@@ -1,0 +1,66 @@
+[package]
+name = "memo"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+resolver = "2"
+members = [
+    "memo-core",
+    "memo-service",
+    "memo-cli",
+    "memo-rig",
+    "memo-config",
+    "examples/multi-round-interactive"
+]
+
+[dependencies]
+memo-core = { path = "memo-core" }
+tracing = { workspace = true }
+
+[workspace.dependencies]
+# Async runtime and utilities
+tokio = { version = "1.48", features = ["full"] }
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+anyhow = "1.0"
+thiserror = "2.0"
+
+# UUID and time
+uuid = { version = "1.0", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+# Vector database
+qdrant-client = "1.11"
+
+# LLM framework
+rig-core = "0.23"
+
+# Web framework
+axum = { version = "0.8", features = ["json"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+
+# CLI framework
+clap = { version = "4.0", features = ["derive"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
+# Configuration
+config = "0.15"
+
+# Async trait
+async-trait = "0.1"
+
+# Additional dependencies for cloning
+dyn-clone = "1.0"

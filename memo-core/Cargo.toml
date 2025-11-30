@@ -1,0 +1,38 @@
+[package]
+name = "memo-core"
+version = "0.1.0"
+edition = "2024"
+description = "Core memory management engine for Rust agent memory system"
+license = "MIT"
+
+[dependencies]
+memo-config = { path = "../memo-config" }
+# Workspace dependencies
+tokio = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+qdrant-client = { workspace = true }
+rig-core = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["chrono"] }
+reqwest = { workspace = true }
+
+# Additional dependencies specific to core
+md5 = "0.8"
+sha2 = "0.10"
+base64 = "0.22"
+async-trait = "0.1"
+dyn-clone = "1.0"
+regex = "1.10"
+tracing-appender = "0.2"
+schemars = { version = "1.0", features = ["derive"] }
+
+
+
+[features]
+default = []

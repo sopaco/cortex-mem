@@ -1,0 +1,782 @@
+use async_trait::async_trait;
+use qdrant_client::{
+    qdrant::{
+        condition, point_id, points_selector, r#match, vectors_config, Condition, CreateCollection,
+        DeletePoints, Distance, FieldCondition, Filter, GetPoints, Match, PointId, PointStruct,
+        PointsIdsList, PointsSelector, ScoredPoint, ScrollPoints, SearchPoints, UpsertPoints,
+        VectorParams, VectorsConfig,
+    },
+    Qdrant,
+};
+use std::collections::HashMap;
+use tracing::{debug, error, info, warn};
+
+use crate::{
+    config::QdrantConfig,
+    error::{MemoryError, Result},
+    types::{Filters, Memory, MemoryMetadata, MemoryType, ScoredMemory},
+    vector_store::VectorStore,
+};
+
+/// Qdrant vector store implementation
+pub struct QdrantVectorStore {
+    client: Qdrant,
+    collection_name: String,
+    embedding_dim: Option<usize>,
+}
+
+impl QdrantVectorStore {
+    /// Create a new Qdrant vector store
+    pub async fn new(config: &QdrantConfig) -> Result<Self> {
+        let client = Qdrant::from_url(&config.url)
+            .build()
+            .map_err(|e| MemoryError::VectorStore(e))?;
+
+        let store = Self {
+            client,
+            collection_name: config.collection_name.clone(),
+            embedding_dim: config.embedding_dim,
+        };
+
+        Ok(store)
+    }
+
+    /// Create a new Qdrant vector store with auto-detected embedding dimension
+    pub async fn new_with_llm_client(
+        config: &QdrantConfig,
+        llm_client: &dyn crate::llm::LLMClient,
+    ) -> Result<Self> {
+        let client = Qdrant::from_url(&config.url)
+            .build()
+            .map_err(|e| MemoryError::VectorStore(e))?;
+
+        let mut store = Self {
+            client,
+            collection_name: config.collection_name.clone(),
+            embedding_dim: config.embedding_dim,
+        };
+
+        // Auto-detect embedding dimension if not specified
+        if store.embedding_dim.is_none() {
+            info!("Auto-detecting embedding dimension...");
+            let test_embedding = llm_client.embed("test").await?;
+            let detected_dim = test_embedding.len();
+            info!("Detected embedding dimension: {}", detected_dim);
+            store.embedding_dim = Some(detected_dim);
+        }
+
+        // Ensure collection exists with correct dimension
+        store.ensure_collection().await?;
+
+        Ok(store)
+    }
+
+    /// Ensure the collection exists, create if not
+    async fn ensure_collection(&self) -> Result<()> {
+        let collections = self
+            .client
+            .list_collections()
+            .await
+            .map_err(|e| MemoryError::VectorStore(e))?;
+
+        let collection_exists = collections
+            .collections
+            .iter()
+            .any(|c| c.name == self.collection_name);
+
+        if !collection_exists {
+            let embedding_dim = self.embedding_dim.ok_or_else(|| {
+                MemoryError::config(
+                    "Embedding dimension not set. Use new_with_llm_client for auto-detection.",
+                )
+            })?;
+
+            info!(
+                "Creating collection: {} with dimension: {}",
+                self.collection_name, embedding_dim
+            );
+
+            let vectors_config = VectorsConfig {
+                config: Some(vectors_config::Config::Params(VectorParams {
+                    size: embedding_dim as u64,
+                    distance: Distance::Cosine.into(),
+                    ..Default::default()
+                })),
+            };
+
+            self.client
+                .create_collection(CreateCollection {
+                    collection_name: self.collection_name.clone(),
+                    vectors_config: Some(vectors_config),
+                    ..Default::default()
+                })
+                .await
+                .map_err(|e| MemoryError::VectorStore(e))?;
+
+            info!("Collection created successfully: {}", self.collection_name);
+        } else {
+            debug!("Collection already exists: {}", self.collection_name);
+
+            // Verify dimension compatibility if collection exists
+            if let Some(expected_dim) = self.embedding_dim {
+                if let Err(e) = self.verify_collection_dimension(expected_dim).await {
+                    warn!("Collection dimension verification failed: {}", e);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Verify that the existing collection has the expected dimension
+    async fn verify_collection_dimension(&self, expected_dim: usize) -> Result<()> {
+        let collection_info = self
+            .client
+            .collection_info(&self.collection_name)
+            .await
+            .map_err(|e| MemoryError::VectorStore(e))?;
+
+        if let Some(collection_config) = collection_info.result {
+            if let Some(config) = collection_config.config {
+                if let Some(params) = config.params {
+                    if let Some(vectors_config) = params.vectors_config {
+                        if let Some(vectors_config::Config::Params(vector_params)) =
+                            vectors_config.config
+                        {
+                            let actual_dim = vector_params.size as usize;
+                            if actual_dim != expected_dim {
+                                return Err(MemoryError::config(format!(
+                                    "Collection '{}' has dimension {} but expected {}. Please delete the collection or use a compatible embedding model.",
+                                    self.collection_name, actual_dim, expected_dim
+                                )));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Convert Memory to Qdrant PointStruct
+    fn memory_to_point(&self, memory: &Memory) -> PointStruct {
+        let mut payload = HashMap::new();
+
+        // Basic fields
+        payload.insert("content".to_string(), memory.content.clone().into());
+        payload.insert(
+            "created_at".to_string(),
+            memory.created_at.to_rfc3339().into(),
+        );
+        payload.insert(
+            "updated_at".to_string(),
+            memory.updated_at.to_rfc3339().into(),
+        );
+
+        // Metadata fields
+        if let Some(user_id) = &memory.metadata.user_id {
+            payload.insert("user_id".to_string(), user_id.clone().into());
+        }
+        if let Some(agent_id) = &memory.metadata.agent_id {
+            payload.insert("agent_id".to_string(), agent_id.clone().into());
+        }
+        if let Some(run_id) = &memory.metadata.run_id {
+            payload.insert("run_id".to_string(), run_id.clone().into());
+        }
+        if let Some(actor_id) = &memory.metadata.actor_id {
+            payload.insert("actor_id".to_string(), actor_id.clone().into());
+        }
+        if let Some(role) = &memory.metadata.role {
+            payload.insert("role".to_string(), role.clone().into());
+        }
+
+        payload.insert(
+            "memory_type".to_string(),
+            format!("{:?}", memory.metadata.memory_type).into(),
+        );
+        payload.insert("hash".to_string(), memory.metadata.hash.clone().into());
+        payload.insert(
+            "importance_score".to_string(),
+            memory.metadata.importance_score.into(),
+        );
+
+        // Store entities and topics as arrays
+        if !memory.metadata.entities.is_empty() {
+            let entities_json =
+                serde_json::to_string(&memory.metadata.entities).unwrap_or_default();
+            payload.insert("entities".to_string(), entities_json.into());
+        }
+
+        if !memory.metadata.topics.is_empty() {
+            let topics_json = serde_json::to_string(&memory.metadata.topics).unwrap_or_default();
+            payload.insert("topics".to_string(), topics_json.into());
+        }
+
+        // Custom metadata
+        for (key, value) in &memory.metadata.custom {
+            payload.insert(format!("custom_{}", key), value.to_string().into());
+        }
+
+        PointStruct::new(memory.id.clone(), memory.embedding.clone(), payload)
+    }
+
+    /// Convert filters to Qdrant filter
+    fn filters_to_qdrant_filter(&self, filters: &Filters) -> Option<Filter> {
+        let mut conditions = Vec::new();
+
+        if let Some(user_id) = &filters.user_id {
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "user_id".to_string(),
+                    r#match: Some(Match {
+                        match_value: Some(r#match::MatchValue::Keyword(user_id.clone())),
+                    }),
+                    ..Default::default()
+                })),
+            });
+        }
+
+        if let Some(agent_id) = &filters.agent_id {
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "agent_id".to_string(),
+                    r#match: Some(Match {
+                        match_value: Some(r#match::MatchValue::Keyword(agent_id.clone())),
+                    }),
+                    ..Default::default()
+                })),
+            });
+        }
+
+        if let Some(run_id) = &filters.run_id {
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "run_id".to_string(),
+                    r#match: Some(Match {
+                        match_value: Some(r#match::MatchValue::Keyword(run_id.clone())),
+                    }),
+                    ..Default::default()
+                })),
+            });
+        }
+
+        if let Some(memory_type) = &filters.memory_type {
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "memory_type".to_string(),
+                    r#match: Some(Match {
+                        match_value: Some(r#match::MatchValue::Keyword(format!(
+                            "{:?}",
+                            memory_type
+                        ))),
+                    }),
+                    ..Default::default()
+                })),
+            });
+        }
+
+        // Filter by topics - check if any of the requested topics are present
+        if let Some(topics) = &filters.topics {
+            if !topics.is_empty() {
+                let topic_conditions: Vec<Condition> = topics
+                    .iter()
+                    .map(|topic| Condition {
+                        condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                            key: "topics".to_string(),
+                            r#match: Some(Match {
+                                match_value: Some(r#match::MatchValue::Text(topic.clone())),
+                            }),
+                            ..Default::default()
+                        })),
+                    })
+                    .collect();
+
+                if !topic_conditions.is_empty() {
+                    conditions.push(Condition {
+                        condition_one_of: Some(condition::ConditionOneOf::Filter(Filter {
+                            should: topic_conditions,
+                            ..Default::default()
+                        })),
+                    });
+                }
+            }
+        }
+
+        // Filter by entities - check if any of the requested entities are present
+        if let Some(entities) = &filters.entities {
+            if !entities.is_empty() {
+                let entity_conditions: Vec<Condition> = entities
+                    .iter()
+                    .map(|entity| Condition {
+                        condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                            key: "entities".to_string(),
+                            r#match: Some(Match {
+                                match_value: Some(r#match::MatchValue::Text(entity.clone())),
+                            }),
+                            ..Default::default()
+                        })),
+                    })
+                    .collect();
+
+                if !entity_conditions.is_empty() {
+                    conditions.push(Condition {
+                        condition_one_of: Some(condition::ConditionOneOf::Filter(Filter {
+                            should: entity_conditions,
+                            ..Default::default()
+                        })),
+                    });
+                }
+            }
+        }
+
+        // Filter by custom fields (including keywords)
+        for (key, value) in &filters.custom {
+            if let Some(keywords_array) = value.as_array() {
+                // Handle keywords array
+                let keyword_conditions: Vec<Condition> = keywords_array
+                    .iter()
+                    .filter_map(|kw| kw.as_str())
+                    .map(|keyword| Condition {
+                        condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                            key: format!("custom_{}", key),
+                            r#match: Some(Match {
+                                match_value: Some(r#match::MatchValue::Text(keyword.to_string())),
+                            }),
+                            ..Default::default()
+                        })),
+                    })
+                    .collect();
+
+                if !keyword_conditions.is_empty() {
+                    conditions.push(Condition {
+                        condition_one_of: Some(condition::ConditionOneOf::Filter(Filter {
+                            should: keyword_conditions,
+                            ..Default::default()
+                        })),
+                    });
+                }
+            } else if let Some(keyword_str) = value.as_str() {
+                // Handle single string value
+                conditions.push(Condition {
+                    condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                        key: format!("custom_{}", key),
+                        r#match: Some(Match {
+                            match_value: Some(r#match::MatchValue::Text(keyword_str.to_string())),
+                        }),
+                        ..Default::default()
+                    })),
+                });
+            }
+        }
+
+        if conditions.is_empty() {
+            None
+        } else {
+            Some(Filter {
+                must: conditions,
+                ..Default::default()
+            })
+        }
+    }
+
+    /// Convert Qdrant point to Memory
+    fn point_to_memory(&self, point: &ScoredPoint) -> Result<Memory> {
+        let payload = &point.payload;
+
+        let id = match &point.id {
+            Some(PointId {
+                point_id_options: Some(point_id),
+            }) => match point_id {
+                point_id::PointIdOptions::Uuid(uuid) => uuid.clone(),
+                point_id::PointIdOptions::Num(num) => num.to_string(),
+            },
+            _ => return Err(MemoryError::Parse("Invalid point ID".to_string())),
+        };
+
+        let content = payload
+            .get("content")
+            .and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.as_str()),
+                _ => None,
+            })
+            .ok_or_else(|| MemoryError::Parse("Missing content field".to_string()))?
+            .to_string();
+
+        // For now, we'll use a dummy embedding since parsing vectors is complex
+        let embedding_dim = self.embedding_dim.unwrap_or(1024); // Default fallback
+        let embedding = vec![0.0; embedding_dim];
+
+        let created_at = payload
+            .get("created_at")
+            .and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.as_str()),
+                _ => None,
+            })
+            .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .ok_or_else(|| MemoryError::Parse("Invalid created_at timestamp".to_string()))?;
+
+        let updated_at = payload
+            .get("updated_at")
+            .and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.as_str()),
+                _ => None,
+            })
+            .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .ok_or_else(|| MemoryError::Parse("Invalid updated_at timestamp".to_string()))?;
+
+        let memory_type = payload
+            .get("memory_type")
+            .and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.as_str()),
+                _ => None,
+            })
+            .and_then(|s| match s {
+                "Conversational" => Some(MemoryType::Conversational),
+                "Procedural" => Some(MemoryType::Procedural),
+                "Factual" => Some(MemoryType::Factual),
+                _ => None,
+            })
+            .unwrap_or(MemoryType::Conversational);
+
+        let hash = payload
+            .get("hash")
+            .and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.as_str()),
+                _ => None,
+            })
+            .map(|s| s.to_string())
+            .unwrap_or_default();
+
+        let mut custom = HashMap::new();
+        for (key, value) in payload {
+            if key.starts_with("custom_") {
+                let custom_key = key.strip_prefix("custom_").unwrap().to_string();
+                custom.insert(custom_key, serde_json::Value::String(value.to_string()));
+            }
+        }
+
+        let metadata = MemoryMetadata {
+            user_id: payload.get("user_id").and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.to_string()),
+                _ => None,
+            }),
+            agent_id: payload.get("agent_id").and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.to_string()),
+                _ => None,
+            }),
+            run_id: payload.get("run_id").and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.to_string()),
+                _ => None,
+            }),
+            actor_id: payload.get("actor_id").and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.to_string()),
+                _ => None,
+            }),
+            role: payload.get("role").and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.to_string()),
+                _ => None,
+            }),
+            memory_type,
+            hash,
+            importance_score: payload
+                .get("importance_score")
+                .and_then(|v| match v {
+                    qdrant_client::qdrant::Value {
+                        kind: Some(qdrant_client::qdrant::value::Kind::DoubleValue(d)),
+                    } => Some(*d),
+                    qdrant_client::qdrant::Value {
+                        kind: Some(qdrant_client::qdrant::value::Kind::IntegerValue(i)),
+                    } => Some(*i as f64),
+                    _ => None,
+                })
+                .map(|f| f as f32)
+                .unwrap_or(0.5),
+            entities: payload
+                .get("entities")
+                .and_then(|v| match v {
+                    qdrant_client::qdrant::Value {
+                        kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                    } => Some(s.as_str()),
+                    _ => None,
+                })
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap_or_default(),
+            topics: payload
+                .get("topics")
+                .and_then(|v| match v {
+                    qdrant_client::qdrant::Value {
+                        kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                    } => Some(s.as_str()),
+                    _ => None,
+                })
+                .and_then(|s| serde_json::from_str(s).ok())
+                .unwrap_or_default(),
+            custom,
+        };
+
+        Ok(Memory {
+            id,
+            content,
+            embedding,
+            metadata,
+            created_at,
+            updated_at,
+        })
+    }
+}
+
+impl Clone for QdrantVectorStore {
+    fn clone(&self) -> Self {
+        Self {
+            client: self.client.clone(),
+            collection_name: self.collection_name.clone(),
+            embedding_dim: self.embedding_dim,
+        }
+    }
+}
+
+impl QdrantVectorStore {
+    /// Get the embedding dimension
+    pub fn embedding_dim(&self) -> Option<usize> {
+        self.embedding_dim
+    }
+
+    /// Set the embedding dimension (used for auto-detection)
+    pub fn set_embedding_dim(&mut self, dim: usize) {
+        self.embedding_dim = Some(dim);
+    }
+}
+
+#[async_trait]
+impl VectorStore for QdrantVectorStore {
+    async fn insert(&self, memory: &Memory) -> Result<()> {
+        let point = self.memory_to_point(memory);
+
+        let upsert_request = UpsertPoints {
+            collection_name: self.collection_name.clone(),
+            points: vec![point],
+            ..Default::default()
+        };
+
+        self.client
+            .upsert_points(upsert_request)
+            .await
+            .map_err(|e| MemoryError::VectorStore(e))?;
+
+        debug!("Inserted memory with ID: {}", memory.id);
+        Ok(())
+    }
+
+    async fn search(
+        &self,
+        query_vector: &[f32],
+        filters: &Filters,
+        limit: usize,
+    ) -> Result<Vec<ScoredMemory>> {
+        self.search_with_threshold(query_vector, filters, limit, None)
+            .await
+    }
+
+    /// Search with optional similarity threshold filtering
+    async fn search_with_threshold(
+        &self,
+        query_vector: &[f32],
+        filters: &Filters,
+        limit: usize,
+        score_threshold: Option<f32>,
+    ) -> Result<Vec<ScoredMemory>> {
+        let filter = self.filters_to_qdrant_filter(filters);
+
+        let search_points = SearchPoints {
+            collection_name: self.collection_name.clone(),
+            vector: query_vector.to_vec(),
+            limit: limit as u64,
+            filter,
+            with_payload: Some(true.into()),
+            with_vectors: Some(true.into()),
+            score_threshold: score_threshold.map(|t| t as f32), // Set score threshold if provided
+            ..Default::default()
+        };
+
+        let response = self
+            .client
+            .search_points(search_points)
+            .await
+            .map_err(|e| MemoryError::VectorStore(e))?;
+
+        let mut results = Vec::new();
+        for point in response.result {
+            match self.point_to_memory(&point) {
+                Ok(memory) => {
+                    results.push(ScoredMemory {
+                        memory,
+                        score: point.score,
+                    });
+                }
+                Err(e) => {
+                    warn!("Failed to parse memory from point: {}", e);
+                }
+            }
+        }
+
+        debug!(
+            "Found {} memories for search query with threshold {:?}",
+            results.len(),
+            score_threshold
+        );
+        Ok(results)
+    }
+
+    async fn update(&self, memory: &Memory) -> Result<()> {
+        // For Qdrant, update is the same as insert (upsert)
+        self.insert(memory).await
+    }
+
+    async fn delete(&self, id: &str) -> Result<()> {
+        let point_id = PointId {
+            point_id_options: Some(point_id::PointIdOptions::Uuid(id.to_string())),
+        };
+
+        let points_selector = PointsSelector {
+            points_selector_one_of: Some(points_selector::PointsSelectorOneOf::Points(
+                PointsIdsList {
+                    ids: vec![point_id],
+                },
+            )),
+        };
+
+        let delete_request = DeletePoints {
+            collection_name: self.collection_name.clone(),
+            points: Some(points_selector),
+            ..Default::default()
+        };
+
+        self.client
+            .delete_points(delete_request)
+            .await
+            .map_err(|e| MemoryError::VectorStore(e))?;
+
+        debug!("Deleted memory with ID: {}", id);
+        Ok(())
+    }
+
+    async fn get(&self, id: &str) -> Result<Option<Memory>> {
+        let point_id = PointId {
+            point_id_options: Some(point_id::PointIdOptions::Uuid(id.to_string())),
+        };
+
+        let get_request = GetPoints {
+            collection_name: self.collection_name.clone(),
+            ids: vec![point_id],
+            with_payload: Some(true.into()),
+            with_vectors: Some(true.into()),
+            ..Default::default()
+        };
+
+        let response = self
+            .client
+            .get_points(get_request)
+            .await
+            .map_err(|e| MemoryError::VectorStore(e))?;
+
+        if let Some(point) = response.result.first() {
+            // Convert RetrievedPoint to ScoredPoint for parsing
+            let scored_point = ScoredPoint {
+                id: point.id.clone(),
+                payload: point.payload.clone(),
+                score: 1.0, // Not relevant for get operation
+                vectors: point.vectors.clone(),
+                shard_key: None,
+                order_value: None,
+                version: 0,
+            };
+
+            match self.point_to_memory(&scored_point) {
+                Ok(memory) => Ok(Some(memory)),
+                Err(e) => {
+                    error!("Failed to parse memory from point: {}", e);
+                    Err(e)
+                }
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    async fn list(&self, filters: &Filters, limit: Option<usize>) -> Result<Vec<Memory>> {
+        let filter = self.filters_to_qdrant_filter(filters);
+        let limit = limit.unwrap_or(100) as u32;
+
+        let scroll_points = ScrollPoints {
+            collection_name: self.collection_name.clone(),
+            filter,
+            limit: Some(limit),
+            with_payload: Some(true.into()),
+            with_vectors: Some(true.into()),
+            ..Default::default()
+        };
+
+        let response = self
+            .client
+            .scroll(scroll_points)
+            .await
+            .map_err(|e| MemoryError::VectorStore(e))?;
+
+        let mut results = Vec::new();
+        for point in response.result {
+            // Convert RetrievedPoint to ScoredPoint for parsing
+            let scored_point = ScoredPoint {
+                id: point.id.clone(),
+                payload: point.payload.clone(),
+                score: 1.0, // Not relevant for list operation
+                vectors: point.vectors.clone(),
+                shard_key: None,
+                order_value: None,
+                version: 0,
+            };
+
+            match self.point_to_memory(&scored_point) {
+                Ok(memory) => results.push(memory),
+                Err(e) => {
+                    warn!("Failed to parse memory from point: {}", e);
+                }
+            }
+        }
+
+        debug!("Listed {} memories", results.len());
+        Ok(results)
+    }
+
+    async fn health_check(&self) -> Result<bool> {
+        match self.client.health_check().await {
+            Ok(_) => Ok(true),
+            Err(e) => {
+                error!("Qdrant health check failed: {}", e);
+                Ok(false)
+            }
+        }
+    }
+}
