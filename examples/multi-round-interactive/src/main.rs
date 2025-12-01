@@ -259,6 +259,7 @@ async fn run_application(
         }
     }
 
+    info!("Cortex TARS powering down. Goodbye!");
     Ok(())
 }
 
