@@ -10,7 +10,7 @@ use memo_rig::{
 };
 use ratatui::{Terminal, backend::CrosstermBackend};
 use tracing::info;
-use std::{io, path::PathBuf, sync::Arc};
+use std::{io, path::PathBuf, sync::Arc, time::Duration};
 use tokio::sync::mpsc;
 
 mod agent;
@@ -420,6 +420,8 @@ async fn handle_quit_async(
     // 停止日志监听任务
     log_monitoring_handle.abort();
 
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    
     println!("\n╠══════════════════════════════════════════════════════════════════════════════╣");
     println!("║                                    🎉 退出流程完成                            ║");
     println!("╚══════════════════════════════════════════════════════════════════════════════╝");

@@ -143,28 +143,6 @@ impl LogFileMonitor {
         // 添加前缀标识这是来自日志文件的内容
         format!("📋 {}", colored_line)
     }
-
-    /// 一次性读取所有现有日志内容（用于初始显示）
-    pub async fn read_all_existing_logs(&mut self, log_dir: &str) -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
-        self.find_latest_log_file(log_dir).await?;
-        
-        let mut all_logs = Vec::new();
-        
-        if let Some(ref log_file_path) = self.log_file_path {
-            let file = File::open(log_file_path)?;
-            let reader = BufReader::new(file);
-            
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    if !line.trim().is_empty() {
-                        all_logs.push(line);
-                    }
-                }
-            }
-        }
-        
-        Ok(all_logs)
-    }
 }
 
 /// 启动日志监听任务（异步）
