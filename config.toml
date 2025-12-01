@@ -34,7 +34,7 @@ auto_enhance = false
 deduplicate = true
 similarity_threshold = 0.65
 merge_threshold = 0.75
-search_similarity_threshold = 0.55
+search_similarity_threshold = 0.3
 
 [logging]
 enabled = true
