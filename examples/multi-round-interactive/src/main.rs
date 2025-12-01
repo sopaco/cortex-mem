@@ -9,6 +9,7 @@ use memo_rig::{
     llm::OpenAILLMClient, memory::manager::MemoryManager, vector_store::qdrant::QdrantVectorStore,
 };
 use ratatui::{Terminal, backend::CrosstermBackend};
+use tracing::info;
 use std::{io, path::PathBuf, sync::Arc};
 use tokio::sync::mpsc;
 
