@@ -3,4 +3,4 @@
 /.litho
 .DS_Store
 logs/
-
+config.toml
