@@ -1722,6 +1722,7 @@ dependencies = [
  "once_cell",
  "ratatui",
  "rig-core",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",

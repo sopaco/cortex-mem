@@ -231,15 +231,20 @@ impl MemoryManager {
             debug!("No facts extracted, trying alternative extraction methods");
 
             // Try to extract facts from user messages only
-            let user_messages: Vec<_> = messages.iter()
+            let user_messages: Vec<_> = messages
+                .iter()
                 .filter(|msg| msg.role == "user")
                 .cloned()
                 .collect();
 
             if !user_messages.is_empty() {
-                if let Ok(user_facts) = self.fact_extractor.extract_user_facts(&user_messages).await {
+                if let Ok(user_facts) = self.fact_extractor.extract_user_facts(&user_messages).await
+                {
                     if !user_facts.is_empty() {
-                        debug!("Extracted {} facts from user messages fallback", user_facts.len());
+                        debug!(
+                            "Extracted {} facts from user messages fallback",
+                            user_facts.len()
+                        );
                         final_extracted_facts = user_facts;
                     }
                 }
@@ -249,7 +254,11 @@ impl MemoryManager {
             if final_extracted_facts.is_empty() {
                 let mut single_message_facts = Vec::new();
                 for message in messages {
-                    if let Ok(mut facts) = self.fact_extractor.extract_facts_from_text(&message.content).await {
+                    if let Ok(mut facts) = self
+                        .fact_extractor
+                        .extract_facts_from_text(&message.content)
+                        .await
+                    {
                         for fact in &mut facts {
                             fact.source_role = message.role.clone();
                         }
@@ -259,7 +268,10 @@ impl MemoryManager {
 
                 if !single_message_facts.is_empty() {
                     final_extracted_facts = single_message_facts;
-                    debug!("Extracted {} facts from individual messages", final_extracted_facts.len());
+                    debug!(
+                        "Extracted {} facts from individual messages",
+                        final_extracted_facts.len()
+                    );
                 }
             }
 
@@ -317,7 +329,12 @@ impl MemoryManager {
             // 使用配置中的搜索相似度阈值进行过滤
             let existing_memories = self
                 .vector_store
-                .search_with_threshold(&query_embedding, &filters, 5, self.config.search_similarity_threshold)
+                .search_with_threshold(
+                    &query_embedding,
+                    &filters,
+                    5,
+                    self.config.search_similarity_threshold,
+                )
                 .await?;
 
             // Use memory updater to determine actions
@@ -614,6 +631,9 @@ impl MemoryManager {
 {}",
             PROCEDURAL_MEMORY_SYSTEM_PROMPT, formatted_messages
         );
+
+        #[cfg(debug_assertions)]
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
         // Get LLM response with procedural memory summarization
         let response = self.llm_client.complete(&prompt).await?;

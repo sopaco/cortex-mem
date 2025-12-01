@@ -306,10 +306,31 @@ async fn handle_quit_async(
         } else {
             &all_logs[..]
         };
-        for log in recent_logs {
-            println!("   {}", log);
+        
+        println!("   {}", "─".repeat(70));
+        for (i, log) in recent_logs.iter().enumerate() {
+            let beautified_content = beautify_log_content(log);
+            
+            // 添加日志条目编号
+            if i > 0 {
+                println!("   {}", "─".repeat(70));
+            }
+            
+            // 显示美化后的内容，支持多行显示
+            let lines: Vec<&str> = beautified_content.split('\n').collect();
+            for (line_i, line) in lines.iter().enumerate() {
+                if line_i == 0 {
+                    // 第一行显示编号和完整内容
+                    let colored_line = get_log_level_color(log, line);
+                    println!("   {}", colored_line);
+                } else {
+                    // 后续行添加缩进
+                    println!("   │ {}", line);
+                }
+            }
         }
         if all_logs.len() > 10 {
+            println!("   {}", "─".repeat(70));
             println!("   ... (显示最近10条，共{}条)", all_logs.len());
         }
     }
@@ -323,16 +344,31 @@ async fn handle_quit_async(
             } else {
                 &file_logs[..]
             };
-            for log in recent_file_logs {
-                // 过滤掉时间戳前缀，保持简洁
-                if let Some(content_start) = log.find("] ") {
-                    let content = &log[content_start + 2..];
-                    println!("   {}", content);
-                } else {
-                    println!("   {}", log);
+            
+            println!("   {}", "─".repeat(70));
+            for (i, log) in recent_file_logs.iter().enumerate() {
+                let beautified_content = beautify_log_content(log);
+                
+                // 添加日志条目编号
+                if i > 0 {
+                    println!("   {}", "─".repeat(70));
+                }
+                
+                // 显示美化后的内容，支持多行显示
+                let lines: Vec<&str> = beautified_content.split('\n').collect();
+                for (line_i, line) in lines.iter().enumerate() {
+                    if line_i == 0 {
+                        // 第一行显示完整内容
+                        let colored_line = get_log_level_color(log, line);
+                        println!("   {}", colored_line);
+                    } else {
+                        // 后续行添加缩进
+                        println!("   │ {}", line);
+                    }
                 }
             }
             if file_logs.len() > 20 {
+                println!("   {}", "─".repeat(70));
                 println!("   ... (总共{}行)", file_logs.len());
             }
         }
@@ -454,4 +490,68 @@ async fn read_latest_log_file(log_dir: &str) -> Result<Vec<String>, Box<dyn std:
     }
 
     Ok(Vec::new())
+}
+
+/// 美化日志内容显示
+fn beautify_log_content(log_line: &str) -> String {
+    // 过滤掉时间戳前缀，保持简洁
+    let content = if let Some(content_start) = log_line.find("] ") {
+        &log_line[content_start + 2..]
+    } else {
+        log_line
+    };
+
+    // 判断是否为JSON内容
+    let trimmed_content = content.trim();
+    let is_json = trimmed_content.starts_with('{') && trimmed_content.ends_with('}');
+
+    if is_json {
+        // 尝试美化JSON，保留完整内容
+        match prettify_json(trimmed_content) {
+            Ok(formatted_json) => {
+                // 如果格式化成功，返回完整的带缩进的JSON
+                formatted_json
+            }
+            Err(_) => {
+                // 如果JSON格式化失败，返回原始内容
+                content.to_string()
+            }
+        }
+    } else {
+        // 非JSON内容，保持原样
+        content.to_string()
+    }
+}
+
+/// 美化JSON内容
+fn prettify_json(json_str: &str) -> Result<String, Box<dyn std::error::Error>> {
+    use serde_json::Value;
+    
+    let value: Value = serde_json::from_str(json_str)?;
+    Ok(serde_json::to_string_pretty(&value)?)
+}
+
+/// 根据日志级别返回带颜色的文本
+fn get_log_level_color(log_line: &str, text: &str) -> String {
+    let log_level = if let Some(level_start) = log_line.find("[") {
+        if let Some(level_end) = log_line[level_start..].find("]") {
+            &log_line[level_start + 1..level_start + level_end]
+        } else {
+            "UNKNOWN"
+        }
+    } else {
+        "UNKNOWN"
+    };
+
+    // ANSI颜色代码
+    let (color_code, reset_code) = match log_level.to_uppercase().as_str() {
+        "ERROR" => ("\x1b[91m", "\x1b[0m"),     // 亮红色
+        "WARN" | "WARNING" => ("\x1b[93m", "\x1b[0m"), // 亮黄色
+        "INFO" => ("\x1b[36m", "\x1b[0m"),     // 亮青色
+        "DEBUG" => ("\x1b[94m", "\x1b[0m"),    // 亮蓝色
+        "TRACE" => ("\x1b[95m", "\x1b[0m"),    // 亮紫色
+        _ => ("\x1b[0m", "\x1b[0m"),           // 白色
+    };
+
+    format!("{}{}{}", color_code, text, reset_code)
 }

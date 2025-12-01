@@ -1,21 +1,15 @@
-use crate::{
-    error::Result,
-    llm::LLMClient,
-    types::Memory,
-    vector_store::VectorStore,
-};
+use crate::{error::Result, llm::LLMClient, types::Memory, vector_store::VectorStore};
 use async_trait::async_trait;
-
 
 /// Trait for detecting and handling duplicate memories
 #[async_trait]
 pub trait DuplicateDetector: Send + Sync {
     /// Detect if a memory is a duplicate of existing memories
     async fn detect_duplicates(&self, memory: &Memory) -> Result<Vec<Memory>>;
-    
+
     /// Merge similar memories into a single memory
     async fn merge_memories(&self, memories: &[Memory]) -> Result<Memory>;
-    
+
     /// Check if two memories are similar enough to be considered duplicates
     async fn are_similar(&self, memory1: &Memory, memory2: &Memory) -> Result<bool>;
 }
@@ -46,7 +40,9 @@ impl AdvancedDuplicateDetector {
     /// Calculate semantic similarity between two memories
     fn calculate_semantic_similarity(&self, memory1: &Memory, memory2: &Memory) -> f32 {
         // Calculate cosine similarity between embeddings
-        let dot_product: f32 = memory1.embedding.iter()
+        let dot_product: f32 = memory1
+            .embedding
+            .iter()
             .zip(memory2.embedding.iter())
             .map(|(a, b)| a * b)
             .sum();
@@ -105,7 +101,7 @@ impl AdvancedDuplicateDetector {
         // Entity overlap
         let entities1: std::collections::HashSet<_> = memory1.metadata.entities.iter().collect();
         let entities2: std::collections::HashSet<_> = memory2.metadata.entities.iter().collect();
-        
+
         if !entities1.is_empty() || !entities2.is_empty() {
             let intersection = entities1.intersection(&entities2).count();
             let union = entities1.union(&entities2).count();
@@ -118,7 +114,7 @@ impl AdvancedDuplicateDetector {
         // Topic overlap
         let topics1: std::collections::HashSet<_> = memory1.metadata.topics.iter().collect();
         let topics2: std::collections::HashSet<_> = memory2.metadata.topics.iter().collect();
-        
+
         if !topics1.is_empty() || !topics2.is_empty() {
             let intersection = topics1.intersection(&topics2).count();
             let union = topics1.union(&topics2).count();
@@ -139,15 +135,11 @@ impl AdvancedDuplicateDetector {
     fn create_merge_prompt(&self, memories: &[Memory]) -> String {
         let mut prompt = String::from(
             "You are tasked with merging similar memories into a single, comprehensive memory. \
-            Please combine the following memories while preserving all important information:\n\n"
+            Please combine the following memories while preserving all important information:\n\n",
         );
 
         for (i, memory) in memories.iter().enumerate() {
-            prompt.push_str(&format!(
-                "Memory {}: {}\n",
-                i + 1,
-                memory.content
-            ));
+            prompt.push_str(&format!("Memory {}: {}\n", i + 1, memory.content));
         }
 
         prompt.push_str(
@@ -156,7 +148,7 @@ impl AdvancedDuplicateDetector {
             2. Removes redundant information\n\
             3. Maintains the most important details\n\
             4. Uses clear and concise language\n\n\
-            Merged memory:"
+            Merged memory:",
         );
 
         prompt
@@ -174,7 +166,8 @@ impl DuplicateDetector for AdvancedDuplicateDetector {
             ..Default::default()
         };
 
-        let similar_memories = self.vector_store
+        let similar_memories = self
+            .vector_store
             .search(&memory.embedding, &filters, 10)
             .await?;
 
@@ -194,7 +187,9 @@ impl DuplicateDetector for AdvancedDuplicateDetector {
 
     async fn merge_memories(&self, memories: &[Memory]) -> Result<Memory> {
         if memories.is_empty() {
-            return Err(crate::error::MemoryError::validation("No memories to merge"));
+            return Err(crate::error::MemoryError::validation(
+                "No memories to merge",
+            ));
         }
 
         if memories.len() == 1 {
@@ -203,6 +198,10 @@ impl DuplicateDetector for AdvancedDuplicateDetector {
 
         // Use LLM to merge content
         let prompt = self.create_merge_prompt(memories);
+
+        #[cfg(debug_assertions)]
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
         let merged_content = self.llm_client.complete(&prompt).await?;
 
         // Create merged memory based on the most recent memory
@@ -246,9 +245,8 @@ impl DuplicateDetector for AdvancedDuplicateDetector {
         let metadata_similarity = self.calculate_metadata_similarity(memory1, memory2);
 
         // Weighted combination of similarities
-        let combined_similarity = semantic_similarity * 0.5 
-            + content_similarity * 0.3 
-            + metadata_similarity * 0.2;
+        let combined_similarity =
+            semantic_similarity * 0.5 + content_similarity * 0.3 + metadata_similarity * 0.2;
 
         Ok(combined_similarity >= self.similarity_threshold)
     }
@@ -261,7 +259,9 @@ pub struct RuleBasedDuplicateDetector {
 
 impl RuleBasedDuplicateDetector {
     pub fn new(similarity_threshold: f32) -> Self {
-        Self { similarity_threshold }
+        Self {
+            similarity_threshold,
+        }
     }
 
     fn calculate_simple_similarity(&self, memory1: &Memory, memory2: &Memory) -> f32 {
@@ -277,7 +277,7 @@ impl RuleBasedDuplicateDetector {
         // Length-based similarity
         let len_diff = (content1.len() as f32 - content2.len() as f32).abs();
         let max_len = content1.len().max(content2.len()) as f32;
-        
+
         if max_len == 0.0 {
             return 1.0;
         }
@@ -296,13 +296,13 @@ impl DuplicateDetector for RuleBasedDuplicateDetector {
 
     async fn merge_memories(&self, memories: &[Memory]) -> Result<Memory> {
         if memories.is_empty() {
-            return Err(crate::error::MemoryError::validation("No memories to merge"));
+            return Err(crate::error::MemoryError::validation(
+                "No memories to merge",
+            ));
         }
 
         // Simple merge: take the longest content
-        let longest_memory = memories.iter()
-            .max_by_key(|m| m.content.len())
-            .unwrap();
+        let longest_memory = memories.iter().max_by_key(|m| m.content.len()).unwrap();
 
         Ok(longest_memory.clone())
     }
@@ -332,4 +332,3 @@ pub fn create_duplicate_detector(
         Box::new(RuleBasedDuplicateDetector::new(similarity_threshold))
     }
 }
-

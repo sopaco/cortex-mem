@@ -7,9 +7,9 @@ use crate::{
     error::{MemoryError, Result},
     llm::LLMClient,
     memory::extractor::{ExtractedFact, FactCategory},
+    memory::utils::remove_code_blocks,
     types::{Memory, MemoryMetadata, MemoryType, ScoredMemory},
     vector_store::VectorStore,
-    memory::utils::remove_code_blocks,
 };
 
 /// Actions that can be performed on memories
@@ -98,9 +98,7 @@ impl LLMMemoryUpdater {
             .map(|(i, fact)| {
                 format!(
                     "{}. {} (importance: {:.2})",
-                    i,
-                    fact.content,
-                    fact.importance
+                    i, fact.content, fact.importance
                 )
             })
             .collect::<Vec<_>>()
@@ -112,9 +110,7 @@ impl LLMMemoryUpdater {
             .map(|(i, scored_memory)| {
                 format!(
                     "{}. {} (score: {:.2})",
-                    i,
-                    scored_memory.memory.content,
-                    scored_memory.score
+                    i, scored_memory.memory.content, scored_memory.score
                 )
             })
             .collect::<Vec<_>>()
@@ -184,10 +180,13 @@ Return only the merged content without any additional explanation:"#,
     fn parse_update_decisions(&self, response: &str) -> Result<Vec<UpdateDecision>> {
         // Remove code blocks first (similar to mem0's approach)
         let cleaned_response = remove_code_blocks(response);
-        
+
         // Try to find JSON in the response
         let json_start = cleaned_response.find('[').unwrap_or(0);
-        let json_end = cleaned_response.rfind(']').map(|i| i + 1).unwrap_or(cleaned_response.len());
+        let json_end = cleaned_response
+            .rfind(']')
+            .map(|i| i + 1)
+            .unwrap_or(cleaned_response.len());
         let json_str = &cleaned_response[json_start..json_end];
 
         match serde_json::from_str::<Vec<serde_json::Value>>(json_str) {
@@ -204,7 +203,7 @@ Return only the merged content without any additional explanation:"#,
             }
             Err(e) => {
                 warn!("Failed to parse update decisions: {}", e);
-                
+
                 // Try alternative extraction method (similar to mem0's approach)
                 if let Ok(extracted_json) = self.extract_json_from_response(&cleaned_response) {
                     match serde_json::from_str::<Vec<serde_json::Value>>(&extracted_json) {
@@ -224,7 +223,7 @@ Return only the merged content without any additional explanation:"#,
                         }
                     }
                 }
-                
+
                 Ok(vec![])
             }
         }
@@ -233,9 +232,12 @@ Return only the merged content without any additional explanation:"#,
     /// Extract JSON from response (similar to mem0's extract_json)
     fn extract_json_from_response(&self, response: &str) -> Result<String> {
         let text = response.trim();
-        
+
         // Try to find code blocks with optional 'json' tag
-        if let Some(pattern) = regex::Regex::new(r"```(?:json)?\s*(.*?)\s*```").unwrap().find(text) {
+        if let Some(pattern) = regex::Regex::new(r"```(?:json)?\s*(.*?)\s*```")
+            .unwrap()
+            .find(text)
+        {
             let json_str = &text[pattern.start() + 3 + 3..pattern.end() - 3]; // Skip ``` and optional 'json\n'
             Ok(json_str.trim().to_string())
         } else {
@@ -351,15 +353,17 @@ impl UuidMapping {
         for (idx, scored_memory) in existing_memories.iter().enumerate() {
             let temp_uuid = idx.to_string(); // Use index as temporary UUID
             let real_uuid = scored_memory.memory.id.clone();
-            
-            self.temp_to_real.insert(temp_uuid.clone(), real_uuid.clone());
+
+            self.temp_to_real
+                .insert(temp_uuid.clone(), real_uuid.clone());
             self.real_to_temp.insert(real_uuid, temp_uuid);
         }
     }
 
     /// Convert LLM-generated memory IDs to real IDs
     fn resolve_memory_ids(&self, llm_ids: &[String]) -> Vec<String> {
-        llm_ids.iter()
+        llm_ids
+            .iter()
             .filter_map(|llm_id| self.temp_to_real.get(llm_id).cloned())
             .collect()
     }
@@ -393,6 +397,10 @@ impl MemoryUpdater for LLMMemoryUpdater {
         uuid_mapping.create_from_existing_memories(existing_memories);
 
         let prompt = self.build_update_prompt(facts, existing_memories);
+
+        #[cfg(debug_assertions)]
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
         let response = self.llm_client.complete(&prompt).await?;
         let decisions = self.parse_update_decisions(&response)?;
 
@@ -522,10 +530,17 @@ impl MemoryUpdater for LLMMemoryUpdater {
                         result.actions_performed.push(action);
                         result.memories_updated.push(target_id);
                         result.memories_deleted.extend(source_ids);
-                        debug!("Decided to MERGE {} memories for fact: {}", valid_ids.len(), fact.content);
+                        debug!(
+                            "Decided to MERGE {} memories for fact: {}",
+                            valid_ids.len(),
+                            fact.content
+                        );
                     } else if valid_ids.len() == 1 {
                         // Only one valid memory found, treat as UPDATE instead
-                        debug!("Only one valid memory found for MERGE, treating as UPDATE for fact: {}", fact.content);
+                        debug!(
+                            "Only one valid memory found for MERGE, treating as UPDATE for fact: {}",
+                            fact.content
+                        );
                         let update_action = MemoryAction::Update {
                             id: valid_ids[0].clone(),
                             content: decision.content.unwrap_or_else(|| fact.content.clone()),
@@ -534,7 +549,10 @@ impl MemoryUpdater for LLMMemoryUpdater {
                         result.memories_updated.push(valid_ids[0].clone());
                     } else {
                         // No valid memories found, create new memory
-                        debug!("MERGE action found no valid memory IDs, creating new memory for fact: {}", fact.content);
+                        debug!(
+                            "MERGE action found no valid memory IDs, creating new memory for fact: {}",
+                            fact.content
+                        );
                         let create_action = MemoryAction::Create {
                             content: decision.content.unwrap_or_else(|| fact.content.clone()),
                             metadata: MemoryMetadata {
@@ -558,10 +576,15 @@ impl MemoryUpdater for LLMMemoryUpdater {
                     for memory_id in resolved_ids {
                         // Only attempt to delete if the memory actually exists
                         if self.vector_store.get(&memory_id).await.is_ok() {
-                            let action = MemoryAction::Delete { id: memory_id.clone() };
+                            let action = MemoryAction::Delete {
+                                id: memory_id.clone(),
+                            };
                             result.actions_performed.push(action);
                             result.memories_deleted.push(memory_id.clone());
-                            debug!("Decided to DELETE memory {} for fact: {}", memory_id, fact.content);
+                            debug!(
+                                "Decided to DELETE memory {} for fact: {}",
+                                memory_id, fact.content
+                            );
                         } else {
                             debug!("Memory {} for DELETE no longer exists, skipping", memory_id);
                         }
@@ -618,6 +641,10 @@ impl MemoryUpdater for LLMMemoryUpdater {
         }
 
         let prompt = self.build_merge_prompt(memories);
+
+        #[cfg(debug_assertions)]
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
         let merged_content = self.llm_client.complete(&prompt).await?;
 
         Ok(merged_content.trim().to_string())

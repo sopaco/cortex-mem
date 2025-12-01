@@ -4,9 +4,12 @@ use tracing::{debug, info};
 
 use crate::{
     error::Result,
-    llm::{LLMClient, StructuredFactExtraction, DetailedFactExtraction},
+    llm::{DetailedFactExtraction, LLMClient, StructuredFactExtraction},
+    memory::utils::{
+        LanguageInfo, detect_language, filter_messages_by_role, filter_messages_by_roles,
+        parse_messages, remove_code_blocks,
+    },
     types::Message,
-    memory::utils::{remove_code_blocks, detect_language, parse_messages, filter_messages_by_role, filter_messages_by_roles, LanguageInfo},
 };
 
 /// Extracted fact from conversation
@@ -23,20 +26,20 @@ pub struct ExtractedFact {
 /// Categories of facts that can be extracted
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FactCategory {
-    Personal,      // Personal information about users
-    Preference,    // User preferences and likes/dislikes
-    Factual,       // General factual information
-    Procedural,    // How-to information and procedures
-    Contextual,    // Context about ongoing conversations
+    Personal,   // Personal information about users
+    Preference, // User preferences and likes/dislikes
+    Factual,    // General factual information
+    Procedural, // How-to information and procedures
+    Contextual, // Context about ongoing conversations
 }
 
 /// Extraction strategy based on conversation analysis
 #[derive(Debug, Clone)]
 pub enum ExtractionStrategy {
-    DualChannel,        // Extract both user and assistant facts
-    UserOnly,          // Extract user facts only
-    AssistantOnly,     // Extract assistant facts only
-    ProceduralMemory,  // Extract procedural/step-by-step facts
+    DualChannel,      // Extract both user and assistant facts
+    UserOnly,         // Extract user facts only
+    AssistantOnly,    // Extract assistant facts only
+    ProceduralMemory, // Extract procedural/step-by-step facts
 }
 
 /// Trait for fact extraction from conversations
@@ -45,22 +48,29 @@ pub trait FactExtractor: Send + Sync {
     /// Extract facts from a conversation with enhanced dual prompt system
     /// This method uses intelligent analysis to choose optimal extraction strategy
     async fn extract_facts(&self, messages: &[Message]) -> Result<Vec<ExtractedFact>>;
-    
+
     /// Extract user-only facts (ignoring system/assistant messages)
     async fn extract_user_facts(&self, messages: &[Message]) -> Result<Vec<ExtractedFact>>;
-    
+
     /// Extract assistant-only facts (ignoring user/system messages)
     async fn extract_assistant_facts(&self, messages: &[Message]) -> Result<Vec<ExtractedFact>>;
-    
+
     /// Extract facts from a single text with language detection
     async fn extract_facts_from_text(&self, text: &str) -> Result<Vec<ExtractedFact>>;
-    
+
     /// Extract facts from filtered messages (only specific roles)
-    async fn extract_facts_filtered(&self, messages: &[Message], allowed_roles: &[&str]) -> Result<Vec<ExtractedFact>>;
+    async fn extract_facts_filtered(
+        &self,
+        messages: &[Message],
+        allowed_roles: &[&str],
+    ) -> Result<Vec<ExtractedFact>>;
 
     /// Extract only meaningful assistant facts that contain user-relevant information
     /// Excludes assistant self-description and purely informational responses
-    async fn extract_meaningful_assistant_facts(&self, messages: &[Message]) -> Result<Vec<ExtractedFact>>;
+    async fn extract_meaningful_assistant_facts(
+        &self,
+        messages: &[Message],
+    ) -> Result<Vec<ExtractedFact>>;
 }
 
 /// LLM-based fact extractor implementation
@@ -342,7 +352,7 @@ Facts (JSON only):"#,
     fn parse_facts_response_fallback(&self, response: &str) -> Result<Vec<ExtractedFact>> {
         // Fallback: try to extract JSON from response
         let cleaned_response = remove_code_blocks(response);
-        
+
         // Try to parse as the object format with "facts" key
         if let Ok(json_value) = serde_json::from_str::<serde_json::Value>(&cleaned_response) {
             if let Some(facts_array) = json_value.get("facts").and_then(|v| v.as_array()) {
@@ -374,15 +384,13 @@ Facts (JSON only):"#,
         }])
     }
 
-    
-
     /// Analyze conversation context to determine optimal extraction strategy
     fn analyze_conversation_context(&self, messages: &[Message]) -> ExtractionStrategy {
         let mut has_user = false;
         let mut has_assistant = false;
         let mut _has_system = false;
         let mut _total_messages = 0;
-        
+
         for msg in messages {
             _total_messages += 1;
             match msg.role.as_str() {
@@ -392,14 +400,14 @@ Facts (JSON only):"#,
                 _ => {}
             }
         }
-        
+
         // Analyze message patterns for intelligent strategy selection
         let _user_message_count = messages.iter().filter(|m| m.role == "user").count();
         let _assistant_message_count = messages.iter().filter(|m| m.role == "assistant").count();
-        
+
         // Detect procedural patterns (step-by-step, action-result sequences)
         let is_procedural = self.detect_procedural_pattern(messages);
-        
+
         // Determine optimal extraction strategy
         if is_procedural {
             ExtractionStrategy::ProceduralMemory
@@ -413,17 +421,23 @@ Facts (JSON only):"#,
             ExtractionStrategy::UserOnly // Fallback
         }
     }
-    
+
     /// Detect procedural patterns in conversation (step-by-step actions)
     fn detect_procedural_pattern(&self, messages: &[Message]) -> bool {
         let procedural_keywords = [
-            "正在执行", "正在处理", "执行步骤", "steps", "actions",
-            "最终结果", "output", "是否继续"
+            "正在执行",
+            "正在处理",
+            "执行步骤",
+            "steps",
+            "actions",
+            "最终结果",
+            "output",
+            "是否继续",
         ];
-        
+
         let mut has_procedural_keywords = false;
         let mut has_alternating_pattern = false;
-        
+
         // Check for procedural keywords
         for message in messages {
             if message.role == "user" {
@@ -441,31 +455,31 @@ Facts (JSON only):"#,
                 break;
             }
         }
-        
+
         // Check for alternating user-assistant pattern
         if messages.len() >= 4 {
             let mut user_assistant_alternation = 0;
             for i in 1..messages.len() {
-                if messages[i-1].role != messages[i].role {
+                if messages[i - 1].role != messages[i].role {
                     user_assistant_alternation += 1;
                 }
             }
             has_alternating_pattern = user_assistant_alternation >= messages.len() / 2;
         }
-        
+
         has_procedural_keywords && has_alternating_pattern
     }
-    
+
     /// Extract procedural facts with step-by-step analysis
     async fn extract_procedural_facts(&self, messages: &[Message]) -> Result<Vec<ExtractedFact>> {
         let mut procedural_facts = Vec::new();
-        
+
         for (_i, message) in messages.iter().enumerate() {
             if message.role == "assistant" {
                 // Extract action and result from assistant messages
                 let action_description = self.extract_action_from_message(&message.content);
                 let result_summary = self.summarize_message_result(&message.content);
-                
+
                 if !action_description.is_empty() {
                     procedural_facts.push(ExtractedFact {
                         content: format!("执行了: {}", action_description),
@@ -476,7 +490,7 @@ Facts (JSON only):"#,
                         source_role: "assistant".to_string(),
                     });
                 }
-                
+
                 if !result_summary.is_empty() {
                     procedural_facts.push(ExtractedFact {
                         content: format!("结果: {}", result_summary),
@@ -499,17 +513,17 @@ Facts (JSON only):"#,
                 });
             }
         }
-        
+
         Ok(procedural_facts)
     }
-    
+
     /// Extract action description from message content
     fn extract_action_from_message(&self, content: &str) -> String {
         // Simple action extraction - could be enhanced with more sophisticated NLP
         let action_indicators = [
-            "执行", "正在", "处理", "调用", "获取", "分析", "生成", "创建", "更新", "删除"
+            "执行", "正在", "处理", "调用", "获取", "分析", "生成", "创建", "更新", "删除",
         ];
-        
+
         for indicator in &action_indicators {
             if content.contains(indicator) {
                 // 使用字符边界安全的切分方式
@@ -518,24 +532,24 @@ Facts (JSON only):"#,
                 return chars.into_iter().take(limit).collect::<String>();
             }
         }
-        
+
         // Fallback: first 50 characters - 使用字符边界安全的方式
         let chars: Vec<char> = content.chars().collect();
         let limit = chars.len().min(50);
         chars.into_iter().take(limit).collect::<String>()
     }
-    
+
     /// Summarize message result
     fn summarize_message_result(&self, content: &str) -> String {
         let result_indicators = ["返回", "结果", "输出", "获得", "得到", "生成"];
-        
+
         for indicator in &result_indicators {
             if let Some(byte_pos) = content.find(indicator) {
                 // 使用字符边界安全的切分方式
                 let chars: Vec<char> = content.chars().collect();
                 let indicator_chars: Vec<char> = indicator.chars().collect();
                 let indicator_len = indicator_chars.len();
-                
+
                 // 计算从indicator结束开始的字符索引
                 let mut char_count = 0;
                 let mut start_char_idx = 0;
@@ -546,14 +560,20 @@ Facts (JSON only):"#,
                     }
                     char_count += 1;
                 }
-                
+
                 let end_char_idx = (start_char_idx + 100).min(chars.len());
                 if start_char_idx < end_char_idx {
-                    return chars.into_iter().skip(start_char_idx).take(end_char_idx - start_char_idx).collect::<String>().trim().to_string();
+                    return chars
+                        .into_iter()
+                        .skip(start_char_idx)
+                        .take(end_char_idx - start_char_idx)
+                        .collect::<String>()
+                        .trim()
+                        .to_string();
                 }
             }
         }
-        
+
         // Fallback: summarize key information - 使用字符边界安全的方式
         if content.len() > 100 {
             let chars: Vec<char> = content.chars().collect();
@@ -563,19 +583,19 @@ Facts (JSON only):"#,
             content.to_string()
         }
     }
-    
+
     /// Extract entities from content using simple keyword analysis
     fn extract_entities_from_content(&self, content: &str) -> Vec<String> {
         let mut entities = Vec::new();
-        
+
         // Simple entity extraction based on common patterns
         let patterns = [
             r"[A-Z][a-z]+ [A-Z][a-z]+", // Person names
-            r"\b(?:http|https)://\S+",   // URLs
+            r"\b(?:http|https)://\S+",  // URLs
             r"\b[A-Z]{2,}\b",           // Acronyms
             r"\b\d{4}-\d{2}-\d{2}\b",   // Dates
         ];
-        
+
         for pattern in &patterns {
             if let Ok(regex) = regex::Regex::new(pattern) {
                 for match_result in regex.find_iter(content) {
@@ -583,12 +603,15 @@ Facts (JSON only):"#,
                 }
             }
         }
-        
+
         entities
     }
-    
+
     /// Apply intelligent fact filtering and deduplication
-    async fn intelligent_fact_filtering(&self, facts: Vec<ExtractedFact>) -> Result<Vec<ExtractedFact>> {
+    async fn intelligent_fact_filtering(
+        &self,
+        facts: Vec<ExtractedFact>,
+    ) -> Result<Vec<ExtractedFact>> {
         if facts.is_empty() {
             return Ok(facts);
         }
@@ -610,8 +633,10 @@ Facts (JSON only):"#,
             let mut is_semantically_duplicate = false;
             for existing_fact in &filtered_facts {
                 if self.are_facts_semantically_similar(&fact.content, &existing_fact.content) {
-                    debug!("Skipping semantically similar fact: {} (similar to: {})",
-                           fact.content, existing_fact.content);
+                    debug!(
+                        "Skipping semantically similar fact: {} (similar to: {})",
+                        fact.content, existing_fact.content
+                    );
                     is_semantically_duplicate = true;
                     break;
                 }
@@ -622,11 +647,15 @@ Facts (JSON only):"#,
             }
 
             // Apply stricter importance threshold to reduce noise
-            if fact.importance >= 0.5 { // Increased from 0.3 to 0.5
+            if fact.importance >= 0.5 {
+                // Increased from 0.3 to 0.5
                 seen_contents.insert(content_normalized.clone());
                 filtered_facts.push(fact.clone());
             } else {
-                debug!("Skipping low-importance fact ({}): {}", fact.importance, fact.content);
+                debug!(
+                    "Skipping low-importance fact ({}): {}",
+                    fact.importance, fact.content
+                );
             }
         }
 
@@ -647,10 +676,16 @@ Facts (JSON only):"#,
             }
 
             // Then by importance
-            b.importance.partial_cmp(&a.importance).unwrap_or(std::cmp::Ordering::Equal)
+            b.importance
+                .partial_cmp(&a.importance)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
-        info!("Filtered {} facts down to {} high-quality facts", facts.len(), filtered_facts.len());
+        info!(
+            "Filtered {} facts down to {} high-quality facts",
+            facts.len(),
+            filtered_facts.len()
+        );
         Ok(filtered_facts)
     }
 
@@ -679,38 +714,85 @@ Facts (JSON only):"#,
 
         // Check for repeated technical terms (common in Rust/coding discussions)
         let technical_terms = [
-            "rust", "tokio", "async", "cargo", "wabt", "wasm", "embedded",
-            "memory", "safety", "performance", "cpal", "rodio", "http",
-            "database", "vector", "search", "embedding", "llm", "openai",
-            "git", "github", "library", "crate", "package", "module",
-            "function", "struct", "trait", "enum", "impl", "async",
-            "await", "future", "stream", "channel", "mutex", "arc"
+            "rust",
+            "tokio",
+            "async",
+            "cargo",
+            "wabt",
+            "wasm",
+            "embedded",
+            "memory",
+            "safety",
+            "performance",
+            "cpal",
+            "rodio",
+            "http",
+            "database",
+            "vector",
+            "search",
+            "embedding",
+            "llm",
+            "openai",
+            "git",
+            "github",
+            "library",
+            "crate",
+            "package",
+            "module",
+            "function",
+            "struct",
+            "trait",
+            "enum",
+            "impl",
+            "async",
+            "await",
+            "future",
+            "stream",
+            "channel",
+            "mutex",
+            "arc",
         ];
 
-        let fact1_tech_terms: Vec<_> = technical_terms.iter()
+        let fact1_tech_terms: Vec<_> = technical_terms
+            .iter()
             .filter(|term| fact1_lower.contains(**term))
             .collect();
-        let fact2_tech_terms: Vec<_> = technical_terms.iter()
+        let fact2_tech_terms: Vec<_> = technical_terms
+            .iter()
             .filter(|term| fact2_lower.contains(**term))
             .collect();
 
         // If both facts share multiple technical terms, they're likely duplicates
-        let shared_tech_terms: std::collections::HashSet<_> =
-            fact1_tech_terms.iter().cloned().collect::<std::collections::HashSet<_>>()
-            .intersection(&fact2_tech_terms.iter().cloned().collect::<std::collections::HashSet<_>>())
-            .cloned().collect();
+        let shared_tech_terms: std::collections::HashSet<_> = fact1_tech_terms
+            .iter()
+            .cloned()
+            .collect::<std::collections::HashSet<_>>()
+            .intersection(
+                &fact2_tech_terms
+                    .iter()
+                    .cloned()
+                    .collect::<std::collections::HashSet<_>>(),
+            )
+            .cloned()
+            .collect();
 
         if shared_tech_terms.len() >= 2 {
-            debug!("Facts share technical terms {:?}: {} | {}",
-                   shared_tech_terms, fact1, fact2);
+            debug!(
+                "Facts share technical terms {:?}: {} | {}",
+                shared_tech_terms, fact1, fact2
+            );
             return true;
         }
 
         false
     }
-    
+
     /// Helper method to add source role to parsed facts
-    fn add_source_role_to_facts(&self, mut facts: Vec<ExtractedFact>, source_role: &str) -> Vec<ExtractedFact> {
+    fn add_source_role_to_facts(
+        &self,
+        mut facts: Vec<ExtractedFact>,
+        source_role: &str,
+    ) -> Vec<ExtractedFact> {
         for fact in &mut facts {
             fact.source_role = source_role.to_string();
         }
@@ -736,39 +818,57 @@ impl FactExtractor for LLMFactExtractor {
                 let user_facts = self.extract_user_facts(messages).await?;
 
                 // Try to extract meaningful assistant facts about the user (not self-description)
-                let all_facts = if let Ok(assistant_facts) = self.extract_meaningful_assistant_facts(messages).await {
+                let all_facts = if let Ok(assistant_facts) =
+                    self.extract_meaningful_assistant_facts(messages).await
+                {
                     [user_facts, assistant_facts].concat()
                 } else {
                     user_facts
                 };
 
-                info!("Extracted {} facts using dual-channel strategy from {} messages", all_facts.len(), messages.len());
+                info!(
+                    "Extracted {} facts using dual-channel strategy from {} messages",
+                    all_facts.len(),
+                    messages.len()
+                );
                 all_facts
             }
             ExtractionStrategy::UserOnly => {
                 let user_facts = self.extract_user_facts(messages).await?;
 
-                info!("Extracted {} facts using user-only strategy from {} messages", user_facts.len(), messages.len());
+                info!(
+                    "Extracted {} facts using user-only strategy from {} messages",
+                    user_facts.len(),
+                    messages.len()
+                );
                 user_facts
             }
             ExtractionStrategy::AssistantOnly => {
                 let assistant_facts = self.extract_assistant_facts(messages).await?;
 
-                info!("Extracted {} facts using assistant-only strategy from {} messages", assistant_facts.len(), messages.len());
+                info!(
+                    "Extracted {} facts using assistant-only strategy from {} messages",
+                    assistant_facts.len(),
+                    messages.len()
+                );
                 assistant_facts
             }
             ExtractionStrategy::ProceduralMemory => {
                 // For procedural memories, extract step-by-step actions and results
                 let all_facts = self.extract_procedural_facts(messages).await?;
 
-                info!("Extracted {} procedural facts from {} messages", all_facts.len(), messages.len());
+                info!(
+                    "Extracted {} procedural facts from {} messages",
+                    all_facts.len(),
+                    messages.len()
+                );
                 all_facts
             }
         };
 
         // Apply intelligent fact filtering and deduplication
         let filtered_facts = self.intelligent_fact_filtering(all_facts).await?;
-        
+
         debug!("Final extracted facts: {:?}", filtered_facts);
         Ok(filtered_facts)
     }
@@ -781,34 +881,49 @@ impl FactExtractor for LLMFactExtractor {
 
         // Filter to only user messages (similar to mem0's approach)
         let user_messages = filter_messages_by_role(messages, "user");
-        
+
         if user_messages.is_empty() {
             return Ok(vec![]);
         }
 
         let prompt = self.build_user_memory_prompt(&user_messages);
-        
+
         // Use rig's structured extractor instead of string parsing
         match self.llm_client.extract_structured_facts(&prompt).await {
             Ok(structured_facts) => {
                 let facts = self.parse_structured_facts(structured_facts);
                 let facts_with_role = self.add_source_role_to_facts(facts, "user");
-                
-                info!("Extracted {} user facts from {} user messages using rig extractor", facts_with_role.len(), user_messages.len());
+
+                info!(
+                    "Extracted {} user facts from {} user messages using rig extractor",
+                    facts_with_role.len(),
+                    user_messages.len()
+                );
                 debug!("User facts: {:?}", facts_with_role);
-                
+
                 Ok(facts_with_role)
             }
             Err(e) => {
                 // Fallback to traditional method if extractor fails
-                debug!("Rig extractor failed, falling back to traditional method: {}", e);
+                debug!(
+                    "Rig extractor failed, falling back to traditional method: {}",
+                    e
+                );
+
+                #[cfg(debug_assertions)]
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
                 let response = self.llm_client.complete(&prompt).await?;
                 let facts = self.parse_facts_response_fallback(&response)?;
                 let facts_with_role = self.add_source_role_to_facts(facts, "user");
-                
-                info!("Extracted {} user facts from {} user messages using fallback method", facts_with_role.len(), user_messages.len());
+
+                info!(
+                    "Extracted {} user facts from {} user messages using fallback method",
+                    facts_with_role.len(),
+                    user_messages.len()
+                );
                 debug!("User facts (fallback): {:?}", facts_with_role);
-                
+
                 Ok(facts_with_role)
             }
         }
@@ -822,34 +937,49 @@ impl FactExtractor for LLMFactExtractor {
 
         // Filter to only assistant messages
         let assistant_messages = filter_messages_by_role(messages, "assistant");
-        
+
         if assistant_messages.is_empty() {
             return Ok(vec![]);
         }
 
         let prompt = self.build_assistant_memory_prompt(&assistant_messages);
-        
+
         // Use rig's structured extractor instead of string parsing
         match self.llm_client.extract_structured_facts(&prompt).await {
             Ok(structured_facts) => {
                 let facts = self.parse_structured_facts(structured_facts);
                 let facts_with_role = self.add_source_role_to_facts(facts, "assistant");
-                
-                info!("Extracted {} assistant facts from {} assistant messages using rig extractor", facts_with_role.len(), assistant_messages.len());
+
+                info!(
+                    "Extracted {} assistant facts from {} assistant messages using rig extractor",
+                    facts_with_role.len(),
+                    assistant_messages.len()
+                );
                 debug!("Assistant facts: {:?}", facts_with_role);
-                
+
                 Ok(facts_with_role)
             }
             Err(e) => {
                 // Fallback to traditional method if extractor fails
-                debug!("Rig extractor failed, falling back to traditional method: {}", e);
+                debug!(
+                    "Rig extractor failed, falling back to traditional method: {}",
+                    e
+                );
+
+                #[cfg(debug_assertions)]
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
                 let response = self.llm_client.complete(&prompt).await?;
                 let facts = self.parse_facts_response_fallback(&response)?;
                 let facts_with_role = self.add_source_role_to_facts(facts, "assistant");
-                
-                info!("Extracted {} assistant facts from {} assistant messages using fallback method", facts_with_role.len(), assistant_messages.len());
+
+                info!(
+                    "Extracted {} assistant facts from {} assistant messages using fallback method",
+                    facts_with_role.len(),
+                    assistant_messages.len()
+                );
                 debug!("Assistant facts (fallback): {:?}", facts_with_role);
-                
+
                 Ok(facts_with_role)
             }
         }
@@ -862,72 +992,114 @@ impl FactExtractor for LLMFactExtractor {
         }
 
         let prompt = self.build_text_extraction_prompt(text);
-        
+
         // Use rig's structured extractor instead of string parsing
         match self.llm_client.extract_detailed_facts(&prompt).await {
             Ok(detailed_facts) => {
                 let facts = self.parse_detailed_facts(detailed_facts);
-                let facts_with_language: Vec<_> = facts.into_iter().map(|mut fact| {
-                    fact.language = Some(detect_language(text));
-                    fact
-                }).collect();
-                
-                info!("Extracted {} facts from text with language detection using rig extractor", facts_with_language.len());
+                let facts_with_language: Vec<_> = facts
+                    .into_iter()
+                    .map(|mut fact| {
+                        fact.language = Some(detect_language(text));
+                        fact
+                    })
+                    .collect();
+
+                info!(
+                    "Extracted {} facts from text with language detection using rig extractor",
+                    facts_with_language.len()
+                );
                 debug!("Facts with language: {:?}", facts_with_language);
-                
+
                 Ok(facts_with_language)
             }
             Err(e) => {
                 // Fallback to traditional method if extractor fails
-                debug!("Rig extractor failed, falling back to traditional method: {}", e);
+                debug!(
+                    "Rig extractor failed, falling back to traditional method: {}",
+                    e
+                );
+
+                #[cfg(debug_assertions)]
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
                 let response = self.llm_client.complete(&prompt).await?;
                 let facts = self.parse_facts_response_fallback(&response)?;
-                let facts_with_language: Vec<_> = facts.into_iter().map(|mut fact| {
-                    fact.language = Some(detect_language(text));
-                    fact
-                }).collect();
-                
-                info!("Extracted {} facts from text with language detection using fallback method", facts_with_language.len());
+                let facts_with_language: Vec<_> = facts
+                    .into_iter()
+                    .map(|mut fact| {
+                        fact.language = Some(detect_language(text));
+                        fact
+                    })
+                    .collect();
+
+                info!(
+                    "Extracted {} facts from text with language detection using fallback method",
+                    facts_with_language.len()
+                );
                 debug!("Facts with language (fallback): {:?}", facts_with_language);
-                
+
                 Ok(facts_with_language)
             }
         }
     }
 
     /// Extract facts from filtered messages (only specific roles)
-    async fn extract_facts_filtered(&self, messages: &[Message], allowed_roles: &[&str]) -> Result<Vec<ExtractedFact>> {
+    async fn extract_facts_filtered(
+        &self,
+        messages: &[Message],
+        allowed_roles: &[&str],
+    ) -> Result<Vec<ExtractedFact>> {
         if messages.is_empty() {
             return Ok(vec![]);
         }
 
         let filtered_messages = filter_messages_by_roles(messages, allowed_roles);
-        
+
         if filtered_messages.is_empty() {
             return Ok(vec![]);
         }
 
         let prompt = self.build_conversation_extraction_prompt(&filtered_messages);
-        
+
         // Use rig's structured extractor instead of string parsing
         match self.llm_client.extract_detailed_facts(&prompt).await {
             Ok(detailed_facts) => {
                 let facts = self.parse_detailed_facts(detailed_facts);
-                let facts_with_role = self.add_source_role_to_facts(facts, &allowed_roles.join(","));
-                
-                info!("Extracted {} facts from {} filtered messages (roles: {:?}) using rig extractor", facts_with_role.len(), filtered_messages.len(), allowed_roles);
+                let facts_with_role =
+                    self.add_source_role_to_facts(facts, &allowed_roles.join(","));
+
+                info!(
+                    "Extracted {} facts from {} filtered messages (roles: {:?}) using rig extractor",
+                    facts_with_role.len(),
+                    filtered_messages.len(),
+                    allowed_roles
+                );
                 debug!("Filtered facts: {:?}", facts_with_role);
 
                 Ok(facts_with_role)
             }
             Err(e) => {
                 // Fallback to traditional method if extractor fails
-                debug!("Rig extractor failed, falling back to traditional method: {}", e);
+                debug!(
+                    "Rig extractor failed, falling back to traditional method: {}",
+                    e
+                );
+
+                #[cfg(debug_assertions)]
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
                 let response = self.llm_client.complete(&prompt).await?;
                 let facts = self.parse_facts_response_fallback(&response)?;
-                let facts_with_role = self.add_source_role_to_facts(facts, &allowed_roles.join(","));
-                
-                info!("Extracted {} facts from {} filtered messages (roles: {:?}) using fallback method", facts_with_role.len(), filtered_messages.len(), allowed_roles);
+                let facts_with_role =
+                    self.add_source_role_to_facts(facts, &allowed_roles.join(","));
+
+                info!(
+                    "Extracted {} facts from {} filtered messages (roles: {:?}) using fallback method",
+                    facts_with_role.len(),
+                    filtered_messages.len(),
+                    allowed_roles
+                );
                 debug!("Filtered facts (fallback): {:?}", facts_with_role);
 
                 Ok(facts_with_role)
@@ -937,7 +1109,10 @@ impl FactExtractor for LLMFactExtractor {
 
     /// Extract only meaningful assistant facts that contain user-relevant information
     /// Excludes assistant self-description and purely informational responses
-    async fn extract_meaningful_assistant_facts(&self, messages: &[Message]) -> Result<Vec<ExtractedFact>> {
+    async fn extract_meaningful_assistant_facts(
+        &self,
+        messages: &[Message],
+    ) -> Result<Vec<ExtractedFact>> {
         if messages.is_empty() {
             return Ok(vec![]);
         }
@@ -951,27 +1126,45 @@ impl FactExtractor for LLMFactExtractor {
 
         // Build a more selective prompt that focuses on user-relevant information
         let prompt = self.build_user_focused_assistant_prompt(&assistant_messages);
-        
+
         // Use rig's structured extractor instead of string parsing
         match self.llm_client.extract_structured_facts(&prompt).await {
             Ok(structured_facts) => {
                 let facts = self.parse_structured_facts(structured_facts);
                 let facts_with_role = self.add_source_role_to_facts(facts, "assistant");
 
-                info!("Extracted {} meaningful assistant facts from {} assistant messages using rig extractor", facts_with_role.len(), assistant_messages.len());
+                info!(
+                    "Extracted {} meaningful assistant facts from {} assistant messages using rig extractor",
+                    facts_with_role.len(),
+                    assistant_messages.len()
+                );
                 debug!("Meaningful assistant facts: {:?}", facts_with_role);
 
                 Ok(facts_with_role)
             }
             Err(e) => {
                 // Fallback to traditional method if extractor fails
-                debug!("Rig extractor failed, falling back to traditional method: {}", e);
+                debug!(
+                    "Rig extractor failed, falling back to traditional method: {}",
+                    e
+                );
+
+                #[cfg(debug_assertions)]
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
                 let response = self.llm_client.complete(&prompt).await?;
                 let facts = self.parse_facts_response_fallback(&response)?;
                 let facts_with_role = self.add_source_role_to_facts(facts, "assistant");
 
-                info!("Extracted {} meaningful assistant facts from {} assistant messages using fallback method", facts_with_role.len(), assistant_messages.len());
-                debug!("Meaningful assistant facts (fallback): {:?}", facts_with_role);
+                info!(
+                    "Extracted {} meaningful assistant facts from {} assistant messages using fallback method",
+                    facts_with_role.len(),
+                    assistant_messages.len()
+                );
+                debug!(
+                    "Meaningful assistant facts (fallback): {:?}",
+                    facts_with_role
+                );
 
                 Ok(facts_with_role)
             }
@@ -983,4 +1176,3 @@ impl FactExtractor for LLMFactExtractor {
 pub fn create_fact_extractor(llm_client: Box<dyn LLMClient>) -> Box<dyn FactExtractor + 'static> {
     Box::new(LLMFactExtractor::new(llm_client))
 }
-

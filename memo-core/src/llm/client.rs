@@ -38,34 +38,34 @@ pub trait LLMClient: Send + Sync + dyn_clone::DynClone {
     async fn health_check(&self) -> Result<bool>;
 
     // New extractor-based methods
-    
+
     /// Extract structured facts from text using rig extractor
     async fn extract_structured_facts(&self, prompt: &str) -> Result<StructuredFactExtraction>;
-    
+
     /// Extract detailed facts with metadata using rig extractor
     async fn extract_detailed_facts(&self, prompt: &str) -> Result<DetailedFactExtraction>;
-    
+
     /// Extract keywords using rig extractor
     async fn extract_keywords_structured(&self, prompt: &str) -> Result<KeywordExtraction>;
-    
+
     /// Classify memory type using rig extractor
     async fn classify_memory(&self, prompt: &str) -> Result<MemoryClassification>;
-    
+
     /// Score memory importance using rig extractor
     async fn score_importance(&self, prompt: &str) -> Result<ImportanceScore>;
-    
+
     /// Check for duplicates using rig extractor
     async fn check_duplicates(&self, prompt: &str) -> Result<DeduplicationResult>;
-    
+
     /// Generate summary using rig extractor
     async fn generate_summary(&self, prompt: &str) -> Result<SummaryResult>;
-    
+
     /// Detect language using rig extractor
     async fn detect_language(&self, prompt: &str) -> Result<LanguageDetection>;
-    
+
     /// Extract entities using rig extractor
     async fn extract_entities(&self, prompt: &str) -> Result<EntityExtraction>;
-    
+
     /// Analyze conversation using rig extractor
     async fn analyze_conversation(&self, prompt: &str) -> Result<ConversationAnalysis>;
 }
@@ -204,19 +204,32 @@ impl LLMClient for OpenAILLMClient {
 
     async fn extract_keywords(&self, content: &str) -> Result<Vec<String>> {
         let prompt = self.build_keyword_prompt(content);
-        
+
         // Use rig's structured extractor instead of string parsing
         match self.extract_keywords_structured(&prompt).await {
             Ok(keyword_extraction) => {
-                debug!("Extracted {} keywords from content using rig extractor", keyword_extraction.keywords.len());
+                debug!(
+                    "Extracted {} keywords from content using rig extractor",
+                    keyword_extraction.keywords.len()
+                );
                 Ok(keyword_extraction.keywords)
             }
             Err(e) => {
                 // Fallback to traditional method if extractor fails
-                debug!("Rig extractor failed, falling back to traditional method: {}", e);
+                debug!(
+                    "Rig extractor failed, falling back to traditional method: {}",
+                    e
+                );
+
+                #[cfg(debug_assertions)]
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
                 let response = self.complete(&prompt).await?;
                 let keywords = self.parse_keywords(&response);
-                debug!("Extracted {} keywords from content using fallback method", keywords.len());
+                debug!(
+                    "Extracted {} keywords from content using fallback method",
+                    keywords.len()
+                );
                 Ok(keywords)
             }
         }
@@ -224,18 +237,27 @@ impl LLMClient for OpenAILLMClient {
 
     async fn summarize(&self, content: &str, max_length: Option<usize>) -> Result<String> {
         let prompt = self.build_summary_prompt(content, max_length);
-        
+
         // Use rig's structured extractor instead of string parsing
         match self.generate_summary(&prompt).await {
             Ok(summary_result) => {
-                debug!("Generated summary of length: {} using rig extractor", summary_result.summary.len());
+                debug!(
+                    "Generated summary of length: {} using rig extractor",
+                    summary_result.summary.len()
+                );
                 Ok(summary_result.summary.trim().to_string())
             }
             Err(e) => {
                 // Fallback to traditional method if extractor fails
-                debug!("Rig extractor failed, falling back to traditional method: {}", e);
+                debug!(
+                    "Rig extractor failed, falling back to traditional method: {}",
+                    e
+                );
                 let summary = self.complete(&prompt).await?;
-                debug!("Generated summary of length: {} using fallback method", summary.len());
+                debug!(
+                    "Generated summary of length: {} using fallback method",
+                    summary.len()
+                );
                 Ok(summary.trim().to_string())
             }
         }
@@ -345,6 +367,9 @@ impl LLMClient for OpenAILLMClient {
             .preamble(prompt)
             .max_tokens(500)
             .build();
+
+        #[cfg(debug_assertions)]
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
         extractor
             .extract("")

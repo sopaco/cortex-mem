@@ -1,6 +1,6 @@
-use crate::{error::Result, llm::LLMClient, types::MemoryType, MemoryError};
-use tracing::debug;
+use crate::{MemoryError, error::Result, llm::LLMClient, types::MemoryType};
 use async_trait::async_trait;
+use tracing::debug;
 
 /// Trait for classifying memory types
 #[async_trait]
@@ -107,7 +107,7 @@ Return the topics as a comma-separated list. If no clear topics, return "None"."
 impl MemoryClassifier for LLMMemoryClassifier {
     async fn classify_memory(&self, content: &str) -> Result<MemoryType> {
         let prompt = self.create_classification_prompt(content);
-        
+
         // Use rig's structured extractor instead of string parsing
         match self.llm_client.classify_memory(&prompt).await {
             Ok(classification) => {
@@ -124,7 +124,14 @@ impl MemoryClassifier for LLMMemoryClassifier {
             }
             Err(e) => {
                 // Fallback to traditional method if extractor fails
-                debug!("Rig extractor failed, falling back to traditional method: {}", e);
+                debug!(
+                    "Rig extractor failed, falling back to traditional method: {}",
+                    e
+                );
+
+                #[cfg(debug_assertions)]
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
                 let response = self.llm_client.complete(&prompt).await?;
                 Ok(self.parse_memory_type(&response))
             }
@@ -144,11 +151,12 @@ impl MemoryClassifier for LLMMemoryClassifier {
 
     async fn extract_entities(&self, content: &str) -> Result<Vec<String>> {
         let prompt = self.create_entity_extraction_prompt(content);
-        
+
         // Use rig's structured extractor instead of string parsing
         match self.llm_client.extract_entities(&prompt).await {
             Ok(entity_extraction) => {
-                let entities: Vec<String> = entity_extraction.entities
+                let entities: Vec<String> = entity_extraction
+                    .entities
                     .into_iter()
                     .map(|entity| entity.text)
                     .collect();
@@ -156,7 +164,13 @@ impl MemoryClassifier for LLMMemoryClassifier {
             }
             Err(e) => {
                 // Fallback to traditional method if extractor fails
-                debug!("Rig extractor failed, falling back to traditional method: {}", e);
+                debug!(
+                    "Rig extractor failed, falling back to traditional method: {}",
+                    e
+                );
+                #[cfg(debug_assertions)]
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
                 let response = self.llm_client.complete(&prompt).await?;
                 Ok(self.parse_list_response(&response))
             }
@@ -165,6 +179,10 @@ impl MemoryClassifier for LLMMemoryClassifier {
 
     async fn extract_topics(&self, content: &str) -> Result<Vec<String>> {
         let prompt = self.create_topic_extraction_prompt(content);
+
+        #[cfg(debug_assertions)]
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
         let response = self.llm_client.complete(&prompt).await?;
         Ok(self.parse_list_response(&response))
     }
@@ -433,8 +451,18 @@ impl RuleBasedMemoryClassifier {
 
         // Business topics
         let business_keywords = [
-            "business", "company", "meeting", "project", "work", "office",
-            "商业", "公司", "会议", "商业项目", "办公", "办公室",
+            "business",
+            "company",
+            "meeting",
+            "project",
+            "work",
+            "office",
+            "商业",
+            "公司",
+            "会议",
+            "商业项目",
+            "办公",
+            "办公室",
         ];
         if business_keywords
             .iter()
@@ -444,7 +472,18 @@ impl RuleBasedMemoryClassifier {
         }
 
         // Personal topics
-        let personal_keywords = ["family", "friend", "hobby", "interest", "personal", "家庭", "朋友", "爱好", "兴趣", "个人的"];
+        let personal_keywords = [
+            "family",
+            "friend",
+            "hobby",
+            "interest",
+            "personal",
+            "家庭",
+            "朋友",
+            "爱好",
+            "兴趣",
+            "个人的",
+        ];
         if personal_keywords
             .iter()
             .any(|&keyword| content_lower.contains(keyword))
@@ -453,7 +492,10 @@ impl RuleBasedMemoryClassifier {
         }
 
         // Health topics
-        let health_keywords = ["health", "medical", "doctor", "medicine", "exercise", "健康", "医疗", "医生", "药", "体检"];
+        let health_keywords = [
+            "health", "medical", "doctor", "medicine", "exercise", "健康", "医疗", "医生", "药",
+            "体检",
+        ];
         if health_keywords
             .iter()
             .any(|&keyword| content_lower.contains(keyword))
@@ -561,4 +603,3 @@ pub fn create_memory_classifier(
         (false, _) => Box::new(RuleBasedMemoryClassifier::new()),
     }
 }
-

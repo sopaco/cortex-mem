@@ -3,16 +3,15 @@ use crate::{
     llm::LLMClient,
     types::{Memory, MemoryType},
 };
-use tracing::debug;
 use async_trait::async_trait;
-
+use tracing::debug;
 
 /// Trait for evaluating memory importance
 #[async_trait]
 pub trait ImportanceEvaluator: Send + Sync {
     /// Evaluate the importance of a memory
     async fn evaluate_importance(&self, memory: &Memory) -> Result<f32>;
-    
+
     /// Evaluate importance for multiple memories
     async fn evaluate_batch(&self, memories: &[Memory]) -> Result<Vec<f32>>;
 }
@@ -69,23 +68,29 @@ Respond with only a number between 0.0 and 1.0:"#,
 impl ImportanceEvaluator for LLMImportanceEvaluator {
     async fn evaluate_importance(&self, memory: &Memory) -> Result<f32> {
         let prompt = self.create_importance_prompt(memory);
-        
+
         // Use rig's structured extractor instead of string parsing
         match self.llm_client.score_importance(&prompt).await {
-            Ok(importance_score) => {
-                Ok(importance_score.score.clamp(0.0, 1.0))
-            }
+            Ok(importance_score) => Ok(importance_score.score.clamp(0.0, 1.0)),
             Err(e) => {
                 // Fallback to traditional method if extractor fails
-                debug!("Rig extractor failed, falling back to traditional method: {}", e);
+                debug!(
+                    "Rig extractor failed, falling back to traditional method: {}",
+                    e
+                );
+
+                #[cfg(debug_assertions)]
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
                 let response = self.llm_client.complete(&prompt).await?;
-                
+
                 // Parse the response as a float
-                let importance = response.trim()
+                let importance = response
+                    .trim()
                     .parse::<f32>()
                     .unwrap_or(0.5) // Default to neutral importance if parsing fails
                     .clamp(0.0, 1.0);
-                    
+
                 Ok(importance)
             }
         }
@@ -93,13 +98,13 @@ impl ImportanceEvaluator for LLMImportanceEvaluator {
 
     async fn evaluate_batch(&self, memories: &[Memory]) -> Result<Vec<f32>> {
         let mut results = Vec::with_capacity(memories.len());
-        
+
         // For now, evaluate sequentially. Could be optimized with batch processing
         for memory in memories {
             let importance = self.evaluate_importance(memory).await?;
             results.push(importance);
         }
-        
+
         Ok(results)
     }
 }
@@ -138,14 +143,45 @@ impl RuleBasedImportanceEvaluator {
 
     fn evaluate_by_keywords(&self, content: &str) -> f32 {
         let important_keywords = [
-            "important", "critical", "remember", "never", "always",
-            "prefer", "like", "dislike", "hate", "love",
-            "name", "birthday", "address", "phone", "email",
-            "password", "secret", "private", "confidential",
-            "重要", "紧急", "remember", "永远不要", "一直",
-            "偏好", "喜欢", "不喜欢", "讨厌", "喜爱",
-            "姓名", "生日", "地址", "电话", "邮箱",
-            "密码", "密钥", "私有的", "秘密", "机密",
+            "important",
+            "critical",
+            "remember",
+            "never",
+            "always",
+            "prefer",
+            "like",
+            "dislike",
+            "hate",
+            "love",
+            "name",
+            "birthday",
+            "address",
+            "phone",
+            "email",
+            "password",
+            "secret",
+            "private",
+            "confidential",
+            "重要",
+            "紧急",
+            "remember",
+            "永远不要",
+            "一直",
+            "偏好",
+            "喜欢",
+            "不喜欢",
+            "讨厌",
+            "喜爱",
+            "姓名",
+            "生日",
+            "地址",
+            "电话",
+            "邮箱",
+            "密码",
+            "密钥",
+            "私有的",
+            "秘密",
+            "机密",
         ];
 
         let content_lower = content.to_lowercase();
@@ -166,20 +202,20 @@ impl ImportanceEvaluator for RuleBasedImportanceEvaluator {
         let keyword_score = self.evaluate_by_keywords(&memory.content);
 
         // Weighted combination
-        let importance = (content_score * 0.3 + type_score * 0.5 + keyword_score * 0.2)
-            .clamp(0.0, 1.0);
+        let importance =
+            (content_score * 0.3 + type_score * 0.5 + keyword_score * 0.2).clamp(0.0, 1.0);
 
         Ok(importance)
     }
 
     async fn evaluate_batch(&self, memories: &[Memory]) -> Result<Vec<f32>> {
         let mut results = Vec::with_capacity(memories.len());
-        
+
         for memory in memories {
             let importance = self.evaluate_importance(memory).await?;
             results.push(importance);
         }
-        
+
         Ok(results)
     }
 }
@@ -206,7 +242,7 @@ impl ImportanceEvaluator for HybridImportanceEvaluator {
     async fn evaluate_importance(&self, memory: &Memory) -> Result<f32> {
         // First, get rule-based evaluation
         let rule_score = self.rule_evaluator.evaluate_importance(memory).await?;
-        
+
         // If rule-based score is above threshold, use LLM for more accurate evaluation
         if rule_score >= self.llm_threshold {
             let llm_score = self.llm_evaluator.evaluate_importance(memory).await?;
@@ -219,12 +255,12 @@ impl ImportanceEvaluator for HybridImportanceEvaluator {
 
     async fn evaluate_batch(&self, memories: &[Memory]) -> Result<Vec<f32>> {
         let mut results = Vec::with_capacity(memories.len());
-        
+
         for memory in memories {
             let importance = self.evaluate_importance(memory).await?;
             results.push(importance);
         }
-        
+
         Ok(results)
     }
 }
@@ -236,11 +272,8 @@ pub fn create_importance_evaluator(
     hybrid_threshold: Option<f32>,
 ) -> Box<dyn ImportanceEvaluator> {
     match (use_llm, hybrid_threshold) {
-        (true, Some(threshold)) => {
-            Box::new(HybridImportanceEvaluator::new(llm_client, threshold))
-        }
+        (true, Some(threshold)) => Box::new(HybridImportanceEvaluator::new(llm_client, threshold)),
         (true, None) => Box::new(LLMImportanceEvaluator::new(llm_client)),
         (false, _) => Box::new(RuleBasedImportanceEvaluator::new()),
     }
 }
-
