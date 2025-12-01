@@ -288,9 +288,9 @@ pub async fn store_conversations_batch(
     }
 
     // 一次性处理所有消息
-    let _ = conversation_processor
+    conversation_processor
         .process_turn(&messages, metadata)
-        .await;
+        .await?;
 
     Ok(())
 }
