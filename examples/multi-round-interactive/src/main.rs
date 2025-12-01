@@ -314,6 +314,30 @@ async fn handle_quit_async(
         }
     }
 
+    // 尝试读取并显示最新的文件日志（如果有）
+    if let Ok(file_logs) = read_latest_log_file("logs").await {
+        if !file_logs.is_empty() {
+            println!("\n📋 完整运行日志 (最近20行):");
+            let recent_file_logs = if file_logs.len() > 20 {
+                &file_logs[file_logs.len()-20..]
+            } else {
+                &file_logs[..]
+            };
+            for log in recent_file_logs {
+                // 过滤掉时间戳前缀，保持简洁
+                if let Some(content_start) = log.find("] ") {
+                    let content = &log[content_start + 2..];
+                    println!("   {}", content);
+                } else {
+                    println!("   {}", log);
+                }
+            }
+            if file_logs.len() > 20 {
+                println!("   ... (总共{}行)", file_logs.len());
+            }
+        }
+    }
+
     println!("\n🧠 开始执行记忆化存储...");
     
     // 准备对话数据（过滤quit命令）
@@ -382,4 +406,52 @@ async fn handle_quit_async(
     println!("👋 感谢使用Cortex Memory！");
 
     Ok(())
+}
+
+/// 读取最新的日志文件内容
+async fn read_latest_log_file(log_dir: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    use std::fs;
+    use std::io::BufRead;
+    use std::io::BufReader;
+
+    let log_path = std::path::Path::new(log_dir);
+    
+    // 检查日志目录是否存在
+    if !log_path.exists() {
+        return Ok(Vec::new());
+    }
+
+    // 查找最新的日志文件
+    let mut latest_file = None;
+    let mut latest_time = std::time::UNIX_EPOCH;
+
+    if let Ok(entries) = fs::read_dir(log_path) {
+        for entry in entries.flatten() {
+            if let Ok(metadata) = entry.metadata() {
+                if let Ok(modified) = metadata.modified() {
+                    if modified > latest_time && entry.file_name().to_string_lossy().ends_with(".log") {
+                        latest_time = modified;
+                        latest_file = Some(entry.path());
+                    }
+                }
+            }
+        }
+    }
+
+    // 读取最新日志文件的内容
+    if let Some(log_file) = latest_file {
+        let file = fs::File::open(&log_file)?;
+        let reader = BufReader::new(file);
+        let mut lines = Vec::new();
+        
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                lines.push(line);
+            }
+        }
+        
+        return Ok(lines);
+    }
+
+    Ok(Vec::new())
 }
