@@ -15,6 +15,7 @@ use tokio::sync::mpsc;
 mod agent;
 mod app;
 mod events;
+mod log_monitor;
 mod terminal;
 mod ui;
 
@@ -24,6 +25,7 @@ use agent::{
 };
 use app::{App, AppMessage, redirect_log_to_ui, set_global_log_sender};
 use events::{handle_key_event, process_user_input};
+use log_monitor::start_log_monitoring_task;
 use terminal::cleanup_terminal_final;
 use ui::draw_ui;
 
@@ -352,46 +354,15 @@ async fn handle_quit_async(
         }
     }
 
-    // 尝试读取并显示最新的文件日志（如果有）
-    if let Ok(file_logs) = read_latest_log_file("logs").await {
-        if !file_logs.is_empty() {
-            println!("\n📋 完整运行日志 (最近20行):");
-            let recent_file_logs = if file_logs.len() > 20 {
-                &file_logs[file_logs.len() - 20..]
-            } else {
-                &file_logs[..]
-            };
-
-            println!("   {}", "─".repeat(70));
-            for (i, log) in recent_file_logs.iter().enumerate() {
-                let beautified_content = beautify_log_content(log);
-
-                // 添加日志条目编号
-                if i > 0 {
-                    println!("   {}", "─".repeat(70));
-                }
-
-                // 显示美化后的内容，支持多行显示
-                let lines: Vec<&str> = beautified_content.split('\n').collect();
-                for (line_i, line) in lines.iter().enumerate() {
-                    if line_i == 0 {
-                        // 第一行显示完整内容
-                        let colored_line = get_log_level_color(log, line);
-                        println!("   {}", colored_line);
-                    } else {
-                        // 后续行添加缩进
-                        println!("   │ {}", line);
-                    }
-                }
-            }
-            if file_logs.len() > 20 {
-                println!("   {}", "─".repeat(70));
-                println!("   ... (总共{}行)", file_logs.len());
-            }
-        }
-    }
-
     println!("\n🧠 开始执行记忆化存储...");
+    
+    // 启动日志文件监听任务，实时显示日志文件中的新内容
+    let log_dir = "logs".to_string();
+    let log_monitoring_handle = tokio::spawn(async move {
+        if let Err(e) = start_log_monitoring_task(log_dir).await {
+            eprintln!("日志监听任务失败: {}", e);
+        }
+    });
 
     // 准备对话数据（过滤quit命令）
     let mut valid_conversations = Vec::new();
@@ -444,6 +415,9 @@ async fn handle_quit_async(
         }
     }
 
+    // 停止日志监听任务
+    log_monitoring_handle.abort();
+
     println!("\n╠══════════════════════════════════════════════════════════════════════════════╣");
     println!("║                                    🎉 退出流程完成                            ║");
     println!("╚══════════════════════════════════════════════════════════════════════════════╝");
@@ -452,55 +426,7 @@ async fn handle_quit_async(
     Ok(())
 }
 
-/// 读取最新的日志文件内容
-async fn read_latest_log_file(log_dir: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    use std::fs;
-    use std::io::BufRead;
-    use std::io::BufReader;
 
-    let log_path = std::path::Path::new(log_dir);
-
-    // 检查日志目录是否存在
-    if !log_path.exists() {
-        return Ok(Vec::new());
-    }
-
-    // 查找最新的日志文件
-    let mut latest_file = None;
-    let mut latest_time = std::time::UNIX_EPOCH;
-
-    if let Ok(entries) = fs::read_dir(log_path) {
-        for entry in entries.flatten() {
-            if let Ok(metadata) = entry.metadata() {
-                if let Ok(modified) = metadata.modified() {
-                    if modified > latest_time
-                        && entry.file_name().to_string_lossy().ends_with(".log")
-                    {
-                        latest_time = modified;
-                        latest_file = Some(entry.path());
-                    }
-                }
-            }
-        }
-    }
-
-    // 读取最新日志文件的内容
-    if let Some(log_file) = latest_file {
-        let file = fs::File::open(&log_file)?;
-        let reader = BufReader::new(file);
-        let mut lines = Vec::new();
-
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                lines.push(line);
-            }
-        }
-
-        return Ok(lines);
-    }
-
-    Ok(Vec::new())
-}
 
 /// 美化日志内容显示
 fn beautify_log_content(log_line: &str) -> String {
