@@ -10,8 +10,9 @@ use memo_rig::{
 };
 use ratatui::{Terminal, backend::CrosstermBackend};
 use tracing::info;
-use std::{io, path::PathBuf, sync::Arc, time::Duration};
+use std::{io, path::PathBuf, sync::Arc};
 use tokio::sync::mpsc;
+use tokio::time::{sleep, Duration};
 
 mod agent;
 mod app;
@@ -358,14 +359,6 @@ async fn handle_quit_async(
 
     println!("\n🧠 开始执行记忆化存储...");
     
-    // 启动日志文件监听任务，实时显示日志文件中的新内容
-    let log_dir = "logs".to_string();
-    let log_monitoring_handle = tokio::spawn(async move {
-        if let Err(e) = start_log_monitoring_task(log_dir).await {
-            eprintln!("日志监听任务失败: {}", e);
-        }
-    });
-
     // 准备对话数据（过滤quit命令）
     let mut valid_conversations = Vec::new();
     for (user_msg, assistant_msg) in conversations {
@@ -395,6 +388,14 @@ async fn handle_quit_async(
         return Ok(());
     }
 
+    // 只有在有内容需要存储时才启动日志监听任务
+    let log_dir = "logs".to_string();
+    let log_monitoring_handle = tokio::spawn(async move {
+        if let Err(e) = start_log_monitoring_task(log_dir).await {
+            eprintln!("日志监听任务失败: {}", e);
+        }
+    });
+
     println!(
         "📝 正在保存 {} 条对话记录到记忆库...",
         valid_conversations.len()
@@ -420,7 +421,7 @@ async fn handle_quit_async(
     // 停止日志监听任务
     log_monitoring_handle.abort();
 
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    tokio::time::sleep(Duration::from_secs(3)).await;
     
     println!("\n╠══════════════════════════════════════════════════════════════════════════════╣");
     println!("║                                    🎉 退出流程完成                            ║");
