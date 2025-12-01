@@ -18,9 +18,9 @@ mod events;
 mod terminal;
 mod ui;
 
-use agent::{agent_reply_with_memory_retrieval, create_memory_agent, extract_user_basic_info};
-use app::{redirect_log_to_ui, set_global_log_sender, App, AppMessage, FocusArea};
-use events::{handle_key_event, handle_quit, process_user_input};
+use agent::{agent_reply_with_memory_retrieval, create_memory_agent, extract_user_basic_info, store_conversations_batch};
+use app::{redirect_log_to_ui, set_global_log_sender, App, AppMessage};
+use events::{handle_key_event, process_user_input};
 use terminal::cleanup_terminal_final;
 use ui::draw_ui;
 
@@ -148,52 +148,9 @@ async fn run_application(
                 }
                 
                 if is_quit {
-                    // 先设置shutting_down状态，这样UI会立即更新
-                    app.is_shutting_down = true;
-                    
-                    // 如果当前焦点在输入框，切换到对话区域
-                    if app.focus_area == FocusArea::Input {
-                        app.focus_area = FocusArea::Conversation;
-                    }
-                    
-                    // 刷新UI，立即显示说明文案而不是输入框
-                    terminal.draw(|f| draw_ui(f, &mut app))?;
-                    
-                    // 记录退出命令
-                    redirect_log_to_ui("INFO", "用户输入退出命令 /quit");
-                    
-                    // 同步执行handle_quit，确保记忆化操作完成
-                    let conversations_snapshot: Vec<(String, String)> = app.conversations.iter().cloned().collect();
-                    let memory_manager_clone = memory_manager.clone();
-                    let user_id_string = user_id.to_string();
-                    
-                    // 先刷新一次UI显示开始退出
-                    terminal.draw(|f| draw_ui(f, &mut app))?;
-                    
-                    match handle_quit(conversations_snapshot, memory_manager_clone, &user_id_string).await {
-                        Ok(completed) => {
-                            if completed {
-                                // 手动设置记忆化完成状态
-                                app.memory_iteration_completed = true;
-                                app.should_quit = true;
-                                redirect_log_to_ui("INFO", "记忆化完成，准备退出...");
-                            } else {
-                                redirect_log_to_ui("WARN", "记忆化未完成，但仍然退出");
-                                app.should_quit = true;
-                            }
-                        }
-                        Err(e) => {
-                            redirect_log_to_ui("ERROR", &format!("退出流程出错: {}", e));
-                            redirect_log_to_ui("INFO", "出现错误，仍然准备退出...");
-                            app.should_quit = true;
-                        }
-                    }
-                    
-                    // 刷新最终UI
-                    terminal.draw(|f| draw_ui(f, &mut app))?;
-                    
-                    // 短暂停留让用户看到最后的日志
-                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                    // 立即退出到terminal，后台执行记忆化任务
+                    let conversations_vec: Vec<(String, String)> = app.conversations.iter().cloned().collect();
+                    handle_quit_async(terminal, &mut app, &conversations_vec, &memory_manager, user_id).await?;
                     
                     // 退出主循环
                     break;
@@ -288,6 +245,141 @@ async fn run_application(
             tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
         }
     }
+
+    Ok(())
+}
+
+/// 异步处理退出逻辑，立即退出TUI到terminal
+async fn handle_quit_async(
+    _terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
+    app: &mut App,
+    conversations: &Vec<(String, String)>,
+    memory_manager: &Arc<MemoryManager>,
+    user_id: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use crossterm::{execute, event::DisableMouseCapture, terminal::{LeaveAlternateScreen, Clear, ClearType}};
+    use crossterm::style::{ResetColor, SetAttribute, Attribute, SetForegroundColor, SetBackgroundColor, Color};
+    use crossterm::cursor::{MoveTo, Show};
+    use std::{io::{stdout, Write}};
+
+    // 记录退出命令到UI
+    redirect_log_to_ui("INFO", "🚀 用户输入退出命令 /quit，开始后台记忆化...");
+
+    // 先获取所有日志内容
+    let all_logs: Vec<String> = app.logs.iter().cloned().collect();
+
+    // 彻底清理terminal状态
+    let mut stdout = stdout();
+    
+    // 执行完整的terminal重置序列
+    execute!(&mut stdout, ResetColor)?;
+    execute!(&mut stdout, Clear(ClearType::All))?;
+    execute!(&mut stdout, MoveTo(0, 0))?;
+    execute!(&mut stdout, Show)?;
+    execute!(&mut stdout, LeaveAlternateScreen)?;
+    execute!(&mut stdout, DisableMouseCapture)?;
+    execute!(&mut stdout, SetAttribute(Attribute::Reset))?;
+    execute!(&mut stdout, SetForegroundColor(Color::Reset))?;
+    execute!(&mut stdout, SetBackgroundColor(Color::Reset))?;
+    
+    // 禁用原始模式
+    let _ = crossterm::terminal::disable_raw_mode();
+    
+    // 刷新输出确保清理完成
+    stdout.flush()?;
+
+    // 输出分隔线
+    println!("\n╔══════════════════════════════════════════════════════════════════════════════╗");
+    println!("║                            🧠 Cortex Memory - 退出流程                        ║");
+    println!("╠══════════════════════════════════════════════════════════════════════════════╣");
+
+    // 显示会话摘要
+    println!("📋 会话摘要:");
+    println!("   • 对话轮次: {} 轮", conversations.len());
+    println!("   • 用户ID: {}", user_id);
+    
+    // 显示最近的日志（如果有）
+    if !all_logs.is_empty() {
+        println!("\n📜 最近的操作日志:");
+        let recent_logs = if all_logs.len() > 10 {
+            &all_logs[all_logs.len()-10..]
+        } else {
+            &all_logs[..]
+        };
+        for log in recent_logs {
+            println!("   {}", log);
+        }
+        if all_logs.len() > 10 {
+            println!("   ... (显示最近10条，共{}条)", all_logs.len());
+        }
+    }
+
+    println!("\n🧠 开始执行记忆化存储...");
+    
+    // 准备对话数据（过滤quit命令）
+    let mut valid_conversations = Vec::new();
+    for (user_msg, assistant_msg) in conversations {
+        let user_msg_trimmed = user_msg.trim().to_lowercase();
+        if user_msg_trimmed == "quit"
+            || user_msg_trimmed == "exit"
+            || user_msg_trimmed == "/quit"
+            || user_msg_trimmed == "/exit"
+        {
+            continue;
+        }
+        valid_conversations.push((user_msg.clone(), assistant_msg.clone()));
+    }
+
+    if valid_conversations.is_empty() {
+        println!("⚠️ 没有需要存储的内容");
+        println!("\n╠══════════════════════════════════════════════════════════════════════════════╣");
+        println!("║                                    ✅ 退出流程完成                            ║");
+        println!("╚══════════════════════════════════════════════════════════════════════════════╝");
+        println!("👋 感谢使用Cortex Memory！");
+        return Ok(());
+    }
+
+    println!("📝 正在保存 {} 条对话记录到记忆库...", valid_conversations.len());
+    println!("🚀 开始存储 {} 条消息到记忆系统...", valid_conversations.len() * 2);
+
+    // 转换对话为消息格式
+    let all_messages = valid_conversations
+        .iter()
+        .flat_map(|(user_msg, assistant_msg)| {
+            vec![
+                memo_rig::types::Message {
+                    role: "user".to_string(),
+                    content: user_msg.clone(),
+                    name: None,
+                },
+                memo_rig::types::Message {
+                    role: "assistant".to_string(),
+                    content: assistant_msg.clone(),
+                    name: None,
+                },
+            ]
+        })
+        .collect::<Vec<_>>();
+
+    // 执行批量记忆化
+    match store_conversations_batch(memory_manager.clone(), &all_messages, user_id).await {
+        Ok(_) => {
+            println!("✨ 记忆化完成！");
+            println!("✅ 所有对话已成功存储到记忆系统");
+            println!("🔍 存储详情:");
+            println!("   • 用户消息: {} 条", all_messages.iter().filter(|m| m.role == "user").count());
+            println!("   • 助手消息: {} 条", all_messages.iter().filter(|m| m.role == "assistant").count());
+        }
+        Err(e) => {
+            println!("❌ 记忆存储失败: {}", e);
+            println!("⚠️ 虽然记忆化失败，但仍正常退出");
+        }
+    }
+
+    println!("\n╠══════════════════════════════════════════════════════════════════════════════╣");
+    println!("║                                    🎉 退出流程完成                            ║");
+    println!("╚══════════════════════════════════════════════════════════════════════════════╝");
+    println!("👋 感谢使用Cortex Memory！");
 
     Ok(())
 }
