@@ -1,14 +1,14 @@
 use clap::Parser;
 use crossterm::{
     event, execute,
-    terminal::{enable_raw_mode, EnterAlternateScreen},
+    terminal::{EnterAlternateScreen, enable_raw_mode},
 };
 use memo_config::Config;
 use memo_core::init_logging;
 use memo_rig::{
     llm::OpenAILLMClient, memory::manager::MemoryManager, vector_store::qdrant::QdrantVectorStore,
 };
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::{Terminal, backend::CrosstermBackend};
 use std::{io, path::PathBuf, sync::Arc};
 use tokio::sync::mpsc;
 
@@ -18,8 +18,11 @@ mod events;
 mod terminal;
 mod ui;
 
-use agent::{agent_reply_with_memory_retrieval, create_memory_agent, extract_user_basic_info, store_conversations_batch};
-use app::{redirect_log_to_ui, set_global_log_sender, App, AppMessage};
+use agent::{
+    agent_reply_with_memory_retrieval, create_memory_agent, extract_user_basic_info,
+    store_conversations_batch,
+};
+use app::{App, AppMessage, redirect_log_to_ui, set_global_log_sender};
 use events::{handle_key_event, process_user_input};
 use terminal::cleanup_terminal_final;
 use ui::draw_ui;
@@ -38,10 +41,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 加载基本配置以获取日志设置
     let cli = Cli::parse();
     let config = Config::load(&cli.config)?;
-    
+
     // 初始化日志系统
     init_logging(&config.logging)?;
-    
+
     // 设置终端
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -141,23 +144,31 @@ async fn run_application(
             if let Some(input) = handle_key_event(event::read()?, &mut app) {
                 // 先检查是否是quit命令
                 let is_quit = process_user_input(input.clone(), &mut app);
-                
+
                 // 如果是quit命令，先添加到对话历史
                 if is_quit {
                     app.add_conversation(input.clone(), "正在执行退出命令...".to_string());
                 }
-                
+
                 if is_quit {
                     // 立即退出到terminal，后台执行记忆化任务
-                    let conversations_vec: Vec<(String, String)> = app.conversations.iter().cloned().collect();
-                    handle_quit_async(terminal, &mut app, &conversations_vec, &memory_manager, user_id).await?;
-                    
+                    let conversations_vec: Vec<(String, String)> =
+                        app.conversations.iter().cloned().collect();
+                    handle_quit_async(
+                        terminal,
+                        &mut app,
+                        &conversations_vec,
+                        &memory_manager,
+                        user_id,
+                    )
+                    .await?;
+
                     // 退出主循环
                     break;
                 } else {
                     // 记录用户输入
                     redirect_log_to_ui("INFO", &format!("接收用户输入: {}", input));
-                    
+
                     // 处理用户输入
                     let agent_clone = agent.clone();
                     let memory_manager_clone = memory_manager.clone();
@@ -176,7 +187,7 @@ async fn run_application(
                     tokio::spawn(async move {
                         // 记录开始处理
                         redirect_log_to_ui("DEBUG", "正在检索相关记忆...");
-                        
+
                         // Agent生成回复（带记忆检索和利用）
                         match agent_reply_with_memory_retrieval(
                             &agent_clone,
@@ -257,10 +268,16 @@ async fn handle_quit_async(
     memory_manager: &Arc<MemoryManager>,
     user_id: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use crossterm::{execute, event::DisableMouseCapture, terminal::{LeaveAlternateScreen, Clear, ClearType}};
-    use crossterm::style::{ResetColor, SetAttribute, Attribute, SetForegroundColor, SetBackgroundColor, Color};
     use crossterm::cursor::{MoveTo, Show};
-    use std::{io::{stdout, Write}};
+    use crossterm::style::{
+        Attribute, Color, ResetColor, SetAttribute, SetBackgroundColor, SetForegroundColor,
+    };
+    use crossterm::{
+        event::DisableMouseCapture,
+        execute,
+        terminal::{Clear, ClearType, LeaveAlternateScreen},
+    };
+    use std::io::{Write, stdout};
 
     // 记录退出命令到UI
     redirect_log_to_ui("INFO", "🚀 用户输入退出命令 /quit，开始后台记忆化...");
@@ -270,7 +287,7 @@ async fn handle_quit_async(
 
     // 彻底清理terminal状态
     let mut stdout = stdout();
-    
+
     // 执行完整的terminal重置序列
     execute!(&mut stdout, ResetColor)?;
     execute!(&mut stdout, Clear(ClearType::All))?;
@@ -281,10 +298,10 @@ async fn handle_quit_async(
     execute!(&mut stdout, SetAttribute(Attribute::Reset))?;
     execute!(&mut stdout, SetForegroundColor(Color::Reset))?;
     execute!(&mut stdout, SetBackgroundColor(Color::Reset))?;
-    
+
     // 禁用原始模式
     let _ = crossterm::terminal::disable_raw_mode();
-    
+
     // 刷新输出确保清理完成
     stdout.flush()?;
 
@@ -297,25 +314,25 @@ async fn handle_quit_async(
     println!("📋 会话摘要:");
     println!("   • 对话轮次: {} 轮", conversations.len());
     println!("   • 用户ID: {}", user_id);
-    
+
     // 显示最近的日志（如果有）
     if !all_logs.is_empty() {
         println!("\n📜 最近的操作日志:");
         let recent_logs = if all_logs.len() > 10 {
-            &all_logs[all_logs.len()-10..]
+            &all_logs[all_logs.len() - 10..]
         } else {
             &all_logs[..]
         };
-        
+
         println!("   {}", "─".repeat(70));
         for (i, log) in recent_logs.iter().enumerate() {
             let beautified_content = beautify_log_content(log);
-            
+
             // 添加日志条目编号
             if i > 0 {
                 println!("   {}", "─".repeat(70));
             }
-            
+
             // 显示美化后的内容，支持多行显示
             let lines: Vec<&str> = beautified_content.split('\n').collect();
             for (line_i, line) in lines.iter().enumerate() {
@@ -340,20 +357,20 @@ async fn handle_quit_async(
         if !file_logs.is_empty() {
             println!("\n📋 完整运行日志 (最近20行):");
             let recent_file_logs = if file_logs.len() > 20 {
-                &file_logs[file_logs.len()-20..]
+                &file_logs[file_logs.len() - 20..]
             } else {
                 &file_logs[..]
             };
-            
+
             println!("   {}", "─".repeat(70));
             for (i, log) in recent_file_logs.iter().enumerate() {
                 let beautified_content = beautify_log_content(log);
-                
+
                 // 添加日志条目编号
                 if i > 0 {
                     println!("   {}", "─".repeat(70));
                 }
-                
+
                 // 显示美化后的内容，支持多行显示
                 let lines: Vec<&str> = beautified_content.split('\n').collect();
                 for (line_i, line) in lines.iter().enumerate() {
@@ -375,7 +392,7 @@ async fn handle_quit_async(
     }
 
     println!("\n🧠 开始执行记忆化存储...");
-    
+
     // 准备对话数据（过滤quit命令）
     let mut valid_conversations = Vec::new();
     for (user_msg, assistant_msg) in conversations {
@@ -392,43 +409,34 @@ async fn handle_quit_async(
 
     if valid_conversations.is_empty() {
         println!("⚠️ 没有需要存储的内容");
-        println!("\n╠══════════════════════════════════════════════════════════════════════════════╣");
-        println!("║                                    ✅ 退出流程完成                            ║");
-        println!("╚══════════════════════════════════════════════════════════════════════════════╝");
+        println!(
+            "\n╠══════════════════════════════════════════════════════════════════════════════╣"
+        );
+        println!(
+            "║                                    ✅ 退出流程完成                            ║"
+        );
+        println!(
+            "╚══════════════════════════════════════════════════════════════════════════════╝"
+        );
         println!("👋 感谢使用Cortex Memory！");
         return Ok(());
     }
 
-    println!("📝 正在保存 {} 条对话记录到记忆库...", valid_conversations.len());
-    println!("🚀 开始存储 {} 条消息到记忆系统...", valid_conversations.len() * 2);
-
-    // 转换对话为消息格式
-    let all_messages = valid_conversations
-        .iter()
-        .flat_map(|(user_msg, assistant_msg)| {
-            vec![
-                memo_rig::types::Message {
-                    role: "user".to_string(),
-                    content: user_msg.clone(),
-                    name: None,
-                },
-                memo_rig::types::Message {
-                    role: "assistant".to_string(),
-                    content: assistant_msg.clone(),
-                    name: None,
-                },
-            ]
-        })
-        .collect::<Vec<_>>();
+    println!(
+        "📝 正在保存 {} 条对话记录到记忆库...",
+        valid_conversations.len()
+    );
+    println!("🚀 开始存储对话到记忆系统...");
 
     // 执行批量记忆化
-    match store_conversations_batch(memory_manager.clone(), &all_messages, user_id).await {
+    match store_conversations_batch(memory_manager.clone(), &valid_conversations, user_id).await {
         Ok(_) => {
             println!("✨ 记忆化完成！");
             println!("✅ 所有对话已成功存储到记忆系统");
             println!("🔍 存储详情:");
-            println!("   • 用户消息: {} 条", all_messages.iter().filter(|m| m.role == "user").count());
-            println!("   • 助手消息: {} 条", all_messages.iter().filter(|m| m.role == "assistant").count());
+            println!("   • 对话轮次: {} 轮", valid_conversations.len());
+            println!("   • 用户消息: {} 条", valid_conversations.len());
+            println!("   • 助手消息: {} 条", valid_conversations.len());
         }
         Err(e) => {
             println!("❌ 记忆存储失败: {}", e);
@@ -451,7 +459,7 @@ async fn read_latest_log_file(log_dir: &str) -> Result<Vec<String>, Box<dyn std:
     use std::io::BufReader;
 
     let log_path = std::path::Path::new(log_dir);
-    
+
     // 检查日志目录是否存在
     if !log_path.exists() {
         return Ok(Vec::new());
@@ -465,7 +473,9 @@ async fn read_latest_log_file(log_dir: &str) -> Result<Vec<String>, Box<dyn std:
         for entry in entries.flatten() {
             if let Ok(metadata) = entry.metadata() {
                 if let Ok(modified) = metadata.modified() {
-                    if modified > latest_time && entry.file_name().to_string_lossy().ends_with(".log") {
+                    if modified > latest_time
+                        && entry.file_name().to_string_lossy().ends_with(".log")
+                    {
                         latest_time = modified;
                         latest_file = Some(entry.path());
                     }
@@ -479,13 +489,13 @@ async fn read_latest_log_file(log_dir: &str) -> Result<Vec<String>, Box<dyn std:
         let file = fs::File::open(&log_file)?;
         let reader = BufReader::new(file);
         let mut lines = Vec::new();
-        
+
         for line in reader.lines() {
             if let Ok(line) = line {
                 lines.push(line);
             }
         }
-        
+
         return Ok(lines);
     }
 
@@ -526,7 +536,7 @@ fn beautify_log_content(log_line: &str) -> String {
 /// 美化JSON内容
 fn prettify_json(json_str: &str) -> Result<String, Box<dyn std::error::Error>> {
     use serde_json::Value;
-    
+
     let value: Value = serde_json::from_str(json_str)?;
     Ok(serde_json::to_string_pretty(&value)?)
 }
@@ -545,12 +555,12 @@ fn get_log_level_color(log_line: &str, text: &str) -> String {
 
     // ANSI颜色代码
     let (color_code, reset_code) = match log_level.to_uppercase().as_str() {
-        "ERROR" => ("\x1b[91m", "\x1b[0m"),     // 亮红色
+        "ERROR" => ("\x1b[91m", "\x1b[0m"),            // 亮红色
         "WARN" | "WARNING" => ("\x1b[93m", "\x1b[0m"), // 亮黄色
-        "INFO" => ("\x1b[36m", "\x1b[0m"),     // 亮青色
-        "DEBUG" => ("\x1b[94m", "\x1b[0m"),    // 亮蓝色
-        "TRACE" => ("\x1b[95m", "\x1b[0m"),    // 亮紫色
-        _ => ("\x1b[0m", "\x1b[0m"),           // 白色
+        "INFO" => ("\x1b[36m", "\x1b[0m"),             // 亮青色
+        "DEBUG" => ("\x1b[94m", "\x1b[0m"),            // 亮蓝色
+        "TRACE" => ("\x1b[95m", "\x1b[0m"),            // 亮紫色
+        _ => ("\x1b[0m", "\x1b[0m"),                   // 白色
     };
 
     format!("{}{}{}", color_code, text, reset_code)

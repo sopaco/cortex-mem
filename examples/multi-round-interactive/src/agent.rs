@@ -2,7 +2,6 @@ use memo_config::Config;
 use memo_rig::{
     memory::manager::MemoryManager,
     tool::{MemoryArgs, MemoryToolConfig, create_memory_tool},
-    types::Message,
 };
 use rig::{
     agent::Agent,
@@ -23,17 +22,36 @@ pub async fn create_memory_agent(
     memory_tool_config: MemoryToolConfig,
     config: &Config,
 ) -> Result<Agent<CompletionModel>, Box<dyn std::error::Error>> {
-    let _memory_tool =
-        create_memory_tool(memory_manager.clone(), &config, Some(memory_tool_config));
+    // 创建记忆工具
+    let memory_tool = create_memory_tool(memory_manager.clone(), &config, Some(memory_tool_config));
 
     let llm_client = Client::builder(&config.llm.api_key)
         .base_url(&config.llm.api_base_url)
         .build();
 
+    // 构建带有记忆工具的agent，让agent能够自主决定何时调用记忆功能
     let completion_model = llm_client
         .completion_model(&config.llm.model_efficient)
         .completions_api()
         .into_agent_builder()
+        .tool(memory_tool) // 注册记忆工具
+        .preamble(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
+
+你的工具:
+- memory: 可以存储、搜索和检索记忆。支持以下操作:
+  * store: 存储新记忆
+  * search: 搜索相关记忆
+  * recall: 召回上下文
+  * get: 获取特定记忆
+
+使用指南:
+1. 在需要时自主使用memory工具搜索相关记忆
+2. 当用户提供新的重要信息时，主动使用memory工具存储
+3. 保持对话的连贯性和一致性
+4. 自然地融入记忆信息，避免显得刻意
+5. 专注于用户的需求和想要了解的信息，以及想要你做的事情
+
+记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#)
         .build();
 
     Ok(completion_model)
@@ -195,137 +213,53 @@ pub fn retrieve_relevant_conversations(
     context
 }
 
-/// Agent回复函数 - 带记忆检索和利用的智能回复
+/// Agent回复函数 - 基于tool call的记忆引擎使用
 pub async fn agent_reply_with_memory_retrieval(
     agent: &Agent<CompletionModel>,
-    memory_manager: Arc<MemoryManager>,
-    config: &Config,
+    _memory_manager: Arc<MemoryManager>,
+    _config: &Config,
     user_input: &str,
-    user_id: &str,
+    _user_id: &str,
     user_info: Option<&str>,
-    conversations: &[(String, String)],
+    _conversations: &[(String, String)],
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     // 记录开始处理
     redirect_log_to_ui("DEBUG", &format!("开始处理用户请求: {}", user_input));
 
-    let memory_tool = create_memory_tool(
-        memory_manager.clone(),
-        config,
-        Some(MemoryToolConfig {
-            default_user_id: Some(user_id.to_string()),
-            ..Default::default()
-        }),
-    );
+    // 构建基本prompt，让agent自主决定是否需要使用工具检索记忆
+    let prompt = format!("用户输入: {}", user_input);
 
-    // 1. 从当前对话历史中检索相关对话（短记忆）
-    redirect_log_to_ui("DEBUG", "正在检索短期记忆...");
-    let conversation_context = retrieve_relevant_conversations(conversations, user_input);
-
-    // 2. 从长期记忆系统中检索相关记忆
-    redirect_log_to_ui("DEBUG", "正在检索长期记忆...");
-    let search_args = MemoryArgs {
-        action: "search".to_string(),
-        query: Some(user_input.to_string()),
-        user_id: Some(user_id.to_string()),
-        limit: Some(5),
-        content: None,
-        memory_id: None,
-        agent_id: None,
-        memory_type: None,
-        topics: None,
-        keywords: None,
-    };
-
-    let mut long_term_context = String::new();
-    if let Ok(search_result) = memory_tool.call(search_args).await {
-        if let Some(data) = search_result.data {
-            if let Some(results) = data.get("results").and_then(|r| r.as_array()) {
-                if !results.is_empty() {
-                    long_term_context.push_str("🔄 长期记忆:\n");
-                    for (i, result) in results.iter().enumerate() {
-                        if let Some(content) = result.get("content").and_then(|c| c.as_str()) {
-                            long_term_context.push_str(&format!("{}. {}\n", i + 1, content));
-                        }
-                    }
-                    long_term_context.push_str("\n");
-                    redirect_log_to_ui("DEBUG", &format!("找到 {} 条相关长期记忆", results.len()));
-                } else {
-                    redirect_log_to_ui("DEBUG", "未找到相关长期记忆");
-                }
-            }
-        }
-    } else {
-        redirect_log_to_ui("DEBUG", "检索长期记忆时出错");
-    }
-
-    // 构建完整上下文
-    let mut context = String::new();
-
-    // 添加用户基本信息
+    // 如果有用户基本信息，添加到prompt中
     if let Some(info) = user_info {
-        context.push_str(&format!("📋 用户档案信息:\n{}\n\n", info));
-    }
+        let full_prompt = format!("用户基本信息:\n{}\n\n{}", info, prompt);
+        redirect_log_to_ui("DEBUG", "已添加用户基本信息到prompt");
 
-    // 添加对话历史上下文
-    if !conversation_context.is_empty() {
-        context.push_str(&conversation_context);
-        context.push_str("\n");
-        redirect_log_to_ui("DEBUG", "已添加短期记忆上下文");
+        redirect_log_to_ui("DEBUG", "正在生成AI回复（让agent自主决定是否使用工具）...");
+        let response = agent
+            .prompt(&full_prompt)
+            .multi_turn(10)
+            .await
+            .map_err(|e| format!("LLM error: {}", e))?;
+
+        redirect_log_to_ui("DEBUG", "AI回复生成完成");
+        Ok(response.trim().to_string())
     } else {
-        redirect_log_to_ui("DEBUG", "未找到相关短期记忆");
+        redirect_log_to_ui("DEBUG", "生成AI回复（让agent自主决定是否使用工具）...");
+        let response = agent
+            .prompt(&prompt)
+            .multi_turn(10)
+            .await
+            .map_err(|e| format!("LLM error: {}", e))?;
+
+        redirect_log_to_ui("DEBUG", "AI回复生成完成");
+        Ok(response.trim().to_string())
     }
-
-    // 添加长期记忆上下文
-    if !long_term_context.is_empty() {
-        context.push_str(&long_term_context);
-    }
-
-    // 构建system prompt
-    let system_prompt = r#"你是一个拥有短期和长期记忆的智能AI助手。你可以访问：
-
-🧠 短期记忆（本次会话中的对话记录）
-🔄 长期记忆（之前会话中保存的重要信息）
-📋 用户档案信息
-
-📖 记忆使用指南：
-- 优先使用短期记忆来理解当前对话的上下文
-- 结合长期记忆提供个性化的回复
-- 如果用户提到之前讨论过的内容，参考相关记忆
-- 保持对话的连贯性和一致性
-- 自然地融入记忆信息，避免显得刻意
-
-记住：你正在与一个了解的用户进行连续对话，对话过程中专注于用户的需求和想要了解的信息，以及想要你做的事情，不需要刻意向用户表达你自己在记忆能力方面的特点和行为。"#;
-
-    // 构建prompt
-    let prompt = if !context.is_empty() {
-        format!(
-            "{}\n\n{}\n\n💬 当前对话:\nUser: {}\nAssistant:",
-            system_prompt, context, user_input
-        )
-    } else {
-        format!(
-            "{}\n\n💬 当前对话:\nUser: {}\nAssistant:",
-            system_prompt, user_input
-        )
-    };
-
-    redirect_log_to_ui("DEBUG", "正在生成AI回复...");
-    let response = agent
-        .prompt(&prompt)
-        .await
-        .map_err(|e| format!("LLM error: {}", e))?;
-
-    #[cfg(debug_assertions)]
-    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-    redirect_log_to_ui("DEBUG", "AI回复生成完成");
-    Ok(response.trim().to_string())
 }
 
 /// 批量存储对话到记忆系统（优化版）
 pub async fn store_conversations_batch(
     memory_manager: Arc<MemoryManager>,
-    messages: &[Message],
+    conversations: &[(String, String)],
     user_id: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 只创建一次ConversationProcessor实例
@@ -335,9 +269,27 @@ pub async fn store_conversations_batch(
         memo_rig::types::MemoryMetadata::new(memo_rig::types::MemoryType::Conversational)
             .with_user_id(user_id.to_string());
 
+    // 将对话历史转换为消息格式
+    let mut messages = Vec::new();
+    for (user_msg, assistant_msg) in conversations {
+        // 添加用户消息
+        messages.push(memo_rig::types::Message {
+            role: "user".to_string(),
+            content: user_msg.clone(),
+            name: None,
+        });
+
+        // 添加助手回复
+        messages.push(memo_rig::types::Message {
+            role: "assistant".to_string(),
+            content: assistant_msg.clone(),
+            name: None,
+        });
+    }
+
     // 一次性处理所有消息
     let _ = conversation_processor
-        .process_turn(messages, metadata)
+        .process_turn(&messages, metadata)
         .await;
 
     Ok(())
