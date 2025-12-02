@@ -166,7 +166,7 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
 
             // 使用ratatui的wrap逻辑来计算光标位置
             // 我们需要模拟ratatui::widgets::Wrap的行为
-            
+
             // 获取光标前的所有字符
             let chars_before_cursor: Vec<char> = app
                 .current_input
@@ -198,7 +198,7 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
             let cursor_line_width = current_line_width;
 
             // 计算最终的光标位置
-            letx = left_chunks[1].x + 1 + current_line_width as u16;
+            let cursor_x = left_chunks[1].x + 1 + current_line_width as u16;
             let cursor_y = left_chunks[1].y + 1 + line_offset as u16;
 
             // 确保光标在输入框范围内
