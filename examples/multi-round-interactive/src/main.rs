@@ -11,8 +11,7 @@ use memo_rig::{
 use ratatui::{Terminal, backend::CrosstermBackend};
 use std::{io, path::PathBuf, sync::Arc};
 use tokio::sync::mpsc;
-use tokio::time::{Duration, sleep};
-use tracing::info;
+use tokio::time::Duration;
 
 mod agent;
 mod app;

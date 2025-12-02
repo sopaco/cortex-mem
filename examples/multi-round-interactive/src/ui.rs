@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::app::{App, FocusArea};
-use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+use unicode_width::UnicodeWidthChar;
 
 /// UI 绘制函数
 pub fn draw_ui(f: &mut Frame, app: &mut App) {
@@ -174,9 +174,6 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
                 .take(app.cursor_position)
                 .collect();
 
-            // 获取当前字符（如果有的话）
-            let current_char = app.current_input.chars().nth(app.cursor_position);
-
             // 模拟ratatui的换行逻辑
             let mut line_offset = 0;
             let mut current_line_width = 0;
@@ -193,9 +190,6 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
 
                 current_line_width += char_width;
             }
-
-            // 计算光标位置（在当前字符的位置）
-            let cursor_line_width = current_line_width;
 
             // 计算最终的光标位置
             let cursor_x = left_chunks[1].x + 1 + current_line_width as u16;
