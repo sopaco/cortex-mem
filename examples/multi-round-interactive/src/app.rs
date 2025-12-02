@@ -39,6 +39,14 @@ pub enum AppMessage {
         user: String,
         assistant: String,
     },
+    StreamingChunk {
+        user: String,
+        chunk: String,
+    },
+    StreamingComplete {
+        user: String,
+        full_response: String,
+    },
     #[allow(dead_code)]
     MemoryIterationCompleted,
 }
@@ -85,6 +93,8 @@ pub struct App {
     // 滚动条状态
     pub conversation_scrollbar_state: ScrollbarState,
     pub log_scrollbar_state: ScrollbarState,
+    // 当前正在流式生成的回复
+    pub current_streaming_response: Option<(String, String)>, // (user_input, partial_response)
 }
 
 impl Default for App {
@@ -107,6 +117,7 @@ impl Default for App {
             user_scrolled_conversations: false,
             conversation_scrollbar_state: ScrollbarState::default(),
             log_scrollbar_state: ScrollbarState::default(),
+            current_streaming_response: None,
         }
     }
 }
@@ -115,6 +126,7 @@ impl App {
     pub fn new(message_sender: mpsc::UnboundedSender<AppMessage>) -> Self {
         Self {
             message_sender: Some(message_sender),
+            current_streaming_response: None,
             ..Default::default()
         }
     }
@@ -141,6 +153,44 @@ impl App {
         if !self.user_scrolled_conversations {
             self.scroll_conversations_to_bottom();
         }
+    }
+
+    /// 开始流式回复
+    pub fn start_streaming_response(&mut self, user_input: String) {
+        self.current_streaming_response = Some((user_input, String::new()));
+        self.is_processing = true;
+    }
+
+    /// 添加流式内容块
+    pub fn add_streaming_chunk(&mut self, chunk: String) {
+        if let Some((_, ref mut response)) = self.current_streaming_response {
+            response.push_str(&chunk);
+            
+            // 如果用户没有手动滚动过，自动滚动到最新对话
+            if !self.user_scrolled_conversations {
+                self.scroll_conversations_to_bottom();
+            }
+        }
+    }
+
+    /// 完成流式回复
+    pub fn complete_streaming_response(&mut self) {
+        if let Some((user_input, full_response)) = self.current_streaming_response.take() {
+            self.add_conversation(user_input, full_response);
+        }
+        self.is_processing = false;
+    }
+
+    /// 获取当前显示的对话（包括正在流式生成的）
+    pub fn get_display_conversations(&self) -> Vec<(String, String)> {
+        let mut conversations: Vec<(String, String)> = self.conversations.iter().cloned().collect();
+        
+        // 如果有正在流式生成的回复，添加到显示列表
+        if let Some((ref user_input, ref partial_response)) = self.current_streaming_response {
+            conversations.push((user_input.clone(), partial_response.clone()));
+        }
+        
+        conversations
     }
 
     /// 在光标位置插入字符

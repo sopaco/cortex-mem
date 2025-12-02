@@ -23,26 +23,47 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
         .constraints([Constraint::Percentage(75), Constraint::Percentage(25)])
         .split(chunks[0]);
 
-    // 对话历史 - 构建所有对话文本，使用Paragraph的scroll功能
-    let conversation_text = app
-        .conversations
+    // 对话历史 - 构建所有对话文本，包括正在流式生成的内容
+    let display_conversations = app.get_display_conversations();
+    let conversation_text = display_conversations
         .iter()
-        .flat_map(|(user, assistant)| {
+        .enumerate()
+        .flat_map(|(index, (user, assistant))| {
+            let is_streaming = app.current_streaming_response.is_some() && 
+                               index == display_conversations.len() - 1;
+            
+            let assistant_style = if is_streaming {
+                Style::default().fg(Color::Yellow) // 流式生成中用黄色
+            } else {
+                Style::default().fg(Color::Green)  // 完成的回复用绿色
+            };
+            
+            let assistant_prefix = if is_streaming {
+                "助手 (生成中): "
+            } else {
+                "助手: "
+            };
+            
             vec![
                 Line::from(vec![
                     Span::styled("用户: ", Style::default().fg(Color::Cyan)),
                     Span::raw(user.clone()),
                 ]),
                 Line::from(vec![
-                    Span::styled("助手: ", Style::default().fg(Color::Green)),
-                    Span::raw(assistant.clone()),
+                    Span::styled(assistant_prefix, assistant_style),
+                    Span::styled(assistant.clone(), assistant_style),
+                    if is_streaming {
+                        Span::styled("▋", Style::default().fg(Color::Yellow)) // 光标效果
+                    } else {
+                        Span::raw("")
+                    }
                 ]),
                 Line::from(""), // 空行分隔
             ]
         })
         .collect::<Vec<_>>();
 
-    let total_conversations = app.conversations.len();
+    let total_conversations = display_conversations.len();
 
     // 构建对话区域标题，显示滚动状态和焦点状态
     let conversation_title = if app.focus_area == FocusArea::Conversation {

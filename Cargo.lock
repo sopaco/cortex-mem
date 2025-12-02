@@ -1713,9 +1713,11 @@ dependencies = [
 name = "multi-round-interactive"
 version = "0.1.0"
 dependencies = [
+ "async-stream",
  "async-trait",
  "clap",
  "crossterm 0.29.0",
+ "futures",
  "memo-config",
  "memo-core",
  "memo-rig",

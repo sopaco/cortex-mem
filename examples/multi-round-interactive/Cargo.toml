@@ -31,3 +31,7 @@ async-trait = "0.1"
 
 # JSON处理
 serde_json = "1.0"
+
+# Stream processing
+futures = "0.3"
+async-stream = "0.3"

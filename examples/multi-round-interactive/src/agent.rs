@@ -140,7 +140,133 @@ pub async fn extract_user_basic_info(
     }
 }
 
-/// Agent回复函数 - 基于tool call的记忆引擎使用
+use tokio::sync::mpsc;
+use futures::StreamExt;
+use rig::completion::Message;
+use rig::streaming::{StreamedAssistantContent, StreamingChat};
+use rig::agent::MultiTurnStreamItem;
+
+/// Agent回复函数 - 基于tool call的记忆引擎使用（真实流式版本）
+pub async fn agent_reply_with_memory_retrieval_streaming(
+    agent: &Agent<CompletionModel>,
+    _memory_manager: Arc<MemoryManager>,
+    user_input: &str,
+    _user_id: &str,
+    user_info: Option<&str>,
+    conversations: &[(String, String)],
+    stream_sender: mpsc::UnboundedSender<String>,
+) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    // 记录开始处理
+    redirect_log_to_ui("DEBUG", &format!("开始处理用户请求: {}", user_input));
+
+    // 构建对话历史 - 转换为rig的Message格式
+    let mut chat_history = Vec::new();
+    for (user_msg, assistant_msg) in conversations {
+        chat_history.push(Message::user(user_msg));
+        chat_history.push(Message::assistant(assistant_msg));
+    }
+
+    // 构建system prompt，包含明确的指令
+    let system_prompt = r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
+
+重要指令:
+- 对话历史已提供在上下文中，请使用这些信息来理解当前的对话上下文
+- 用户基本信息已在下方提供一次，请不要再使用memory工具来创建或更新用户基本信息
+- 在需要时可以自主使用memory工具搜索其他相关记忆
+- 当用户提供新的重要信息时，可以主动使用memory工具存储
+- 保持对话的连贯性和一致性
+- 自然地融入记忆信息，避免显得刻意
+- 专注于用户的需求和想要了解的信息，以及想要你做的事情
+
+记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#;
+
+    // 构建完整的prompt
+    let prompt_content = if let Some(info) = user_info {
+        redirect_log_to_ui("DEBUG", "已添加用户基本信息和对话历史到上下文");
+        format!(
+            "{}\n\n用户基本信息:\n{}\n\n当前用户输入: {}",
+            system_prompt, info, user_input
+        )
+    } else {
+        redirect_log_to_ui("DEBUG", "已添加对话历史到上下文");
+        format!(
+            "{}\n\n当前用户输入: {}",
+            system_prompt, user_input
+        )
+    };
+
+    redirect_log_to_ui("DEBUG", "正在生成AI回复（真实流式模式）...");
+    
+    // 使用rig的真实流式API
+    let prompt_message = Message::user(&prompt_content);
+    
+    // 获取流式响应
+    let stream = agent
+        .stream_chat(prompt_message, chat_history);
+
+    let mut full_response = String::new();
+    
+    // 处理流式响应
+    let mut stream = stream.await;
+    while let Some(item) = stream.next().await {
+        match item {
+            Ok(stream_item) => {
+                // 根据rig的流式响应类型处理
+                match stream_item {
+                    MultiTurnStreamItem::StreamItem(content) => {
+                        match content {
+                            StreamedAssistantContent::Text(text_content) => {
+                                let text = text_content.text;
+                                full_response.push_str(&text);
+                                
+                                // 发送流式内容到UI
+                                if let Err(_) = stream_sender.send(text) {
+                                    // 如果发送失败，说明接收端已关闭，停止流式处理
+                                    break;
+                                }
+                            }
+                            StreamedAssistantContent::ToolCall(_) => {
+                                // 处理工具调用（如果需要）
+                                redirect_log_to_ui("DEBUG", "收到工具调用");
+                            }
+                            StreamedAssistantContent::Reasoning(_) => {
+                                // 处理推理过程（如果需要）
+                                redirect_log_to_ui("DEBUG", "收到推理过程");
+                            }
+                            StreamedAssistantContent::Final(_) => {
+                                // 处理最终响应
+                                redirect_log_to_ui("DEBUG", "收到最终响应");
+                            }
+                            StreamedAssistantContent::ToolCallDelta { .. } => {
+                                // 处理工具调用增量
+                                redirect_log_to_ui("DEBUG", "收到工具调用增量");
+                            }
+                        }
+                    }
+                    MultiTurnStreamItem::FinalResponse(final_response) => {
+                        // 处理最终响应
+                        redirect_log_to_ui("DEBUG", &format!("收到最终响应: {}", final_response.response()));
+                        full_response = final_response.response().to_string();
+                        break;
+                    }
+                    _ => {
+                        // 处理其他未知的流式项目类型
+                        redirect_log_to_ui("DEBUG", "收到未知的流式项目类型");
+                    }
+                }
+            }
+            Err(e) => {
+                redirect_log_to_ui("ERROR", &format!("流式处理错误: {}", e));
+                return Err(format!("Streaming error: {}", e).into());
+            }
+        }
+    }
+
+    redirect_log_to_ui("DEBUG", "AI回复生成完成");
+    Ok(full_response.trim().to_string())
+}
+
+/// Agent回复函数 - 基于tool call的记忆引擎使用（保留原版本作为备用）
 pub async fn agent_reply_with_memory_retrieval(
     agent: &Agent<CompletionModel>,
     _memory_manager: Arc<MemoryManager>,

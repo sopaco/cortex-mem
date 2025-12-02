@@ -21,7 +21,7 @@ mod terminal;
 mod ui;
 
 use agent::{
-    agent_reply_with_memory_retrieval, create_memory_agent, extract_user_basic_info,
+    agent_reply_with_memory_retrieval_streaming, create_memory_agent, extract_user_basic_info,
     store_conversations_batch,
 };
 use app::{App, AppMessage, redirect_log_to_ui, set_global_log_sender};
@@ -132,6 +132,17 @@ async fn run_application(
                 AppMessage::Conversation { user, assistant } => {
                     app.add_conversation(user, assistant);
                 }
+                AppMessage::StreamingChunk { user, chunk } => {
+                    // 如果是新的用户输入，开始新的流式回复
+                    if app.current_streaming_response.is_none() || 
+                       app.current_streaming_response.as_ref().map(|(u, _)| u != &user).unwrap_or(false) {
+                        app.start_streaming_response(user);
+                    }
+                    app.add_streaming_chunk(chunk);
+                }
+                AppMessage::StreamingComplete { user: _, full_response: _ } => {
+                    app.complete_streaming_response();
+                }
                 AppMessage::MemoryIterationCompleted => {
                     app.memory_iteration_completed = true;
                     app.should_quit = true;
@@ -188,31 +199,74 @@ async fn run_application(
                     redirect_log_to_ui("INFO", "开始处理用户请求...");
 
                     tokio::spawn(async move {
-                        // Agent生成回复（带记忆检索和利用）
-                        match agent_reply_with_memory_retrieval(
-                            &agent_clone,
-                            memory_manager_clone.clone(),
-                            &config_clone,
-                            &input,
-                            &user_id_clone,
-                            user_info_clone.as_deref(),
-                            &current_conversations,
-                        )
-                        .await
-                        {
-                            Ok(response) => {
-                                // 发送对话到主线程
+                        // 创建流式通道
+                        let (stream_tx, mut stream_rx) = mpsc::unbounded_channel::<String>();
+                        
+                        // 启动流式处理任务
+                        let agent_clone2 = agent_clone.clone();
+                        let memory_manager_clone2 = memory_manager_clone.clone();
+                        let config_clone2 = config_clone.clone();
+                        let user_info_clone2 = user_info_clone.clone();
+                        let user_id_clone2 = user_id_clone.clone();
+                        let input_clone = input.clone();
+                        let current_conversations_clone = current_conversations.clone();
+                        
+                        let generation_task = tokio::spawn(async move {
+                            agent_reply_with_memory_retrieval_streaming(
+                                &agent_clone2,
+                                memory_manager_clone2,
+                                &input_clone,
+                                &user_id_clone2,
+                                user_info_clone2.as_deref(),
+                                &current_conversations_clone,
+                                stream_tx,
+                            )
+                            .await
+                        });
+
+                        // 处理流式内容
+                        while let Some(chunk) = stream_rx.recv().await {
+                            if let Some(sender) = &msg_tx_clone {
+                                let _ = sender.send(AppMessage::StreamingChunk {
+                                    user: input.clone(),
+                                    chunk,
+                                });
+                            }
+                        }
+
+                        // 等待生成任务完成
+                        match generation_task.await {
+                            Ok(Ok(full_response)) => {
+                                // 发送完成消息
                                 if let Some(sender) = &msg_tx_clone {
-                                    let _ = sender.send(AppMessage::Conversation {
+                                    let _ = sender.send(AppMessage::StreamingComplete {
                                         user: input.clone(),
-                                        assistant: response.clone(),
+                                        full_response: full_response.clone(),
                                     });
-                                    redirect_log_to_ui("INFO", &format!("生成回复: {}", response));
+                                    redirect_log_to_ui("INFO", &format!("生成回复完成: {}", full_response));
+                                }
+                            }
+                            Ok(Err(e)) => {
+                                let error_msg = format!("抱歉，我遇到了一些技术问题: {}", e);
+                                redirect_log_to_ui("ERROR", &error_msg);
+                                // 完成流式回复（即使出错也要清理状态）
+                                if let Some(sender) = &msg_tx_clone {
+                                    let _ = sender.send(AppMessage::StreamingComplete {
+                                        user: input.clone(),
+                                        full_response: error_msg,
+                                    });
                                 }
                             }
                             Err(e) => {
-                                let error_msg = format!("抱歉，我遇到了一些技术问题: {}", e);
+                                let error_msg = format!("任务执行失败: {}", e);
                                 redirect_log_to_ui("ERROR", &error_msg);
+                                // 完成流式回复（即使出错也要清理状态）
+                                if let Some(sender) = &msg_tx_clone {
+                                    let _ = sender.send(AppMessage::StreamingComplete {
+                                        user: input.clone(),
+                                        full_response: error_msg,
+                                    });
+                                }
                             }
                         }
                     });
@@ -238,6 +292,17 @@ async fn run_application(
                     }
                     AppMessage::Conversation { user, assistant } => {
                         app.add_conversation(user, assistant);
+                    }
+                    AppMessage::StreamingChunk { user, chunk } => {
+                        // 如果是新的用户输入，开始新的流式回复
+                        if app.current_streaming_response.is_none() || 
+                           app.current_streaming_response.as_ref().map(|(u, _)| u != &user).unwrap_or(false) {
+                            app.start_streaming_response(user);
+                        }
+                        app.add_streaming_chunk(chunk);
+                    }
+                    AppMessage::StreamingComplete { user: _, full_response: _ } => {
+                        app.complete_streaming_response();
                     }
                     AppMessage::MemoryIterationCompleted => {
                         app.memory_iteration_completed = true;
