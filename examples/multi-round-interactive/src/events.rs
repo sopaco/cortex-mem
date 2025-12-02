@@ -1,9 +1,12 @@
 use crate::app::{App, FocusArea};
-use crossterm::event::{Event, KeyCode, KeyEventKind};
-
-
+use crossterm::event::{Event, KeyCode, KeyEventKind, MouseButton, MouseEvent, MouseEventKind};
 
 pub fn handle_key_event(event: Event, app: &mut App) -> Option<String> {
+    // 处理鼠标事件
+    if let Event::Mouse(mouse) = event {
+        return handle_mouse_event(mouse, app);
+    }
+
     // Some(input)表示需要处理的输入，None表示不需要处理
     if let Event::Key(key) = event {
         if key.kind == KeyEventKind::Press {
@@ -111,6 +114,50 @@ pub fn handle_key_event(event: Event, app: &mut App) -> Option<String> {
         }
     } else {
         None
+    }
+}
+
+/// 处理鼠标事件
+fn handle_mouse_event(mouse: MouseEvent, app: &mut App) -> Option<String> {
+    match mouse.kind {
+        MouseEventKind::Down(MouseButton::Left) => {
+            // 左键点击时更新焦点区域
+            // 这里可以根据鼠标位置判断点击了哪个区域
+            // 简化处理：如果鼠标在左边区域，设置为输入或对话焦点；如果在右边区域，设置为日志焦点
+            // 由于我们没有详细的坐标信息，这里只是简化处理
+            None
+        }
+        MouseEventKind::ScrollUp => {
+            // 鼠标向上滚动
+            match app.focus_area {
+                FocusArea::Logs => {
+                    app.scroll_logs_backward();
+                }
+                FocusArea::Conversation => {
+                    app.scroll_conversations_backward();
+                }
+                FocusArea::Input => {}
+            }
+            None
+        }
+        MouseEventKind::ScrollDown => {
+            // 鼠标向下滚动
+            match app.focus_area {
+                FocusArea::Logs => {
+                    app.scroll_logs_forward();
+                }
+                FocusArea::Conversation => {
+                    app.scroll_conversations_forward();
+                }
+                FocusArea::Input => {}
+            }
+            None
+        }
+        MouseEventKind::Drag(MouseButton::Left) => {
+            // 鼠标左键拖拽 - 这里我们不需要特别处理，终端默认支持文本选择
+            None
+        }
+        _ => None,
     }
 }
 

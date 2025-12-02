@@ -189,9 +189,6 @@ async fn run_application(
                     redirect_log_to_ui("INFO", "开始处理用户请求...");
 
                     tokio::spawn(async move {
-                        // 记录开始处理
-                        redirect_log_to_ui("DEBUG", "正在检索相关记忆...");
-
                         // Agent生成回复（带记忆检索和利用）
                         match agent_reply_with_memory_retrieval(
                             &agent_clone,

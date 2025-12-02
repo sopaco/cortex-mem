@@ -19,6 +19,7 @@ rig-core = "0.23"
 # TUI
 ratatui = "0.29"
 crossterm = "0.29"
+unicode-width = "0.1"
 
 # Logging
 tracing = "0.1"
