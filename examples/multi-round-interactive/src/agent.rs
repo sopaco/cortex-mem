@@ -44,12 +44,14 @@ pub async fn create_memory_agent(
   * recall: 召回上下文
   * get: 获取特定记忆
 
-使用指南:
-1. 在需要时自主使用memory工具搜索相关记忆
-2. 当用户提供新的重要信息时，主动使用memory工具存储
-3. 保持对话的连贯性和一致性
-4. 自然地融入记忆信息，避免显得刻意
-5. 专注于用户的需求和想要了解的信息，以及想要你做的事情
+重要指令:
+- 对话历史将作为上下文提供，请使用这些信息来理解当前的对话流程
+- 用户基本信息将在上下文中提供一次，请不要再使用memory工具来创建或更新用户基本信息
+- 在需要时可以自主使用memory工具搜索其他相关记忆
+- 当用户提供新的重要信息时，可以主动使用memory工具存储
+- 保持对话的连贯性和一致性
+- 自然地融入记忆信息，避免显得刻意
+- 专注于用户的需求和想要了解的信息，以及想要你做的事情
 
 记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#)
         .build();
@@ -221,39 +223,64 @@ pub async fn agent_reply_with_memory_retrieval(
     user_input: &str,
     _user_id: &str,
     user_info: Option<&str>,
-    _conversations: &[(String, String)],
+    conversations: &[(String, String)],
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     // 记录开始处理
     redirect_log_to_ui("DEBUG", &format!("开始处理用户请求: {}", user_input));
 
-    // 构建基本prompt，让agent自主决定是否需要使用工具检索记忆
-    let prompt = format!("用户输入: {}", user_input);
-
-    // 如果有用户基本信息，添加到prompt中
-    if let Some(info) = user_info {
-        let full_prompt = format!("用户基本信息:\n{}\n\n{}", info, prompt);
-        redirect_log_to_ui("DEBUG", "已添加用户基本信息到prompt");
-
-        redirect_log_to_ui("DEBUG", "正在生成AI回复（让agent自主决定是否使用工具）...");
-        let response = agent
-            .prompt(&full_prompt)
-            .multi_turn(10)
-            .await
-            .map_err(|e| format!("LLM error: {}", e))?;
-
-        redirect_log_to_ui("DEBUG", "AI回复生成完成");
-        Ok(response.trim().to_string())
-    } else {
-        redirect_log_to_ui("DEBUG", "生成AI回复（让agent自主决定是否使用工具）...");
-        let response = agent
-            .prompt(&prompt)
-            .multi_turn(10)
-            .await
-            .map_err(|e| format!("LLM error: {}", e))?;
-
-        redirect_log_to_ui("DEBUG", "AI回复生成完成");
-        Ok(response.trim().to_string())
+    // 构建对话历史上下文
+    let mut conversation_history = String::new();
+    if !conversations.is_empty() {
+        conversation_history.push_str("对话历史记录:\n");
+        for (i, (user_msg, assistant_msg)) in conversations.iter().enumerate() {
+            conversation_history.push_str(&format!(
+                "回合 {}: 用户: {}\n助手: {}\n",
+                i + 1,
+                user_msg,
+                assistant_msg
+            ));
+        }
+        conversation_history.push_str("\n");
     }
+
+    // 构建system prompt，包含明确的指令
+    let system_prompt = r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
+
+重要指令:
+- 对话历史已提供在上下文中，请使用这些信息来理解当前的对话上下文
+- 用户基本信息已在下方提供一次，请不要再使用memory工具来创建或更新用户基本信息
+- 在需要时可以自主使用memory工具搜索其他相关记忆
+- 当用户提供新的重要信息时，可以主动使用memory工具存储
+- 保持对话的连贯性和一致性
+- 自然地融入记忆信息，避免显得刻意
+- 专注于用户的需求和想要了解的信息，以及想要你做的事情
+
+记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#;
+
+    // 构建完整的prompt
+    let prompt = if let Some(info) = user_info {
+        redirect_log_to_ui("DEBUG", "已添加用户基本信息和对话历史到上下文");
+        format!(
+            "{}\n\n用户基本信息:\n{}\n\n{}\n\n当前用户输入: {}",
+            system_prompt, info, conversation_history, user_input
+        )
+    } else {
+        redirect_log_to_ui("DEBUG", "已添加对话历史到上下文");
+        format!(
+            "{}\n\n{}\n\n当前用户输入: {}",
+            system_prompt, conversation_history, user_input
+        )
+    };
+
+    redirect_log_to_ui("DEBUG", "正在生成AI回复（包含历史对话上下文）...");
+    let response = agent
+        .prompt(&prompt)
+        .multi_turn(10)
+        .await
+        .map_err(|e| format!("LLM error: {}", e))?;
+
+    redirect_log_to_ui("DEBUG", "AI回复生成完成");
+    Ok(response.trim().to_string())
 }
 
 /// 批量存储对话到记忆系统（优化版）
