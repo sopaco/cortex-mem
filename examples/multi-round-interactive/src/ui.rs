@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use crate::app::{App, FocusArea};
-use unicode_width::UnicodeWidthStr;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 /// UI 绘制函数
 pub fn draw_ui(f: &mut Frame, app: &mut App) {
@@ -161,14 +161,50 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
 
         // 只有当焦点在输入框时才设置光标
         if app.focus_area == FocusArea::Input {
-            // 计算到光标位置的文本宽度，考虑Unicode字符宽度
-            let cursor_text: String = app
+            // 计算输入框可用宽度（减去边框和边距）
+            let available_width = left_chunks[1].width.saturating_sub(2) as usize;
+
+            // 使用ratatui的wrap逻辑来计算光标位置
+            // 我们需要模拟ratatui::widgets::Wrap的行为
+            
+            // 获取光标前的所有字符
+            let chars_before_cursor: Vec<char> = app
                 .current_input
                 .chars()
                 .take(app.cursor_position)
                 .collect();
-            let cursor_width = cursor_text.width() as u16;
-            f.set_cursor_position((left_chunks[1].x + cursor_width + 1, left_chunks[1].y + 1));
+
+            // 获取当前字符（如果有的话）
+            let current_char = app.current_input.chars().nth(app.cursor_position);
+
+            // 模拟ratatui的换行逻辑
+            let mut line_offset = 0;
+            let mut current_line_width = 0;
+
+            // 遍历光标前的所有字符，计算换行
+            for ch in chars_before_cursor {
+                let char_width = ch.width().unwrap_or(0);
+
+                // 如果当前字符会超出行宽，则换行
+                if current_line_width + char_width > available_width {
+                    line_offset += 1;
+                    current_line_width = 0;
+                }
+
+                current_line_width += char_width;
+            }
+
+            // 计算光标位置（在当前字符的位置）
+            let cursor_line_width = current_line_width;
+
+            // 计算最终的光标位置
+            letx = left_chunks[1].x + 1 + current_line_width as u16;
+            let cursor_y = left_chunks[1].y + 1 + line_offset as u16;
+
+            // 确保光标在输入框范围内
+            if cursor_y < left_chunks[1].y + left_chunks[1].height {
+                f.set_cursor_position((cursor_x, cursor_y));
+            }
         }
     }
 
