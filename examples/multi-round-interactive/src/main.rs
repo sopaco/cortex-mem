@@ -167,7 +167,7 @@ async fn run_application(
                 if is_quit {
                     // 立即退出到terminal，后台执行记忆化任务
                     let conversations_vec: Vec<(String, String)> =
-                        app.conversations.iter().cloned().collect();
+                        app.conversations.iter().map(|(user, assistant, _)| (user.clone(), assistant.clone())).collect();
                     handle_quit_async(
                         terminal,
                         &mut app,
@@ -193,7 +193,7 @@ async fn run_application(
 
                     // 获取当前对话历史的引用（转换为slice）
                     let current_conversations: Vec<(String, String)> =
-                        app.conversations.iter().cloned().collect();
+                        app.conversations.iter().map(|(user, assistant, _)| (user.clone(), assistant.clone())).collect();
 
                     // 记录开始处理
                     redirect_log_to_ui("INFO", "开始处理用户请求...");

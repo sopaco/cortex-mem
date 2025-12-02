@@ -27,10 +27,12 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
     let display_conversations = app.get_display_conversations();
     let conversation_text = display_conversations
         .iter()
+        .rev() // 反转顺序，使最新对话显示在前面
         .enumerate()
-        .flat_map(|(index, (user, assistant))| {
+        .flat_map(|(index, (user, assistant, timestamp))| {
+            // 由于反转了顺序，流式生成的对话现在是第一个（index == 0）
             let is_streaming = app.current_streaming_response.is_some() && 
-                               index == display_conversations.len() - 1;
+                               index == 0;
             
             let assistant_style = if is_streaming {
                 Style::default().fg(Color::Yellow) // 流式生成中用黄色
@@ -44,10 +46,18 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
                 "助手: "
             };
             
+            // 格式化时间戳
+            let time_str = if let Some(ts) = timestamp {
+                format!(" [{}]", ts.format("%H:%M:%S"))
+            } else {
+                String::new()
+            };
+            
             vec![
                 Line::from(vec![
                     Span::styled("用户: ", Style::default().fg(Color::Cyan)),
                     Span::raw(user.clone()),
+                    Span::styled(time_str.clone(), Style::default().fg(Color::DarkGray)),
                 ]),
                 Line::from(vec![
                     Span::styled(assistant_prefix, assistant_style),
@@ -226,10 +236,11 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
     // 右列：日志区域 - 构建所有日志文本，使用Paragraph的scroll功能
     let total_logs = app.logs.len();
 
-    // 构建要显示的日志文本
+    // 构建要显示的日志文本，反转顺序使最新日志显示在前面
     let log_text = app
         .logs
         .iter()
+        .rev() // 反转顺序，使最新日志显示在前面
         .map(|log| {
             let style = if log.starts_with("[WARN]") {
                 Style::default().fg(Color::Yellow)

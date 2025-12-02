@@ -1715,6 +1715,7 @@ version = "0.1.0"
 dependencies = [
  "async-stream",
  "async-trait",
+ "chrono",
  "clap",
  "crossterm 0.29.0",
  "futures",

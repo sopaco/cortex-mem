@@ -1,6 +1,7 @@
 use ratatui::widgets::ScrollbarState;
 use std::collections::VecDeque;
 use tokio::sync::mpsc;
+use chrono::{DateTime, Local};
 
 // 全局消息发送器，用于日志重定向
 use once_cell::sync::OnceCell;
@@ -60,8 +61,8 @@ pub enum FocusArea {
 
 /// 应用状态
 pub struct App {
-    // 对话历史
-    pub conversations: VecDeque<(String, String)>,
+    // 对话历史 - 包含时间戳
+    pub conversations: VecDeque<(String, String, DateTime<Local>)>,
     // 当前输入
     pub current_input: String,
     // 光标位置（以字符为单位）
@@ -144,7 +145,8 @@ impl App {
     }
 
     pub fn add_conversation(&mut self, user: String, assistant: String) {
-        self.conversations.push_back((user, assistant));
+        let timestamp = Local::now();
+        self.conversations.push_back((user, assistant, timestamp));
         if self.conversations.len() > 100 {
             self.conversations.pop_front();
         }
@@ -182,12 +184,15 @@ impl App {
     }
 
     /// 获取当前显示的对话（包括正在流式生成的）
-    pub fn get_display_conversations(&self) -> Vec<(String, String)> {
-        let mut conversations: Vec<(String, String)> = self.conversations.iter().cloned().collect();
+    pub fn get_display_conversations(&self) -> Vec<(String, String, Option<DateTime<Local>>)> {
+        let mut conversations: Vec<(String, String, Option<DateTime<Local>>)> = self.conversations
+            .iter()
+            .map(|(user, assistant, timestamp)| (user.clone(), assistant.clone(), Some(*timestamp)))
+            .collect();
         
-        // 如果有正在流式生成的回复，添加到显示列表
+        // 如果有正在流式生成的回复，添加到显示列表（没有时间戳）
         if let Some((ref user_input, ref partial_response)) = self.current_streaming_response {
-            conversations.push((user_input.clone(), partial_response.clone()));
+            conversations.push((user_input.clone(), partial_response.clone(), None));
         }
         
         conversations
