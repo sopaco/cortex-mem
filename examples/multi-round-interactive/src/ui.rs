@@ -161,9 +161,14 @@ pub fn draw_ui(f: &mut Frame, app: &mut App) {
 
         // 只有当焦点在输入框时才设置光标
         if app.focus_area == FocusArea::Input {
-            // 修复中文输入时光标位置问题 - 使用Unicode宽度而非字节长度
-            let input_width = app.current_input.width() as u16;
-            f.set_cursor_position((left_chunks[1].x + input_width + 1, left_chunks[1].y + 1));
+            // 计算到光标位置的文本宽度，考虑Unicode字符宽度
+            let cursor_text: String = app
+                .current_input
+                .chars()
+                .take(app.cursor_position)
+                .collect();
+            let cursor_width = cursor_text.width() as u16;
+            f.set_cursor_position((left_chunks[1].x + cursor_width + 1, left_chunks[1].y + 1));
         }
     }
 

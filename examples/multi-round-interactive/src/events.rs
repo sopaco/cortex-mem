@@ -15,6 +15,7 @@ pub fn handle_key_event(event: Event, app: &mut App) -> Option<String> {
                     if app.focus_area == FocusArea::Input && !app.current_input.trim().is_empty() {
                         let input = app.current_input.clone();
                         app.current_input.clear();
+                        app.reset_cursor_to_end();
                         app.is_processing = true;
                         Some(input) // 返回输入内容给上层处理
                     } else {
@@ -26,7 +27,7 @@ pub fn handle_key_event(event: Event, app: &mut App) -> Option<String> {
                         && !app.is_shutting_down
                         && app.focus_area == FocusArea::Input
                     {
-                        app.current_input.push(c);
+                        app.insert_char_at_cursor(c);
                     }
                     None
                 }
@@ -35,7 +36,25 @@ pub fn handle_key_event(event: Event, app: &mut App) -> Option<String> {
                         && !app.is_shutting_down
                         && app.focus_area == FocusArea::Input
                     {
-                        app.current_input.pop();
+                        app.delete_char_at_cursor();
+                    }
+                    None
+                }
+                KeyCode::Left => {
+                    if !app.is_processing
+                        && !app.is_shutting_down
+                        && app.focus_area == FocusArea::Input
+                    {
+                        app.move_cursor_left();
+                    }
+                    None
+                }
+                KeyCode::Right => {
+                    if !app.is_processing
+                        && !app.is_shutting_down
+                        && app.focus_area == FocusArea::Input
+                    {
+                        app.move_cursor_right();
                     }
                     None
                 }
@@ -84,7 +103,10 @@ pub fn handle_key_event(event: Event, app: &mut App) -> Option<String> {
                             app.conversation_scroll_offset = total_lines.saturating_sub(1);
                             app.user_scrolled_conversations = true;
                         }
-                        FocusArea::Input => {} // 输入框不支持滚动
+                        FocusArea::Input => {
+                            // 将光标移动到输入框开头
+                            app.cursor_position = 0;
+                        }
                     }
                     None
                 }
@@ -98,7 +120,10 @@ pub fn handle_key_event(event: Event, app: &mut App) -> Option<String> {
                             // 滚动到最新的对话
                             app.scroll_conversations_to_bottom();
                         }
-                        FocusArea::Input => {} // 输入框不支持滚动
+                        FocusArea::Input => {
+                            // 将光标移动到输入框末尾
+                            app.reset_cursor_to_end();
+                        }
                     }
                     None
                 }

@@ -1,6 +1,6 @@
+use ratatui::widgets::ScrollbarState;
 use std::collections::VecDeque;
 use tokio::sync::mpsc;
-use ratatui::widgets::ScrollbarState;
 
 // 全局消息发送器，用于日志重定向
 use once_cell::sync::OnceCell;
@@ -56,6 +56,8 @@ pub struct App {
     pub conversations: VecDeque<(String, String)>,
     // 当前输入
     pub current_input: String,
+    // 光标位置（以字符为单位）
+    pub cursor_position: usize,
     // 日志信息
     pub logs: VecDeque<String>,
     // Agent 是否正在处理
@@ -90,6 +92,7 @@ impl Default for App {
         Self {
             conversations: VecDeque::with_capacity(100),
             current_input: String::new(),
+            cursor_position: 0,
             logs: VecDeque::with_capacity(50),
             is_processing: false,
             user_info: None,
@@ -140,6 +143,66 @@ impl App {
         }
     }
 
+    /// 在光标位置插入字符
+    pub fn insert_char_at_cursor(&mut self, c: char) {
+        // 将光标位置转换为字节索引
+        let byte_pos = self
+            .current_input
+            .chars()
+            .take(self.cursor_position)
+            .map(|ch| ch.len_utf8())
+            .sum();
+
+        self.current_input.insert(byte_pos, c);
+        self.cursor_position += 1;
+    }
+
+    /// 在光标位置删除字符（退格键）
+    pub fn delete_char_at_cursor(&mut self) {
+        if self.cursor_position > 0 {
+            // 将光标位置转换为字节索引
+            let chars: Vec<char> = self.current_input.chars().collect();
+            if self.cursor_position <= chars.len() {
+                // 找到要删除字符的字节范围
+                let byte_start: usize = chars
+                    .iter()
+                    .take(self.cursor_position - 1)
+                    .map(|ch| ch.len_utf8())
+                    .sum();
+
+                let byte_end: usize = chars
+                    .iter()
+                    .take(self.cursor_position)
+                    .map(|ch| ch.len_utf8())
+                    .sum();
+
+                // 安全地删除字符
+                self.current_input.drain(byte_start..byte_end);
+                self.cursor_position -= 1;
+            }
+        }
+    }
+
+    /// 将光标向左移动一个字符
+    pub fn move_cursor_left(&mut self) {
+        if self.cursor_position > 0 {
+            self.cursor_position -= 1;
+        }
+    }
+
+    /// 将光标向右移动一个字符
+    pub fn move_cursor_right(&mut self) {
+        let input_len = self.current_input.chars().count();
+        if self.cursor_position < input_len {
+            self.cursor_position += 1;
+        }
+    }
+
+    /// 重置光标位置到末尾
+    pub fn reset_cursor_to_end(&mut self) {
+        self.cursor_position = self.current_input.chars().count();
+    }
+
     /// 滚动到日志底部（最新日志）
     pub fn scroll_logs_to_bottom(&mut self) {
         self.log_scroll_offset = 0;
@@ -155,9 +218,9 @@ impl App {
         if self.logs.is_empty() {
             return;
         }
-        
+
         let page_size = 10; // 每次翻页的行数
-        
+
         // 简单增加偏移量，让UI层处理边界
         self.log_scroll_offset += page_size;
         self.user_scrolled_logs = true;
@@ -168,9 +231,9 @@ impl App {
         if self.logs.is_empty() {
             return;
         }
-        
+
         let page_size = 10; // 每次翻页的行数
-        
+
         // 向后翻页（减少偏移量，查看更新的日志）
         if self.log_scroll_offset >= page_size {
             self.log_scroll_offset -= page_size;
@@ -185,9 +248,9 @@ impl App {
         if self.conversations.is_empty() {
             return;
         }
-        
+
         let page_size = 5; // 每次翻页的行数
-        
+
         // 简单增加偏移量，让UI层处理边界
         self.conversation_scroll_offset += page_size;
         self.user_scrolled_conversations = true;
@@ -198,9 +261,9 @@ impl App {
         if self.conversations.is_empty() {
             return;
         }
-        
+
         let page_size = 5; // 每次翻页的行数
-        
+
         // 向后翻页（减少偏移量，查看更新的内容）
         if self.conversation_scroll_offset >= page_size {
             self.conversation_scroll_offset -= page_size;
@@ -245,6 +308,4 @@ impl App {
             let _ = sender.send(AppMessage::Log(format!("[INFO] {}", message)));
         }
     }
-
-    
 }
