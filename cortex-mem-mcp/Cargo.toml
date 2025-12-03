@@ -25,6 +25,12 @@ schemars = { version = "1.0", features = ["derive"] }
 memo-core = { path = "../memo-core" }
 memo-config = { path = "../memo-config" }
 
+# CLI framework
+clap = { workspace = true }
+
+# Directory utilities
+dirs = "5.0"
+
 # Logging
 tracing-subscriber = { workspace = true }
 

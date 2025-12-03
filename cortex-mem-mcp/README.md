@@ -39,7 +39,29 @@ Download the appropriate binary for your platform and add it to your PATH.
 
 ## Configuration
 
-The server uses the same configuration system as memo-core. Create a `config.toml` file in the directory where you run the server:
+The server uses the same configuration system as memo-core. By default, it will look for `config.toml` in the following locations in order:
+
+1. Current working directory
+2. User home directory (`~/.config/memo/config.toml`)
+3. System configuration directory (platform-specific):
+   - macOS: `/usr/local/etc/memo/config.toml`
+   - Linux: `/etc/memo/config.toml`
+   - Windows: `C:\ProgramData\memo\config.toml`
+
+You can also specify a custom configuration file path:
+
+```bash
+# Use default search locations
+cortex-mem-mcp
+
+# Specify a custom configuration file
+cortex-mem-mcp --config /path/to/your/config.toml
+
+# Use a short form
+cortex-mem-mcp -c ~/.memo/config.toml
+```
+
+Create a `config.toml` file with the following contents:
 
 ```tom
 [llm]
@@ -74,11 +96,13 @@ Add to your Claude Desktop `claude_desktop_config.json`:
   "mcpServers": {
     "cortex-mem": {
       "command": "cortex-mem-mcp",
-      "args": []
+      "args": ["--config", "/path/to/your/config.toml"]
     }
   }
 }
 ```
+
+*Note:* Claude Desktop uses the MCP server's working directory (usually where Claude Desktop is running) to resolve relative paths. It's recommended to use absolute paths for the configuration file.
 
 #### Cursor
 
@@ -88,11 +112,14 @@ Add to your `~/.cursor/mcp.json`:
 {
   "mcpServers": {
     "cortex-mem": {
-      "command": "cortex-mem-mcp"
+      "command": "cortex-mem-mcp",
+      "args": ["--config", "/path/to/your/config.toml"]
     }
   }
 }
 ```
+
+*Note:* Similar to Claude Desktop, it's recommended to use absolute paths for the configuration file when using Cursor.
 
 #### For Development
 
@@ -101,6 +128,9 @@ To run directly from source:
 ```bash
 cd /path/to/cortex-mem/cortex-mem-mcp
 cargo run
+
+# Or with custom config
+cargo run -- --config /path/to/config.toml
 ```
 
 ### Available Tools

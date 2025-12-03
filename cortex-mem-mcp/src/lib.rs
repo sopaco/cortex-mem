@@ -13,6 +13,7 @@ use rmcp::{
     service::RequestContext,
     RoleServer, ServerHandler,
 };
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tracing::info;
 
@@ -22,15 +23,21 @@ pub struct MemoryMcpService {
 }
 
 impl MemoryMcpService {
-    /// Create a new memory MCP service
+    /// Create a new memory MCP service with default config path
     pub async fn new() -> Result<Self> {
-        // Load configuration - try config.toml in current directory first
-        let config = Config::load(
-            std::env::current_dir()
-                .map(|p| p.join("config.toml"))
-                .unwrap_or_else(|_| "config.toml".into()),
-        )?;
-        info!("Loaded configuration successfully");
+        // Try to find config.toml in standard locations
+        let config_path = Self::find_default_config_path()
+            .unwrap_or_else(|| Path::new("config.toml").to_path_buf());
+        Self::with_config_path(config_path).await
+    }
+
+    /// Create a new memory MCP service with specific config path
+    pub async fn with_config_path<P: AsRef<Path> + Clone + std::fmt::Debug>(
+        path: P,
+    ) -> Result<Self> {
+        // Load configuration from specified path
+        let config = Config::load(path.clone())?;
+        info!("Loaded configuration from: {:?}", path);
 
         // Initialize vector store and LLM client
         let (vector_store, llm_client) = initialize_memory_system(&config).await?;
@@ -318,6 +325,45 @@ impl MemoryMcpService {
                 })
             }
         }
+    }
+
+    /// Find default configuration file path
+    /// Tries multiple locations in order:
+    /// 1. Current directory
+    /// 2. User home directory/.config/memo/
+    /// 3. System config directory
+    fn find_default_config_path() -> Option<PathBuf> {
+        // Try current directory first
+        if let Ok(current_dir) = std::env::current_dir() {
+            let current_config = current_dir.join("config.toml");
+            if current_config.exists() {
+                return Some(current_config);
+            }
+        }
+
+        // Try user home directory
+        if let Some(home_dir) = dirs::home_dir() {
+            let user_config = home_dir.join(".config").join("memo").join("config.toml");
+            if user_config.exists() {
+                return Some(user_config);
+            }
+        }
+
+        // Try system config directory (platform-specific)
+        #[cfg(target_os = "macos")]
+        let system_config = Path::new("/usr/local/etc/memo/config.toml");
+
+        #[cfg(target_os = "linux")]
+        let system_config = Path::new("/etc/memo/config.toml");
+
+        #[cfg(target_os = "windows")]
+        let system_config = Path::new("C:\\ProgramData\\memo\\config.toml");
+
+        if system_config.exists() {
+            return Some(system_config.to_path_buf());
+        }
+
+        None
     }
 
     /// Tool implementation for getting a specific memory

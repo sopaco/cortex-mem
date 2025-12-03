@@ -1,19 +1,33 @@
 use anyhow::anyhow;
+use clap::Parser;
 use cortex_mem_mcp::MemoryMcpService;
 use rmcp::{transport::stdio, ServiceExt};
+use std::path::PathBuf;
 use tracing::{error, info};
+
+#[derive(Parser)]
+#[command(name = "cortex-mem-mcp")]
+#[command(about = "MCP server for Cortex Memo memory management system")]
+struct Cli {
+    /// Path to the configuration file
+    #[arg(short, long, default_value = "config.toml")]
+    config: PathBuf,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cli = Cli::parse();
+
     // Initialize logging
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .init();
 
     info!("Starting Cortex Memo MCP Server");
+    info!("Using configuration file: {:?}", cli.config);
 
     // Create the service
-    let service = MemoryMcpService::new()
+    let service = MemoryMcpService::with_config_path(cli.config)
         .await
         .map_err(|e| anyhow!("Failed to initialize memory management service: {}", e))?;
 
