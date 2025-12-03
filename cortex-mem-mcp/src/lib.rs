@@ -505,7 +505,15 @@ impl ServerHandler for MemoryMcpService {
                         }).as_object().unwrap().clone().into(),
                         output_schema: Some(
                             serde_json::json!(
-                                {"success": "bool", "memory_id": "string", "message": "string"}
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {"type": "boolean"},
+                                        "memory_id": {"type": "string"},
+                                        "message": {"type": "string"}
+                                    },
+                                    "required": ["success", "memory_id", "message"]
+                                }
                             )
                             .as_object()
                             .unwrap()
@@ -556,9 +564,13 @@ impl ServerHandler for MemoryMcpService {
                         output_schema: Some(
                             serde_json::json!(
                                 {
-                                    "success": "bool",
-                                    "count": "number",
-                                    "memories": {"type": "array", "items": {"type": "object"}}
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {"type": "boolean"},
+                                        "count": {"type": "number"},
+                                        "memories": {"type": "array", "items": {"type": "object"}}
+                                    },
+                                    "required": ["success", "count", "memories"]
                                 }
                             ).as_object()
                             .unwrap()
@@ -599,9 +611,13 @@ impl ServerHandler for MemoryMcpService {
                         output_schema: Some(
                             serde_json::json!(
                                 {
-                                    "success": "bool",
-                                    "count": "number",
-                                    "contexts": {"type": "array", "items": {"type": "object"}}
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {"type": "boolean"},
+                                        "count": {"type": "number"},
+                                        "contexts": {"type": "array", "items": {"type": "object"}}
+                                    },
+                                    "required": ["success", "count", "contexts"]
                                 }
                             ).as_object()
                             .unwrap()
@@ -629,8 +645,12 @@ impl ServerHandler for MemoryMcpService {
                         output_schema: Some(
                             serde_json::json!(
                                 {
-                                    "success": "bool",
-                                    "memory": {"type": "object"}
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {"type": "boolean"},
+                                        "memory": {"type": "object"}
+                                    },
+                                    "required": ["success", "memory"]
                                 }
                             ).as_object()
                             .unwrap()
