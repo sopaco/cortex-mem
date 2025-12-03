@@ -11,6 +11,7 @@ members = [
     "memo-cli",
     "memo-rig",
     "memo-config",
+    "cortex-mem-mcp",
     "examples/multi-round-interactive"
 ]
 
