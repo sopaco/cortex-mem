@@ -1,0 +1,70 @@
+# Cortex Memo MCP Server Configuration Example
+# Copy this file to config.toml and adjust the values as needed
+
+[llm]
+# OpenAI API key - required
+api_key = "your-openai-api-key-here"
+
+# LLM model for processing and classification
+model = "gpt-3.5-turbo"
+
+# Base URL for OpenAI API (default: https://api.openai.com/v1)
+base_url = "https://api.openai.com/v1"
+
+# Maximum retries for failed requests (default: 3)
+max_retries = 3
+
+# Request timeout in seconds (default: 30)
+timeout_seconds = 30
+
+[embedding]
+# Embedding model for vector representations
+model = "text-embedding-ada-002"
+
+# Embedding API key (will use LLM API key if not specified)
+# api_key = "your-openai-api-key-here"
+
+# Embedding base URL (will use LLM base URL if not specified)
+# base_url = "https://api.openai.com/v1"
+
+[qdrant]
+# URL for Qdrant vector database
+url = "http://localhost:6333"
+
+# Collection name for storing memories
+collection_name = "cortex-mem"
+
+# Embedding dimensions (auto-detected if not specified)
+# embedding_dim = 1536
+
+# API key for Qdrant Cloud (if using Qdrant Cloud)
+# api_key = "your-qdrant-api-key"
+
+[memory]
+# Enable automatic memory enhancement with LLM processing
+auto_enhance = true
+
+# Enable deduplication of similar memories
+deduplicate = true
+
+# Similarity threshold for deduplication (0.0 to 1.0)
+similarity_threshold = 0.7
+
+# Merge threshold for combining similar memories (0.0 to 1.0)
+merge_threshold = 0.8
+
+# Default maximum search results
+max_search_results = 10
+
+# Search similarity threshold (0.0 to 1.0)
+search_similarity_threshold = 0.7
+
+[logging]
+# Log level: trace, debug, info, warn, error
+level = "info"
+
+# Enable colored output
+colored = true
+
+# Log to file (optional)
+# file_path = "/var/log/cortex-mem-mcp.log"
