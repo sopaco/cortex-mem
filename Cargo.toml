@@ -1,22 +1,22 @@
 [package]
-name = "memo"
+name = "cortex-mem"
 version = "0.1.0"
 edition = "2024"
 
 [workspace]
 resolver = "2"
 members = [
-    "memo-core",
-    "memo-service",
-    "memo-cli",
-    "memo-rig",
-    "memo-config",
+    "cortex-mem-core",
+    "cortex-mem-service",
+    "cortex-mem-cli",
+    "cortex-mem-rig",
+    "cortex-mem-config",
     "cortex-mem-mcp",
-    "examples/multi-round-interactive"
+    "examples/cortex-mem-tars"
 ]
 
 [dependencies]
-memo-core = { path = "memo-core" }
+cortex-mem-core = { path = "cortex-mem-core" }
 tracing = { workspace = true }
 
 [workspace.dependencies]

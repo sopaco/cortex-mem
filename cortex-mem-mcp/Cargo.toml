@@ -2,7 +2,7 @@
 name = "cortex-mem-mcp"
 version = "0.1.0"
 edition = "2021"
-description = "MCP server for memo-core memory management system"
+description = "MCP server for cortex-mem memory management system"
 license = "MIT"
 
 [dependencies]
@@ -22,8 +22,8 @@ rmcp = { version = "0.10", features = ["server", "transport-io"] }
 schemars = { version = "1.0", features = ["derive"] }
 
 # Local dependencies
-memo-core = { path = "../memo-core" }
-memo-config = { path = "../memo-config" }
+cortex-mem-core = { path = "../cortex-mem-core" }
+cortex-mem-config = { path = "../cortex-mem-config" }
 
 # CLI framework
 clap = { workspace = true }

@@ -511,6 +511,72 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
+name = "cortex-mem"
+version = "0.1.0"
+dependencies = [
+ "cortex-mem-core",
+ "tracing",
+]
+
+[[package]]
+name = "cortex-mem-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "colored",
+ "config",
+ "cortex-mem-config",
+ "cortex-mem-core",
+ "dialoguer",
+ "serde",
+ "serde_json",
+ "tabled",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "cortex-mem-config"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "thiserror 2.0.17",
+ "toml 0.8.23",
+]
+
+[[package]]
+name = "cortex-mem-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "chrono",
+ "cortex-mem-config",
+ "dyn-clone",
+ "futures",
+ "md5",
+ "qdrant-client",
+ "regex",
+ "reqwest",
+ "rig-core",
+ "schemars",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "cortex-mem-mcp"
 version = "0.1.0"
 dependencies = [
@@ -518,9 +584,9 @@ dependencies = [
  "async-trait",
  "chrono",
  "clap",
+ "cortex-mem-config",
+ "cortex-mem-core",
  "dirs",
- "memo-config",
- "memo-core",
  "rmcp",
  "schemars",
  "serde",
@@ -530,6 +596,67 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+]
+
+[[package]]
+name = "cortex-mem-rig"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "cortex-mem-config",
+ "cortex-mem-core",
+ "rig-core",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "cortex-mem-service"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum 0.8.6",
+ "chrono",
+ "clap",
+ "config",
+ "cortex-mem-config",
+ "cortex-mem-core",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "tokio",
+ "tower 0.5.2",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "cortex-mem-tars"
+version = "0.1.0"
+dependencies = [
+ "async-stream",
+ "async-trait",
+ "chrono",
+ "clap",
+ "cortex-mem-config",
+ "cortex-mem-core",
+ "cortex-mem-rig",
+ "crossterm 0.29.0",
+ "futures",
+ "once_cell",
+ "ratatui",
+ "rig-core",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unicode-width 0.1.14",
 ]
 
 [[package]]
@@ -1650,110 +1777,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
-name = "memo"
-version = "0.1.0"
-dependencies = [
- "memo-core",
- "tracing",
-]
-
-[[package]]
-name = "memo-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "colored",
- "config",
- "dialoguer",
- "memo-config",
- "memo-core",
- "serde",
- "serde_json",
- "tabled",
- "thiserror 2.0.17",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "memo-config"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "serde",
- "thiserror 2.0.17",
- "toml 0.8.23",
-]
-
-[[package]]
-name = "memo-core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "base64 0.22.1",
- "chrono",
- "dyn-clone",
- "futures",
- "md5",
- "memo-config",
- "qdrant-client",
- "regex",
- "reqwest",
- "rig-core",
- "schemars",
- "serde",
- "serde_json",
- "sha2",
- "thiserror 2.0.17",
- "tokio",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
-name = "memo-rig"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "memo-config",
- "memo-core",
- "rig-core",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "memo-service"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum 0.8.6",
- "chrono",
- "clap",
- "config",
- "memo-config",
- "memo-core",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
- "tokio",
- "tower 0.5.2",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1795,29 +1818,6 @@ dependencies = [
  "log",
  "wasi",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "multi-round-interactive"
-version = "0.1.0"
-dependencies = [
- "async-stream",
- "async-trait",
- "chrono",
- "clap",
- "crossterm 0.29.0",
- "futures",
- "memo-config",
- "memo-core",
- "memo-rig",
- "once_cell",
- "ratatui",
- "rig-core",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "unicode-width 0.1.14",
 ]
 
 [[package]]
