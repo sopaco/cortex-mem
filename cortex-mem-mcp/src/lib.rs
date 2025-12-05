@@ -89,7 +89,7 @@ impl MemoryMcpService {
         let memory_type = arguments
             .get("memory_type")
             .and_then(|v| v.as_str())
-            .map(|s| self.parse_memory_type(s))
+            .map(|s| MemoryType::parse_with_result(s))
             .transpose()
             .map_err(|e| ErrorData {
                 code: rmcp::model::ErrorCode(-32602).into(),
@@ -177,7 +177,7 @@ impl MemoryMcpService {
         let memory_type = arguments
             .get("memory_type")
             .and_then(|v| v.as_str())
-            .map(|s| self.parse_memory_type(s))
+            .map(|s| MemoryType::parse_with_result(s))
             .transpose()
             .map_err(|e| ErrorData {
                 code: rmcp::model::ErrorCode(-32602).into(),
@@ -432,19 +432,6 @@ impl MemoryMcpService {
                     data: None,
                 })
             }
-        }
-    }
-
-    /// Helper function to parse memory type from string
-    fn parse_memory_type(&self, s: &str) -> Result<MemoryType, String> {
-        match s.to_lowercase().as_str() {
-            "conversational" => Ok(MemoryType::Conversational),
-            "procedural" => Ok(MemoryType::Procedural),
-            "factual" => Ok(MemoryType::Factual),
-            "semantic" => Ok(MemoryType::Semantic),
-            "episodic" => Ok(MemoryType::Episodic),
-            "personal" => Ok(MemoryType::Personal),
-            _ => Err(format!("Invalid memory type: {}", s)),
         }
     }
 }

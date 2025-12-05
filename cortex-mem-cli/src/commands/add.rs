@@ -20,7 +20,7 @@ impl AddCommand {
         agent_id: Option<String>,
         memory_type: String,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let memory_type = parse_memory_type(&memory_type);
+        let memory_type = MemoryType::parse(&memory_type);
 
         let mut metadata = MemoryMetadata::new(memory_type.to_owned());
 
@@ -40,7 +40,10 @@ impl AddCommand {
 
         if is_conversation {
             // Handle as conversation for advanced processing
-            let messages = if content.contains('\n') || content.contains("User:") || content.contains("Assistant:") {
+            let messages = if content.contains('\n')
+                || content.contains("User:")
+                || content.contains("Assistant:")
+            {
                 // Parse conversation format
                 parse_conversation_content(&content, &user_id, &agent_id)
             } else {
@@ -153,13 +156,4 @@ fn parse_conversation_content(
     }
 
     messages
-}
-
-fn parse_memory_type(type_str: &str) -> MemoryType {
-    match type_str.to_lowercase().as_str() {
-        "conversational" => MemoryType::Conversational,
-        "procedural" => MemoryType::Procedural,
-        "factual" => MemoryType::Factual,
-        _ => MemoryType::Conversational,
-    }
 }

@@ -53,7 +53,7 @@ pub async fn create_memory(
     State(state): State<AppState>,
     Json(request): Json<CreateMemoryRequest>,
 ) -> Result<Json<SuccessResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let memory_type = parse_memory_type(request.memory_type.as_deref().unwrap_or("conversational"));
+    let memory_type = MemoryType::parse(request.memory_type.as_deref().unwrap_or("conversational"));
 
     let mut metadata = MemoryMetadata::new(memory_type.clone());
 
@@ -330,7 +330,7 @@ pub async fn search_memories(
     }
 
     if let Some(memory_type_str) = request.memory_type {
-        filters.memory_type = Some(parse_memory_type(&memory_type_str));
+        filters.memory_type = Some(MemoryType::parse(&memory_type_str));
     }
 
     let limit = request.limit.unwrap_or(10);
@@ -414,7 +414,7 @@ pub async fn list_memories(
     }
 
     if let Some(memory_type_str) = query.memory_type {
-        filters.memory_type = Some(parse_memory_type(&memory_type_str));
+        filters.memory_type = Some(MemoryType::parse(&memory_type_str));
     }
 
     let limit = query.limit;
@@ -459,17 +459,5 @@ pub async fn list_memories(
                 }),
             ))
         }
-    }
-}
-
-fn parse_memory_type(memory_type_str: &str) -> MemoryType {
-    match memory_type_str.to_lowercase().as_str() {
-        "conversational" => MemoryType::Conversational,
-        "procedural" => MemoryType::Procedural,
-        "factual" => MemoryType::Factual,
-        "semantic" => MemoryType::Semantic,
-        "episodic" => MemoryType::Episodic,
-        "personal" => MemoryType::Personal,
-        _ => MemoryType::Conversational,
     }
 }
