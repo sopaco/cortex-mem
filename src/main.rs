@@ -1,4 +1,4 @@
-use memo_core::{Config, init_logging};
+use cortex_mem_core::{Config, init_logging};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 加载配置

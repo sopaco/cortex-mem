@@ -1,6 +1,6 @@
 use anyhow::Result;
-use memo_config::Config;
-use memo_core::{
+use cortex_mem_config::Config;
+use cortex_mem_core::{
     init::initialize_memory_system,
     memory::MemoryManager,
     types::{Filters, MemoryMetadata, MemoryType},
