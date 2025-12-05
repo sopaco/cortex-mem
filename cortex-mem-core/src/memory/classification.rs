@@ -77,19 +77,6 @@ Return the topics as a comma-separated list. If no clear topics, return "None"."
         )
     }
 
-    fn parse_memory_type(&self, response: &str) -> MemoryType {
-        let response = response.trim().to_lowercase();
-        match response.as_str() {
-            "conversational" => MemoryType::Conversational,
-            "procedural" => MemoryType::Procedural,
-            "factual" => MemoryType::Factual,
-            "semantic" => MemoryType::Semantic,
-            "episodic" => MemoryType::Episodic,
-            "personal" => MemoryType::Personal,
-            _ => MemoryType::Conversational, // Default fallback
-        }
-    }
-
     fn parse_list_response(&self, response: &str) -> Vec<String> {
         if response.trim().to_lowercase() == "none" {
             return Vec::new();
@@ -133,7 +120,7 @@ impl MemoryClassifier for LLMMemoryClassifier {
                 tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
                 let response = self.llm_client.complete(&prompt).await?;
-                Ok(self.parse_memory_type(&response))
+                Ok(MemoryType::parse(&response))
             }
         }
     }

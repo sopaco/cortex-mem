@@ -105,7 +105,7 @@ pub async fn extract_user_basic_info(
     if let Ok(search_result) = memory_tool.call(search_args_personal).await {
         if let Some(data) = search_result.data {
             if let Some(results) = data.get("results").and_then(|r| r.as_array()) {
-                if !results.is_empty() {
+                    if !results.is_empty() {
                     context.push_str("用户基本信息 - 特征:\n");
                     for (i, result) in results.iter().enumerate() {
                         if let Some(content) = result.get("content").and_then(|c| c.as_str()) {

@@ -24,27 +24,28 @@ impl ListCommand {
         limit: usize,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut filters = Filters::new();
-        
+
         if let Some(user_id) = user_id {
             filters.user_id = Some(user_id);
         }
-        
+
         if let Some(agent_id) = agent_id {
             filters.agent_id = Some(agent_id);
         }
-        
+
         if let Some(memory_type_str) = memory_type {
-            filters.memory_type = Some(parse_memory_type(&memory_type_str));
+            filters.memory_type = Some(MemoryType::parse(&memory_type_str));
         }
-        
+
         if let Some(topics) = topics {
             filters.topics = Some(topics);
         }
-        
+
         if let Some(keywords) = keywords {
-            filters.custom.insert("keywords".to_string(), Value::Array(
-                keywords.into_iter().map(Value::String).collect()
-            ));
+            filters.custom.insert(
+                "keywords".to_string(),
+                Value::Array(keywords.into_iter().map(Value::String).collect()),
+            );
         }
 
         match self.memory_manager.list(&filters, Some(limit)).await {
@@ -54,31 +55,37 @@ impl ListCommand {
                 } else {
                     println!("📝 Found {} memories:", memories.len());
                     println!();
-                    
+
                     for (i, memory) in memories.iter().enumerate() {
                         println!("{}. ID: {}", i + 1, memory.id);
                         println!("   Content: {}", memory.content);
                         println!("   Type: {:?}", memory.metadata.memory_type);
-                        println!("   Created: {}", memory.created_at.format("%Y-%m-%d %H:%M:%S"));
-                        println!("   Updated: {}", memory.updated_at.format("%Y-%m-%d %H:%M:%S"));
-                        
+                        println!(
+                            "   Created: {}",
+                            memory.created_at.format("%Y-%m-%d %H:%M:%S")
+                        );
+                        println!(
+                            "   Updated: {}",
+                            memory.updated_at.format("%Y-%m-%d %H:%M:%S")
+                        );
+
                         if let Some(user_id) = &memory.metadata.user_id {
                             println!("   User: {}", user_id);
                         }
-                        
+
                         if let Some(agent_id) = &memory.metadata.agent_id {
                             println!("   Agent: {}", agent_id);
                         }
-                        
+
                         if let Some(role) = &memory.metadata.role {
                             println!("   Role: {}", role);
                         }
-                        
+
                         // Display topics
                         if !memory.metadata.topics.is_empty() {
                             println!("   Topics: {}", memory.metadata.topics.join(", "));
                         }
-                        
+
                         // Display keywords from custom metadata
                         if let Some(keywords) = memory.metadata.custom.get("keywords") {
                             if let Some(keywords_array) = keywords.as_array() {
@@ -92,11 +99,11 @@ impl ListCommand {
                                 }
                             }
                         }
-                        
+
                         println!();
                     }
                 }
-                
+
                 info!("List completed: {} memories found", memories.len());
             }
             Err(e) => {
@@ -107,14 +114,5 @@ impl ListCommand {
         }
 
         Ok(())
-    }
-}
-
-fn parse_memory_type(type_str: &str) -> MemoryType {
-    match type_str.to_lowercase().as_str() {
-        "conversational" => MemoryType::Conversational,
-        "procedural" => MemoryType::Procedural,
-        "factual" => MemoryType::Factual,
-        _ => MemoryType::Conversational,
     }
 }

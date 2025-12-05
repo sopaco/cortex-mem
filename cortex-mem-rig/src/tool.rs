@@ -108,7 +108,7 @@ impl MemoryTool {
         let memory_type = args
             .memory_type
             .as_ref()
-            .map(|t| parse_memory_type(t))
+            .map(|t| MemoryType::parse(t))
             .unwrap_or(MemoryType::Conversational);
 
         let mut metadata = MemoryMetadata::new(memory_type);
@@ -175,7 +175,7 @@ impl MemoryTool {
         }
 
         if let Some(memory_type_str) = &args.memory_type {
-            filters.memory_type = Some(parse_memory_type(memory_type_str));
+            filters.memory_type = Some(MemoryType::parse(memory_type_str));
         }
 
         if let Some(topics) = &args.topics {
@@ -183,7 +183,9 @@ impl MemoryTool {
         }
 
         if let Some(keywords) = &args.keywords {
-            filters.custom.insert("keywords".to_string(), json!(keywords));
+            filters
+                .custom
+                .insert("keywords".to_string(), json!(keywords));
         }
 
         let limit = args
@@ -271,7 +273,7 @@ impl MemoryTool {
         }
 
         if let Some(memory_type_str) = &args.memory_type {
-            filters.memory_type = Some(parse_memory_type(memory_type_str));
+            filters.memory_type = Some(MemoryType::parse(memory_type_str));
         }
 
         if let Some(topics) = &args.topics {
@@ -279,7 +281,9 @@ impl MemoryTool {
         }
 
         if let Some(keywords) = &args.keywords {
-            filters.custom.insert("keywords".to_string(), json!(keywords));
+            filters
+                .custom
+                .insert("keywords".to_string(), json!(keywords));
         }
 
         let limit = args
@@ -579,15 +583,6 @@ impl Default for MemoryToolConfig {
             auto_enhance: None,       // Will be taken from global config
             search_similarity_threshold: None, // Will be taken from global config
         }
-    }
-}
-
-fn parse_memory_type(memory_type_str: &str) -> MemoryType {
-    match memory_type_str.to_lowercase().as_str() {
-        "conversational" => MemoryType::Conversational,
-        "procedural" => MemoryType::Procedural,
-        "factual" => MemoryType::Factual,
-        _ => MemoryType::Conversational,
     }
 }
 

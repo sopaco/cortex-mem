@@ -47,6 +47,35 @@ pub enum MemoryType {
     Personal,
 }
 
+impl MemoryType {
+    /// Parse a string into a MemoryType enum
+    /// Defaults to Conversational for unrecognized types
+    pub fn parse(memory_type_str: &str) -> Self {
+        match memory_type_str.to_lowercase().as_str() {
+            "conversational" => MemoryType::Conversational,
+            "procedural" => MemoryType::Procedural,
+            "factual" => MemoryType::Factual,
+            "semantic" => MemoryType::Semantic,
+            "episodic" => MemoryType::Episodic,
+            "personal" => MemoryType::Personal,
+            _ => MemoryType::Conversational,
+        }
+    }
+
+    /// Parse a string into a MemoryType enum with Result
+    pub fn parse_with_result(memory_type_str: &str) -> Result<Self, String> {
+        match memory_type_str.to_lowercase().as_str() {
+            "conversational" => Ok(MemoryType::Conversational),
+            "procedural" => Ok(MemoryType::Procedural),
+            "factual" => Ok(MemoryType::Factual),
+            "semantic" => Ok(MemoryType::Semantic),
+            "episodic" => Ok(MemoryType::Episodic),
+            "personal" => Ok(MemoryType::Personal),
+            _ => Err(format!("Invalid memory type: {}", memory_type_str)),
+        }
+    }
+}
+
 /// Memory search result with similarity score
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScoredMemory {
