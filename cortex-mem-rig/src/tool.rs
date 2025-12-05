@@ -587,6 +587,9 @@ fn parse_memory_type(memory_type_str: &str) -> MemoryType {
         "conversational" => MemoryType::Conversational,
         "procedural" => MemoryType::Procedural,
         "factual" => MemoryType::Factual,
+        "semantic" => MemoryType::Semantic,
+        "episodic" => MemoryType::Episodic,
+        "personal" => MemoryType::Personal,
         _ => MemoryType::Conversational,
     }
 }

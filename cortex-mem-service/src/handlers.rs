@@ -462,11 +462,14 @@ pub async fn list_memories(
     }
 }
 
-fn parse_memory_type(type_str: &str) -> MemoryType {
-    match type_str.to_lowercase().as_str() {
+fn parse_memory_type(memory_type_str: &str) -> MemoryType {
+    match memory_type_str.to_lowercase().as_str() {
         "conversational" => MemoryType::Conversational,
         "procedural" => MemoryType::Procedural,
         "factual" => MemoryType::Factual,
+        "semantic" => MemoryType::Semantic,
+        "episodic" => MemoryType::Episodic,
+        "personal" => MemoryType::Personal,
         _ => MemoryType::Conversational,
     }
 }
