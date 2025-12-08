@@ -1,5 +1,6 @@
 use chrono::Utc;
 use std::sync::Arc;
+use tracing::debug;
 use uuid::Uuid;
 
 use crate::{
@@ -139,11 +140,39 @@ impl OptimizationDetector {
                 continue;
             }
 
+            // 检查记忆是否已归档
+            let is_archived_i = memory_i
+                .metadata
+                .custom
+                .get("archived")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+
+            // 如果已归档，跳过检查
+            if is_archived_i {
+                debug!("跳过已归档的记忆: {}", memory_i.id);
+                continue;
+            }
+
             let mut similar_memories = Vec::new();
 
             // 与其他记忆进行比较
             for (j, memory_j) in memories.iter().enumerate() {
                 if i >= j || processed_memories.contains(&memory_j.id) {
+                    continue;
+                }
+
+                // 检查记忆是否已归档
+                let is_archived_j = memory_j
+                    .metadata
+                    .custom
+                    .get("archived")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
+
+                // 如果已归档，跳过检查
+                if is_archived_j {
+                    debug!("跳过已归档的记忆: {}", memory_j.id);
                     continue;
                 }
 
@@ -200,6 +229,20 @@ impl OptimizationDetector {
         let memories = self.memory_manager.list(filters, None).await?;
 
         for memory in memories {
+            // 检查记忆是否已归档
+            let is_archived = memory
+                .metadata
+                .custom
+                .get("archived")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+
+            // 如果已归档，跳过检查
+            if is_archived {
+                debug!("跳过已归档的记忆: {}", memory.id);
+                continue;
+            }
+
             let quality_score = self.evaluate_memory_quality(&memory).await?;
 
             if quality_score < self.config.quality_threshold {
@@ -241,6 +284,20 @@ impl OptimizationDetector {
         let _cutoff_date = Utc::now() - chrono::Duration::days(self.config.time_decay_days as i64);
 
         for memory in memories {
+            // 检查记忆是否已归档
+            let is_archived = memory
+                .metadata
+                .custom
+                .get("archived")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+
+            // 如果已归档，跳过检查
+            if is_archived {
+                debug!("跳过已归档的记忆: {}", memory.id);
+                continue;
+            }
+
             let days_since_update = (Utc::now() - memory.updated_at).num_days();
             let is_outdated = days_since_update as u32 > self.config.time_decay_days;
 
@@ -293,6 +350,20 @@ impl OptimizationDetector {
         let memories = self.memory_manager.list(filters, None).await?;
 
         for memory in memories {
+            // 检查记忆是否已归档
+            let is_archived = memory
+                .metadata
+                .custom
+                .get("archived")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+
+            // 如果已归档，跳过检查
+            if is_archived {
+                debug!("跳过已归档的记忆: {}", memory.id);
+                continue;
+            }
+
             let classification_issues = self.check_classification_quality(&memory).await?;
 
             for issue_desc in classification_issues {
@@ -329,6 +400,20 @@ impl OptimizationDetector {
 
         // 1. 检查单个记忆的大小问题
         for memory in &memories {
+            // 检查记忆是否已归档
+            let is_archived = memory
+                .metadata
+                .custom
+                .get("archived")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+
+            // 如果已归档，跳过检查
+            if is_archived {
+                debug!("跳过已归档的记忆: {}", memory.id);
+                continue;
+            }
+
             let memory_size = memory.content.len() + memory.embedding.len() * 4; // 粗略估算
 
             // 如果记忆超过一定大小且重要性很低
@@ -362,13 +447,31 @@ impl OptimizationDetector {
             issues.push(issue);
         }
 
-        // 3. 检查低重要性记忆
+        // 3. 检查低重要性记忆（排除已归档的记忆）
         let low_importance_memories: Vec<_> = memories
             .iter()
-            .filter(|m| m.metadata.importance_score < 0.2)
+            .filter(|m| {
+                m.metadata.importance_score < 0.2 &&
+                // 排除已归档的记忆
+                !m.metadata.custom.get("archived")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false)
+            })
             .collect();
 
-        if low_importance_memories.len() > total_memories / 4 {
+        let unarchived_count = total_memories
+            - memories
+                .iter()
+                .filter(|m| {
+                    m.metadata
+                        .custom
+                        .get("archived")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(false)
+                })
+                .count();
+
+        if low_importance_memories.len() > unarchived_count / 4 {
             let issue = OptimizationIssue {
                 id: Uuid::new_v4().to_string(),
                 kind: IssueKind::SpaceInefficient,
@@ -376,8 +479,8 @@ impl OptimizationDetector {
                 description: format!(
                     "低重要性记忆过多: {} / {} ({:.1}%)",
                     low_importance_memories.len(),
-                    total_memories,
-                    low_importance_memories.len() as f64 / total_memories as f64 * 100.0
+                    unarchived_count,
+                    low_importance_memories.len() as f64 / unarchived_count as f64 * 100.0
                 ),
                 affected_memories: low_importance_memories
                     .iter()
