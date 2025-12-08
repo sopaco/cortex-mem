@@ -14,7 +14,7 @@ use tracing::{debug, error, info, warn};
 use crate::{
     config::QdrantConfig,
     error::{MemoryError, Result},
-    types::{Filters, Memory, MemoryMetadata, MemoryType, ScoredMemory},
+    types::{Filters, Memory, MemoryMetadata, ScoredMemory},
     vector_store::VectorStore,
 };
 
@@ -432,30 +432,21 @@ impl QdrantVectorStore {
             .map(|dt| dt.with_timezone(&chrono::Utc))
             .ok_or_else(|| MemoryError::Parse("Invalid updated_at timestamp".to_string()))?;
 
-        let memory_type_str = payload.get("memory_type").and_then(|v| match v {
-            qdrant_client::qdrant::Value {
-                kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
-            } => Some(s.as_str()),
-            _ => None,
-        });
-
-        let memory_type = memory_type_str
-            .and_then(|s| match s {
-                "Conversational" => Some(MemoryType::Conversational),
-                "Procedural" => Some(MemoryType::Procedural),
-                "Factual" => Some(MemoryType::Factual),
-                "Semantic" => Some(MemoryType::Semantic),
-                "Episodic" => Some(MemoryType::Episodic),
-                "Personal" => Some(MemoryType::Personal),
+        let memory_type = payload
+            .get("memory_type")
+            .and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.as_str()),
                 _ => None,
             })
+            .map(|s| {
+                debug!("Parsing memory type from string: '{}'", s);
+                crate::types::MemoryType::parse(s)
+            })
             .unwrap_or_else(|| {
-                if let Some(s) = memory_type_str {
-                    warn!("Unknown memory type '{}', defaulting to Conversational", s);
-                } else {
-                    warn!("No memory type found in payload, defaulting to Conversational");
-                }
-                MemoryType::Conversational
+                warn!("No memory type found in payload, defaulting to Conversational");
+                crate::types::MemoryType::Conversational
             });
 
         let hash = payload

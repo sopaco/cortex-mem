@@ -577,15 +577,7 @@ Respond with only the category name (e.g., "Conversational", "Procedural", etc.)
         // 使用LLM分类器进行分类
         match llm_client.classify_memory(&prompt).await {
             Ok(classification) => {
-                let memory_type = match classification.memory_type.as_str() {
-                    "Conversational" => crate::types::MemoryType::Conversational,
-                    "Procedural" => crate::types::MemoryType::Procedural,
-                    "Factual" => crate::types::MemoryType::Factual,
-                    "Semantic" => crate::types::MemoryType::Semantic,
-                    "Episodic" => crate::types::MemoryType::Episodic,
-                    "Personal" => crate::types::MemoryType::Personal,
-                    _ => crate::types::MemoryType::Conversational, // 默认回退
-                };
+                let memory_type = crate::types::MemoryType::parse(&classification.memory_type);
 
                 tracing::info!(
                     "LLM分类成功: '{}' -> {:?} (置信度: {})",

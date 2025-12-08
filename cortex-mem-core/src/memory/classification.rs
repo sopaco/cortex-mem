@@ -98,15 +98,7 @@ impl MemoryClassifier for LLMMemoryClassifier {
         // Use rig's structured extractor instead of string parsing
         match self.llm_client.classify_memory(&prompt).await {
             Ok(classification) => {
-                let memory_type = match classification.memory_type.as_str() {
-                    "Conversational" => MemoryType::Conversational,
-                    "Procedural" => MemoryType::Procedural,
-                    "Factual" => MemoryType::Factual,
-                    "Semantic" => MemoryType::Semantic,
-                    "Episodic" => MemoryType::Episodic,
-                    "Personal" => MemoryType::Personal,
-                    _ => MemoryType::Conversational, // Default fallback
-                };
+                let memory_type = MemoryType::parse(&classification.memory_type);
                 Ok(memory_type)
             }
             Err(e) => {

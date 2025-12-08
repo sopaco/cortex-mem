@@ -353,7 +353,7 @@ impl LLMClient for OpenAILLMClient {
         } else if response.to_lowercase().contains("personal") {
             "Personal".to_string()
         } else {
-            // Try to extract the exact word
+            // Try to extract the exact word and use MemoryType::parse
             response
                 .lines()
                 .find_map(|line| {
@@ -369,9 +369,8 @@ impl LLMClient for OpenAILLMClient {
                     .iter()
                     .find(|&typ| line.contains(typ))
                 })
-                .cloned()
-                .unwrap_or("Conversational")
-                .to_string()
+                .map(|typ| typ.to_string())
+                .unwrap_or_else(|| "Conversational".to_string())
         };
 
         Ok(MemoryClassification {
