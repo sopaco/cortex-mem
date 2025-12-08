@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 use qdrant_client::{
-    qdrant::{
-        condition, point_id, points_selector, r#match, vectors_config, Condition, CreateCollection,
-        DeletePoints, Distance, FieldCondition, Filter, GetPoints, Match, PointId, PointStruct,
-        PointsIdsList, PointsSelector, ScoredPoint, ScrollPoints, SearchPoints, UpsertPoints,
-        VectorParams, VectorsConfig,
-    },
     Qdrant,
+    qdrant::{
+        Condition, CreateCollection, DeletePoints, Distance, FieldCondition, Filter, GetPoints,
+        Match, PointId, PointStruct, PointsIdsList, PointsSelector, ScoredPoint, ScrollPoints,
+        SearchPoints, UpsertPoints, VectorParams, VectorsConfig, condition, r#match, point_id,
+        points_selector, vectors_config,
+    },
 };
 use std::collections::HashMap;
 use tracing::{debug, error, info, warn};
@@ -191,10 +191,9 @@ impl QdrantVectorStore {
             payload.insert("role".to_string(), role.clone().into());
         }
 
-        payload.insert(
-            "memory_type".to_string(),
-            format!("{:?}", memory.metadata.memory_type).into(),
-        );
+        let memory_type_str = format!("{:?}", memory.metadata.memory_type);
+        debug!("Storing memory type as string: '{}'", memory_type_str);
+        payload.insert("memory_type".to_string(), memory_type_str.into());
         payload.insert("hash".to_string(), memory.metadata.hash.clone().into());
         payload.insert(
             "importance_score".to_string(),
@@ -433,21 +432,31 @@ impl QdrantVectorStore {
             .map(|dt| dt.with_timezone(&chrono::Utc))
             .ok_or_else(|| MemoryError::Parse("Invalid updated_at timestamp".to_string()))?;
 
-        let memory_type = payload
-            .get("memory_type")
-            .and_then(|v| match v {
-                qdrant_client::qdrant::Value {
-                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
-                } => Some(s.as_str()),
-                _ => None,
-            })
+        let memory_type_str = payload.get("memory_type").and_then(|v| match v {
+            qdrant_client::qdrant::Value {
+                kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+            } => Some(s.as_str()),
+            _ => None,
+        });
+
+        let memory_type = memory_type_str
             .and_then(|s| match s {
                 "Conversational" => Some(MemoryType::Conversational),
                 "Procedural" => Some(MemoryType::Procedural),
                 "Factual" => Some(MemoryType::Factual),
+                "Semantic" => Some(MemoryType::Semantic),
+                "Episodic" => Some(MemoryType::Episodic),
+                "Personal" => Some(MemoryType::Personal),
                 _ => None,
             })
-            .unwrap_or(MemoryType::Conversational);
+            .unwrap_or_else(|| {
+                if let Some(s) = memory_type_str {
+                    warn!("Unknown memory type '{}', defaulting to Conversational", s);
+                } else {
+                    warn!("No memory type found in payload, defaulting to Conversational");
+                }
+                MemoryType::Conversational
+            });
 
         let hash = payload
             .get("hash")

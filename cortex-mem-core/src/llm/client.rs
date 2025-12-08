@@ -327,20 +327,58 @@ impl LLMClient for OpenAILLMClient {
     }
 
     async fn classify_memory(&self, prompt: &str) -> Result<MemoryClassification> {
-        let extractor = self
-            .client
-            .extractor_completions_api::<MemoryClassification>(&self.completion_model_name)
-            .preamble(prompt)
-            .max_tokens(500)
-            .build();
+        // Instead of using the extractor which requires context, we'll use a simpler approach
+        // with direct completion and parse the result
 
         #[cfg(debug_assertions)]
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
 
-        extractor
-            .extract("")
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))
+        // Use direct completion for more reliable classification
+        let completion = self.complete(prompt).await?;
+
+        // Parse the completion to extract the memory type
+        let response = completion.trim();
+
+        // Extract the memory type from the response
+        let memory_type = if response.to_lowercase().contains("conversational") {
+            "Conversational".to_string()
+        } else if response.to_lowercase().contains("procedural") {
+            "Procedural".to_string()
+        } else if response.to_lowercase().contains("factual") {
+            "Factual".to_string()
+        } else if response.to_lowercase().contains("semantic") {
+            "Semantic".to_string()
+        } else if response.to_lowercase().contains("episodic") {
+            "Episodic".to_string()
+        } else if response.to_lowercase().contains("personal") {
+            "Personal".to_string()
+        } else {
+            // Try to extract the exact word
+            response
+                .lines()
+                .find_map(|line| {
+                    let line = line.trim();
+                    [
+                        "Conversational",
+                        "Procedural",
+                        "Factual",
+                        "Semantic",
+                        "Episodic",
+                        "Personal",
+                    ]
+                    .iter()
+                    .find(|&typ| line.contains(typ))
+                })
+                .cloned()
+                .unwrap_or("Conversational")
+                .to_string()
+        };
+
+        Ok(MemoryClassification {
+            memory_type,
+            confidence: 0.8, // Default confidence
+            reasoning: format!("LLM classification response: {}", response),
+        })
     }
 
     async fn score_importance(&self, prompt: &str) -> Result<ImportanceScore> {
