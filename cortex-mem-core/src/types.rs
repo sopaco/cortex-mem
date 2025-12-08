@@ -296,3 +296,7 @@ impl Message {
         self
     }
 }
+
+// Optimization types
+mod optimization;
+pub use optimization::*;

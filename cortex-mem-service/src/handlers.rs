@@ -8,14 +8,7 @@ use cortex_mem_core::types::{Filters, MemoryMetadata, MemoryType, Message};
 
 use tracing::{error, info};
 
-use crate::{
-    AppState,
-    models::{
-        CreateMemoryRequest, ErrorResponse, HealthResponse, ListMemoryQuery, ListResponse,
-        MemoryMetadataResponse, MemoryResponse, ScoredMemoryResponse, SearchMemoryRequest,
-        SearchResponse, SuccessResponse, UpdateMemoryRequest,
-    },
-};
+use crate::{AppState, models::{CreateMemoryRequest, ErrorResponse, HealthResponse, ListMemoryQuery, ListResponse, MemoryMetadataResponse, MemoryResponse, ScoredMemoryResponse, SearchMemoryRequest, SearchResponse, SuccessResponse, UpdateMemoryRequest}};
 
 /// Health check endpoint
 pub async fn health_check(

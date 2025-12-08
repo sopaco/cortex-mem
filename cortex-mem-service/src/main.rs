@@ -21,6 +21,7 @@ mod models;
 
 use handlers::{create_memory, get_memory, health_check, list_memories, search_memories};
 
+
 /// Application state shared across handlers
 #[derive(Clone)]
 pub struct AppState {

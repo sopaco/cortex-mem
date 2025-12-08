@@ -84,6 +84,11 @@ impl MemoryManager {
         format!("{:x}", hasher.finalize())
     }
 
+    /// Get a reference to the LLM client
+    pub fn llm_client(&self) -> &dyn LLMClient {
+        self.llm_client.as_ref()
+    }
+
     /// Check if memory with the same content already exists
     async fn check_duplicate(&self, content: &str, filters: &Filters) -> Result<Option<Memory>> {
         let hash = self.generate_hash(content);
@@ -554,6 +559,62 @@ impl MemoryManager {
     /// Retrieve a memory by ID
     pub async fn get(&self, id: &str) -> Result<Option<Memory>> {
         self.vector_store.get(id).await
+    }
+
+    /// Update memory metadata only (for reclassification)
+    pub async fn update_metadata(&self, id: &str, new_memory_type: crate::types::MemoryType) -> Result<()> {
+        self.update_complete_memory(id, None, Some(new_memory_type), None, None, None, None).await
+    }
+    
+    /// Update complete memory with all fields
+    pub async fn update_complete_memory(
+        &self,
+        id: &str,
+        new_content: Option<String>,
+        new_memory_type: Option<crate::types::MemoryType>,
+        new_importance: Option<f32>,
+        new_entities: Option<Vec<String>>,
+        new_topics: Option<Vec<String>>,
+        new_custom: Option<std::collections::HashMap<String, serde_json::Value>>,
+    ) -> Result<()> {
+        // Get existing memory
+        let mut memory = self
+            .vector_store
+            .get(id)
+            .await?
+            .ok_or_else(|| MemoryError::NotFound { id: id.to_string() })?;
+
+        // Update content if provided
+        if let Some(content) = new_content {
+            memory.content = content;
+            memory.embedding = self.llm_client.embed(&memory.content).await?;
+            memory.metadata.hash = self.generate_hash(&memory.content);
+        }
+        
+        // Update metadata
+        if let Some(memory_type) = new_memory_type {
+            memory.metadata.memory_type = memory_type;
+        }
+        if let Some(importance) = new_importance {
+            memory.metadata.importance_score = importance;
+        }
+        if let Some(entities) = new_entities {
+            memory.metadata.entities = entities;
+        }
+        if let Some(topics) = new_topics {
+            memory.metadata.topics = topics;
+        }
+        if let Some(custom) = new_custom {
+            memory.metadata.custom.extend(custom);
+        }
+        
+        memory.updated_at = Utc::now();
+
+        // Update in vector store
+        self.vector_store.update(&memory).await?;
+
+        info!("Updated complete memory with ID: {}", id);
+        Ok(())
     }
 
     /// Update an existing memory

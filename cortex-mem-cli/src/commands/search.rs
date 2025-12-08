@@ -1,6 +1,6 @@
 use cortex_mem_core::{memory::MemoryManager, types::Filters};
 use serde_json::Value;
-use tracing::{error, info};
+use tracing::info;
 
 pub struct SearchCommand {
     memory_manager: MemoryManager,
