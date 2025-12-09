@@ -38,7 +38,7 @@ pub async fn create_memory_agent(
         .preamble(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
 
 你的工具:
-- memory: 可以存储、搜索和检索记忆。支持以下操作:
+- CortexMemoryTool: 可以存储、搜索和检索记忆。支持以下操作:
   * store: 存储新记忆
   * search: 搜索相关记忆
   * recall: 召回上下文
@@ -105,7 +105,7 @@ pub async fn extract_user_basic_info(
     if let Ok(search_result) = memory_tool.call(search_args_personal).await {
         if let Some(data) = search_result.data {
             if let Some(results) = data.get("results").and_then(|r| r.as_array()) {
-                    if !results.is_empty() {
+                if !results.is_empty() {
                     context.push_str("用户基本信息 - 特征:\n");
                     for (i, result) in results.iter().enumerate() {
                         if let Some(content) = result.get("content").and_then(|c| c.as_str()) {
@@ -140,11 +140,11 @@ pub async fn extract_user_basic_info(
     }
 }
 
-use tokio::sync::mpsc;
 use futures::StreamExt;
+use rig::agent::MultiTurnStreamItem;
 use rig::completion::Message;
 use rig::streaming::{StreamedAssistantContent, StreamingChat};
-use rig::agent::MultiTurnStreamItem;
+use tokio::sync::mpsc;
 
 /// Agent回复函数 - 基于tool call的记忆引擎使用（真实流式版本）
 pub async fn agent_reply_with_memory_retrieval_streaming(
@@ -189,23 +189,21 @@ pub async fn agent_reply_with_memory_retrieval_streaming(
         )
     } else {
         redirect_log_to_ui("DEBUG", "已添加对话历史到上下文");
-        format!(
-            "{}\n\n当前用户输入: {}",
-            system_prompt, user_input
-        )
+        format!("{}\n\n当前用户输入: {}", system_prompt, user_input)
     };
 
     redirect_log_to_ui("DEBUG", "正在生成AI回复（真实流式模式）...");
-    
+
     // 使用rig的真实流式API
     let prompt_message = Message::user(&prompt_content);
-    
+
     // 获取流式响应
     let stream = agent
-        .stream_chat(prompt_message, chat_history);
+        .stream_chat(prompt_message, chat_history)
+        .multi_turn(10);
 
     let mut full_response = String::new();
-    
+
     // 处理流式响应
     let mut stream = stream.await;
     while let Some(item) = stream.next().await {
@@ -218,7 +216,7 @@ pub async fn agent_reply_with_memory_retrieval_streaming(
                             StreamedAssistantContent::Text(text_content) => {
                                 let text = text_content.text;
                                 full_response.push_str(&text);
-                                
+
                                 // 发送流式内容到UI
                                 if let Err(_) = stream_sender.send(text) {
                                     // 如果发送失败，说明接收端已关闭，停止流式处理
@@ -245,7 +243,10 @@ pub async fn agent_reply_with_memory_retrieval_streaming(
                     }
                     MultiTurnStreamItem::FinalResponse(final_response) => {
                         // 处理最终响应
-                        redirect_log_to_ui("DEBUG", &format!("收到最终响应: {}", final_response.response()));
+                        redirect_log_to_ui(
+                            "DEBUG",
+                            &format!("收到最终响应: {}", final_response.response()),
+                        );
                         full_response = final_response.response().to_string();
                         break;
                     }
@@ -266,74 +267,6 @@ pub async fn agent_reply_with_memory_retrieval_streaming(
     Ok(full_response.trim().to_string())
 }
 
-/// Agent回复函数 - 基于tool call的记忆引擎使用（保留原版本作为备用）
-pub async fn agent_reply_with_memory_retrieval(
-    agent: &Agent<CompletionModel>,
-    _memory_manager: Arc<MemoryManager>,
-    _config: &Config,
-    user_input: &str,
-    _user_id: &str,
-    user_info: Option<&str>,
-    conversations: &[(String, String)],
-) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    // 记录开始处理
-    redirect_log_to_ui("DEBUG", &format!("开始处理用户请求: {}", user_input));
-
-    // 构建对话历史上下文
-    let mut conversation_history = String::new();
-    if !conversations.is_empty() {
-        conversation_history.push_str("对话历史记录:\n");
-        for (i, (user_msg, assistant_msg)) in conversations.iter().enumerate() {
-            conversation_history.push_str(&format!(
-                "回合 {}: 用户: {}\n助手: {}\n",
-                i + 1,
-                user_msg,
-                assistant_msg
-            ));
-        }
-        conversation_history.push_str("\n");
-    }
-
-    // 构建system prompt，包含明确的指令
-    let system_prompt = r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
-
-重要指令:
-- 对话历史已提供在上下文中，请使用这些信息来理解当前的对话上下文
-- 用户基本信息已在下方提供一次，请不要再使用memory工具来创建或更新用户基本信息
-- 在需要时可以自主使用memory工具搜索其他相关记忆
-- 当用户提供新的重要信息时，可以主动使用memory工具存储
-- 保持对话的连贯性和一致性
-- 自然地融入记忆信息，避免显得刻意
-- 专注于用户的需求和想要了解的信息，以及想要你做的事情
-
-记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#;
-
-    // 构建完整的prompt
-    let prompt = if let Some(info) = user_info {
-        redirect_log_to_ui("DEBUG", "已添加用户基本信息和对话历史到上下文");
-        format!(
-            "{}\n\n用户基本信息:\n{}\n\n{}\n\n当前用户输入: {}",
-            system_prompt, info, conversation_history, user_input
-        )
-    } else {
-        redirect_log_to_ui("DEBUG", "已添加对话历史到上下文");
-        format!(
-            "{}\n\n{}\n\n当前用户输入: {}",
-            system_prompt, conversation_history, user_input
-        )
-    };
-
-    redirect_log_to_ui("DEBUG", "正在生成AI回复（包含历史对话上下文）...");
-    let response = agent
-        .prompt(&prompt)
-        .multi_turn(10)
-        .await
-        .map_err(|e| format!("LLM error: {}", e))?;
-
-    redirect_log_to_ui("DEBUG", "AI回复生成完成");
-    Ok(response.trim().to_string())
-}
-
 /// 批量存储对话到记忆系统（优化版）
 pub async fn store_conversations_batch(
     memory_manager: Arc<MemoryManager>,
@@ -341,11 +274,13 @@ pub async fn store_conversations_batch(
     user_id: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // 只创建一次ConversationProcessor实例
-    let conversation_processor = cortex_mem_rig::processor::ConversationProcessor::new(memory_manager);
+    let conversation_processor =
+        cortex_mem_rig::processor::ConversationProcessor::new(memory_manager);
 
-    let metadata =
-        cortex_mem_rig::types::MemoryMetadata::new(cortex_mem_rig::types::MemoryType::Conversational)
-            .with_user_id(user_id.to_string());
+    let metadata = cortex_mem_rig::types::MemoryMetadata::new(
+        cortex_mem_rig::types::MemoryType::Conversational,
+    )
+    .with_user_id(user_id.to_string());
 
     // 将对话历史转换为消息格式
     let mut messages = Vec::new();

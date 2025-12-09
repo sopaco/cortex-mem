@@ -161,6 +161,7 @@ impl LLMClient for OpenAILLMClient {
         let response = self
             .completion_model
             .prompt(prompt)
+            .multi_turn(10)
             .await
             .map_err(|e| MemoryError::LLM(e.to_string()))?;
 

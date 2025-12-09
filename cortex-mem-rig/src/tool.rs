@@ -483,7 +483,7 @@ impl MemoryTool {
 
 #[async_trait::async_trait]
 impl Tool for MemoryTool {
-    const NAME: &'static str = "memory";
+    const NAME: &'static str = "CortexMemoryTool";
 
     type Error = MemoryToolError;
     type Args = MemoryArgs;
