@@ -1,7 +1,7 @@
 use chrono::Utc;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use crate::{
@@ -84,6 +84,11 @@ impl MemoryManager {
         format!("{:x}", hasher.finalize())
     }
 
+    /// Get a reference to the LLM client
+    pub fn llm_client(&self) -> &dyn LLMClient {
+        self.llm_client.as_ref()
+    }
+
     /// Check if memory with the same content already exists
     async fn check_duplicate(&self, content: &str, filters: &Filters) -> Result<Option<Memory>> {
         let hash = self.generate_hash(content);
@@ -93,6 +98,14 @@ impl MemoryManager {
 
         for memory in existing_memories {
             if memory.metadata.hash == hash {
+                // Check if the existing memory has empty content
+                if memory.content.trim().is_empty() {
+                    warn!(
+                        "Found duplicate memory {} with empty content, skipping",
+                        memory.id
+                    );
+                    continue;
+                }
                 debug!("Found duplicate memory with ID: {}", memory.id);
                 return Ok(Some(memory));
             }
@@ -182,6 +195,15 @@ impl MemoryManager {
 
     /// Create a new memory from content and metadata
     pub async fn create_memory(&self, content: String, metadata: MemoryMetadata) -> Result<Memory> {
+        // Validate content
+        if content.trim().is_empty() {
+            return Err(MemoryError::Validation(
+                "Content cannot be empty when creating memory".to_string(),
+            ));
+        }
+
+        debug!("Creating memory with content length: {}", content.len());
+
         // Generate embedding
         let embedding = self.llm_client.embed(&content).await?;
 
@@ -412,6 +434,20 @@ impl MemoryManager {
 
     /// Store a memory in the vector store
     pub async fn store(&self, content: String, metadata: MemoryMetadata) -> Result<String> {
+        // Log content for debugging
+        debug!(
+            "Storing memory with content: '{}...'",
+            content.chars().take(50).collect::<String>()
+        );
+
+        // Check if content is empty
+        if content.trim().is_empty() {
+            warn!("Attempting to store memory with empty content, skipping");
+            return Err(MemoryError::Validation(
+                "Content cannot be empty".to_string(),
+            ));
+        }
+
         // Check for duplicates if enabled
         if self.config.deduplicate {
             let filters = Filters {
@@ -432,11 +468,19 @@ impl MemoryManager {
             };
 
             if let Some(existing) = self.check_duplicate(&content, &filters).await? {
-                info!(
-                    "Duplicate memory found, returning existing ID: {}",
-                    existing.id
-                );
-                return Ok(existing.id);
+                // Check if existing memory has empty content
+                if existing.content.trim().is_empty() {
+                    warn!(
+                        "Existing memory {} has empty content, creating new memory instead",
+                        existing.id
+                    );
+                } else {
+                    info!(
+                        "Duplicate memory found, returning existing ID: {}",
+                        existing.id
+                    );
+                    return Ok(existing.id);
+                }
             }
         }
 
@@ -444,9 +488,18 @@ impl MemoryManager {
         let memory = self.create_memory(content, metadata).await?;
         let memory_id = memory.id.clone();
 
+        // Verify memory content before storing
+        if memory.content.trim().is_empty() {
+            warn!("Created memory has empty content: {}", memory_id);
+        }
+
         self.vector_store.insert(&memory).await?;
 
-        info!("Stored new memory with ID: {}", memory_id);
+        info!(
+            "Stored new memory with ID: {} (content length: {})",
+            memory_id,
+            memory.content.len()
+        );
         Ok(memory_id)
     }
 
@@ -554,6 +607,78 @@ impl MemoryManager {
     /// Retrieve a memory by ID
     pub async fn get(&self, id: &str) -> Result<Option<Memory>> {
         self.vector_store.get(id).await
+    }
+
+    /// Update memory metadata only (for reclassification)
+    pub async fn update_metadata(
+        &self,
+        id: &str,
+        new_memory_type: crate::types::MemoryType,
+    ) -> Result<()> {
+        self.update_complete_memory(id, None, Some(new_memory_type), None, None, None, None)
+            .await
+    }
+
+    /// Update complete memory with all fields
+    pub async fn update_complete_memory(
+        &self,
+        id: &str,
+        new_content: Option<String>,
+        new_memory_type: Option<crate::types::MemoryType>,
+        new_importance: Option<f32>,
+        new_entities: Option<Vec<String>>,
+        new_topics: Option<Vec<String>>,
+        new_custom: Option<std::collections::HashMap<String, serde_json::Value>>,
+    ) -> Result<()> {
+        // Get existing memory
+        let mut memory = self
+            .vector_store
+            .get(id)
+            .await?
+            .ok_or_else(|| MemoryError::NotFound { id: id.to_string() })?;
+
+        // Update content if provided
+        if let Some(content) = new_content {
+            memory.content = content;
+            memory.embedding = self.llm_client.embed(&memory.content).await?;
+            memory.metadata.hash = self.generate_hash(&memory.content);
+        }
+
+        // Update metadata
+        if let Some(memory_type) = new_memory_type {
+            debug!(
+                "Updating memory {} type from {:?} to {:?}",
+                id, memory.metadata.memory_type, memory_type
+            );
+            memory.metadata.memory_type = memory_type;
+        }
+        if let Some(importance) = new_importance {
+            memory.metadata.importance_score = importance;
+        }
+        if let Some(entities) = new_entities {
+            memory.metadata.entities = entities;
+        }
+        if let Some(topics) = new_topics {
+            memory.metadata.topics = topics;
+        }
+        if let Some(custom) = new_custom {
+            memory.metadata.custom.extend(custom);
+        }
+
+        memory.updated_at = Utc::now();
+
+        // Update in vector store
+        debug!(
+            "Storing updated memory with ID: {}, type: {:?}",
+            id, memory.metadata.memory_type
+        );
+        self.vector_store.update(&memory).await?;
+
+        info!(
+            "Updated complete memory with ID: {}, new type: {:?}",
+            id, memory.metadata.memory_type
+        );
+        Ok(())
     }
 
     /// Update an existing memory

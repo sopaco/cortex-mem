@@ -110,3 +110,5 @@ pub struct HealthResponse {
     pub llm_service: bool,
     pub timestamp: String,
 }
+
+

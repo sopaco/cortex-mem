@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 use qdrant_client::{
-    qdrant::{
-        condition, point_id, points_selector, r#match, vectors_config, Condition, CreateCollection,
-        DeletePoints, Distance, FieldCondition, Filter, GetPoints, Match, PointId, PointStruct,
-        PointsIdsList, PointsSelector, ScoredPoint, ScrollPoints, SearchPoints, UpsertPoints,
-        VectorParams, VectorsConfig,
-    },
     Qdrant,
+    qdrant::{
+        Condition, CreateCollection, DeletePoints, Distance, FieldCondition, Filter, GetPoints,
+        Match, PointId, PointStruct, PointsIdsList, PointsSelector, ScoredPoint, ScrollPoints,
+        SearchPoints, UpsertPoints, VectorParams, VectorsConfig, condition, r#match, point_id,
+        points_selector, vectors_config,
+    },
 };
 use std::collections::HashMap;
 use tracing::{debug, error, info, warn};
@@ -14,7 +14,7 @@ use tracing::{debug, error, info, warn};
 use crate::{
     config::QdrantConfig,
     error::{MemoryError, Result},
-    types::{Filters, Memory, MemoryMetadata, MemoryType, ScoredMemory},
+    types::{Filters, Memory, MemoryMetadata, ScoredMemory},
     vector_store::VectorStore,
 };
 
@@ -191,10 +191,9 @@ impl QdrantVectorStore {
             payload.insert("role".to_string(), role.clone().into());
         }
 
-        payload.insert(
-            "memory_type".to_string(),
-            format!("{:?}", memory.metadata.memory_type).into(),
-        );
+        let memory_type_str = format!("{:?}", memory.metadata.memory_type);
+        debug!("Storing memory type as string: '{}'", memory_type_str);
+        payload.insert("memory_type".to_string(), memory_type_str.into());
         payload.insert("hash".to_string(), memory.metadata.hash.clone().into());
         payload.insert(
             "importance_score".to_string(),
@@ -441,13 +440,14 @@ impl QdrantVectorStore {
                 } => Some(s.as_str()),
                 _ => None,
             })
-            .and_then(|s| match s {
-                "Conversational" => Some(MemoryType::Conversational),
-                "Procedural" => Some(MemoryType::Procedural),
-                "Factual" => Some(MemoryType::Factual),
-                _ => None,
+            .map(|s| {
+                debug!("Parsing memory type from string: '{}'", s);
+                crate::types::MemoryType::parse(s)
             })
-            .unwrap_or(MemoryType::Conversational);
+            .unwrap_or_else(|| {
+                warn!("No memory type found in payload, defaulting to Conversational");
+                crate::types::MemoryType::Conversational
+            });
 
         let hash = payload
             .get("hash")

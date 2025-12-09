@@ -5,13 +5,23 @@ use cortex_mem_core::{
     memory::MemoryManager,
 };
 use std::path::PathBuf;
+use std::sync::Arc;
 use tokio;
 use tracing::info;
 use tracing_subscriber;
 
 mod commands;
 
-use commands::{add::AddCommand, delete::DeleteCommand, list::ListCommand, search::SearchCommand};
+use commands::{
+    OptimizeCommand, 
+    OptimizationStatusCommand, 
+    OptimizationConfigCommand, 
+    OptimizeCommandRunner,
+};
+use commands::add::AddCommand;
+use commands::delete::DeleteCommand;
+use commands::list::ListCommand;
+use commands::search::SearchCommand;
 
 #[derive(Parser)]
 #[command(name = "cortex-mem-cli")]
@@ -89,6 +99,21 @@ pub enum Commands {
         /// Memory ID to delete
         id: String,
     },
+    /// Optimize memory database
+    Optimize {
+        #[command(flatten)]
+        cmd: OptimizeCommand,
+    },
+    /// Show optimization status
+    OptimizeStatus {
+        #[command(flatten)]
+        cmd: OptimizationStatusCommand,
+    },
+    /// Manage optimization configuration
+    OptimizeConfig {
+        #[command(flatten)]
+        cmd: OptimizationConfigCommand,
+    },
 }
 
 #[tokio::main]
@@ -140,6 +165,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Delete { id } => {
             let cmd = DeleteCommand::new(memory_manager);
             cmd.execute(id).await?;
+        }
+        Commands::Optimize { cmd } => {
+            let runner = OptimizeCommandRunner::new(Arc::new(memory_manager), config);
+            runner.run_optimize(&cmd).await?;
+        }
+        Commands::OptimizeStatus { cmd } => {
+            let runner = OptimizeCommandRunner::new(Arc::new(memory_manager), config);
+            runner.run_status(&cmd).await?;
+        }
+        Commands::OptimizeConfig { cmd } => {
+            let runner = OptimizeCommandRunner::new(Arc::new(memory_manager), config);
+            runner.run_config(&cmd).await?;
         }
     }
 
