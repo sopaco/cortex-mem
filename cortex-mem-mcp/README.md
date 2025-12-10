@@ -59,6 +59,9 @@ cortex-mem-mcp --config /path/to/your/config.toml
 
 # Use a short form
 cortex-mem-mcp -c ~/.memo/config.toml
+
+# Configure agent for automatic agent_id and user_id
+cortex-mem-mcp --config /path/to/your/config.toml --agent "my_agent"
 ```
 
 Create a `config.toml` file with the following contents:
@@ -96,7 +99,7 @@ Add to your Claude Desktop `claude_desktop_config.json`:
   "mcpServers": {
     "cortex-mem": {
       "command": "cortex-mem-mcp",
-      "args": ["--config", "/path/to/your/config.toml"]
+      "args": ["--config", "/path/to/your/config.toml", "--agent", "my_agent"]
     }
   }
 }
@@ -113,7 +116,7 @@ Add to your `~/.cursor/mcp.json`:
   "mcpServers": {
     "cortex-mem": {
       "command": "cortex-mem-mcp",
-      "args": ["--config", "/path/to/your/config.toml"]
+      "args": ["--config", "/path/to/your/config.toml", "--agent", "my_agent"]
     }
   }
 }
@@ -141,8 +144,8 @@ Store a new memory in the system.
 
 Parameters:
 - `content` (required, string): The content of the memory to store
-- `user_id` (required, string): User ID associated with the memory
-- `agent_id` (optional, string): Agent ID associated with the memory
+- `user_id` (optional, string): User ID associated with the memory (required unless --agent was specified on startup)
+- `agent_id` (optional, string): Agent ID associated with the memory (defaults to configured agent)
 - `memory_type` (optional, string): Type of memory (conversational, procedural, factual, semantic, episodic, personal)
 - `topics` (optional, array): Topics to associate with the memory
 
@@ -152,8 +155,8 @@ Search for memories using a natural language query.
 
 Parameters:
 - `query` (required, string): Search query to find relevant memories
-- `user_id` (optional, string): User ID to filter memories
-- `agent_id` (optional, string): Agent ID to filter memories
+- `user_id` (optional, string): User ID to filter memories (defaults to configured agent's user)
+- `agent_id` (optional, string): Agent ID to filter memories (defaults to configured agent)
 - `memory_type` (optional, string): Memory type to filter by
 - `topics` (optional, array): Topics to filter memories by
 - `limit` (optional, integer): Maximum number of results to return (default: 10)
@@ -164,8 +167,8 @@ Recall relevant context based on a query.
 
 Parameters:
 - `query` (required, string): Query for context retrieval
-- `user_id` (optional, string): User ID to filter memories
-- `agent_id` (optional, string): Agent ID to filter memories
+- `user_id` (optional, string): User ID to filter memories (defaults to configured agent's user)
+- `agent_id` (optional, string): Agent ID to filter memories (defaults to configured agent)
 - `limit` (optional, integer): Maximum number of context memories to return (default: 5)
 
 #### Get Memory
@@ -180,6 +183,15 @@ Parameters:
 ### Project Structure
 
 ```
+
+## Agent Configuration
+
+The `--agent` parameter allows you to configure a default agent identifier that will be automatically used for all memory operations. When configured:
+
+- **agent_id**: Will be set to the value provided via `--agent`
+- **user_id**: Will be automatically generated as `user_of_<agent_id>`
+
+This simplifies memory operations by eliminating the need to specify these parameters in each tool call. For more details, see [AGENT_CONFIG.md](AGENT_CONFIG.md).
 cortex-mem-mcp/
 ├── src/
 │   ├── lib.rs           # Main implementation

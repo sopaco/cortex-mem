@@ -20,6 +20,7 @@ use tracing::info;
 /// Service for handling MCP tool calls related to memory management
 pub struct MemoryMcpService {
     memory_manager: Arc<MemoryManager>,
+    agent_id: Option<String>,
 }
 
 impl MemoryMcpService {
@@ -34,6 +35,14 @@ impl MemoryMcpService {
     /// Create a new memory MCP service with specific config path
     pub async fn with_config_path<P: AsRef<Path> + Clone + std::fmt::Debug>(
         path: P,
+    ) -> Result<Self> {
+        Self::with_config_path_and_agent(path, None).await
+    }
+
+    /// Create a new memory MCP service with specific config path and agent
+    pub async fn with_config_path_and_agent<P: AsRef<Path> + Clone + std::fmt::Debug>(
+        path: P,
+        agent_id: Option<String>,
     ) -> Result<Self> {
         // Load configuration from specified path
         let config = Config::load(path.clone())?;
@@ -51,7 +60,7 @@ impl MemoryMcpService {
         ));
         info!("Created memory manager");
 
-        Ok(Self { memory_manager })
+        Ok(Self { memory_manager, agent_id })
     }
 
     /// Tool implementation for storing a memory
@@ -72,19 +81,31 @@ impl MemoryMcpService {
                 data: None,
             })?;
 
-        let user_id = arguments
+        // Use provided user_id or default based on agent_id
+        let user_id: String = arguments
             .get("user_id")
             .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .or_else(|| {
+                // If no user_id provided but we have an agent_id, use default user_id
+                if let Some(agent) = &self.agent_id {
+                    Some(format!("user_of_{}", agent))
+                } else {
+                    None
+                }
+            })
             .ok_or_else(|| ErrorData {
                 code: rmcp::model::ErrorCode(-32602).into(),
-                message: "Missing required argument 'user_id'".into(),
+                message: "Missing required argument 'user_id' or --agent parameter not specified".into(),
                 data: None,
             })?;
 
+        // Use provided agent_id or default from service
         let agent_id = arguments
             .get("agent_id")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
+            .map(|s| s.to_string())
+            .or_else(|| self.agent_id.clone());
 
         let memory_type = arguments
             .get("memory_type")
@@ -167,12 +188,22 @@ impl MemoryMcpService {
         let user_id = arguments
             .get("user_id")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
+            .map(|s| s.to_string())
+            .or_else(|| {
+                // If no user_id provided but we have an agent_id, use default user_id
+                if let Some(agent) = &self.agent_id {
+                    Some(format!("user_of_{}", agent))
+                } else {
+                    None
+                }
+            });
 
+        // Use provided agent_id or default from service
         let agent_id = arguments
             .get("agent_id")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
+            .map(|s| s.to_string())
+            .or_else(|| self.agent_id.clone());
 
         let memory_type = arguments
             .get("memory_type")
@@ -272,12 +303,22 @@ impl MemoryMcpService {
         let user_id = arguments
             .get("user_id")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
+            .map(|s| s.to_string())
+            .or_else(|| {
+                // If no user_id provided but we have an agent_id, use default user_id
+                if let Some(agent) = &self.agent_id {
+                    Some(format!("user_of_{}", agent))
+                } else {
+                    None
+                }
+            });
 
+        // Use provided agent_id or default from service
         let agent_id = arguments
             .get("agent_id")
             .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
+            .map(|s| s.to_string())
+            .or_else(|| self.agent_id.clone());
 
         let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
 
@@ -460,7 +501,7 @@ impl ServerHandler for MemoryMcpService {
                     Tool {
                         name: "store_memory".into(),
                         title: Some("Store Memory".into()),
-                        description: Some("Store a new memory in the system".into()),
+                        description: Some("Store a new memory in the system. If agent is configured via command line, agent_id and user_id will default to the configured values unless overridden.".into()),
                         input_schema: serde_json::json!({
                             "type": "object",
                             "properties": {
@@ -470,11 +511,11 @@ impl ServerHandler for MemoryMcpService {
                                 },
                                 "user_id": {
                                     "type": "string",
-                                    "description": "User ID associated with the memory"
+                                    "description": "User ID associated with the memory (required unless --agent was specified on startup)"
                                 },
                                 "agent_id": {
                                     "type": "string",
-                                    "description": "Agent ID associated with the memory"
+                                    "description": "Agent ID associated with the memory (optional, defaults to configured agent)"
                                 },
                                 "memory_type": {
                                     "type": "string",
@@ -488,7 +529,7 @@ impl ServerHandler for MemoryMcpService {
                                     "description": "Topics to associate with the memory"
                                 }
                             },
-                            "required": ["content", "user_id"]
+                            "required": ["content"]
                         }).as_object().unwrap().clone().into(),
                         output_schema: Some(
                             serde_json::json!(
@@ -514,7 +555,7 @@ impl ServerHandler for MemoryMcpService {
                     Tool {
                         name: "search_memory".into(),
                         title: Some("Search Memory".into()),
-                        description: Some("Search for memories using natural language query".into()),
+                        description: Some("Search for memories using natural language query. If agent is configured via command line, agent_id and user_id will default to the configured values.".into()),
                         input_schema: serde_json::json!({
                             "type": "object",
                             "properties": {
@@ -524,11 +565,11 @@ impl ServerHandler for MemoryMcpService {
                                 },
                                 "user_id": {
                                     "type": "string",
-                                    "description": "User ID to filter memories"
+                                    "description": "User ID to filter memories (optional, defaults to configured agent's user)"
                                 },
                                 "agent_id": {
                                     "type": "string",
-                                    "description": "Agent ID to filter memories"
+                                    "description": "Agent ID to filter memories (optional, defaults to configured agent)"
                                 },
                                 "memory_type": {
                                     "type": "string",
@@ -571,7 +612,7 @@ impl ServerHandler for MemoryMcpService {
                     Tool {
                         name: "recall_context".into(),
                         title: Some("Recall Context".into()),
-                        description: Some("Recall relevant context based on a query".into()),
+                        description: Some("Recall relevant context based on a query. If agent is configured via command line, agent_id and user_id will default to the configured values.".into()),
                         input_schema: serde_json::json!({
                             "type": "object",
                             "properties": {
@@ -581,11 +622,11 @@ impl ServerHandler for MemoryMcpService {
                                 },
                                 "user_id": {
                                     "type": "string",
-                                    "description": "User ID to filter memories"
+                                    "description": "User ID to filter memories (optional, defaults to configured agent's user)"
                                 },
                                 "agent_id": {
                                     "type": "string",
-                                    "description": "Agent ID to filter memories"
+                                    "description": "Agent ID to filter memories (optional, defaults to configured agent)"
                                 },
                                 "limit": {
                                     "type": "integer",
