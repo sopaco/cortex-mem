@@ -37,7 +37,3 @@ tracing-subscriber = { workspace = true }
 [[bin]]
 name = "cortex-mem-mcp"
 path = "src/main.rs"
-
-[[example]]
-name = "minimal_service_test"
-path = "examples/minimal_service_test.rs"

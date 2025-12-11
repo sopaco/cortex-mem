@@ -1,23 +1,28 @@
 # Cortex Mem MCP Server
 
-An MCP (Model Context Protocol) server that exposes the memo-core memory management capabilities through the MCP stdio protocol.
+An MCP (Model Context Protocol) server that exposes the cortex-mem memory management capabilities through the MCP stdio protocol, aligned with OpenMemory MCP API design.
 
 ## Overview
 
-This server allows AI agents and applications using the MCP stdio protocol to interact with the Cortex Mem memory system. It provides tools for:
+This MCP server provides a standardized interface for AI agents to store, query, and retrieve memories. The API design follows the OpenMemory MCP specification for better compatibility and consistency across applications.
 
-- **Storing memories**: Save new memories with content, metadata, and associated topics
-- **Searching memories**: Find memories using natural language queries with various filters
-- **Recalling context**: Retrieve relevant memories to provide context for AI operations
+This server allows AI agents and applications using the MCP stdio protocol to interact with the Cortex Mem memory system with OpenMemory-aligned tools:
+
+- **Storing memories**: Add new memories with content, type, and optional metadata
+- **Querying memories**: Unified search interface with salience filtering and natural language queries
+- **Listing memories**: Get summarized view of recent memories with filtering options
 - **Getting specific memories**: Retrieve memories by their unique ID
 
 ## Features
 
 - Full MCP stdio protocol support
-- Memory management compatible with memo-core and memo-rig tool interfaces
+- OpenMemory-aligned API design for better compatibility
+- Memory management compatible with cortex-mem-core interfaces
 - Support for different memory types (conversational, procedural, factual, semantic, episodic, personal)
 - Topic-based memory organization
 - Natural language search with similarity scoring
+- Salience filtering for importance-based retrieval
+- Advanced semantic search capabilities
 - Configurable memory management parameters
 
 ## Installation
@@ -136,11 +141,25 @@ cargo run
 cargo run -- --config /path/to/config.toml
 ```
 
-### Available Tools
+### OpenMemory-aligned API Reference
+
+#### Query Memory
+Unified interface for searching memories that replaces both *search_memory* and *recall_context*.
+
+Parameters:
+- `query` (required, string): Query string for semantic search
+- `k` (optional, integer): Maximum number of results to return (default: 10)
+- `memory_type` (optional, string): Type of memory to filter by (conversational, procedural, factual, semantic, episodic, personal)
+- `min_salience` (optional, number): Minimum salience/importance score threshold (0-1)
+- `topics` (optional, array): Topics to filter memories by
+- `user_id` (optional, string): User ID to filter memories (defaults to configured agent's user)
+- `agent_id` (optional, string): Agent ID to filter memories (defaults to configured agent)
+
+Special Features:
+- **Salience Filtering**: Filter results by importance score to focus on high-value memories
 
 #### Store Memory
-
-Store a new memory in the system.
+Store a new memory in the system. API remains the same.
 
 Parameters:
 - `content` (required, string): The content of the memory to store
@@ -149,31 +168,19 @@ Parameters:
 - `memory_type` (optional, string): Type of memory (conversational, procedural, factual, semantic, episodic, personal)
 - `topics` (optional, array): Topics to associate with the memory
 
-#### Search Memory
-
-Search for memories using a natural language query.
-
-Parameters:
-- `query` (required, string): Search query to find relevant memories
-- `user_id` (optional, string): User ID to filter memories (defaults to configured agent's user)
-- `agent_id` (optional, string): Agent ID to filter memories (defaults to configured agent)
-- `memory_type` (optional, string): Memory type to filter by
-- `topics` (optional, array): Topics to filter memories by
-- `limit` (optional, integer): Maximum number of results to return (default: 10)
-
-#### Recall Context
-
-Recall relevant context based on a query.
+#### List Memories
+Get a summarized view of recent memories with filtering options. This is a new tool aligned with OpenMemory's list functionality.
 
 Parameters:
-- `query` (required, string): Query for context retrieval
+- `limit` (optional, integer): Maximum number of memories to return (default: 20)
+- `memory_type` (optional, string): Type of memory to filter by (conversational, procedural, factual, semantic, episodic, personal)
 - `user_id` (optional, string): User ID to filter memories (defaults to configured agent's user)
 - `agent_id` (optional, string): Agent ID to filter memories (defaults to configured agent)
-- `limit` (optional, integer): Maximum number of context memories to return (default: 5)
+
+Returns simplified memory objects with preview text rather than full content.
 
 #### Get Memory
-
-Retrieve a specific memory by its ID.
+Retrieve a specific memory by its ID. API remains the same but with improved implementation.
 
 Parameters:
 - `memory_id` (required, string): ID of the memory to retrieve
@@ -227,6 +234,92 @@ cargo test
 1. Check that the LLM service is accessible
 2. Verify that the vector store is running
 3. Check the server logs for detailed error messages
+
+### Migration Guide (v0.1.0+)
+
+If you were using the previous API with `search_memory` and `recall_context`, here's how to migrate:
+
+#### Old API → New API
+
+```json
+// Old search_memory call
+{
+  "name": "search_memory",
+  "arguments": {
+    "query": "用户的爱好",
+    "limit": 10,
+    "user_id": "user123"
+  }
+}
+
+// New query_memory call
+{
+  "name": "query_memory",
+  "arguments": {
+    "query": "用户的爱好",
+    "k": 10,
+    "user_id": "user123"
+  }
+}
+```
+
+```json
+// Old recall_context call
+{
+  "name": "recall_context",
+  "arguments": {
+    "query": "最近的对话",
+    "limit": 5,
+    "user_id": "user123"
+  }
+}
+
+// New query_memory call
+{
+  "name": "query_memory",
+  "arguments": {
+    "query": "最近的对话",
+    "k": 5,
+    "user_id": "user123"
+  }
+}
+```
+
+#### Key Changes
+
+1. **Tool Names**: `search_memory` → `query_memory`, `recall_context` → `query_memory` (unified)
+2. **Parameter Names**: `limit` → `k` (for consistency with OpenMemory)
+3. **New Features**: Added `min_salience` parameter for importance filtering
+4. **New Tool**: Added `list_memories` for browsing memory overview
+
+### Example Usage
+
+Query memories with salience filtering:
+
+```json
+{
+  "name": "query_memory",
+  "arguments": {
+    "query": "用户的爱好和偏好",
+    "k": 5,
+    "min_salience": 0.7,
+    "user_id": "user123"
+  }
+}
+```
+
+List memories by type:
+
+```json
+{
+  "name": "list_memories",
+  "arguments": {
+    "memory_type": "episodic",
+    "limit": 20,
+    "user_id": "user123"
+  }
+}
+```
 
 ## License
 

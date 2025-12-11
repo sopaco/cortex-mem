@@ -171,8 +171,8 @@ impl MemoryMcpService {
         }
     }
 
-    /// Tool implementation for searching memories
-    async fn search_memory(
+    /// Tool implementation for querying memories (replaces search_memory and recall_context)
+    async fn query_memory(
         &self,
         arguments: &serde_json::Map<std::string::String, serde_json::Value>,
     ) -> Result<CallToolResult, ErrorData> {
@@ -230,12 +230,14 @@ impl MemoryMcpService {
                     .collect()
             });
 
-        let limit = arguments
-            .get("limit")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(10) as usize;
+        let k = arguments.get("k").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
 
-        debug!("Searching memories with query: {}", query);
+        let min_salience = arguments
+            .get("min_salience")
+            .and_then(|v| v.as_f64())
+            .map(|s| s as f32);
+
+        debug!("Querying memories with query: {}", query);
 
         // Build filters
         let mut filters = Filters::default();
@@ -244,8 +246,13 @@ impl MemoryMcpService {
         filters.memory_type = memory_type;
         filters.topics = topics;
 
+        // Apply min_salience filter if provided
+        if let Some(salience) = min_salience {
+            filters.min_importance = Some(salience);
+        }
+
         // Search memories
-        match self.memory_manager.search(query, &filters, limit).await {
+        match self.memory_manager.search(query, &filters, k).await {
             Ok(memories) => {
                 info!("Found {} matching memories", memories.len());
 
@@ -259,6 +266,7 @@ impl MemoryMcpService {
                             "user_id": m.memory.metadata.user_id,
                             "agent_id": m.memory.metadata.agent_id,
                             "topics": m.memory.metadata.topics,
+                            "salience": m.memory.metadata.importance_score,
                             "score": m.score,
                             "created_at": m.memory.created_at
                         })
@@ -276,18 +284,18 @@ impl MemoryMcpService {
                 )]))
             }
             Err(e) => {
-                error!("Failed to search memories: {}", e);
+                error!("Failed to query memories: {}", e);
                 Err(ErrorData {
                     code: rmcp::model::ErrorCode(-32603).into(),
-                    message: format!("Failed to search memories: {}", e).into(),
+                    message: format!("Failed to query memories: {}", e).into(),
                     data: None,
                 })
             }
         }
     }
 
-    /// Tool implementation for recalling context
-    async fn recall_context(
+    /// Tool implementation for listing memories
+    async fn list_memories(
         &self,
         arguments: &serde_json::Map<std::string::String, serde_json::Value>,
     ) -> Result<CallToolResult, ErrorData> {
@@ -295,15 +303,6 @@ impl MemoryMcpService {
         use tracing::{debug, error, info};
 
         // Extract arguments
-        let query = arguments
-            .get("query")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| ErrorData {
-                code: rmcp::model::ErrorCode(-32602).into(),
-                message: "Missing required argument 'query'".into(),
-                data: None,
-            })?;
-
         let user_id = arguments
             .get("user_id")
             .and_then(|v| v.as_str())
@@ -324,37 +323,62 @@ impl MemoryMcpService {
             .map(|s| s.to_string())
             .or_else(|| self.agent_id.clone());
 
-        let limit = arguments.get("limit").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
+        let memory_type = arguments
+            .get("memory_type")
+            .and_then(|v| v.as_str())
+            .map(|s| MemoryType::parse_with_result(s))
+            .transpose()
+            .map_err(|e| ErrorData {
+                code: rmcp::model::ErrorCode(-32602).into(),
+                message: format!("Invalid memory_type: {}", e).into(),
+                data: None,
+            })?;
 
-        debug!("Recalling context with query: {}", query);
+        let limit = arguments
+            .get("limit")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(20) as usize;
+
+        debug!("Listing memories with limit: {}", limit);
 
         // Build filters
         let mut filters = Filters::default();
         filters.user_id = user_id;
         filters.agent_id = agent_id;
+        filters.memory_type = memory_type;
 
-        // Search for context
-        match self.memory_manager.search(query, &filters, limit).await {
+        // List memories
+        match self.memory_manager.list(&filters, Some(limit)).await {
             Ok(memories) => {
-                info!("Recalled {} context memories", memories.len());
+                info!("Found {} memories", memories.len());
 
-                let contexts: Vec<_> = memories
+                let results: Vec<_> = memories
                     .into_iter()
                     .map(|m| {
+                        // Create a preview of the content (first 100 characters)
+                        let preview = if m.content.len() > 100 {
+                            format!("{}...", &m.content[..100])
+                        } else {
+                            m.content.clone()
+                        };
+
                         json!({
-                            "id": m.memory.id,
-                            "content": m.memory.content,
-                            "type": format!("{:?}", m.memory.metadata.memory_type),
-                            "score": m.score,
-                            "created_at": m.memory.created_at
+                            "id": m.id,
+                            "type": format!("{:?}", m.metadata.memory_type),
+                            "salience": m.metadata.importance_score,
+                            "preview": preview,
+                            "user_id": m.metadata.user_id,
+                            "agent_id": m.metadata.agent_id,
+                            "topics": m.metadata.topics,
+                            "created_at": m.created_at
                         })
                     })
                     .collect();
 
                 let result = json!({
                     "success": true,
-                    "count": contexts.len(),
-                    "contexts": contexts
+                    "count": results.len(),
+                    "memories": results
                 });
 
                 Ok(CallToolResult::success(vec![Content::text(
@@ -362,10 +386,10 @@ impl MemoryMcpService {
                 )]))
             }
             Err(e) => {
-                error!("Failed to recall context: {}", e);
+                error!("Failed to list memories: {}", e);
                 Err(ErrorData {
                     code: rmcp::model::ErrorCode(-32603).into(),
-                    message: format!("Failed to recall context: {}", e).into(),
+                    message: format!("Failed to list memories: {}", e).into(),
                     data: None,
                 })
             }
@@ -417,7 +441,7 @@ impl MemoryMcpService {
         arguments: &serde_json::Map<std::string::String, serde_json::Value>,
     ) -> Result<CallToolResult, ErrorData> {
         use serde_json::json;
-        use tracing::{debug, error};
+        use tracing::{debug, error, info};
 
         // Extract arguments
         let memory_id = arguments
@@ -431,43 +455,38 @@ impl MemoryMcpService {
 
         debug!("Getting memory with ID: {}", memory_id);
 
-        // Since memo-core doesn't have a direct get by ID method, we'll search with an empty query
-        // and filter by ID in the metadata custom fields
-        let mut filters = Filters::default();
-        filters
-            .custom
-            .insert("memory_id".to_string(), json!(memory_id));
+        // Get memory
+        match self.memory_manager.get(memory_id).await {
+            Ok(Some(memory)) => {
+                info!("Retrieved memory with ID: {}", memory_id);
 
-        match self.memory_manager.search("", &filters, 1).await {
-            Ok(memories) => {
-                if let Some(scored_memory) = memories.into_iter().next() {
-                    let memory = scored_memory.memory;
+                let result = json!({
+                    "success": true,
+                    "memory": {
+                        "id": memory.id,
+                        "content": memory.content,
+                        "type": format!("{:?}", memory.metadata.memory_type),
+                        "user_id": memory.metadata.user_id,
+                        "agent_id": memory.metadata.agent_id,
+                        "topics": memory.metadata.topics,
+                        "salience": memory.metadata.importance_score,
+                        "created_at": memory.created_at,
+                        "updated_at": memory.updated_at,
+                        "metadata": memory.metadata
+                    }
+                });
 
-                    let result = json!({
-                        "success": true,
-                        "memory": {
-                            "id": memory.id,
-                            "content": memory.content,
-                            "type": format!("{:?}", memory.metadata.memory_type),
-                            "user_id": memory.metadata.user_id,
-                            "agent_id": memory.metadata.agent_id,
-                            "topics": memory.metadata.topics,
-                            "importance_score": memory.metadata.importance_score,
-                            "created_at": memory.created_at,
-                            "updated_at": memory.updated_at
-                        }
-                    });
-
-                    Ok(CallToolResult::success(vec![Content::text(
-                        serde_json::to_string_pretty(&result).unwrap(),
-                    )]))
-                } else {
-                    Err(ErrorData {
-                        code: rmcp::model::ErrorCode(-32602).into(),
-                        message: format!("Memory with ID '{}' not found", memory_id).into(),
-                        data: None,
-                    })
-                }
+                Ok(CallToolResult::success(vec![Content::text(
+                    serde_json::to_string_pretty(&result).unwrap(),
+                )]))
+            }
+            Ok(None) => {
+                info!("No memory found with ID: {}", memory_id);
+                Err(ErrorData {
+                    code: rmcp::model::ErrorCode(-32602).into(),
+                    message: format!("Memory with ID '{}' not found", memory_id).into(),
+                    data: None,
+                })
             }
             Err(e) => {
                 error!("Failed to get memory: {}", e);
@@ -557,15 +576,36 @@ impl ServerHandler for MemoryMcpService {
                         meta: None,
                     },
                     Tool {
-                        name: "search_memory".into(),
-                        title: Some("Search Memory".into()),
-                        description: Some("Search for memories using natural language query. If agent is configured via command line, agent_id and user_id will default to the configured values.".into()),
+                        name: "query_memory".into(),
+                        title: Some("Query Memory".into()),
+                        description: Some("Query memories with semantic search, filters and salience threshold. Replaces search_memory and recall_context.".into()),
                         input_schema: serde_json::json!({
                             "type": "object",
                             "properties": {
                                 "query": {
                                     "type": "string",
-                                    "description": "Search query to find relevant memories"
+                                    "description": "Query string for semantic search"
+                                },
+                                "k": {
+                                    "type": "integer",
+                                    "description": "Maximum number of results to return",
+                                    "default": 10
+                                },
+                                "memory_type": {
+                                    "type": "string",
+                                    "enum": ["conversational", "procedural", "factual", "semantic", "episodic", "personal"],
+                                    "description": "Type of memory to filter by"
+                                },
+                                "min_salience": {
+                                    "type": "number",
+                                    "description": "Minimum salience/importance score threshold (0-1)",
+                                    "minimum": 0,
+                                    "maximum": 1
+                                },
+                                "topics": {
+                                    "type": "array",
+                                    "items": {"type": "string"},
+                                    "description": "Topics to filter memories by"
                                 },
                                 "user_id": {
                                     "type": "string",
@@ -574,21 +614,6 @@ impl ServerHandler for MemoryMcpService {
                                 "agent_id": {
                                     "type": "string",
                                     "description": "Agent ID to filter memories (optional, defaults to configured agent)"
-                                },
-                                "memory_type": {
-                                    "type": "string",
-                                    "enum": ["conversational", "procedural", "factual", "semantic", "episodic", "personal"],
-                                    "description": "Memory type to filter by"
-                                },
-                                "topics": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "Topics to filter memories by"
-                                },
-                                "limit": {
-                                    "type": "integer",
-                                    "description": "Maximum number of results to return",
-                                    "default": 10
                                 }
                             },
                             "required": ["query"]
@@ -614,15 +639,21 @@ impl ServerHandler for MemoryMcpService {
                         meta: None,
                     },
                     Tool {
-                        name: "recall_context".into(),
-                        title: Some("Recall Context".into()),
-                        description: Some("Recall relevant context based on a query. If agent is configured via command line, agent_id and user_id will default to the configured values.".into()),
+                        name: "list_memories".into(),
+                        title: Some("List Memories".into()),
+                        description: Some("List recent memories with summary information".into()),
                         input_schema: serde_json::json!({
                             "type": "object",
                             "properties": {
-                                "query": {
+                                "limit": {
+                                    "type": "integer",
+                                    "description": "Maximum number of memories to return",
+                                    "default": 20
+                                },
+                                "memory_type": {
                                     "type": "string",
-                                    "description": "Query for context retrieval"
+                                    "enum": ["conversational", "procedural", "factual", "semantic", "episodic", "personal"],
+                                    "description": "Type of memory to filter by"
                                 },
                                 "user_id": {
                                     "type": "string",
@@ -631,14 +662,8 @@ impl ServerHandler for MemoryMcpService {
                                 "agent_id": {
                                     "type": "string",
                                     "description": "Agent ID to filter memories (optional, defaults to configured agent)"
-                                },
-                                "limit": {
-                                    "type": "integer",
-                                    "description": "Maximum number of context memories to return",
-                                    "default": 5
                                 }
-                            },
-                            "required": ["query"]
+                            }
                         }).as_object().unwrap().clone().into(),
                         output_schema: Some(
                             serde_json::json!(
@@ -647,9 +672,9 @@ impl ServerHandler for MemoryMcpService {
                                     "properties": {
                                         "success": {"type": "boolean"},
                                         "count": {"type": "number"},
-                                        "contexts": {"type": "array", "items": {"type": "object"}}
+                                        "memories": {"type": "array", "items": {"type": "object"}}
                                     },
-                                    "required": ["success", "count", "contexts"]
+                                    "required": ["success", "count", "memories"]
                                 }
                             ).as_object()
                             .unwrap()
@@ -719,9 +744,9 @@ impl ServerHandler for MemoryMcpService {
                         })
                     }
                 }
-                "search_memory" => {
+                "query_memory" => {
                     if let Some(arguments) = &request.arguments {
-                        self.search_memory(arguments).await
+                        self.query_memory(arguments).await
                     } else {
                         Err(ErrorData {
                             code: rmcp::model::ErrorCode(-32602).into(),
@@ -730,9 +755,9 @@ impl ServerHandler for MemoryMcpService {
                         })
                     }
                 }
-                "recall_context" => {
+                "list_memories" => {
                     if let Some(arguments) = &request.arguments {
-                        self.recall_context(arguments).await
+                        self.list_memories(arguments).await
                     } else {
                         Err(ErrorData {
                             code: rmcp::model::ErrorCode(-32602).into(),
