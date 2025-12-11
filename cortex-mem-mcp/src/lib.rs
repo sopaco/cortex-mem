@@ -449,7 +449,7 @@ impl MemoryMcpService {
             .and_then(|v| v.as_str())
             .ok_or_else(|| ErrorData {
                 code: rmcp::model::ErrorCode(-32602).into(),
-                message: "Missing required argument 'memory_id'".into(),
+                message: "Missing required argument 'memory_id'. To get a specific memory, you must provide its ID. If you want to list all memories, use 'list_memories'. If you want to search for memories, use 'query_memory'.".into(),
                 data: None,
             })?;
 
@@ -687,14 +687,14 @@ impl ServerHandler for MemoryMcpService {
                     },
                     Tool {
                         name: "get_memory".into(),
-                        title: Some("Get Memory".into()),
-                        description: Some("Retrieve a specific memory by its ID".into()),
+                        title: Some("Get Memory by ID".into()),
+                        description: Some("Retrieve a specific memory by its exact ID. NOTE: This tool requires a specific memory_id parameter. If you don't know the memory ID but want to explore memories, use 'get_all_memories' to see all memories or 'query_memory' to search by content. This tool is best when you already have a memory ID from a previous search.".into()),
                         input_schema: serde_json::json!({
                             "type": "object",
                             "properties": {
                                 "memory_id": {
                                     "type": "string",
-                                    "description": "ID of the memory to retrieve"
+                                    "description": "Exact ID of the memory to retrieve (required). You must obtain this ID from previous calls to get_all_memories, list_memories, or query_memory."
                                 }
                             },
                             "required": ["memory_id"]
@@ -709,7 +709,51 @@ impl ServerHandler for MemoryMcpService {
                                     },
                                     "required": ["success", "memory"]
                                 }
-                            ).as_object()
+                            )
+                            .as_object()
+                            .unwrap()
+                            .clone()
+                            .into(),
+                        ),
+                        annotations: None,
+                        icons: None,
+                        meta: None,
+                    },
+                    Tool {
+                        name: "get_all_memories".into(),
+                        title: Some("Get All Memories".into()),
+                        description: Some("Retrieve all memories for the current agent/user. This is a convenience tool that internally calls list_memories with a higher limit.".into()),
+                        input_schema: serde_json::json!({
+                            "type": "object",
+                            "properties": {
+                                "memory_type": {
+                                    "type": "string",
+                                    "enum": ["conversational", "procedural", "factual", "semantic", "episodic", "personal"],
+                                    "description": "Type of memory to filter by (optional)"
+                                },
+                                "user_id": {
+                                    "type": "string",
+                                    "description": "User ID to filter memories (optional, defaults to configured agent's user)"
+                                },
+                                "agent_id": {
+                                    "type": "string",
+                                    "description": "Agent ID to filter memories (optional, defaults to configured agent)"
+                                }
+                            }
+                        }).as_object().unwrap().clone().into(),
+                        output_schema: Some(
+                            serde_json::json!(
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {"type": "boolean"},
+                                        "count": {"type": "number"},
+                                        "memories": {"type": "array", "items": {"type": "object"}}
+                                    },
+                                    "required": ["success", "count", "memories"]
+                                }
+                            )
+                            .as_object()
                             .unwrap()
                             .clone()
                             .into(),
@@ -772,9 +816,22 @@ impl ServerHandler for MemoryMcpService {
                     } else {
                         Err(ErrorData {
                             code: rmcp::model::ErrorCode(-32602).into(),
-                            message: "Missing arguments".into(),
+                            message: "Missing arguments. You must provide 'memory_id' for this tool. Consider using 'list_memories' to find memory IDs or 'get_all_memories' to retrieve all memories.".into(),
                             data: None,
                         })
+                    }
+                }
+                "get_all_memories" => {
+                    if let Some(arguments) = &request.arguments {
+                        // Convert get_all_memories request to list_memories with high limit
+                        let mut list_args = arguments.clone();
+                        list_args.insert("limit".into(), serde_json::json!(100)); // Set a high limit
+                        self.list_memories(&list_args).await
+                    } else {
+                        // If no arguments, call list_memories with empty args and high limit
+                        let mut empty_args = serde_json::Map::new();
+                        empty_args.insert("limit".into(), serde_json::json!(100));
+                        self.list_memories(&empty_args).await
                     }
                 }
                 _ => Err(ErrorData {
