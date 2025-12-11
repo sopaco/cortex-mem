@@ -60,7 +60,10 @@ impl MemoryMcpService {
         ));
         info!("Created memory manager");
 
-        Ok(Self { memory_manager, agent_id })
+        Ok(Self {
+            memory_manager,
+            agent_id,
+        })
     }
 
     /// Tool implementation for storing a memory
@@ -96,7 +99,8 @@ impl MemoryMcpService {
             })
             .ok_or_else(|| ErrorData {
                 code: rmcp::model::ErrorCode(-32602).into(),
-                message: "Missing required argument 'user_id' or --agent parameter not specified".into(),
+                message: "Missing required argument 'user_id' or --agent parameter not specified"
+                    .into(),
                 data: None,
             })?;
 

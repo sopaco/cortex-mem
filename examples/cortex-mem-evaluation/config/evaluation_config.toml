@@ -1,0 +1,123 @@
+# Cortex-Mem Evaluation Configuration
+
+[general]
+# 评估模式：recall, effectiveness, performance, all
+mode = "all"
+# 输出目录
+output_dir = "results"
+# 是否启用详细日志
+verbose = true
+# 随机种子（确保可复现性）
+random_seed = 42
+
+[recall_evaluation]
+# 召回率评估配置
+enabled = true
+# 测试用例路径
+test_cases_path = "data/test_cases/recall_test_cases.json"
+# 基准真值路径
+ground_truth_path = "data/ground_truth/recall_ground_truth.json"
+# 评估的K值列表
+k_values = [1, 3, 5, 10]
+# 相似度阈值列表
+similarity_thresholds = [0.7, 0.8, 0.9]
+# 每个查询的最大返回结果数
+max_results_per_query = 20
+# 是否保存中间结果
+save_intermediate_results = true
+
+[effectiveness_evaluation]
+# 记忆有效性评估配置
+enabled = true
+# 测试用例路径
+test_cases_path = "data/test_cases/effectiveness_test_cases.json"
+# 基准真值路径
+ground_truth_path = "data/ground_truth/effectiveness_ground_truth.json"
+# 是否使用LLM辅助评估
+llm_evaluation_enabled = false
+# LLM评估使用的模型
+llm_model = "gpt-4"
+# LLM API密钥（环境变量优先）
+llm_api_key = ""
+# 评估超时时间（秒）
+evaluation_timeout_seconds = 30
+# 是否验证记忆提取准确性
+verify_fact_extraction = true
+# 是否验证记忆分类准确性
+verify_classification = true
+# 是否验证重要性评估
+verify_importance_evaluation = true
+# 是否验证去重效果
+verify_deduplication = true
+# 是否验证记忆更新逻辑
+verify_memory_update = true
+
+[performance_evaluation]
+# 性能评估配置
+enabled = true
+# 测试的记忆库大小列表
+memory_sizes = [100, 1000, 5000]
+# 并发用户数列表
+concurrent_users = [1, 5, 10]
+# 测试持续时间（秒）
+test_duration_seconds = 30
+# 预热时间（秒）
+warmup_seconds = 5
+# 操作类型：add, search, update, mixed
+operation_types = ["add", "search", "update", "mixed"]
+# 是否测量内存使用
+measure_memory_usage = true
+# 是否测量CPU使用
+measure_cpu_usage = true
+# 是否生成性能报告
+generate_performance_report = true
+
+[memory_config]
+# 记忆管理器配置
+# 向量存储类型：qdrant, memory（内存）
+vector_store_type = "memory"
+# Qdrant配置（如果使用Qdrant）
+qdrant_url = "http://localhost:6334"
+qdrant_collection = "evaluation_memories"
+# 相似度阈值
+similarity_threshold = 0.8
+# 合并阈值
+merge_threshold = 0.9
+# 是否自动增强记忆
+auto_enhance = true
+# 是否启用去重
+deduplicate = true
+# 最大令牌数
+max_tokens = 1000
+# 温度设置
+temperature = 0.7
+
+[report]
+# 报告生成配置
+# 报告格式：json, markdown, html, all
+format = "all"
+# 是否生成可视化图表
+generate_visualizations = true
+# 图表格式：png, svg, pdf
+chart_format = "png"
+# 是否包含详细数据
+include_detailed_data = true
+# 是否包含建议
+include_recommendations = true
+# 报告标题
+report_title = "Cortex-Mem Core Capabilities Evaluation Report"
+# 报告作者
+report_author = "Cortex-Mem Evaluation Framework"
+
+[logging]
+# 日志配置
+# 日志级别：trace, debug, info, warn, error
+level = "info"
+# 日志输出：console, file, both
+output = "both"
+# 日志文件路径
+log_file = "results/evaluation.log"
+# 是否启用结构化日志
+structured_logging = true
+# 是否记录时间戳
+include_timestamps = true
