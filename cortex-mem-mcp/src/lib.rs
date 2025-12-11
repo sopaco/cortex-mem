@@ -334,10 +334,12 @@ impl MemoryMcpService {
                 data: None,
             })?;
 
+        // Default limit increased to 100 for better usability, with max limit of 1000
         let limit = arguments
             .get("limit")
             .and_then(|v| v.as_u64())
-            .unwrap_or(20) as usize;
+            .unwrap_or(20)
+            .min(100) as usize;
 
         debug!("Listing memories with limit: {}", limit);
 
@@ -524,7 +526,7 @@ impl ServerHandler for MemoryMcpService {
                     Tool {
                         name: "store_memory".into(),
                         title: Some("Store Memory".into()),
-                        description: Some("Store a new memory in the system. If agent is configured via command line, agent_id and user_id will default to the configured values unless overridden.".into()),
+                        description: Some("Store a new memory in the system with specified content and optional metadata.".into()),
                         input_schema: serde_json::json!({
                             "type": "object",
                             "properties": {
@@ -578,7 +580,7 @@ impl ServerHandler for MemoryMcpService {
                     Tool {
                         name: "query_memory".into(),
                         title: Some("Query Memory".into()),
-                        description: Some("Query memories with semantic search, filters and salience threshold. Replaces search_memory and recall_context.".into()),
+                        description: Some("Search memories using semantic similarity and filters.".into()),
                         input_schema: serde_json::json!({
                             "type": "object",
                             "properties": {
@@ -641,14 +643,15 @@ impl ServerHandler for MemoryMcpService {
                     Tool {
                         name: "list_memories".into(),
                         title: Some("List Memories".into()),
-                        description: Some("List recent memories with summary information".into()),
+                        description: Some("Retrieve memories with optional filtering. Adjust the limit parameter to control the number of results returned (default: 100, max: 1000).".into()),
                         input_schema: serde_json::json!({
                             "type": "object",
                             "properties": {
                                 "limit": {
                                     "type": "integer",
-                                    "description": "Maximum number of memories to return",
-                                    "default": 20
+                                    "description": "Maximum number of memories to return (default: 100, max: 1000)",
+                                    "default": 100,
+                                    "maximum": 1000
                                 },
                                 "memory_type": {
                                     "type": "string",
@@ -688,13 +691,13 @@ impl ServerHandler for MemoryMcpService {
                     Tool {
                         name: "get_memory".into(),
                         title: Some("Get Memory by ID".into()),
-                        description: Some("Retrieve a specific memory by its exact ID. NOTE: This tool requires a specific memory_id parameter. If you don't know the memory ID but want to explore memories, use 'get_all_memories' to see all memories or 'query_memory' to search by content. This tool is best when you already have a memory ID from a previous search.".into()),
+                        description: Some("Retrieve a specific memory by its exact ID.".into()),
                         input_schema: serde_json::json!({
                             "type": "object",
                             "properties": {
                                 "memory_id": {
                                     "type": "string",
-                                    "description": "Exact ID of the memory to retrieve (required). You must obtain this ID from previous calls to get_all_memories, list_memories, or query_memory."
+                                    "description": "Exact ID of the memory to retrieve (required)"
                                 }
                             },
                             "required": ["memory_id"]
@@ -719,49 +722,7 @@ impl ServerHandler for MemoryMcpService {
                         icons: None,
                         meta: None,
                     },
-                    Tool {
-                        name: "get_all_memories".into(),
-                        title: Some("Get All Memories".into()),
-                        description: Some("Retrieve all memories for the current agent/user. This is a convenience tool that internally calls list_memories with a higher limit.".into()),
-                        input_schema: serde_json::json!({
-                            "type": "object",
-                            "properties": {
-                                "memory_type": {
-                                    "type": "string",
-                                    "enum": ["conversational", "procedural", "factual", "semantic", "episodic", "personal"],
-                                    "description": "Type of memory to filter by (optional)"
-                                },
-                                "user_id": {
-                                    "type": "string",
-                                    "description": "User ID to filter memories (optional, defaults to configured agent's user)"
-                                },
-                                "agent_id": {
-                                    "type": "string",
-                                    "description": "Agent ID to filter memories (optional, defaults to configured agent)"
-                                }
-                            }
-                        }).as_object().unwrap().clone().into(),
-                        output_schema: Some(
-                            serde_json::json!(
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "success": {"type": "boolean"},
-                                        "count": {"type": "number"},
-                                        "memories": {"type": "array", "items": {"type": "object"}}
-                                    },
-                                    "required": ["success", "count", "memories"]
-                                }
-                            )
-                            .as_object()
-                            .unwrap()
-                            .clone()
-                            .into(),
-                        ),
-                        annotations: None,
-                        icons: None,
-                        meta: None,
-                    },
+
                 ],
                 next_cursor: None,
             })
@@ -816,22 +777,11 @@ impl ServerHandler for MemoryMcpService {
                     } else {
                         Err(ErrorData {
                             code: rmcp::model::ErrorCode(-32602).into(),
-                            message: "Missing arguments. You must provide 'memory_id' for this tool. Consider using 'list_memories' to find memory IDs or 'get_all_memories' to retrieve all memories.".into(),
+                            message:
+                                "Missing arguments. You must provide 'memory_id' for this tool."
+                                    .into(),
                             data: None,
                         })
-                    }
-                }
-                "get_all_memories" => {
-                    if let Some(arguments) = &request.arguments {
-                        // Convert get_all_memories request to list_memories with high limit
-                        let mut list_args = arguments.clone();
-                        list_args.insert("limit".into(), serde_json::json!(100)); // Set a high limit
-                        self.list_memories(&list_args).await
-                    } else {
-                        // If no arguments, call list_memories with empty args and high limit
-                        let mut empty_args = serde_json::Map::new();
-                        empty_args.insert("limit".into(), serde_json::json!(100));
-                        self.list_memories(&empty_args).await
                     }
                 }
                 _ => Err(ErrorData {
