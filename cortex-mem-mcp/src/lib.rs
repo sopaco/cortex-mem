@@ -357,9 +357,16 @@ impl MemoryMcpService {
                 let results: Vec<_> = memories
                     .into_iter()
                     .map(|m| {
-                        // Create a preview of the content (first 100 characters)
-                        let preview = if m.content.len() > 100 {
-                            format!("{}...", &m.content[..100])
+                        // Create a preview of the content (first 300 characters)
+                        // Safe UTF-8 character boundary slicing
+                        let preview = if m.content.chars().count() > 300 {
+                            let safe_end = m
+                                .content
+                                .char_indices()
+                                .nth(300)
+                                .map(|(idx, _)| idx)
+                                .unwrap_or(0);
+                            format!("{}...", &m.content[..safe_end])
                         } else {
                             m.content.clone()
                         };
