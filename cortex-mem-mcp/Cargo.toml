@@ -24,6 +24,7 @@ schemars = { version = "1.0", features = ["derive"] }
 # Local dependencies
 cortex-mem-core = { path = "../cortex-mem-core" }
 cortex-mem-config = { path = "../cortex-mem-config" }
+cortex-mem-tools = { path = "../cortex-mem-tools" }
 
 # CLI framework
 clap = { workspace = true }

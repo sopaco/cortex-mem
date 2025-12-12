@@ -3,8 +3,8 @@ use cortex_mem_config::Config;
 use cortex_mem_core::{
     init::initialize_memory_system,
     memory::MemoryManager,
-    types::{Filters, MemoryMetadata, MemoryType},
 };
+use cortex_mem_tools::{MemoryOperations, MemoryOperationPayload, MemoryToolsError};
 use rmcp::{
     model::{
         CallToolRequestParam, CallToolResult, Content, ErrorData, ListToolsResult,
@@ -13,13 +13,15 @@ use rmcp::{
     service::RequestContext,
     RoleServer, ServerHandler,
 };
+use serde_json::Map;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tracing::info;
+use tracing::{error, info};
 
 /// Service for handling MCP tool calls related to memory management
 pub struct MemoryMcpService {
     memory_manager: Arc<MemoryManager>,
+    operations: MemoryOperations,
     agent_id: Option<String>,
 }
 
@@ -60,8 +62,17 @@ impl MemoryMcpService {
         ));
         info!("Created memory manager");
 
+        // Create operations handler
+        let operations = MemoryOperations::new(
+            memory_manager.clone(),
+            None, // Default user ID will be derived from agent ID
+            agent_id.clone(),
+            100,  // Default limit
+        );
+
         Ok(Self {
             memory_manager,
+            operations,
             agent_id,
         })
     }
@@ -69,227 +80,39 @@ impl MemoryMcpService {
     /// Tool implementation for storing a memory
     async fn store_memory(
         &self,
-        arguments: &serde_json::Map<std::string::String, serde_json::Value>,
+        arguments: &Map<String, serde_json::Value>,
     ) -> Result<CallToolResult, ErrorData> {
-        use serde_json::json;
-        use tracing::{error, info};
+        let payload = self.map_to_payload(arguments, &self.agent_id);
 
-        // Extract arguments
-        let content = arguments
-            .get("content")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| ErrorData {
-                code: rmcp::model::ErrorCode(-32602).into(),
-                message: "Missing required argument 'content'".into(),
-                data: None,
-            })?;
-
-        // Use provided user_id or default based on agent_id
-        let user_id: String = arguments
-            .get("user_id")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .or_else(|| {
-                // If no user_id provided but we have an agent_id, use default user_id
-                if let Some(agent) = &self.agent_id {
-                    Some(format!("user_of_{}", agent))
-                } else {
-                    None
-                }
-            })
-            .ok_or_else(|| ErrorData {
-                code: rmcp::model::ErrorCode(-32602).into(),
-                message: "Missing required argument 'user_id' or --agent parameter not specified"
-                    .into(),
-                data: None,
-            })?;
-
-        // Use provided agent_id or default from service
-        let agent_id = arguments
-            .get("agent_id")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .or_else(|| self.agent_id.clone());
-
-        let memory_type = arguments
-            .get("memory_type")
-            .and_then(|v| v.as_str())
-            .map(|s| MemoryType::parse_with_result(s))
-            .transpose()
-            .map_err(|e| ErrorData {
-                code: rmcp::model::ErrorCode(-32602).into(),
-                message: format!("Invalid memory_type: {}", e).into(),
-                data: None,
-            })?
-            .unwrap_or(MemoryType::Conversational);
-
-        let topics = arguments
-            .get("topics")
-            .and_then(|v| v.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str())
-                    .map(String::from)
-                    .collect()
-            })
-            .unwrap_or_default();
-
-        info!("Storing memory for user: {}", user_id);
-
-        // Create metadata
-        let mut metadata = MemoryMetadata::new(memory_type);
-        metadata.user_id = Some(user_id.to_string());
-        metadata.agent_id = agent_id;
-        metadata.topics = topics;
-
-        // Store the memory
-        match self
-            .memory_manager
-            .store(content.to_string(), metadata)
-            .await
-        {
-            Ok(memory_id) => {
-                info!("Memory stored successfully with ID: {}", memory_id);
-                let result = json!({
-                    "success": true,
-                    "message": "Memory stored successfully",
-                    "memory_id": memory_id
-                });
-
+        match self.operations.store_memory(payload).await {
+            Ok(response) => {
                 Ok(CallToolResult::success(vec![Content::text(
-                    serde_json::to_string_pretty(&result).unwrap(),
+                    serde_json::to_string_pretty(&response).unwrap(),
                 )]))
             }
             Err(e) => {
                 error!("Failed to store memory: {}", e);
-                Err(ErrorData {
-                    code: rmcp::model::ErrorCode(-32603).into(),
-                    message: format!("Failed to store memory: {}", e).into(),
-                    data: None,
-                })
+                Err(self.tools_error_to_mcp_error(e))
             }
         }
     }
 
-    /// Tool implementation for querying memories (replaces search_memory and recall_context)
+    /// Tool implementation for querying memories
     async fn query_memory(
         &self,
-        arguments: &serde_json::Map<std::string::String, serde_json::Value>,
+        arguments: &Map<String, serde_json::Value>,
     ) -> Result<CallToolResult, ErrorData> {
-        use serde_json::json;
-        use tracing::{debug, error, info};
+        let payload = self.map_to_payload(arguments, &self.agent_id);
 
-        // Extract arguments
-        let query = arguments
-            .get("query")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| ErrorData {
-                code: rmcp::model::ErrorCode(-32602).into(),
-                message: "Missing required argument 'query'".into(),
-                data: None,
-            })?;
-
-        let user_id = arguments
-            .get("user_id")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .or_else(|| {
-                // If no user_id provided but we have an agent_id, use default user_id
-                if let Some(agent) = &self.agent_id {
-                    Some(format!("user_of_{}", agent))
-                } else {
-                    None
-                }
-            });
-
-        // Use provided agent_id or default from service
-        let agent_id = arguments
-            .get("agent_id")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .or_else(|| self.agent_id.clone());
-
-        let memory_type = arguments
-            .get("memory_type")
-            .and_then(|v| v.as_str())
-            .map(|s| MemoryType::parse_with_result(s))
-            .transpose()
-            .map_err(|e| ErrorData {
-                code: rmcp::model::ErrorCode(-32602).into(),
-                message: format!("Invalid memory_type: {}", e).into(),
-                data: None,
-            })?;
-
-        let topics = arguments
-            .get("topics")
-            .and_then(|v| v.as_array())
-            .map(|arr| {
-                arr.iter()
-                    .filter_map(|v| v.as_str())
-                    .map(String::from)
-                    .collect()
-            });
-
-        let k = arguments.get("k").and_then(|v| v.as_u64()).unwrap_or(10) as usize;
-
-        let min_salience = arguments
-            .get("min_salience")
-            .and_then(|v| v.as_f64())
-            .map(|s| s as f32);
-
-        debug!("Querying memories with query: {}", query);
-
-        // Build filters
-        let mut filters = Filters::default();
-        filters.user_id = user_id;
-        filters.agent_id = agent_id;
-        filters.memory_type = memory_type;
-        filters.topics = topics;
-
-        // Apply min_salience filter if provided
-        if let Some(salience) = min_salience {
-            filters.min_importance = Some(salience);
-        }
-
-        // Search memories
-        match self.memory_manager.search(query, &filters, k).await {
-            Ok(memories) => {
-                info!("Found {} matching memories", memories.len());
-
-                let results: Vec<_> = memories
-                    .into_iter()
-                    .map(|m| {
-                        json!({
-                            "id": m.memory.id,
-                            "content": m.memory.content,
-                            "type": format!("{:?}", m.memory.metadata.memory_type),
-                            "user_id": m.memory.metadata.user_id,
-                            "agent_id": m.memory.metadata.agent_id,
-                            "topics": m.memory.metadata.topics,
-                            "salience": m.memory.metadata.importance_score,
-                            "score": m.score,
-                            "created_at": m.memory.created_at
-                        })
-                    })
-                    .collect();
-
-                let result = json!({
-                    "success": true,
-                    "count": results.len(),
-                    "memories": results
-                });
-
+        match self.operations.query_memory(payload).await {
+            Ok(response) => {
                 Ok(CallToolResult::success(vec![Content::text(
-                    serde_json::to_string_pretty(&result).unwrap(),
+                    serde_json::to_string_pretty(&response).unwrap(),
                 )]))
             }
             Err(e) => {
                 error!("Failed to query memories: {}", e);
-                Err(ErrorData {
-                    code: rmcp::model::ErrorCode(-32603).into(),
-                    message: format!("Failed to query memories: {}", e).into(),
-                    data: None,
-                })
+                Err(self.tools_error_to_mcp_error(e))
             }
         }
     }
@@ -297,119 +120,44 @@ impl MemoryMcpService {
     /// Tool implementation for listing memories
     async fn list_memories(
         &self,
-        arguments: &serde_json::Map<std::string::String, serde_json::Value>,
+        arguments: &Map<String, serde_json::Value>,
     ) -> Result<CallToolResult, ErrorData> {
-        use serde_json::json;
-        use tracing::{debug, error, info};
+        let payload = self.map_to_payload(arguments, &self.agent_id);
 
-        // Extract arguments
-        let user_id = arguments
-            .get("user_id")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .or_else(|| {
-                // If no user_id provided but we have an agent_id, use default user_id
-                if let Some(agent) = &self.agent_id {
-                    Some(format!("user_of_{}", agent))
-                } else {
-                    None
-                }
-            });
-
-        // Use provided agent_id or default from service
-        let agent_id = arguments
-            .get("agent_id")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string())
-            .or_else(|| self.agent_id.clone());
-
-        let memory_type = arguments
-            .get("memory_type")
-            .and_then(|v| v.as_str())
-            .map(|s| MemoryType::parse_with_result(s))
-            .transpose()
-            .map_err(|e| ErrorData {
-                code: rmcp::model::ErrorCode(-32602).into(),
-                message: format!("Invalid memory_type: {}", e).into(),
-                data: None,
-            })?;
-
-        // Default limit increased to 100 for better usability, with max limit of 1000
-        let limit = arguments
-            .get("limit")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(20)
-            .min(100) as usize;
-
-        debug!("Listing memories with limit: {}", limit);
-
-        // Build filters
-        let mut filters = Filters::default();
-        filters.user_id = user_id;
-        filters.agent_id = agent_id;
-        filters.memory_type = memory_type;
-
-        // List memories
-        match self.memory_manager.list(&filters, Some(limit)).await {
-            Ok(memories) => {
-                info!("Found {} memories", memories.len());
-
-                let results: Vec<_> = memories
-                    .into_iter()
-                    .map(|m| {
-                        // Create a preview of the content (first 300 characters)
-                        // Safe UTF-8 character boundary slicing
-                        let preview = if m.content.chars().count() > 300 {
-                            let safe_end = m
-                                .content
-                                .char_indices()
-                                .nth(300)
-                                .map(|(idx, _)| idx)
-                                .unwrap_or(0);
-                            format!("{}...", &m.content[..safe_end])
-                        } else {
-                            m.content.clone()
-                        };
-
-                        json!({
-                            "id": m.id,
-                            "type": format!("{:?}", m.metadata.memory_type),
-                            "salience": m.metadata.importance_score,
-                            "preview": preview,
-                            "user_id": m.metadata.user_id,
-                            "agent_id": m.metadata.agent_id,
-                            "topics": m.metadata.topics,
-                            "created_at": m.created_at
-                        })
-                    })
-                    .collect();
-
-                let result = json!({
-                    "success": true,
-                    "count": results.len(),
-                    "memories": results
-                });
-
+        match self.operations.list_memories(payload).await {
+            Ok(response) => {
                 Ok(CallToolResult::success(vec![Content::text(
-                    serde_json::to_string_pretty(&result).unwrap(),
+                    serde_json::to_string_pretty(&response).unwrap(),
                 )]))
             }
             Err(e) => {
                 error!("Failed to list memories: {}", e);
-                Err(ErrorData {
-                    code: rmcp::model::ErrorCode(-32603).into(),
-                    message: format!("Failed to list memories: {}", e).into(),
-                    data: None,
-                })
+                Err(self.tools_error_to_mcp_error(e))
+            }
+        }
+    }
+
+    /// Tool implementation for getting a specific memory by ID
+    async fn get_memory(
+        &self,
+        arguments: &Map<String, serde_json::Value>,
+    ) -> Result<CallToolResult, ErrorData> {
+        let payload = self.map_to_payload(arguments, &self.agent_id);
+
+        match self.operations.get_memory(payload).await {
+            Ok(response) => {
+                Ok(CallToolResult::success(vec![Content::text(
+                    serde_json::to_string_pretty(&response).unwrap(),
+                )]))
+            }
+            Err(e) => {
+                error!("Failed to get memory: {}", e);
+                Err(self.tools_error_to_mcp_error(e))
             }
         }
     }
 
     /// Find default configuration file path
-    /// Tries multiple locations in order:
-    /// 1. Current directory
-    /// 2. User home directory/.config/memo/
-    /// 3. System config directory
     fn find_default_config_path() -> Option<PathBuf> {
         // Try current directory first
         if let Ok(current_dir) = std::env::current_dir() {
@@ -444,67 +192,111 @@ impl MemoryMcpService {
         None
     }
 
-    /// Tool implementation for getting a specific memory
-    async fn get_memory(
+    /// Helper function to convert MCP arguments to MemoryOperationPayload
+    fn map_to_payload(
         &self,
-        arguments: &serde_json::Map<std::string::String, serde_json::Value>,
-    ) -> Result<CallToolResult, ErrorData> {
-        use serde_json::json;
-        use tracing::{debug, error, info};
+        arguments: &Map<String, serde_json::Value>,
+        default_agent_id: &Option<String>,
+    ) -> MemoryOperationPayload {
+        let mut payload = MemoryOperationPayload::default();
 
-        // Extract arguments
-        let memory_id = arguments
-            .get("memory_id")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| ErrorData {
+        // Extract common fields
+        if let Some(content) = arguments.get("content").and_then(|v| v.as_str()) {
+            payload.content = Some(content.to_string());
+        }
+
+        if let Some(query) = arguments.get("query").and_then(|v| v.as_str()) {
+            payload.query = Some(query.to_string());
+        }
+
+        if let Some(memory_id) = arguments.get("memory_id").and_then(|v| v.as_str()) {
+            payload.memory_id = Some(memory_id.to_string());
+        }
+
+        // User ID can be provided or derived from agent ID
+        if let Some(user_id) = arguments.get("user_id").and_then(|v| v.as_str()) {
+            payload.user_id = Some(user_id.to_string());
+        } else if let Some(agent_id) = default_agent_id {
+            // If agent_id is set, derive user_id from it
+            payload.user_id = Some(format!("user_of_{}", agent_id));
+        }
+
+        // Agent ID can be provided or use default
+        if let Some(agent_id) = arguments.get("agent_id").and_then(|v| v.as_str()) {
+            payload.agent_id = Some(agent_id.to_string());
+        } else {
+            payload.agent_id = default_agent_id.clone();
+        }
+
+        if let Some(memory_type) = arguments.get("memory_type").and_then(|v| v.as_str()) {
+            payload.memory_type = Some(memory_type.to_string());
+        }
+
+        if let Some(topics) = arguments.get("topics").and_then(|v| v.as_array()) {
+            payload.topics = Some(
+                topics
+                    .iter()
+                    .filter_map(|v| v.as_str())
+                    .map(String::from)
+                    .collect(),
+            );
+        }
+
+        if let Some(keywords) = arguments.get("keywords").and_then(|v| v.as_array()) {
+            payload.keywords = Some(
+                keywords
+                    .iter()
+                    .filter_map(|v| v.as_str())
+                    .map(String::from)
+                    .collect(),
+            );
+        }
+
+        if let Some(limit) = arguments.get("limit").and_then(|v| v.as_u64()) {
+            payload.limit = Some(limit as usize);
+        }
+
+        if let Some(k) = arguments.get("k").and_then(|v| v.as_u64()) {
+            payload.k = Some(k as usize);
+        }
+
+        if let Some(min_salience) = arguments.get("min_salience").and_then(|v| v.as_f64()) {
+            payload.min_salience = Some(min_salience);
+        }
+
+        payload
+    }
+
+    /// Helper function to convert MemoryToolsError to MCP ErrorData
+    fn tools_error_to_mcp_error(&self, error: MemoryToolsError) -> ErrorData {
+        use MemoryToolsError::*;
+
+        match error {
+            InvalidInput(msg) => ErrorData {
                 code: rmcp::model::ErrorCode(-32602).into(),
-                message: "Missing required argument 'memory_id'. To get a specific memory, you must provide its ID. If you want to list all memories, use 'list_memories'. If you want to search for memories, use 'query_memory'.".into(),
+                message: msg.into(),
                 data: None,
-            })?;
-
-        debug!("Getting memory with ID: {}", memory_id);
-
-        // Get memory
-        match self.memory_manager.get(memory_id).await {
-            Ok(Some(memory)) => {
-                info!("Retrieved memory with ID: {}", memory_id);
-
-                let result = json!({
-                    "success": true,
-                    "memory": {
-                        "id": memory.id,
-                        "content": memory.content,
-                        "type": format!("{:?}", memory.metadata.memory_type),
-                        "user_id": memory.metadata.user_id,
-                        "agent_id": memory.metadata.agent_id,
-                        "topics": memory.metadata.topics,
-                        "salience": memory.metadata.importance_score,
-                        "created_at": memory.created_at,
-                        "updated_at": memory.updated_at,
-                        "metadata": memory.metadata
-                    }
-                });
-
-                Ok(CallToolResult::success(vec![Content::text(
-                    serde_json::to_string_pretty(&result).unwrap(),
-                )]))
-            }
-            Ok(None) => {
-                info!("No memory found with ID: {}", memory_id);
-                Err(ErrorData {
-                    code: rmcp::model::ErrorCode(-32602).into(),
-                    message: format!("Memory with ID '{}' not found", memory_id).into(),
-                    data: None,
-                })
-            }
-            Err(e) => {
-                error!("Failed to get memory: {}", e);
-                Err(ErrorData {
-                    code: rmcp::model::ErrorCode(-32603).into(),
-                    message: format!("Failed to get memory: {}", e).into(),
-                    data: None,
-                })
-            }
+            },
+            Runtime(msg) => ErrorData {
+                code: rmcp::model::ErrorCode(-32603).into(),
+                message: msg.into(),
+                data: None,
+            },
+            MemoryNotFound(msg) => ErrorData {
+                code: rmcp::model::ErrorCode(-32601).into(),
+                message: msg.into(),
+                data: None,
+            },
+            Serialization(_) => ErrorData {
+                code: rmcp::model::ErrorCode(-32603).into(),
+                message: "Serialization error".into(),
+                data: None,
+            },
+            Core(_) => ErrorData {
+                code: rmcp::model::ErrorCode(-32603).into(),
+                message: "Core error".into(),
+                data: None,
+            },
         }
     }
 }
@@ -686,7 +478,8 @@ impl ServerHandler for MemoryMcpService {
                                     },
                                     "required": ["success", "count", "memories"]
                                 }
-                            ).as_object()
+                            )
+                            .as_object()
                             .unwrap()
                             .clone()
                             .into(),
@@ -729,7 +522,6 @@ impl ServerHandler for MemoryMcpService {
                         icons: None,
                         meta: None,
                     },
-
                 ],
                 next_cursor: None,
             })

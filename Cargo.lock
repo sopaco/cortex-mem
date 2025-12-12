@@ -682,6 +682,7 @@ dependencies = [
  "clap",
  "cortex-mem-config",
  "cortex-mem-core",
+ "cortex-mem-tools",
  "dirs 5.0.1",
  "rmcp",
  "schemars",
@@ -702,6 +703,7 @@ dependencies = [
  "async-trait",
  "cortex-mem-config",
  "cortex-mem-core",
+ "cortex-mem-tools",
  "rig-core",
  "serde",
  "serde_json",
@@ -753,6 +755,24 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "unicode-width 0.1.14",
+]
+
+[[package]]
+name = "cortex-mem-tools"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "cortex-mem-config",
+ "cortex-mem-core",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -2178,6 +2198,23 @@ name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
+
+[[package]]
+name = "memory-tools-refactor"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "cortex-mem-config",
+ "cortex-mem-core",
+ "cortex-mem-tools",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
 
 [[package]]
 name = "mime"
