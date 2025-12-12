@@ -1,11 +1,11 @@
 use cortex_mem_config::Config;
 use cortex_mem_core::{MemoryManager};
-use cortex_mem_tools::{MemoryOperations, MemoryOperationPayload, MemoryToolsError};
+use cortex_mem_tools::{MemoryOperations, MemoryOperationPayload, map_mcp_arguments_to_payload};
 use rig::{completion::ToolDefinition, tool::Tool};
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
+use serde_json::{Value, json, Map};
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 // Re-export the error type from cortex-mem-tools for backward compatibility
 pub use cortex_mem_tools::MemoryToolsError as MemoryToolError;
@@ -206,59 +206,59 @@ impl MemoryTool {
         }
     }
 
-    /// Process memory content for display
-    fn process_memory_content(&self, content: &str, memory_type: &str) -> String {
-        // Truncate content for preview if it's too long
-        if content.len() > 500 {
-            let safe_end = content
-                .char_indices()
-                .nth(500)
-                .map(|(idx, _)| idx)
-                .unwrap_or(0);
-            format!("{}...", &content[..safe_end])
-        } else {
-            content.to_string()
-        }
-    }
-
     /// Helper function to convert Rig MemoryArgs to MemoryOperationPayload
     fn map_args_to_payload(&self, args: &MemoryArgs, operation: &str) -> MemoryOperationPayload {
-        let mut payload = MemoryOperationPayload::default();
-
+        // 将MemoryArgs转换为Map<String, Value>，然后使用共享的映射函数
+        let mut map = Map::new();
+        
         // Store operation
-        if operation == "store" && args.content.is_some() {
-            payload.content = args.content.clone();
+        if operation == "store" {
+            if let Some(content) = &args.content {
+                map.insert("content".to_string(), json!(content));
+            }
         }
 
         // Query/Search/Recall operations
-        if (operation == "query" || operation == "recall" || operation == "search") && args.query.is_some() {
-            payload.query = args.query.clone();
+        if operation == "query" || operation == "recall" || operation == "search" {
+            if let Some(query) = &args.query {
+                map.insert("query".to_string(), json!(query));
+            }
         }
 
         // Get operation
-        if operation == "get" && args.memory_id.is_some() {
-            payload.memory_id = args.memory_id.clone();
+        if operation == "get" {
+            if let Some(memory_id) = &args.memory_id {
+                map.insert("memory_id".to_string(), json!(memory_id));
+            }
         }
 
         // Common fields
-        if args.user_id.is_some() {
-            payload.user_id = args.user_id.clone();
-        } else {
-            payload.user_id = self.config.default_user_id.clone();
+        if let Some(user_id) = &args.user_id {
+            map.insert("user_id".to_string(), json!(user_id));
         }
 
-        if args.agent_id.is_some() {
-            payload.agent_id = args.agent_id.clone();
-        } else {
-            payload.agent_id = self.config.default_agent_id.clone();
+        if let Some(agent_id) = &args.agent_id {
+            map.insert("agent_id".to_string(), json!(agent_id));
         }
 
-        payload.memory_type = args.memory_type.clone();
-        payload.topics = args.topics.clone();
-        payload.keywords = args.keywords.clone();
-        payload.limit = args.limit;
+        if let Some(memory_type) = &args.memory_type {
+            map.insert("memory_type".to_string(), json!(memory_type));
+        }
 
-        payload
+        if let Some(topics) = &args.topics {
+            map.insert("topics".to_string(), json!(topics));
+        }
+
+        if let Some(keywords) = &args.keywords {
+            map.insert("keywords".to_string(), json!(keywords));
+        }
+
+        if let Some(limit) = args.limit {
+            map.insert("limit".to_string(), json!(limit));
+        }
+
+        // 使用共享的映射函数
+        map_mcp_arguments_to_payload(&map, &self.config.default_agent_id)
     }
 }
 

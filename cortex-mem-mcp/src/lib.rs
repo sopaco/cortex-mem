@@ -4,7 +4,7 @@ use cortex_mem_core::{
     init::initialize_memory_system,
     memory::MemoryManager,
 };
-use cortex_mem_tools::{MemoryOperations, MemoryOperationPayload, MemoryToolsError};
+use cortex_mem_tools::{MemoryOperations, MemoryToolsError, map_mcp_arguments_to_payload, tools_error_to_mcp_error_code, get_tool_error_message, get_mcp_tool_definitions};
 use rmcp::{
     model::{
         CallToolRequestParam, CallToolResult, Content, ErrorData, ListToolsResult,
@@ -82,7 +82,7 @@ impl MemoryMcpService {
         &self,
         arguments: &Map<String, serde_json::Value>,
     ) -> Result<CallToolResult, ErrorData> {
-        let payload = self.map_to_payload(arguments, &self.agent_id);
+        let payload = map_mcp_arguments_to_payload(arguments, &self.agent_id);
 
         match self.operations.store_memory(payload).await {
             Ok(response) => {
@@ -102,7 +102,7 @@ impl MemoryMcpService {
         &self,
         arguments: &Map<String, serde_json::Value>,
     ) -> Result<CallToolResult, ErrorData> {
-        let payload = self.map_to_payload(arguments, &self.agent_id);
+        let payload = map_mcp_arguments_to_payload(arguments, &self.agent_id);
 
         match self.operations.query_memory(payload).await {
             Ok(response) => {
@@ -122,7 +122,7 @@ impl MemoryMcpService {
         &self,
         arguments: &Map<String, serde_json::Value>,
     ) -> Result<CallToolResult, ErrorData> {
-        let payload = self.map_to_payload(arguments, &self.agent_id);
+        let payload = map_mcp_arguments_to_payload(arguments, &self.agent_id);
 
         match self.operations.list_memories(payload).await {
             Ok(response) => {
@@ -142,7 +142,7 @@ impl MemoryMcpService {
         &self,
         arguments: &Map<String, serde_json::Value>,
     ) -> Result<CallToolResult, ErrorData> {
-        let payload = self.map_to_payload(arguments, &self.agent_id);
+        let payload = map_mcp_arguments_to_payload(arguments, &self.agent_id);
 
         match self.operations.get_memory(payload).await {
             Ok(response) => {
@@ -192,111 +192,12 @@ impl MemoryMcpService {
         None
     }
 
-    /// Helper function to convert MCP arguments to MemoryOperationPayload
-    fn map_to_payload(
-        &self,
-        arguments: &Map<String, serde_json::Value>,
-        default_agent_id: &Option<String>,
-    ) -> MemoryOperationPayload {
-        let mut payload = MemoryOperationPayload::default();
-
-        // Extract common fields
-        if let Some(content) = arguments.get("content").and_then(|v| v.as_str()) {
-            payload.content = Some(content.to_string());
-        }
-
-        if let Some(query) = arguments.get("query").and_then(|v| v.as_str()) {
-            payload.query = Some(query.to_string());
-        }
-
-        if let Some(memory_id) = arguments.get("memory_id").and_then(|v| v.as_str()) {
-            payload.memory_id = Some(memory_id.to_string());
-        }
-
-        // User ID can be provided or derived from agent ID
-        if let Some(user_id) = arguments.get("user_id").and_then(|v| v.as_str()) {
-            payload.user_id = Some(user_id.to_string());
-        } else if let Some(agent_id) = default_agent_id {
-            // If agent_id is set, derive user_id from it
-            payload.user_id = Some(format!("user_of_{}", agent_id));
-        }
-
-        // Agent ID can be provided or use default
-        if let Some(agent_id) = arguments.get("agent_id").and_then(|v| v.as_str()) {
-            payload.agent_id = Some(agent_id.to_string());
-        } else {
-            payload.agent_id = default_agent_id.clone();
-        }
-
-        if let Some(memory_type) = arguments.get("memory_type").and_then(|v| v.as_str()) {
-            payload.memory_type = Some(memory_type.to_string());
-        }
-
-        if let Some(topics) = arguments.get("topics").and_then(|v| v.as_array()) {
-            payload.topics = Some(
-                topics
-                    .iter()
-                    .filter_map(|v| v.as_str())
-                    .map(String::from)
-                    .collect(),
-            );
-        }
-
-        if let Some(keywords) = arguments.get("keywords").and_then(|v| v.as_array()) {
-            payload.keywords = Some(
-                keywords
-                    .iter()
-                    .filter_map(|v| v.as_str())
-                    .map(String::from)
-                    .collect(),
-            );
-        }
-
-        if let Some(limit) = arguments.get("limit").and_then(|v| v.as_u64()) {
-            payload.limit = Some(limit as usize);
-        }
-
-        if let Some(k) = arguments.get("k").and_then(|v| v.as_u64()) {
-            payload.k = Some(k as usize);
-        }
-
-        if let Some(min_salience) = arguments.get("min_salience").and_then(|v| v.as_f64()) {
-            payload.min_salience = Some(min_salience);
-        }
-
-        payload
-    }
-
     /// Helper function to convert MemoryToolsError to MCP ErrorData
     fn tools_error_to_mcp_error(&self, error: MemoryToolsError) -> ErrorData {
-        use MemoryToolsError::*;
-
-        match error {
-            InvalidInput(msg) => ErrorData {
-                code: rmcp::model::ErrorCode(-32602).into(),
-                message: msg.into(),
-                data: None,
-            },
-            Runtime(msg) => ErrorData {
-                code: rmcp::model::ErrorCode(-32603).into(),
-                message: msg.into(),
-                data: None,
-            },
-            MemoryNotFound(msg) => ErrorData {
-                code: rmcp::model::ErrorCode(-32601).into(),
-                message: msg.into(),
-                data: None,
-            },
-            Serialization(_) => ErrorData {
-                code: rmcp::model::ErrorCode(-32603).into(),
-                message: "Serialization error".into(),
-                data: None,
-            },
-            Core(_) => ErrorData {
-                code: rmcp::model::ErrorCode(-32603).into(),
-                message: "Core error".into(),
-                data: None,
-            },
+        ErrorData {
+            code: rmcp::model::ErrorCode(tools_error_to_mcp_error_code(&error)).into(),
+            message: get_tool_error_message(&error).into(),
+            data: None,
         }
     }
 }
@@ -320,209 +221,22 @@ impl ServerHandler for MemoryMcpService {
         _context: RequestContext<RoleServer>,
     ) -> impl std::future::Future<Output = Result<ListToolsResult, ErrorData>> + Send + '_ {
         async move {
+            let tool_definitions = get_mcp_tool_definitions();
+            let tools: Vec<Tool> = tool_definitions.into_iter().map(|def| {
+                Tool {
+                    name: def.name.into(),
+                    title: def.title.map(|t| t.into()),
+                    description: def.description.map(|d| d.into()),
+                    input_schema: def.input_schema.as_object().unwrap().clone().into(),
+                    output_schema: def.output_schema.map(|schema| schema.as_object().unwrap().clone().into()),
+                    annotations: None,
+                    icons: None,
+                    meta: None,
+                }
+            }).collect();
+
             Ok(ListToolsResult {
-                tools: vec![
-                    Tool {
-                        name: "store_memory".into(),
-                        title: Some("Store Memory".into()),
-                        description: Some("Store a new memory in the system with specified content and optional metadata.".into()),
-                        input_schema: serde_json::json!({
-                            "type": "object",
-                            "properties": {
-                                "content": {
-                                    "type": "string",
-                                    "description": "The content of the memory to store"
-                                },
-                                "user_id": {
-                                    "type": "string",
-                                    "description": "User ID associated with the memory (required unless --agent was specified on startup)"
-                                },
-                                "agent_id": {
-                                    "type": "string",
-                                    "description": "Agent ID associated with the memory (optional, defaults to configured agent)"
-                                },
-                                "memory_type": {
-                                    "type": "string",
-                                    "enum": ["conversational", "procedural", "factual", "semantic", "episodic", "personal"],
-                                    "description": "Type of memory",
-                                    "default": "conversational"
-                                },
-                                "topics": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "Topics to associate with the memory"
-                                }
-                            },
-                            "required": ["content"]
-                        }).as_object().unwrap().clone().into(),
-                        output_schema: Some(
-                            serde_json::json!(
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "success": {"type": "boolean"},
-                                        "memory_id": {"type": "string"},
-                                        "message": {"type": "string"}
-                                    },
-                                    "required": ["success", "memory_id", "message"]
-                                }
-                            )
-                            .as_object()
-                            .unwrap()
-                            .clone()
-                            .into(),
-                        ),
-                        annotations: None,
-                        icons: None,
-                        meta: None,
-                    },
-                    Tool {
-                        name: "query_memory".into(),
-                        title: Some("Query Memory".into()),
-                        description: Some("Search memories using semantic similarity and filters.".into()),
-                        input_schema: serde_json::json!({
-                            "type": "object",
-                            "properties": {
-                                "query": {
-                                    "type": "string",
-                                    "description": "Query string for semantic search"
-                                },
-                                "k": {
-                                    "type": "integer",
-                                    "description": "Maximum number of results to return",
-                                    "default": 10
-                                },
-                                "memory_type": {
-                                    "type": "string",
-                                    "enum": ["conversational", "procedural", "factual", "semantic", "episodic", "personal"],
-                                    "description": "Type of memory to filter by"
-                                },
-                                "min_salience": {
-                                    "type": "number",
-                                    "description": "Minimum salience/importance score threshold (0-1)",
-                                    "minimum": 0,
-                                    "maximum": 1
-                                },
-                                "topics": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                    "description": "Topics to filter memories by"
-                                },
-                                "user_id": {
-                                    "type": "string",
-                                    "description": "User ID to filter memories (optional, defaults to configured agent's user)"
-                                },
-                                "agent_id": {
-                                    "type": "string",
-                                    "description": "Agent ID to filter memories (optional, defaults to configured agent)"
-                                }
-                            },
-                            "required": ["query"]
-                        }).as_object().unwrap().clone().into(),
-                        output_schema: Some(
-                            serde_json::json!(
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "success": {"type": "boolean"},
-                                        "count": {"type": "number"},
-                                        "memories": {"type": "array", "items": {"type": "object"}}
-                                    },
-                                    "required": ["success", "count", "memories"]
-                                }
-                            ).as_object()
-                            .unwrap()
-                            .clone()
-                            .into(),
-                        ),
-                        annotations: None,
-                        icons: None,
-                        meta: None,
-                    },
-                    Tool {
-                        name: "list_memories".into(),
-                        title: Some("List Memories".into()),
-                        description: Some("Retrieve memories with optional filtering. Adjust the limit parameter to control the number of results returned (default: 100, max: 1000).".into()),
-                        input_schema: serde_json::json!({
-                            "type": "object",
-                            "properties": {
-                                "limit": {
-                                    "type": "integer",
-                                    "description": "Maximum number of memories to return (default: 100, max: 1000)",
-                                    "default": 100,
-                                    "maximum": 1000
-                                },
-                                "memory_type": {
-                                    "type": "string",
-                                    "enum": ["conversational", "procedural", "factual", "semantic", "episodic", "personal"],
-                                    "description": "Type of memory to filter by"
-                                },
-                                "user_id": {
-                                    "type": "string",
-                                    "description": "User ID to filter memories (optional, defaults to configured agent's user)"
-                                },
-                                "agent_id": {
-                                    "type": "string",
-                                    "description": "Agent ID to filter memories (optional, defaults to configured agent)"
-                                }
-                            }
-                        }).as_object().unwrap().clone().into(),
-                        output_schema: Some(
-                            serde_json::json!(
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "success": {"type": "boolean"},
-                                        "count": {"type": "number"},
-                                        "memories": {"type": "array", "items": {"type": "object"}}
-                                    },
-                                    "required": ["success", "count", "memories"]
-                                }
-                            )
-                            .as_object()
-                            .unwrap()
-                            .clone()
-                            .into(),
-                        ),
-                        annotations: None,
-                        icons: None,
-                        meta: None,
-                    },
-                    Tool {
-                        name: "get_memory".into(),
-                        title: Some("Get Memory by ID".into()),
-                        description: Some("Retrieve a specific memory by its exact ID.".into()),
-                        input_schema: serde_json::json!({
-                            "type": "object",
-                            "properties": {
-                                "memory_id": {
-                                    "type": "string",
-                                    "description": "Exact ID of the memory to retrieve (required)"
-                                }
-                            },
-                            "required": ["memory_id"]
-                        }).as_object().unwrap().clone().into(),
-                        output_schema: Some(
-                            serde_json::json!(
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "success": {"type": "boolean"},
-                                        "memory": {"type": "object"}
-                                    },
-                                    "required": ["success", "memory"]
-                                }
-                            )
-                            .as_object()
-                            .unwrap()
-                            .clone()
-                            .into(),
-                        ),
-                        annotations: None,
-                        icons: None,
-                        meta: None,
-                    },
-                ],
+                tools,
                 next_cursor: None,
             })
         }
