@@ -1,12 +1,9 @@
 use cortex_mem_config::Config;
-use cortex_mem_rig::{
-    memory::manager::MemoryManager,
-    tool::{MemoryArgs, MemoryToolConfig, create_memory_tool},
-};
+use cortex_mem_core::memory::MemoryManager;
+use cortex_mem_rig::{ListMemoriesArgs, create_memory_tools, tool::MemoryToolConfig};
 use rig::{
     agent::Agent,
     client::CompletionClient,
-    completion::Prompt,
     providers::openai::{Client, CompletionModel},
     tool::Tool,
 };
@@ -23,7 +20,8 @@ pub async fn create_memory_agent(
     config: &Config,
 ) -> Result<Agent<CompletionModel>, Box<dyn std::error::Error>> {
     // 创建记忆工具
-    let memory_tool = create_memory_tool(memory_manager.clone(), &config, Some(memory_tool_config));
+    let memory_tools =
+        create_memory_tools(memory_manager.clone(), &config, Some(memory_tool_config));
 
     let llm_client = Client::builder(&config.llm.api_key)
         .base_url(&config.llm.api_base_url)
@@ -34,7 +32,11 @@ pub async fn create_memory_agent(
         .completion_model(&config.llm.model_efficient)
         .completions_api()
         .into_agent_builder()
-        .tool(memory_tool) // 注册记忆工具
+        // 注册四个独立的记忆工具，保持与MCP一致
+        .tool(memory_tools.store_memory())
+        .tool(memory_tools.query_memory())
+        .tool(memory_tools.list_memories())
+        .tool(memory_tools.get_memory())
         .preamble(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
 
 你的工具:
@@ -65,7 +67,7 @@ pub async fn extract_user_basic_info(
     memory_manager: Arc<MemoryManager>,
     user_id: &str,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    let memory_tool = create_memory_tool(
+    let memory_tools = create_memory_tools(
         memory_manager,
         config,
         Some(MemoryToolConfig {
@@ -76,35 +78,28 @@ pub async fn extract_user_basic_info(
 
     let mut context = String::new();
 
-    let search_args_personal = MemoryArgs {
-        action: "search".to_string(),
-        query: None,
-        user_id: Some(user_id.to_string()),
+    let search_args_personal = ListMemoriesArgs {
         limit: Some(20),
-        content: None,
-        memory_id: None,
+        memory_type: Some("personal".to_string()), // 使用小写以匹配新API
+        user_id: Some(user_id.to_string()),
         agent_id: None,
-        memory_type: Some("Personal".to_owned()),
-        topics: None,
-        keywords: None,
     };
 
-    let search_args_factual = MemoryArgs {
-        action: "search".to_string(),
-        query: None,
-        user_id: Some(user_id.to_string()),
+    let search_args_factual = ListMemoriesArgs {
         limit: Some(20),
-        content: None,
-        memory_id: None,
+        memory_type: Some("factual".to_string()), // 使用小写以匹配新API
+        user_id: Some(user_id.to_string()),
         agent_id: None,
-        memory_type: Some("Factual".to_owned()),
-        topics: None,
-        keywords: None,
     };
 
-    if let Ok(search_result) = memory_tool.call(search_args_personal).await {
+    if let Ok(search_result) = memory_tools
+        .list_memories()
+        .call(search_args_personal)
+        .await
+    {
         if let Some(data) = search_result.data {
-            if let Some(results) = data.get("results").and_then(|r| r.as_array()) {
+            // 根据新的MCP格式调整数据结构访问
+            if let Some(results) = data.get("memories").and_then(|r| r.as_array()) {
                 if !results.is_empty() {
                     context.push_str("用户基本信息 - 特征:\n");
                     for (i, result) in results.iter().enumerate() {
@@ -118,9 +113,9 @@ pub async fn extract_user_basic_info(
         }
     }
 
-    if let Ok(search_result) = memory_tool.call(search_args_factual).await {
+    if let Ok(search_result) = memory_tools.list_memories().call(search_args_factual).await {
         if let Some(data) = search_result.data {
-            if let Some(results) = data.get("results").and_then(|r| r.as_array()) {
+            if let Some(results) = data.get("memories").and_then(|r| r.as_array()) {
                 if !results.is_empty() {
                     context.push_str("用户基本信息 - 事实:\n");
                     for (i, result) in results.iter().enumerate() {
@@ -277,8 +272,8 @@ pub async fn store_conversations_batch(
     let conversation_processor =
         cortex_mem_rig::processor::ConversationProcessor::new(memory_manager);
 
-    let metadata = cortex_mem_rig::types::MemoryMetadata::new(
-        cortex_mem_rig::types::MemoryType::Conversational,
+    let metadata = cortex_mem_core::types::MemoryMetadata::new(
+        cortex_mem_core::types::MemoryType::Conversational,
     )
     .with_user_id(user_id.to_string());
 
@@ -286,14 +281,14 @@ pub async fn store_conversations_batch(
     let mut messages = Vec::new();
     for (user_msg, assistant_msg) in conversations {
         // 添加用户消息
-        messages.push(cortex_mem_rig::types::Message {
+        messages.push(cortex_mem_core::types::Message {
             role: "user".to_string(),
             content: user_msg.clone(),
             name: None,
         });
 
         // 添加助手回复
-        messages.push(cortex_mem_rig::types::Message {
+        messages.push(cortex_mem_core::types::Message {
             role: "assistant".to_string(),
             content: assistant_msg.clone(),
             name: None,

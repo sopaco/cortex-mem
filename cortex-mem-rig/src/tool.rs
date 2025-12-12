@@ -1,9 +1,9 @@
 use cortex_mem_config::Config;
-use cortex_mem_core::{MemoryManager};
-use cortex_mem_tools::{MemoryOperations, MemoryOperationPayload, map_mcp_arguments_to_payload};
+use cortex_mem_core::MemoryManager;
+use cortex_mem_tools::{MemoryOperations, get_mcp_tool_definitions, map_mcp_arguments_to_payload};
 use rig::{completion::ToolDefinition, tool::Tool};
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json, Map};
+use serde_json::{Map, Value, json};
 use std::sync::Arc;
 use tracing::{error, info};
 
@@ -19,37 +19,59 @@ pub struct MemoryToolConfig {
     pub search_similarity_threshold: Option<f32>,
 }
 
-/// Memory tool arguments
+/// Store Memory tool arguments
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MemoryArgs {
-    pub action: String,
-    pub content: Option<String>,
-    pub query: Option<String>,
-    pub memory_id: Option<String>,
+pub struct StoreMemoryArgs {
+    pub content: String,
     pub user_id: Option<String>,
     pub agent_id: Option<String>,
     pub memory_type: Option<String>,
     pub topics: Option<Vec<String>>,
-    pub keywords: Option<Vec<String>>,
-    pub limit: Option<usize>,
 }
 
-/// Memory tool output
+/// Query Memory tool arguments
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MemoryOutput {
+pub struct QueryMemoryArgs {
+    pub query: String,
+    pub k: Option<usize>,
+    pub memory_type: Option<String>,
+    pub min_salience: Option<f64>,
+    pub topics: Option<Vec<String>>,
+    pub user_id: Option<String>,
+    pub agent_id: Option<String>,
+}
+
+/// List Memories tool arguments
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ListMemoriesArgs {
+    pub limit: Option<usize>,
+    pub memory_type: Option<String>,
+    pub user_id: Option<String>,
+    pub agent_id: Option<String>,
+}
+
+/// Get Memory tool arguments
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GetMemoryArgs {
+    pub memory_id: String,
+}
+
+/// Common tool output
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemoryToolOutput {
     pub success: bool,
     pub message: String,
     pub data: Option<Value>,
 }
 
-/// Memory Tool implementation using shared operations
-pub struct MemoryTool {
+/// Base struct for memory tools that shares common functionality
+pub struct MemoryToolsBase {
     operations: MemoryOperations,
     config: MemoryToolConfig,
 }
 
-impl MemoryTool {
-    /// Create a new memory tool with the provided memory manager and configuration
+impl MemoryToolsBase {
+    /// Create a new memory tools base with the provided memory manager and configuration
     pub fn new(
         memory_manager: Arc<MemoryManager>,
         global_config: &Config,
@@ -87,250 +109,53 @@ impl MemoryTool {
             config.max_search_results.unwrap_or(10),
         );
 
-        Self {
-            operations,
-            config,
-        }
+        Self { operations, config }
     }
 
-    /// Get the effective max search results
-    fn get_effective_max_search_results(&self) -> usize {
-        self.config.max_search_results.unwrap_or(10)
-    }
-
-    /// Get the effective search similarity threshold
-    fn get_effective_search_similarity_threshold(&self) -> Option<f32> {
-        self.config.search_similarity_threshold
-    }
-
-    /// Store a new memory
-    async fn store_memory(&self, args: &MemoryArgs) -> Result<MemoryOutput, MemoryToolError> {
-        let payload = self.map_args_to_payload(args, "store");
-
-        match self.operations.store_memory(payload).await {
-            Ok(response) => {
-                info!("Memory stored via rig tool");
-                Ok(MemoryOutput {
-                    success: response.success,
-                    message: response.message,
-                    data: response.data,
-                })
-            }
-            Err(e) => {
-                error!("Failed to store memory via rig tool: {}", e);
-                Err(e)
-            }
+    /// Convert JSON values to a Map for the map_mcp_arguments_to_payload function
+    fn args_to_map(&self, args: &serde_json::Value) -> Map<String, Value> {
+        if let Value::Object(map) = args {
+            map.clone()
+        } else {
+            Map::new()
         }
-    }
-
-    /// Search memories by semantic similarity
-    async fn search_memory(&self, args: &MemoryArgs) -> Result<MemoryOutput, MemoryToolError> {
-        // If query is None, fall back to listing by filters
-        if args.query.is_none() {
-            return self.list_memory_by_filters(args).await;
-        }
-
-        let payload = self.map_args_to_payload(args, "search");
-
-        match self.operations.query_memory(payload).await {
-            Ok(response) => {
-                Ok(MemoryOutput {
-                    success: response.success,
-                    message: response.message,
-                    data: response.data,
-                })
-            }
-            Err(e) => {
-                error!("Failed to search memories via rig tool: {}", e);
-                Err(e)
-            }
-        }
-    }
-
-    /// List memories by filters without vector search
-    async fn list_memory_by_filters(
-        &self,
-        args: &MemoryArgs,
-    ) -> Result<MemoryOutput, MemoryToolError> {
-        let payload = self.map_args_to_payload(args, "list");
-
-        match self.operations.list_memories(payload).await {
-            Ok(response) => {
-                Ok(MemoryOutput {
-                    success: response.success,
-                    message: response.message,
-                    data: response.data,
-                })
-            }
-            Err(e) => {
-                error!("Failed to list memories via rig tool: {}", e);
-                Err(e)
-            }
-        }
-    }
-
-    /// Recall context for a query
-    async fn recall_context(&self, args: &MemoryArgs) -> Result<MemoryOutput, MemoryToolError> {
-        if args.query.is_none() {
-            return Err(MemoryToolError::InvalidInput(
-                "Query is required for recall context".to_string(),
-            ));
-        }
-
-        // Recall context is essentially a query operation
-        self.search_memory(args).await
-    }
-
-    /// Get a specific memory by ID
-    async fn get_memory(&self, args: &MemoryArgs) -> Result<MemoryOutput, MemoryToolError> {
-        if args.memory_id.is_none() {
-            return Err(MemoryToolError::InvalidInput(
-                "Memory ID is required for get action".to_string(),
-            ));
-        }
-
-        let payload = self.map_args_to_payload(args, "get");
-
-        match self.operations.get_memory(payload).await {
-            Ok(response) => {
-                Ok(MemoryOutput {
-                    success: response.success,
-                    message: response.message,
-                    data: response.data,
-                })
-            }
-            Err(e) => {
-                error!("Failed to get memory via rig tool: {}", e);
-                Err(e)
-            }
-        }
-    }
-
-    /// Helper function to convert Rig MemoryArgs to MemoryOperationPayload
-    fn map_args_to_payload(&self, args: &MemoryArgs, operation: &str) -> MemoryOperationPayload {
-        // 将MemoryArgs转换为Map<String, Value>，然后使用共享的映射函数
-        let mut map = Map::new();
-        
-        // Store operation
-        if operation == "store" {
-            if let Some(content) = &args.content {
-                map.insert("content".to_string(), json!(content));
-            }
-        }
-
-        // Query/Search/Recall operations
-        if operation == "query" || operation == "recall" || operation == "search" {
-            if let Some(query) = &args.query {
-                map.insert("query".to_string(), json!(query));
-            }
-        }
-
-        // Get operation
-        if operation == "get" {
-            if let Some(memory_id) = &args.memory_id {
-                map.insert("memory_id".to_string(), json!(memory_id));
-            }
-        }
-
-        // Common fields
-        if let Some(user_id) = &args.user_id {
-            map.insert("user_id".to_string(), json!(user_id));
-        }
-
-        if let Some(agent_id) = &args.agent_id {
-            map.insert("agent_id".to_string(), json!(agent_id));
-        }
-
-        if let Some(memory_type) = &args.memory_type {
-            map.insert("memory_type".to_string(), json!(memory_type));
-        }
-
-        if let Some(topics) = &args.topics {
-            map.insert("topics".to_string(), json!(topics));
-        }
-
-        if let Some(keywords) = &args.keywords {
-            map.insert("keywords".to_string(), json!(keywords));
-        }
-
-        if let Some(limit) = args.limit {
-            map.insert("limit".to_string(), json!(limit));
-        }
-
-        // 使用共享的映射函数
-        map_mcp_arguments_to_payload(&map, &self.config.default_agent_id)
     }
 }
 
-impl Tool for MemoryTool {
-    const NAME: &'static str = "CortexMemoryTool";
+/// Store Memory Tool
+pub struct StoreMemoryTool {
+    base: Arc<MemoryToolsBase>,
+}
+
+impl StoreMemoryTool {
+    pub fn new(base: Arc<MemoryToolsBase>) -> Self {
+        Self { base }
+    }
+}
+
+impl Tool for StoreMemoryTool {
+    const NAME: &'static str = "store_memory";
 
     type Error = MemoryToolError;
-    type Args = MemoryArgs;
-    type Output = MemoryOutput;
+    type Args = StoreMemoryArgs;
+    type Output = MemoryToolOutput;
 
     fn definition(
         &self,
         _prompt: String,
     ) -> impl std::future::Future<Output = ToolDefinition> + Send + Sync {
         async move {
+            // Get tool definition from MCP definitions
+            let tool_definitions = get_mcp_tool_definitions();
+            let def = tool_definitions
+                .iter()
+                .find(|d| d.name == "store_memory")
+                .expect(" store_memory tool definition should exist");
+
             ToolDefinition {
                 name: Self::NAME.to_string(),
-                description: "Store, search, and retrieve agent memories. Supports storing new memories, searching existing ones, and recalling context.".to_string(),
-                parameters: json!({
-                    "type": "object",
-                    "properties": {
-                        "action": {
-                            "type": "string",
-                            "enum": ["store", "search", "recall", "get"],
-                            "description": "Action to perform: store (save new memory), search (find memories), recall (get context), get (retrieve specific memory)"
-                        },
-                        "content": {
-                            "type": "string",
-                            "description": "Content to store (required for store action)"
-                        },
-                        "query": {
-                            "type": "string",
-                            "description": "Search query (required for search and recall actions)"
-                        },
-                        "memory_id": {
-                            "type": "string",
-                            "description": "Memory ID (required for get action)"
-                        },
-                        "user_id": {
-                            "type": "string",
-                            "description": "User ID for filtering (optional)"
-                        },
-                        "agent_id": {
-                            "type": "string",
-                            "description": "Agent ID for filtering (optional)"
-                        },
-                        "memory_type": {
-                            "type": "string",
-                            "enum": ["conversational", "procedural", "factual"],
-                            "description": "Type of memory (optional, defaults to conversational)"
-                        },
-                        "topics": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            },
-                            "description": "Topics to filter memories by (optional)"
-                        },
-                        "keywords": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            },
-                            "description": "Keywords to filter memories by (optional)"
-                        },
-                        "limit": {
-                            "type": "integer",
-                            "description": "Maximum number of results (optional, defaults to configured max)"
-                        }
-                    },
-                    "required": ["action"]
-                }),
+                description: def.description.clone().unwrap_or_default(),
+                parameters: def.input_schema.clone(),
             }
         }
     }
@@ -340,17 +165,268 @@ impl Tool for MemoryTool {
         args: Self::Args,
     ) -> impl std::future::Future<Output = Result<Self::Output, Self::Error>> + Send {
         async move {
-            match args.action.as_str() {
-                "store" => self.store_memory(&args).await,
-                "search" => self.search_memory(&args).await,
-                "recall" => self.recall_context(&args).await,
-                "get" => self.get_memory(&args).await,
-                _ => Err(MemoryToolError::InvalidInput(format!(
-                    "Unknown action: {}. Supported actions: store, search, recall, get",
-                    args.action
-                ))),
+            // Convert args to JSON Value
+            let args_json = json!(args);
+            let arguments = self.base.args_to_map(&args_json);
+
+            // Map to payload using shared function
+            let payload =
+                map_mcp_arguments_to_payload(&arguments, &self.base.config.default_agent_id);
+
+            match self.base.operations.store_memory(payload).await {
+                Ok(response) => {
+                    info!("Memory stored via rig tool");
+                    Ok(MemoryToolOutput {
+                        success: response.success,
+                        message: response.message,
+                        data: response.data,
+                    })
+                }
+                Err(e) => {
+                    error!("Failed to store memory via rig tool: {}", e);
+                    Err(e)
+                }
             }
         }
+    }
+}
+
+/// Query Memory Tool
+pub struct QueryMemoryTool {
+    base: Arc<MemoryToolsBase>,
+}
+
+impl QueryMemoryTool {
+    pub fn new(base: Arc<MemoryToolsBase>) -> Self {
+        Self { base }
+    }
+}
+
+impl Tool for QueryMemoryTool {
+    const NAME: &'static str = "query_memory";
+
+    type Error = MemoryToolError;
+    type Args = QueryMemoryArgs;
+    type Output = MemoryToolOutput;
+
+    fn definition(
+        &self,
+        _prompt: String,
+    ) -> impl std::future::Future<Output = ToolDefinition> + Send + Sync {
+        async move {
+            // Get tool definition from MCP definitions
+            let tool_definitions = get_mcp_tool_definitions();
+            let def = tool_definitions
+                .iter()
+                .find(|d| d.name == "query_memory")
+                .expect("query_memory tool definition should exist");
+
+            ToolDefinition {
+                name: Self::NAME.to_string(),
+                description: def.description.clone().unwrap_or_default(),
+                parameters: def.input_schema.clone(),
+            }
+        }
+    }
+
+    fn call(
+        &self,
+        args: Self::Args,
+    ) -> impl std::future::Future<Output = Result<Self::Output, Self::Error>> + Send {
+        async move {
+            // Convert args to JSON Value
+            let args_json = json!(args);
+            let arguments = self.base.args_to_map(&args_json);
+
+            // Map to payload using shared function
+            let payload =
+                map_mcp_arguments_to_payload(&arguments, &self.base.config.default_agent_id);
+
+            match self.base.operations.query_memory(payload).await {
+                Ok(response) => Ok(MemoryToolOutput {
+                    success: response.success,
+                    message: response.message,
+                    data: response.data,
+                }),
+                Err(e) => {
+                    error!("Failed to query memories via rig tool: {}", e);
+                    Err(e)
+                }
+            }
+        }
+    }
+}
+
+/// List Memories Tool
+pub struct ListMemoriesTool {
+    base: Arc<MemoryToolsBase>,
+}
+
+impl ListMemoriesTool {
+    pub fn new(base: Arc<MemoryToolsBase>) -> Self {
+        Self { base }
+    }
+}
+
+impl Tool for ListMemoriesTool {
+    const NAME: &'static str = "list_memories";
+
+    type Error = MemoryToolError;
+    type Args = ListMemoriesArgs;
+    type Output = MemoryToolOutput;
+
+    fn definition(
+        &self,
+        _prompt: String,
+    ) -> impl std::future::Future<Output = ToolDefinition> + Send + Sync {
+        async move {
+            // Get tool definition from MCP definitions
+            let tool_definitions = get_mcp_tool_definitions();
+            let def = tool_definitions
+                .iter()
+                .find(|d| d.name == "list_memories")
+                .expect("list_memories tool definition should exist");
+
+            ToolDefinition {
+                name: Self::NAME.to_string(),
+                description: def.description.clone().unwrap_or_default(),
+                parameters: def.input_schema.clone(),
+            }
+        }
+    }
+
+    fn call(
+        &self,
+        args: Self::Args,
+    ) -> impl std::future::Future<Output = Result<Self::Output, Self::Error>> + Send {
+        async move {
+            // Convert args to JSON Value
+            let args_json = json!(args);
+            let arguments = self.base.args_to_map(&args_json);
+
+            // Map to payload using shared function
+            let payload =
+                map_mcp_arguments_to_payload(&arguments, &self.base.config.default_agent_id);
+
+            match self.base.operations.list_memories(payload).await {
+                Ok(response) => Ok(MemoryToolOutput {
+                    success: response.success,
+                    message: response.message,
+                    data: response.data,
+                }),
+                Err(e) => {
+                    error!("Failed to list memories via rig tool: {}", e);
+                    Err(e)
+                }
+            }
+        }
+    }
+}
+
+/// Get Memory Tool
+pub struct GetMemoryTool {
+    base: Arc<MemoryToolsBase>,
+}
+
+impl GetMemoryTool {
+    pub fn new(base: Arc<MemoryToolsBase>) -> Self {
+        Self { base }
+    }
+}
+
+impl Tool for GetMemoryTool {
+    const NAME: &'static str = "get_memory";
+
+    type Error = MemoryToolError;
+    type Args = GetMemoryArgs;
+    type Output = MemoryToolOutput;
+
+    fn definition(
+        &self,
+        _prompt: String,
+    ) -> impl std::future::Future<Output = ToolDefinition> + Send + Sync {
+        async move {
+            // Get tool definition from MCP definitions
+            let tool_definitions = get_mcp_tool_definitions();
+            let def = tool_definitions
+                .iter()
+                .find(|d| d.name == "get_memory")
+                .expect("get_memory tool definition should exist");
+
+            ToolDefinition {
+                name: Self::NAME.to_string(),
+                description: def.description.clone().unwrap_or_default(),
+                parameters: def.input_schema.clone(),
+            }
+        }
+    }
+
+    fn call(
+        &self,
+        args: Self::Args,
+    ) -> impl std::future::Future<Output = Result<Self::Output, Self::Error>> + Send {
+        async move {
+            // Convert args to JSON Value
+            let args_json = json!(args);
+            let arguments = self.base.args_to_map(&args_json);
+
+            // Map to payload using shared function
+            let payload =
+                map_mcp_arguments_to_payload(&arguments, &self.base.config.default_agent_id);
+
+            match self.base.operations.get_memory(payload).await {
+                Ok(response) => Ok(MemoryToolOutput {
+                    success: response.success,
+                    message: response.message,
+                    data: response.data,
+                }),
+                Err(e) => {
+                    error!("Failed to get memory via rig tool: {}", e);
+                    Err(e)
+                }
+            }
+        }
+    }
+}
+
+/// MemoryTools struct that provides all memory tools
+pub struct MemoryTools {
+    base: Arc<MemoryToolsBase>,
+}
+
+impl MemoryTools {
+    /// Create new memory tools with the provided memory manager and configuration
+    pub fn new(
+        memory_manager: Arc<MemoryManager>,
+        global_config: &Config,
+        custom_config: Option<MemoryToolConfig>,
+    ) -> Self {
+        let base = Arc::new(MemoryToolsBase::new(
+            memory_manager,
+            global_config,
+            custom_config,
+        ));
+        Self { base }
+    }
+
+    /// Get the store memory tool
+    pub fn store_memory(&self) -> StoreMemoryTool {
+        StoreMemoryTool::new(self.base.clone())
+    }
+
+    /// Get the query memory tool
+    pub fn query_memory(&self) -> QueryMemoryTool {
+        QueryMemoryTool::new(self.base.clone())
+    }
+
+    /// Get the list memories tool
+    pub fn list_memories(&self) -> ListMemoriesTool {
+        ListMemoriesTool::new(self.base.clone())
+    }
+
+    /// Get the get memory tool
+    pub fn get_memory(&self) -> GetMemoryTool {
+        GetMemoryTool::new(self.base.clone())
     }
 }
 
@@ -366,11 +442,128 @@ impl Default for MemoryToolConfig {
     }
 }
 
-/// Create a memory tool with default configuration
-pub fn create_memory_tool(
+/// Create memory tools with default configuration
+pub fn create_memory_tools(
     memory_manager: Arc<MemoryManager>,
     global_config: &Config,
     custom_config: Option<MemoryToolConfig>,
-) -> MemoryTool {
-    MemoryTool::new(memory_manager, global_config, custom_config)
+) -> MemoryTools {
+    MemoryTools::new(memory_manager, global_config, custom_config)
+}
+
+// Backward compatibility - keep the old MemoryTool as a wrapper around the new tools
+#[deprecated(note = "Use MemoryTools instead and get individual tools")]
+pub struct MemoryTool {
+    tools: MemoryTools,
+}
+
+#[allow(deprecated)]
+impl MemoryTool {
+    #[deprecated(note = "Use create_memory_tools instead")]
+    pub fn new(
+        memory_manager: Arc<MemoryManager>,
+        global_config: &Config,
+        custom_config: Option<MemoryToolConfig>,
+    ) -> Self {
+        let tools = MemoryTools::new(memory_manager, global_config, custom_config);
+        Self { tools }
+    }
+}
+
+#[allow(deprecated)]
+impl Tool for MemoryTool {
+    const NAME: &'static str = "CortexMemoryTool";
+
+    type Error = MemoryToolError;
+    type Args = serde_json::Value;
+    type Output = MemoryToolOutput;
+
+    fn definition(
+        &self,
+        _prompt: String,
+    ) -> impl std::future::Future<Output = ToolDefinition> + Send + Sync {
+        async move {
+            // Provide a combined definition for backward compatibility
+            ToolDefinition {
+                name: Self::NAME.to_string(),
+                description: "Legacy wrapper for memory tools. Please use individual tools (store_memory, query_memory, list_memories, get_memory) instead.".to_string(),
+                parameters: json!({
+                    "type": "object",
+                    "properties": {
+                        "tool": {
+                            "type": "string",
+                            "enum": ["store_memory", "query_memory", "list_memories", "get_memory"],
+                            "description": "The specific tool to use"
+                        },
+                        "args": {
+                            "type": "object",
+                            "description": "Arguments for the specific tool"
+                        }
+                    },
+                    "required": ["tool", "args"]
+                }),
+            }
+        }
+    }
+
+    fn call(
+        &self,
+        args: Self::Args,
+    ) -> impl std::future::Future<Output = Result<Self::Output, Self::Error>> + Send {
+        async move {
+            // For backward compatibility, forward to the appropriate tool
+            if let Some(tool_name) = args.get("tool").and_then(|v| v.as_str()) {
+                if let Some(tool_args) = args.get("args") {
+                    match tool_name {
+                        "store_memory" => {
+                            let args: StoreMemoryArgs = serde_json::from_value(tool_args.clone())
+                                .map_err(|e| {
+                                MemoryToolError::InvalidInput(format!("Invalid arguments: {}", e))
+                            })?;
+                            self.tools.store_memory().call(args).await
+                        }
+                        "query_memory" => {
+                            let args: QueryMemoryArgs = serde_json::from_value(tool_args.clone())
+                                .map_err(|e| {
+                                MemoryToolError::InvalidInput(format!("Invalid arguments: {}", e))
+                            })?;
+                            self.tools.query_memory().call(args).await
+                        }
+                        "list_memories" => {
+                            let args: ListMemoriesArgs = serde_json::from_value(tool_args.clone())
+                                .map_err(|e| {
+                                    MemoryToolError::InvalidInput(format!(
+                                        "Invalid arguments: {}",
+                                        e
+                                    ))
+                                })?;
+                            self.tools.list_memories().call(args).await
+                        }
+                        "get_memory" => {
+                            let args: GetMemoryArgs = serde_json::from_value(tool_args.clone())
+                                .map_err(|e| {
+                                    MemoryToolError::InvalidInput(format!(
+                                        "Invalid arguments: {}",
+                                        e
+                                    ))
+                                })?;
+                            self.tools.get_memory().call(args).await
+                        }
+                        _ => Err(MemoryToolError::InvalidInput(format!(
+                            "Unknown tool: {}",
+                            tool_name
+                        ))),
+                    }
+                } else {
+                    Err(MemoryToolError::InvalidInput(
+                        "Missing arguments".to_string(),
+                    ))
+                }
+            } else {
+                Err(MemoryToolError::InvalidInput(
+                    "Missing tool name".to_string(),
+                ))
+            }
+        }
+    }
 }
