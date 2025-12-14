@@ -30,13 +30,14 @@
     "vite": "^5.0.3"
   },
   "dependencies": {
-    "elysia": "^1.0.0",
-    "chart.js": "^4.4.1",
-    "svelte-chartjs": "^2.1.0",
+    "@elysiajs/cors": "^1.4.0",
     "@skeletonlabs/skeleton": "^2.10.0",
     "@skeletonlabs/tw-plugin": "^0.4.0",
-    "tailwindcss": "^3.4.0",
     "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.32"
+    "chart.js": "^4.4.1",
+    "elysia": "^1.0.0",
+    "postcss": "^8.4.32",
+    "svelte-chartjs": "^2.1.0",
+    "tailwindcss": "^3.4.0"
   }
 }

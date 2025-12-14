@@ -75,8 +75,8 @@
     return 'text-green-600 dark:text-green-400';
   }
   
-  // 过滤和排序记忆
-  const filteredMemories = $derived(() => {
+  // 过滤和排序记忆 - 使用响应式变量
+  $: filteredMemories = (() => {
     let result = [...memories];
     
     // 搜索过滤

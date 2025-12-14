@@ -10,6 +10,9 @@
     { name: '优化面板', href: '/optimization', icon: 'optimize' },
     { name: '系统监控', href: '/monitor', icon: 'monitor' },
   ];
+  
+  // 获取当前路径，处理page.url可能为undefined的情况
+  $: currentPath = $page.url?.pathname || '/';
 </script>
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -36,7 +39,7 @@
               <a
                 href={item.href}
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200
-                  {page.url.pathname === item.href
+                  {currentPath === item.href
                     ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'}"
               >

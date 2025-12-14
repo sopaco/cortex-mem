@@ -1,7 +1,7 @@
 [package]
 name = "cortex-mem-mcp"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "MCP server for cortex-mem memory management system"
 license = "MIT"
 
