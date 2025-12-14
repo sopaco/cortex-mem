@@ -13,6 +13,7 @@ use std::fs;
 use tracing::info;
 
 use super::types::*;
+use super::lab_data_integration;
 
 /// 测试数据集生成器
 pub struct DatasetGenerator {
@@ -482,36 +483,84 @@ pub async fn generate_test_dataset(
     dataset_type: &str,
     output_dir: &std::path::Path,
     size: usize,
+    use_lab_data: bool,
 ) -> Result<()> {
-    let mut config = GeneratorConfig::default();
-    config.dataset_size = size;
-    
-    let mut generator = DatasetGenerator::new(config);
-    
-    match dataset_type.to_lowercase().as_str() {
-        "recall" => {
-            let dataset = generator.generate_recall_dataset()?;
-            let output_path = output_dir.join("test_cases/recall_test_cases.json");
-            generator.save_dataset(&dataset, output_path.to_str().unwrap())?;
+    if use_lab_data {
+        // 使用实验室数据生成数据集
+        info!("使用实验室数据生成数据集");
+        
+        match dataset_type.to_lowercase().as_str() {
+            "recall" => {
+                lab_data_integration::generate_lab_dataset(
+                    "recall",
+                    "example_lab_dataset",
+                    output_dir,
+                    size,
+                ).await?;
+            }
+            "effectiveness" => {
+                lab_data_integration::generate_lab_dataset(
+                    "effectiveness",
+                    "example_lab_dataset",
+                    output_dir,
+                    size,
+                ).await?;
+            }
+            "all" => {
+                // 生成召回率数据集
+                lab_data_integration::generate_lab_dataset(
+                    "recall",
+                    "example_lab_dataset",
+                    output_dir,
+                    size,
+                ).await?;
+                
+                // 生成有效性数据集
+                lab_data_integration::generate_lab_dataset(
+                    "effectiveness",
+                    "example_lab_dataset",
+                    output_dir,
+                    size,
+                ).await?;
+            }
+            _ => {
+                anyhow::bail!("未知的数据集类型: {}", dataset_type);
+            }
         }
-        "effectiveness" => {
-            let dataset = generator.generate_effectiveness_dataset()?;
-            let output_path = output_dir.join("test_cases/effectiveness_test_cases.json");
-            generator.save_dataset(&dataset, output_path.to_str().unwrap())?;
-        }
-        "all" => {
-            // 生成召回率数据集
-            let recall_dataset = generator.generate_recall_dataset()?;
-            let recall_path = output_dir.join("test_cases/recall_test_cases.json");
-            generator.save_dataset(&recall_dataset, recall_path.to_str().unwrap())?;
-            
-            // 生成有效性数据集
-            let effectiveness_dataset = generator.generate_effectiveness_dataset()?;
-            let effectiveness_path = output_dir.join("test_cases/effectiveness_test_cases.json");
-            generator.save_dataset(&effectiveness_dataset, effectiveness_path.to_str().unwrap())?;
-        }
-        _ => {
-            anyhow::bail!("未知的数据集类型: {}", dataset_type);
+    } else {
+        // 使用模拟数据生成数据集
+        info!("使用模拟数据生成数据集");
+        
+        let mut config = GeneratorConfig::default();
+        config.dataset_size = size;
+        
+        let mut generator = DatasetGenerator::new(config);
+        
+        match dataset_type.to_lowercase().as_str() {
+            "recall" => {
+                let dataset = generator.generate_recall_dataset()?;
+                let output_path = output_dir.join("test_cases/recall_test_cases.json");
+                generator.save_dataset(&dataset, output_path.to_str().unwrap())?;
+            }
+            "effectiveness" => {
+                let dataset = generator.generate_effectiveness_dataset()?;
+                let output_path = output_dir.join("test_cases/effectiveness_test_cases.json");
+                generator.save_dataset(&dataset, output_path.to_str().unwrap())?;
+            }
+            "all" => {
+                // 生成召回率数据集
+                let recall_dataset = generator.generate_recall_dataset()?;
+                let recall_path = output_dir.join("test_cases/recall_test_cases.json");
+                generator.save_dataset(&recall_dataset, recall_path.to_str().unwrap())?;
+                
+                // 生成有效性数据集
+                let effectiveness_dataset = generator.generate_effectiveness_dataset()?;
+                let effectiveness_path = output_dir.join("test_cases/effectiveness_test_cases.json");
+                generator.save_dataset(&effectiveness_dataset, effectiveness_path.to_str().unwrap())?;
+            }
+            _ => {
+                anyhow::bail!("未知的数据集类型: {}", dataset_type);
+            }
         }
     }
     

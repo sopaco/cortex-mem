@@ -1,12 +1,13 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
-use tracing::{info, error};
+use tracing::info;
 
 mod evaluator;
 mod dataset;
 mod runner;
 mod report;
+mod memory;
 
 use crate::runner::ExperimentRunner;
 
@@ -24,7 +25,7 @@ enum Commands {
     /// 运行完整评估
     Run {
         /// 配置文件路径
-        #[arg(short, long, default_value = "examples/cortex-mem-evaluation/config/evaluation_config.toml")]
+        #[arg(short, long, default_value = "config/evaluation_config.toml")]
         config: PathBuf,
         
         /// 输出目录
@@ -35,7 +36,7 @@ enum Commands {
     /// 仅运行召回率评估
     Recall {
         /// 配置文件路径
-        #[arg(short, long, default_value = "examples/cortex-mem-evaluation/config/evaluation_config.toml")]
+        #[arg(short, long, default_value = "config/evaluation_config.toml")]
         config: PathBuf,
         
         /// 输出目录
@@ -46,7 +47,7 @@ enum Commands {
     /// 仅运行有效性评估
     Effectiveness {
         /// 配置文件路径
-        #[arg(short, long, default_value = "examples/cortex-mem-evaluation/config/evaluation_config.toml")]
+        #[arg(short, long, default_value = "config/evaluation_config.toml")]
         config: PathBuf,
         
         /// 输出目录
@@ -57,7 +58,7 @@ enum Commands {
     /// 仅运行性能评估
     Performance {
         /// 配置文件路径
-        #[arg(short, long, default_value = "examples/cortex-mem-evaluation/config/evaluation_config.toml")]
+        #[arg(short, long, default_value = "config/evaluation_config.toml")]
         config: PathBuf,
         
         /// 输出目录
@@ -78,6 +79,10 @@ enum Commands {
         /// 数据集大小
         #[arg(short, long, default_value = "100")]
         size: usize,
+        
+        /// 是否使用实验室数据
+        #[arg(long, default_value = "true")]
+        use_lab_data: bool,
     },
     
     /// 验证测试数据集
@@ -131,9 +136,9 @@ async fn main() -> Result<()> {
             info!("性能评估完成！");
         }
         
-        Commands::GenerateDataset { dataset_type, output_dir, size } => {
+        Commands::GenerateDataset { dataset_type, output_dir, size, use_lab_data } => {
             info!("开始生成测试数据集...");
-            crate::dataset::generate_test_dataset(&dataset_type, &output_dir, size).await?;
+            crate::dataset::generate_test_dataset(&dataset_type, &output_dir, size, use_lab_data).await?;
             info!("测试数据集生成完成！");
         }
         

@@ -70,6 +70,10 @@ pub struct RecallEvaluationConfig {
     pub max_results_per_query: usize,
     /// 是否保存详细结果
     pub save_detailed_results: bool,
+    /// 是否使用真实评估器
+    pub use_real_evaluator: bool,
+    /// 测试用例路径
+    pub test_cases_path: String,
 }
 
 impl Default for RecallEvaluationConfig {
@@ -79,6 +83,8 @@ impl Default for RecallEvaluationConfig {
             similarity_thresholds: vec![0.7, 0.8, 0.9],
             max_results_per_query: 20,
             save_detailed_results: true,
+            use_real_evaluator: false,
+            test_cases_path: "data/test_cases/recall_test_cases.json".to_string(),
         }
     }
 }
@@ -230,6 +236,8 @@ impl RecallEvaluator {
             recall: avg_recall,
             f1_score,
             avg_results_returned,
+            success_rate: None, // 暂时设为None
+            avg_latency_ms: None, // 暂时设为None
         })
     }
     
