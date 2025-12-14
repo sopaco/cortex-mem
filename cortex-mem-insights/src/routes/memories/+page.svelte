@@ -40,18 +40,54 @@
       
       // 调用API获取记忆列表
       const response = await api.memory.list();
+      console.log('API响应:', response);
+      console.log('记忆数量:', response.total);
+      console.log('第一条记忆:', response.memories[0]);
       
       // 转换API响应到前端数据结构
-      memories = response.memories.map((memory: any) => ({
-        id: memory.id,
-        content: memory.content,
-        type: memory.metadata.memory_type.toLowerCase(),
-        importance: 0.7, // 默认重要性，实际可以从custom字段获取
-        userId: memory.metadata.user_id,
-        agentId: memory.metadata.agent_id,
-        createdAt: memory.created_at,
-        updatedAt: memory.updated_at
-      }));
+      memories = response.memories.map((memory: any) => {
+        // 处理编码问题：尝试修复乱码
+        let content = memory.content;
+        try {
+          // 如果内容看起来像乱码，尝试UTF-8解码
+          if (content.includes('ç') || content.includes('æ') || content.includes('å')) {
+            // 创建TextDecoder进行UTF-8解码
+            const decoder = new TextDecoder('utf-8');
+            // 将字符串转换为Uint8Array
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(content);
+            // 尝试解码
+            content = decoder.decode(bytes);
+          }
+        } catch (decodeError) {
+          console.warn('解码内容失败，使用原始内容:', decodeError);
+        }
+        
+        // 从custom字段获取重要性分数，如果没有则使用默认值
+        let importance = 0.7;
+        if (memory.metadata.custom && memory.metadata.custom.importance) {
+          importance = parseFloat(memory.metadata.custom.importance);
+        } else if (memory.metadata.custom && memory.metadata.custom.score) {
+          importance = parseFloat(memory.metadata.custom.score);
+        }
+        
+        // 确保重要性在0-1范围内
+        importance = Math.max(0, Math.min(1, importance));
+        
+        return {
+          id: memory.id,
+          content: content,
+          type: memory.metadata.memory_type.toLowerCase(),
+          importance: importance,
+          userId: memory.metadata.user_id,
+          agentId: memory.metadata.agent_id,
+          createdAt: memory.created_at,
+          updatedAt: memory.updated_at
+        };
+      });
+      
+      console.log('转换后的记忆数量:', memories.length);
+      console.log('转换后的第一条记忆:', memories[0]);
       
     } catch (err) {
       console.error('加载记忆失败:', err);
@@ -75,16 +111,31 @@
       const response = await api.memory.search(searchQuery);
       
       // 转换搜索结果
-      memories = response.results.map((result: any) => ({
-        id: result.memory.id,
-        content: result.memory.content,
-        type: result.memory.metadata.memory_type.toLowerCase(),
-        importance: result.score, // 使用相似度分数作为重要性
-        userId: result.memory.metadata.user_id,
-        agentId: result.memory.metadata.agent_id,
-        createdAt: result.memory.created_at,
-        updatedAt: result.memory.updated_at
-      }));
+      memories = response.results.map((result: any) => {
+        // 处理编码问题
+        let content = result.memory.content;
+        try {
+          if (content.includes('ç') || content.includes('æ') || content.includes('å')) {
+            const decoder = new TextDecoder('utf-8');
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(content);
+            content = decoder.decode(bytes);
+          }
+        } catch (decodeError) {
+          console.warn('解码搜索内容失败:', decodeError);
+        }
+        
+        return {
+          id: result.memory.id,
+          content: content,
+          type: result.memory.metadata.memory_type.toLowerCase(),
+          importance: result.score, // 使用相似度分数作为重要性
+          userId: result.memory.metadata.user_id,
+          agentId: result.memory.metadata.agent_id,
+          createdAt: result.memory.created_at,
+          updatedAt: result.memory.updated_at
+        };
+      });
       
     } catch (err) {
       console.error('搜索记忆失败:', err);
