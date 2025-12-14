@@ -1,5 +1,7 @@
 // API 客户端配置
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// 在开发模式下使用相对路径，由Vite代理到API服务器
+// 在生产模式下使用环境变量配置的URL
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // 通用请求函数
 async function request<T>(
@@ -56,7 +58,7 @@ export const memoryApi = {
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.page) queryParams.append('page', params.page.toString());
     
-    return request(`/api/memory${queryParams.toString() ? `?${queryParams}` : ''}`);
+    return request(`/api/memories${queryParams.toString() ? `?${queryParams}` : ''}`);
   },
   
   // 搜索记忆
@@ -69,7 +71,7 @@ export const memoryApi = {
     limit?: number;
     similarity_threshold?: number;
   }) => {
-    return request('/api/memory/search', {
+    return request('/api/memories/search', {
       method: 'POST',
       body: JSON.stringify({ query, ...params }),
     });
@@ -77,7 +79,7 @@ export const memoryApi = {
   
   // 获取单个记忆
   get: (id: string) => {
-    return request(`/api/memory/${id}`);
+    return request(`/api/memories/${id}`);
   },
   
   // 创建记忆
@@ -90,7 +92,7 @@ export const memoryApi = {
     memory_type?: string;
     custom?: Record<string, any>;
   }) => {
-    return request('/api/memory', {
+    return request('/api/memories', {
       method: 'POST',
       body: JSON.stringify({ content, ...metadata }),
     });
@@ -98,7 +100,7 @@ export const memoryApi = {
   
   // 更新记忆
   update: (id: string, content: string) => {
-    return request(`/api/memory/${id}`, {
+    return request(`/api/memories/${id}`, {
       method: 'PUT',
       body: JSON.stringify({ content }),
     });
@@ -106,22 +108,22 @@ export const memoryApi = {
   
   // 删除记忆
   delete: (id: string) => {
-    return request(`/api/memory/${id}`, {
+    return request(`/api/memories/${id}`, {
       method: 'DELETE',
     });
   },
   
   // 批量删除
   batchDelete: (ids: string[]) => {
-    return request('/api/memory/batch', {
-      method: 'DELETE',
+    return request('/api/memories/batch/delete', {
+      method: 'POST',
       body: JSON.stringify({ ids }),
     });
   },
   
   // 获取统计信息
   statistics: () => {
-    return request('/api/memory/statistics');
+    return request('/api/memories/stats/summary');
   },
   
   // 导出记忆
@@ -132,7 +134,7 @@ export const memoryApi = {
     include_metadata?: boolean;
     include_scores?: boolean;
   }) => {
-    return request('/api/memory/export', {
+    return request('/api/memories/export', {
       method: 'POST',
       body: JSON.stringify(params),
     });

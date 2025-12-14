@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import api from '$lib/api/client';
   
-  let memories: Array<{
+  interface Memory {
     id: string;
     content: string;
     type: string;
@@ -10,13 +11,15 @@
     agentId?: string;
     createdAt: string;
     updatedAt: string;
-  }> = [];
+  }
   
+  let memories: Memory[] = [];
   let isLoading = true;
   let searchQuery = '';
   let selectedType = 'all';
   let sortBy = 'createdAt';
   let sortOrder: 'asc' | 'desc' = 'desc';
+  let error: string | null = null;
   
   const memoryTypes = [
     { value: 'all', label: '全部类型' },
@@ -27,22 +30,69 @@
   ];
   
   onMount(async () => {
-    // 模拟加载数据
-    setTimeout(() => {
-      memories = Array.from({ length: 20 }, (_, i) => ({
-        id: `mem_${String(i + 1).padStart(3, '0')}`,
-        content: `记忆内容示例 ${i + 1}: 这是第 ${i + 1} 条记忆记录，包含一些重要的用户偏好或系统配置信息。`,
-        type: ['conversational', 'factual', 'personal', 'procedural'][i % 4],
-        importance: 0.5 + Math.random() * 0.5,
-        userId: i % 3 === 0 ? 'user_001' : i % 3 === 1 ? 'user_002' : undefined,
-        agentId: i % 2 === 0 ? 'agent_001' : 'agent_002',
-        createdAt: `2025-12-${String(13 - Math.floor(i / 3)).padStart(2, '0')} ${String(10 + i % 8).padStart(2, '0')}:${String(30 + i % 30).padStart(2, '0')}`,
-        updatedAt: `2025-12-${String(13 - Math.floor(i / 5)).padStart(2, '0')} ${String(14 + i % 6).padStart(2, '0')}:${String(15 + i % 45).padStart(2, '0')}`
+    await loadMemories();
+  });
+  
+  async function loadMemories() {
+    try {
+      isLoading = true;
+      error = null;
+      
+      // 调用API获取记忆列表
+      const response = await api.memory.list();
+      
+      // 转换API响应到前端数据结构
+      memories = response.memories.map((memory: any) => ({
+        id: memory.id,
+        content: memory.content,
+        type: memory.metadata.memory_type.toLowerCase(),
+        importance: 0.7, // 默认重要性，实际可以从custom字段获取
+        userId: memory.metadata.user_id,
+        agentId: memory.metadata.agent_id,
+        createdAt: memory.created_at,
+        updatedAt: memory.updated_at
       }));
       
+    } catch (err) {
+      console.error('加载记忆失败:', err);
+      error = err instanceof Error ? err.message : '加载记忆失败';
+    } finally {
       isLoading = false;
-    }, 1500);
-  });
+    }
+  }
+  
+  async function handleSearch() {
+    if (!searchQuery.trim()) {
+      await loadMemories();
+      return;
+    }
+    
+    try {
+      isLoading = true;
+      error = null;
+      
+      // 调用搜索API
+      const response = await api.memory.search(searchQuery);
+      
+      // 转换搜索结果
+      memories = response.results.map((result: any) => ({
+        id: result.memory.id,
+        content: result.memory.content,
+        type: result.memory.metadata.memory_type.toLowerCase(),
+        importance: result.score, // 使用相似度分数作为重要性
+        userId: result.memory.metadata.user_id,
+        agentId: result.memory.metadata.agent_id,
+        createdAt: result.memory.created_at,
+        updatedAt: result.memory.updated_at
+      }));
+      
+    } catch (err) {
+      console.error('搜索记忆失败:', err);
+      error = err instanceof Error ? err.message : '搜索失败';
+    } finally {
+      isLoading = false;
+    }
+  }
   
   function getTypeColor(type: string) {
     switch (type) {
@@ -151,6 +201,32 @@
     </p>
   </div>
 
+  <!-- 错误显示 -->
+  {#if error}
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+      <div class="flex items-center">
+        <div class="flex-shrink-0">
+          <span class="text-red-500">⚠️</span>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-red-800 dark:text-red-300">加载失败</h3>
+          <div class="mt-1 text-sm text-red-700 dark:text-red-400">
+            {error}
+          </div>
+          <div class="mt-3">
+            <button
+              type="button"
+              class="text-sm font-medium text-red-800 dark:text-red-300 hover:text-red-900 dark:hover:text-red-200"
+              on:click={loadMemories}
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- 搜索和过滤栏 -->
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -165,6 +241,11 @@
             bind:value={searchQuery}
             placeholder="搜索记忆内容、ID、用户或Agent..."
             class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            on:keydown={(e) => {
+              if (e.key === 'Enter') {
+                handleSearch();
+              }
+            }}
           />
         </div>
       </div>
@@ -185,9 +266,9 @@
       <div class="flex space-x-2">
         <button
           class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
-          on:click={() => console.log('高级搜索')}
+          on:click={handleSearch}
         >
-          高级搜索
+          搜索
         </button>
         <button
           class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200"
@@ -196,6 +277,7 @@
             selectedType = 'all';
             sortBy = 'createdAt';
             sortOrder = 'desc';
+            loadMemories();
           }}
         >
           重置

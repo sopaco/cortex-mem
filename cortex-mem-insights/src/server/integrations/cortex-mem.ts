@@ -4,7 +4,7 @@ import { MemoryResponse, SearchResponse, ListResponse, HealthResponse } from '..
 export class CortexMemServiceClient {
   private baseUrl: string;
   
-  constructor(baseUrl: string = 'http://localhost:8080') {
+  constructor(baseUrl: string = 'http://localhost:3000') {
     this.baseUrl = baseUrl;
   }
   
