@@ -15,21 +15,19 @@ impl BenchmarkRunner {
     }
     
     /// 运行基准测试套件
-    pub async fn run_benchmark_suite(&self) -> Result<()> {
+    pub async fn run_benchmark_suite(&self, memory_manager: Option<&cortex_mem_core::MemoryManager>) -> Result<()> {
         info!("基准测试运行器就绪");
-        info!("需要 MemoryManager 实例以运行实际基准测试");
         
-        // 模拟基准测试
-        self.run_simulation().await?;
+        if memory_manager.is_none() {
+            anyhow::bail!("基准测试需要 MemoryManager 实例，请提供有效的 MemoryManager");
+        }
         
-        Ok(())
-    }
-    
-    /// 运行模拟基准测试
-    async fn run_simulation(&self) -> Result<()> {
-        info!("运行模拟基准测试...");
+        let memory_manager = memory_manager.unwrap();
+        info!("使用提供的 MemoryManager 实例运行实际基准测试");
         
-        info!("模拟测试完成");
+        // 实际基准测试逻辑需要实现
+        info!("基准测试框架就绪，需要实现具体测试逻辑");
+        
         Ok(())
     }
     

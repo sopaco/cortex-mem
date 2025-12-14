@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 use tracing::{info, debug, warn, error};
 
 use super::metrics::{RecallMetrics, ThresholdMetrics, QueryResult};
+use crate::dataset::types::RecallTestDataset;
 
 /// 真实召回率评估器配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,6 +29,8 @@ pub struct RealRecallEvaluationConfig {
     pub enable_parallel_evaluation: bool,
     /// 是否验证记忆库完整性
     pub verify_memory_integrity: bool,
+    /// 测试数据集路径
+    pub test_cases_path: String,
 }
 
 impl Default for RealRecallEvaluationConfig {
@@ -40,6 +43,7 @@ impl Default for RealRecallEvaluationConfig {
             timeout_seconds: 30,
             enable_parallel_evaluation: true,
             verify_memory_integrity: true,
+            test_cases_path: "data/test_cases/lab_recall_dataset.json".to_string(),
         }
     }
 }
@@ -203,13 +207,18 @@ impl RealRecallEvaluator {
         let mut error_count = 0;
         
         for (memory_id, memory) in memories {
-            // 检查是否已存在
-            let filters = Filters {
-                user_id: memory.metadata.user_id.clone(),
-                agent_id: memory.metadata.agent_id.clone(),
-                memory_type: Some(memory.metadata.memory_type.clone()),
-                ..Default::default()
+            // 安全地截取前50个字符，避免UTF-8边界错误
+            let preview = if memory.content.len() <= 50 {
+                &memory.content
+            } else {
+                // 找到第50个字符的边界
+                let mut end = 50;
+                while end < memory.content.len() && !memory.content.is_char_boundary(end) {
+                    end += 1;
+                }
+                &memory.content[..end.min(memory.content.len())]
             };
+            info!("正在添加记忆 {}: {}...", memory_id, preview);
             
             // 尝试添加记忆
             match self.memory_manager.store(
@@ -217,13 +226,13 @@ impl RealRecallEvaluator {
                 memory.metadata.clone(),
             ).await {
                 Ok(new_memory_id) => {
-                    debug!("添加记忆成功: {} -> {}", memory_id, new_memory_id);
+                    info!("添加记忆成功: {} -> {}", memory_id, new_memory_id);
                     added_count += 1;
                 }
                 Err(e) => {
                     // 检查是否是重复错误
                     if e.to_string().contains("duplicate") || e.to_string().contains("already exists") {
-                        debug!("记忆已存在: {}", memory_id);
+                        info!("记忆已存在: {}", memory_id);
                         skipped_count += 1;
                     } else {
                         error!("添加记忆失败 {}: {}", memory_id, e);
@@ -232,17 +241,26 @@ impl RealRecallEvaluator {
                 }
             }
             
-            // 限制添加速率，避免过载
-            if added_count % 100 == 0 {
-                tokio::time::sleep(Duration::from_millis(100)).await;
+            // 限制添加速率，避免过载（特别是对于真实LLM客户端）
+            // 每添加一个记忆都等待一段时间，避免API调用频率过高
+            tokio::time::sleep(Duration::from_millis(500)).await; // 500毫秒延迟
+            
+            // 额外的：每5个记忆等待更长时间
+            if added_count % 5 == 0 {
+                info!("已添加{}个记忆，等待2秒避免API限制...", added_count);
+                tokio::time::sleep(Duration::from_secs(2)).await;
             }
         }
         
         info!("记忆库准备完成: 添加={}, 跳过={}, 错误={}", 
             added_count, skipped_count, error_count);
         
-        if error_count > memories.len() / 10 {
-            warn!("记忆添加错误率超过10%，可能影响评估结果");
+        if error_count > 0 {
+            warn!("有{}个记忆添加失败，可能影响评估结果", error_count);
+        }
+        
+        if added_count == 0 && skipped_count == 0 {
+            error!("没有成功添加任何记忆！评估结果将不准确");
         }
         
         Ok(())
@@ -274,6 +292,12 @@ impl RealRecallEvaluator {
             };
             
             // 执行真实搜索
+            info!("执行搜索 - 查询ID: {}, 查询内容: {}..., 阈值: {}, 最大结果数: {}", 
+                test_case.query_id, 
+                &test_case.query[..test_case.query.len().min(30)],
+                similarity_threshold,
+                self.config.max_results_per_query);
+            
             let search_result = tokio::time::timeout(
                 Duration::from_secs(self.config.timeout_seconds),
                 self.memory_manager.search_with_threshold(
@@ -339,6 +363,31 @@ impl RealRecallEvaluator {
                     
                     query_results.push(query_result);
                     
+                    // 添加详细调试信息
+                    if retrieved_total == 0 {
+                        warn!("查询 {} 返回0个结果！相关记忆ID: {:?}", test_case.query_id, test_case.relevant_memory_ids);
+                        
+                        // 安全地截取字符串，避免UTF-8边界错误
+                        let preview_len = test_case.query.len().min(100);
+                        let mut end = preview_len;
+                        while end > 0 && !test_case.query.is_char_boundary(end) {
+                            end -= 1;
+                        }
+                        warn!("查询内容: {}...", &test_case.query[..end]);
+                    } else {
+                        info!("查询 {} 返回 {} 个结果，其中 {} 个相关", 
+                            test_case.query_id, retrieved_total, retrieved_relevant);
+                        
+                        // 显示前3个结果的相似度分数
+                        for (i, result) in search_results.iter().take(3).enumerate() {
+                            info!("  结果 {}: ID={}, 相似度={:.3}, 内容: {}...", 
+                                i + 1, 
+                                result.memory.id,
+                                result.score,
+                                &result.memory.content[..result.memory.content.len().min(50)]);
+                        }
+                    }
+                    
                     debug!(
                         "查询 {}: 精确率={:.3}, 召回率={:.3}, 返回结果={}, 延迟={:?}",
                         test_case.query_id, precision, recall, retrieved_total, latency
@@ -354,9 +403,14 @@ impl RealRecallEvaluator {
                 }
             }
             
-            // 限制查询速率，避免过载
-            if query_count % 10 == 0 {
-                tokio::time::sleep(Duration::from_millis(50)).await;
+            // 限制查询速率，避免过载（特别是对于真实LLM客户端）
+            // 每个查询都等待一段时间，避免API调用频率过高
+            tokio::time::sleep(Duration::from_millis(1000)).await; // 1秒延迟
+            
+            // 额外的：每3个查询等待更长时间
+            if query_count % 3 == 0 {
+                info!("已处理{}个查询，等待3秒避免API限制...", query_count);
+                tokio::time::sleep(Duration::from_secs(3)).await;
             }
         }
         
@@ -567,5 +621,4 @@ impl From<ThresholdMetrics> for EnhancedThresholdMetrics {
     }
 }
 
-// 重新导出RecallTestDataset等类型
-pub use super::recall_evaluator::{RecallTestCase, RecallTestDataset, DatasetMetadata};
+// 不再从recall_evaluator重新导出，使用dataset::types中的定义

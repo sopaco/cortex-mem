@@ -71,8 +71,6 @@ pub struct EffectivenessEvaluationConfig {
     pub importance_score_tolerance: u8,
     /// 是否使用LLM辅助评估
     pub llm_evaluation_enabled: bool,
-    /// 是否使用真实评估器
-    pub use_real_evaluator: bool,
     /// 测试用例路径
     pub test_cases_path: String,
 }
@@ -87,7 +85,6 @@ impl Default for EffectivenessEvaluationConfig {
             verify_memory_update: true,
             importance_score_tolerance: 1,
             llm_evaluation_enabled: false,
-            use_real_evaluator: false,
             test_cases_path: "data/test_cases/effectiveness_test_cases.json".to_string(),
         }
     }
@@ -211,14 +208,15 @@ impl EffectivenessEvaluator {
         memory_manager: &MemoryManager,
         test_case: &EffectivenessTestCase,
     ) -> Result<FactExtractionResult> {
-        // 这里需要调用事实提取功能
-        // 由于API限制，我们暂时返回模拟结果
+        // 调用MemoryManager的事实提取功能
+        // 注意：cortex-mem-core可能没有直接的事实提取API
+        // 这里我们使用搜索功能来近似评估事实提取
         
-        // 模拟提取事实（实际应该调用memory_manager的相关方法）
-        let extracted_facts = vec![
-            "模拟提取的事实1".to_string(),
-            "模拟提取的事实2".to_string(),
-        ];
+        info!("评估事实提取 - 测试用例: {}", test_case.test_case_id);
+        
+        // 尝试从输入文本中提取关键信息
+        // 在实际实现中，应该调用memory_manager的提取器功能
+        let extracted_facts = Vec::new(); // 暂时为空，需要实际实现
         
         // 计算匹配的事实数量
         let matched_facts = extracted_facts
@@ -241,13 +239,16 @@ impl EffectivenessEvaluator {
     /// 评估记忆分类
     async fn evaluate_classification(
         &self,
-        _memory_manager: &MemoryManager,
+        memory_manager: &MemoryManager,
         test_case: &EffectivenessTestCase,
     ) -> Result<ClassificationResult> {
-        // 模拟分类结果
-        // 实际应该调用memory_manager的分类功能
+        // 调用MemoryManager的分类功能
+        info!("评估记忆分类 - 测试用例: {}", test_case.test_case_id);
         
-        let predicted_type = test_case.expected_memory_type.clone(); // 模拟正确分类
+        // 在实际实现中，应该调用memory_manager的分类器
+        // 这里我们暂时使用默认类型，需要实际实现
+        let predicted_type = MemoryType::Conversational; // 默认类型，需要实际实现
+        
         let is_correct = predicted_type == test_case.expected_memory_type;
         
         Ok(ClassificationResult {
@@ -262,13 +263,16 @@ impl EffectivenessEvaluator {
     /// 评估重要性
     async fn evaluate_importance(
         &self,
-        _memory_manager: &MemoryManager,
+        memory_manager: &MemoryManager,
         test_case: &EffectivenessTestCase,
     ) -> Result<ImportanceResult> {
-        // 模拟重要性评估结果
-        // 实际应该调用memory_manager的重要性评估功能
+        // 调用MemoryManager的重要性评估功能
+        info!("评估重要性 - 测试用例: {}", test_case.test_case_id);
         
-        let predicted_score = test_case.expected_importance_score; // 模拟正确评估
+        // 在实际实现中，应该调用memory_manager的重要性评估器
+        // 这里我们暂时使用默认值，需要实际实现
+        let predicted_score = 5; // 默认中等重要性，需要实际实现
+        
         let error = (predicted_score as i16 - test_case.expected_importance_score as i16).abs();
         let within_tolerance = error <= self.config.importance_score_tolerance as i16;
         
@@ -285,36 +289,42 @@ impl EffectivenessEvaluator {
     /// 评估去重效果
     async fn evaluate_deduplication(
         &self,
-        _memory_manager: &MemoryManager,
-        _test_case: &EffectivenessTestCase,
+        memory_manager: &MemoryManager,
+        test_case: &EffectivenessTestCase,
     ) -> Result<DeduplicationResult> {
-        // 模拟去重结果
-        // 实际应该测试重复内容的检测和合并
+        // 测试重复内容的检测和合并
+        info!("评估去重效果 - 测试用例: {}", test_case.test_case_id);
+        
+        // 在实际实现中，应该测试memory_manager的去重功能
+        // 这里我们暂时返回默认值，需要实际实现
         
         Ok(DeduplicationResult {
-            test_case_id: "simulated".to_string(),
-            duplicate_detected: true,
-            correctly_merged: true,
-            merge_quality: 0.9, // 模拟合并质量
+            test_case_id: test_case.test_case_id.clone(),
+            duplicate_detected: false, // 需要实际测试
+            correctly_merged: false, // 需要实际测试
+            merge_quality: 0.0, // 需要实际测试
         })
     }
     
     /// 评估记忆更新
     async fn evaluate_memory_update(
         &self,
-        _memory_manager: &MemoryManager,
-        _test_case: &EffectivenessTestCase,
-        _existing_memories: &HashMap<String, Memory>,
+        memory_manager: &MemoryManager,
+        test_case: &EffectivenessTestCase,
+        existing_memories: &HashMap<String, Memory>,
     ) -> Result<UpdateResult> {
-        // 模拟更新结果
-        // 实际应该测试记忆更新逻辑
+        // 测试记忆更新逻辑
+        info!("评估记忆更新 - 测试用例: {}", test_case.test_case_id);
+        
+        // 在实际实现中，应该测试memory_manager的更新功能
+        // 这里我们暂时返回默认值，需要实际实现
         
         Ok(UpdateResult {
-            test_case_id: "simulated".to_string(),
-            update_correct: true,
-            merge_correct: true,
-            conflict_resolved: true,
-            updated_quality: 0.8, // 模拟更新后质量
+            test_case_id: test_case.test_case_id.clone(),
+            update_correct: false, // 需要实际测试
+            merge_correct: false, // 需要实际测试
+            conflict_resolved: false, // 需要实际测试
+            updated_quality: 0.0, // 需要实际测试
         })
     }
     

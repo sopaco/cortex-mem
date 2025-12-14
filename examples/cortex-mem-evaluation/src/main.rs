@@ -132,7 +132,7 @@ async fn main() -> Result<()> {
         Commands::Performance { config, output_dir } => {
             info!("开始运行性能评估...");
             let runner = ExperimentRunner::new(config, output_dir)?;
-            runner.run_performance_evaluation().await?;
+            runner.run_full_evaluation().await?;
             info!("性能评估完成！");
         }
         

@@ -54,15 +54,19 @@ impl PerformanceEvaluator {
     }
     
     /// 评估系统性能
-    pub async fn evaluate(&self) -> Result<PerformanceMetrics> {
+    pub async fn evaluate(&self, memory_manager: Option<&cortex_mem_core::MemoryManager>) -> Result<PerformanceMetrics> {
         info!("开始性能评估...");
         
         // 性能评估需要实际的 MemoryManager 实例
-        // 这里返回框架信息
+        if memory_manager.is_none() {
+            anyhow::bail!("性能评估需要 MemoryManager 实例，请提供有效的 MemoryManager");
+        }
         
-        info!("性能评估框架就绪，需要 MemoryManager 实例以运行实际测试");
+        let memory_manager = memory_manager.unwrap();
+        info!("性能评估框架就绪，使用提供的 MemoryManager 实例");
         
-        // 返回模拟指标
+        // 实际性能评估逻辑需要实现
+        // 这里返回空指标，需要实际实现
         Ok(PerformanceMetrics {
             latency: super::metrics::LatencyMetrics {
                 add_memory_avg_ms: 0.0,

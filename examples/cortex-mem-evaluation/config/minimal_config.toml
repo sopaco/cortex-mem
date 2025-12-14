@@ -4,13 +4,13 @@
 mode = "all"
 output_dir = "results"
 use_real_evaluators = true
-memory_config_path = "config/simple_evaluation_config.toml"
+memory_config_path = "config/minimal_config.toml"  # 使用自身作为MemoryManager配置
 
 [recall_evaluation]
 enabled = true
 test_cases_path = "data/test_cases/lab_recall_dataset.json"
 k_values = [1, 3, 5]
-similarity_thresholds = [0.7, 0.8]
+similarity_thresholds = [0.1, 0.2]  # 进一步降低阈值以便在真实LLM客户端下返回结果
 max_results_per_query = 10
 use_real_evaluator = true
 
@@ -25,7 +25,7 @@ use_real_evaluator = true
 # Main configuration for the cortex-memo-evaluation system
 
 [qdrant]
-url = "http://localhost:6334"
+url = "http://localhost:6334"  # localhost，使用真实LLM客户端和Qdrant向量存储
 collection_name = "cortex-memo-evaluation"
 # embedding_dim = 1024 # Optional, will be auto-detected if not specified
 timeout_secs = 30

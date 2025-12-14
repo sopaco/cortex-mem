@@ -1,55 +1,50 @@
-# 简化版评估配置
+# 内存评估配置（不使用Qdrant）
 
 [general]
 mode = "all"
 output_dir = "results"
-verbose = true
-random_seed = 42
 use_real_evaluators = true
 
 [recall_evaluation]
 enabled = true
 test_cases_path = "data/test_cases/lab_recall_dataset.json"
-ground_truth_path = "data/test_cases/lab_recall_dataset.json"
 k_values = [1, 3, 5]
 similarity_thresholds = [0.7, 0.8]
 max_results_per_query = 10
-save_intermediate_results = true
 use_real_evaluator = true
 
 [effectiveness_evaluation]
 enabled = true
 test_cases_path = "data/test_cases/lab_effectiveness_dataset.json"
-ground_truth_path = "data/test_cases/lab_effectiveness_dataset.json"
 verify_fact_extraction = true
 verify_classification = true
 verify_importance_evaluation = true
-verify_deduplication = true
-verify_memory_update = true
 use_real_evaluator = true
 
+# 使用非localhost URL强制使用内存向量存储
 [qdrant]
-url = "http://localhost:6334"
-collection_name = "cortex-memo-evaluation"
+url = "http://memory-only:6334"  # 非localhost，强制使用内存向量存储
+collection_name = "memory-evaluation"
 timeout_secs = 30
 
+# 使用模拟LLM配置
 [llm]
-api_base_url = "https://wanqing-api.corp.kuaishou.com/api/gateway/v1/endpoints"
-api_key = "fs2wzco3o7haz38df1jo4vavnvauxtuz3f0b"
-model_efficient = "ep-i4abhq-1764595896785685523"
-temperature = 0.1
-max_tokens = 4096
+api_base_url = "http://mock-llm:11434"
+api_key = "mock-key"
+model_efficient = "mock-model"
+temperature = 0.7
+max_tokens = 1000
 
 [server]
 host = "0.0.0.0"
-port = 3000
+port = 8080
 cors_origins = ["*"]
 
 [embedding]
-api_base_url = "https://wanqing-api.corp.kuaishou.com/api/gateway/v1/endpoints"
-api_key = "fs2wzco3o7haz38df1jo4vavnvauxtuz3f0b"
-model_name = "ep-9kf01g-1762237999831608613"
-batch_size = 10
+api_base_url = "http://mock-embedding:11434"
+model_name = "mock-embedding"
+api_key = "mock-key"
+batch_size = 32
 timeout_secs = 30
 
 [memory]

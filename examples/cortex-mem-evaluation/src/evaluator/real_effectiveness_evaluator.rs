@@ -15,6 +15,8 @@ use super::metrics::{
     FactExtractionResult,
 };
 
+use crate::dataset::types::{EffectivenessTestDataset, EffectivenessTestCase};
+
 /// 真实有效性评估器配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RealEffectivenessEvaluationConfig {
@@ -36,6 +38,8 @@ pub struct RealEffectivenessEvaluationConfig {
     pub enable_verbose_logging: bool,
     /// 是否清理测试数据
     pub cleanup_test_data: bool,
+    /// 测试数据集路径
+    pub test_cases_path: String,
 }
 
 impl Default for RealEffectivenessEvaluationConfig {
@@ -50,6 +54,7 @@ impl Default for RealEffectivenessEvaluationConfig {
             timeout_seconds: 30,
             enable_verbose_logging: false,
             cleanup_test_data: true,
+            test_cases_path: "data/test_cases/lab_effectiveness_dataset.json".to_string(),
         }
     }
 }
@@ -912,4 +917,4 @@ struct UpdateResult {
 }
 
 // 重新导出类型
-pub use super::effectiveness_evaluator::{EffectivenessTestCase, EffectivenessTestDataset};
+// 不再从effectiveness_evaluator重新导出，使用dataset::types中的定义

@@ -12,6 +12,6 @@ cargo run -- generate-dataset --dataset-type effectiveness --use-lab-data
 
 # 运行真实评估
 echo "运行真实评估..."
-cargo run -- run --config config/real_evaluation_config.toml
+cargo run -- run --config config/minimal_config.toml
 
 echo "评估完成！结果保存在 results/ 目录中"
