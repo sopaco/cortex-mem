@@ -37,6 +37,8 @@ export class CortexMemServiceClient {
     limit?: number;
   }): Promise<ListResponse> {
     try {
+      console.log('获取记忆列表 - 参数:', params);
+      
       const queryParams = new URLSearchParams();
       if (params?.user_id) queryParams.append('user_id', params.user_id);
       if (params?.agent_id) queryParams.append('agent_id', params.agent_id);
@@ -46,15 +48,22 @@ export class CortexMemServiceClient {
       if (params?.limit) queryParams.append('limit', params.limit.toString());
       
       const url = `${this.baseUrl}/memories${queryParams.toString() ? `?${queryParams}` : ''}`;
+      console.log('获取记忆列表 - 目标URL:', url);
+      
       const response = await fetch(url);
+      console.log('获取记忆列表 - 响应状态:', response.status, response.statusText);
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('获取记忆列表失败 - 错误响应:', errorText);
         throw new Error(`List memories failed: ${response.statusText}`);
       }
       
-      return await response.json();
+      const result = await response.json();
+      console.log('获取记忆列表 - 成功结果，总数:', result.total);
+      return result;
     } catch (error) {
-      console.error('List memories error:', error);
+      console.error('获取记忆列表错误:', error);
       return {
         total: 0,
         memories: [],
@@ -73,6 +82,10 @@ export class CortexMemServiceClient {
     similarity_threshold?: number;
   }): Promise<SearchResponse> {
     try {
+      console.log('搜索记忆 - 查询:', query);
+      console.log('搜索记忆 - 参数:', params);
+      console.log('搜索记忆 - 目标URL:', `${this.baseUrl}/memories/search`);
+      
       const requestBody = {
         query,
         user_id: params?.user_id,
@@ -84,6 +97,8 @@ export class CortexMemServiceClient {
         similarity_threshold: params?.similarity_threshold,
       };
       
+      console.log('搜索记忆 - 请求体:', JSON.stringify(requestBody));
+      
       const response = await fetch(`${this.baseUrl}/memories/search`, {
         method: 'POST',
         headers: {
@@ -92,13 +107,19 @@ export class CortexMemServiceClient {
         body: JSON.stringify(requestBody),
       });
       
+      console.log('搜索记忆 - 响应状态:', response.status, response.statusText);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('搜索记忆失败 - 错误响应:', errorText);
         throw new Error(`Search memories failed: ${response.statusText}`);
       }
       
-      return await response.json();
+      const result = await response.json();
+      console.log('搜索记忆 - 成功结果:', result);
+      return result;
     } catch (error) {
-      console.error('Search memories error:', error);
+      console.error('搜索记忆错误:', error);
       return {
         total: 0,
         results: [],

@@ -79,7 +79,8 @@ export const memoryRoutes = new Elysia({ prefix: '/api/memories' })
   // 搜索记忆
   .post('/search', async ({ body }) => {
     try {
-      const response = await cortexMemService.searchMemories(body);
+      const { query, ...params } = body;
+      const response = await cortexMemService.searchMemories(query, params);
       return response;
     } catch (error) {
       console.error('搜索记忆失败:', error);
