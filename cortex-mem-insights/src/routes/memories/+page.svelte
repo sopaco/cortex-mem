@@ -22,7 +22,21 @@
 	let error: string | null = null;
 	let filteredMemories: Memory[] = [];
 	let selectedMemories: Set<string> = new Set();
+	let selectedMemoryIds: Set<string> = new Set();
 	let showBatchOperations = false;
+
+	// 计算全选状态
+	$: isAllSelected =
+		filteredMemories.length > 0 && selectedMemories.size === filteredMemories.length;
+	$: isPartialSelected =
+		selectedMemories.size > 0 && selectedMemories.size < filteredMemories.length;
+
+	// 排序状态响应式计算
+	$: console.log('排序状态变化:', { sortBy, sortOrder });
+
+	// 为每个列计算排序图标
+	$: createdAtSortIcon = sortBy === 'createdAt' ? (sortOrder === 'asc' ? '↑' : '↓') : '↓';
+	$: importanceSortIcon = sortBy === 'importance' ? (sortOrder === 'asc' ? '↑' : '↓') : '↓';
 
 	const memoryTypes = [
 		{ value: 'all', label: '全部类型' },
@@ -170,25 +184,28 @@
 		}
 	}
 
-	  function formatImportance(importance: number) {
-	    return (importance * 100).toFixed(1) + '%';
-	  }
-	
-	  function formatDate(isoString: string): string {
-	    try {
-	      const date = new Date(isoString);
-	      return date.toLocaleString('zh-CN', {
-	        year: 'numeric',
-	        month: '2-digit',
-	        day: '2-digit',
-	        hour: '2-digit',
-	        minute: '2-digit',
-	        second: '2-digit'
-	      }).replace(/\//g, '-').replace(',', '');
-	    } catch {
-	      return isoString;
-	    }
-	  }
+	function formatImportance(importance: number) {
+		return (importance * 100).toFixed(1) + '%';
+	}
+
+	function formatDate(isoString: string): string {
+		try {
+			const date = new Date(isoString);
+			return date
+				.toLocaleString('zh-CN', {
+					year: 'numeric',
+					month: '2-digit',
+					day: '2-digit',
+					hour: '2-digit',
+					minute: '2-digit',
+					second: '2-digit'
+				})
+				.replace(/\//g, '-')
+				.replace(',', '');
+		} catch {
+			return isoString;
+		}
+	}
 	function getImportanceColor(importance: number) {
 		if (importance >= 0.9) return 'text-red-600 dark:text-red-400';
 		if (importance >= 0.7) return 'text-orange-600 dark:text-orange-400';
@@ -256,38 +273,63 @@
 			sortBy = column;
 			sortOrder = 'desc';
 		}
+		// 显式触发响应式更新 - 使用临时变量技巧
+		const newSortBy = sortBy;
+		const newSortOrder = sortOrder;
+		sortBy = '';
+		sortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
+		sortBy = newSortBy;
+		sortOrder = newSortOrder;
 	}
 
 	function getSortIcon(column: string) {
-		if (sortBy !== column) return '↕️';
+		if (sortBy !== column) return '↓';
 		return sortOrder === 'asc' ? '↑' : '↓';
 	}
 
 	// 选择功能
 	function toggleSelectMemory(memoryId: string) {
-		if (selectedMemories.has(memoryId)) {
-			selectedMemories.delete(memoryId);
+		// 创建新的Set以确保响应式更新
+		const newSelection = new Set(selectedMemories);
+		if (newSelection.has(memoryId)) {
+			newSelection.delete(memoryId);
 		} else {
-			selectedMemories.add(memoryId);
+			newSelection.add(memoryId);
 		}
-		selectedMemories = selectedMemories; // 触发响应式更新
+		selectedMemories = newSelection;
 		showBatchOperations = selectedMemories.size > 0;
 	}
 
 	function selectAll() {
-		filteredMemories.forEach((memory) => selectedMemories.add(memory.id));
-		selectedMemories = selectedMemories;
+		// 直接创建新的Set而不是修改现有Set
+		const newSelection = new Set();
+		filteredMemories.forEach((memory) => newSelection.add(memory.id));
+		selectedMemories = newSelection;
 		showBatchOperations = true;
 	}
 
 	function deselectAll() {
-		selectedMemories.clear();
-		selectedMemories = selectedMemories;
+		// 创建新的空Set
+		selectedMemories = new Set();
 		showBatchOperations = false;
 	}
 
+	// 响应式更新selectedMemoryIds，确保子项复选框能正确更新
+	$: {
+		console.log('选择状态变化:', {
+			selectedCount: selectedMemories.size,
+			totalCount: filteredMemories.length,
+			isAllSelected,
+			selectedMemoryIds: Array.from(selectedMemories).slice(0, 3) // 只显示前3个用于调试
+		});
+		selectedMemoryIds = new Set(selectedMemories);
+		console.log('selectedMemoryIds已更新:', selectedMemoryIds.size);
+	}
+
 	function isSelected(memoryId: string) {
-		return selectedMemories.has(memoryId);
+		const result = selectedMemoryIds.has(memoryId);
+		console.log('isSelected检查:', memoryId, result);
+		return result;
 	}
 
 	// 批量操作功能
@@ -482,13 +524,13 @@
 						class={`px-3 py-1 rounded ${sortBy === 'createdAt' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}
 						on:click={() => toggleSort('createdAt')}
 					>
-						创建时间 {getSortIcon('createdAt')}
+						创建时间 {createdAtSortIcon}
 					</button>
 					<button
 						class={`px-3 py-1 rounded ${sortBy === 'importance' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}
 						on:click={() => toggleSort('importance')}
 					>
-						重要性 {getSortIcon('importance')}
+						重要性 {importanceSortIcon}
 					</button>
 				</div>
 			</div>
@@ -589,8 +631,7 @@
 								<input
 									type="checkbox"
 									class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-									checked={selectedMemories.size === filteredMemories.length &&
-										filteredMemories.length > 0}
+									checked={isAllSelected}
 									on:change={(e) => {
 										if (e.currentTarget.checked) {
 											selectAll();
@@ -685,9 +726,9 @@
 										{/if}
 									</div>
 								</td>
-								                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-								                  {formatDate(memory.createdAt)}
-								                </td>
+								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+									{formatDate(memory.createdAt)}
+								</td>
 							</tr>
 						{/each}
 					</tbody>
