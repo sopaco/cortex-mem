@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .memory-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .memory-content {
+            max-height: 100px;
+            overflow: auto;
+            background: #f5f5f5;
+            padding: 5px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>cortex-mem-insights API Connection Test</h1>
+    
+    <div id="test-results">
+        <h2>Testing API Endpoints...</h2>
+        <p>This page tests the connection to the cortex-mem-insights API server.</p>
+    </div>
+    
+    <div id="health-result"></div>
+    <div id="memories-result"></div>
+    <div id="search-result"></div>
+    
+    <script>
+        async function testAPI() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                // Test 1: Health Check
+                resultsDiv.innerHTML += '<p>🔄 Testing health endpoint...</p>';
+                const healthResponse = await fetch('http://localhost:3001/health');
+                const healthData = await healthResponse.json();
+                
+                const healthDiv = document.getElementById('health-result');
+                healthDiv.innerHTML = `
+                    <h3>✅ Health Check</h3>
+                    <p><strong>Status:</strong> <span class="success">${healthData.status}</span></p>
+                    <p><strong>Service:</strong> ${healthData.service}</p>
+                    <p><strong>Timestamp:</strong> ${healthData.timestamp}</p>
+                `;
+                
+                // Test 2: Memories List
+                resultsDiv.innerHTML += '<p>🔄 Testing memories endpoint...</p>';
+                const memoriesResponse = await fetch('http://localhost:3001/api/memories');
+                const memoriesData = await memoriesResponse.json();
+                
+                const memoriesDiv = document.getElementById('memories-result');
+                memoriesDiv.innerHTML = `
+                    <h3>✅ Memories List</h3>
+                    <p><strong>Total Memories:</strong> ${memoriesData.total}</p>
+                    <p><strong>Returned Memories:</strong> ${memoriesData.memories.length}</p>
+                    
+                    <h4>Sample Memories:</h4>
+                    ${memoriesData.memories.slice(0, 3).map(memory => `
+                        <div class="memory-item">
+                            <p><strong>ID:</strong> ${memory.id}</p>
+                            <p><strong>Type:</strong> ${memory.metadata.memory_type}</p>
+                            <p><strong>User:</strong> ${memory.metadata.user_id || 'N/A'}</p>
+                            <div class="memory-content">${memory.content.substring(0, 200)}...</div>
+                        </div>
+                    `).join('')}
+                `;
+                
+                // Test 3: Search
+                resultsDiv.innerHTML += '<p>🔄 Testing search endpoint...</p>';
+                const searchResponse = await fetch('http://localhost:3001/api/memories/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: 'Rust', limit: 2 })
+                });
+                const searchData = await searchResponse.json();
+                
+                const searchDiv = document.getElementById('search-result');
+                searchDiv.innerHTML = `
+                    <h3>✅ Search Results</h3>
+                    <p><strong>Query:</strong> "Rust"</p>
+                    <p><strong>Total Results:</strong> ${searchData.total}</p>
+                    <p><strong>Returned Results:</strong> ${searchData.results.length}</p>
+                    
+                    <h4>Top Results:</h4>
+                    ${searchData.results.map(result => `
+                        <div class="memory-item">
+                            <p><strong>Score:</strong> ${result.score.toFixed(3)}</p>
+                            <p><strong>ID:</strong> ${result.memory.id}</p>
+                            <p><strong>Type:</strong> ${result.memory.metadata.memory_type}</p>
+                            <div class="memory-content">${result.memory.content.substring(0, 150)}...</div>
+                        </div>
+                    `).join('')}
+                `;
+                
+                resultsDiv.innerHTML += '<p class="success">🎉 All API tests passed! The backend is working correctly.</p>';
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<p class="error">❌ API test failed: ${error.message}</p>`;
+                console.error('API test error:', error);
+            }
+        }
+        
+        // Run tests when page loads
+        testAPI();
+    </script>
+</body>
+</html>

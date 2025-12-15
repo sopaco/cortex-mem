@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>cortex-mem-insights Frontend Test</h1>
+    
+    <div id="test-results">
+        <p>Testing frontend connectivity...</p>
+    </div>
+    
+    <div class="test-section" id="api-test">
+        <h3>API Connectivity Test</h3>
+        <p>Testing if frontend can reach the API through Vite proxy...</p>
+    </div>
+    
+    <div class="test-section" id="data-test">
+        <h3>Data Loading Test</h3>
+        <p>Testing if frontend can load memory data...</p>
+    </div>
+    
+    <div class="test-section" id="search-test">
+        <h3>Search Functionality Test</h3>
+        <p>Testing if frontend search works...</p>
+    </div>
+    
+    <script>
+        async function testFrontend() {
+            const resultsDiv = document.getElementById('test-results');
+            
+            try {
+                // Test 1: API Connectivity
+                resultsDiv.innerHTML += '<p>🔄 Testing API connectivity...</p>';
+                
+                const apiTestDiv = document.getElementById('api-test');
+                try {
+                    const response = await fetch('http://localhost:5173/api/memories');
+                    const data = await response.json();
+                    
+                    apiTestDiv.innerHTML += `<p class="success">✅ API connectivity works!</p>`;
+                    apiTestDiv.innerHTML += `<p>Total memories: ${data.total}</p>`;
+                    apiTestDiv.innerHTML += `<p>First memory ID: ${data.memories[0]?.id || 'N/A'}</p>`;
+                } catch (error) {
+                    apiTestDiv.innerHTML += `<p class="error">❌ API connectivity failed: ${error.message}</p>`;
+                }
+                
+                // Test 2: Data Loading
+                resultsDiv.innerHTML += '<p>🔄 Testing data loading...</p>';
+                
+                const dataTestDiv = document.getElementById('data-test');
+                try {
+                    const response = await fetch('http://localhost:5173/api/memories?limit=5');
+                    const data = await response.json();
+                    
+                    dataTestDiv.innerHTML += `<p class="success">✅ Data loading works!</p>`;
+                    dataTestDiv.innerHTML += `<p>Loaded ${data.memories.length} memories</p>`;
+                    
+                    if (data.memories.length > 0) {
+                        const memory = data.memories[0];
+                        dataTestDiv.innerHTML += `<div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px;">`;
+                        dataTestDiv.innerHTML += `<p><strong>ID:</strong> ${memory.id}</p>`;
+                        dataTestDiv.innerHTML += `<p><strong>Type:</strong> ${memory.metadata.memory_type}</p>`;
+                        dataTestDiv.innerHTML += `<p><strong>Content:</strong> ${memory.content.substring(0, 100)}...</p>`;
+                        dataTestDiv.innerHTML += `</div>`;
+                    }
+                } catch (error) {
+                    dataTestDiv.innerHTML += `<p class="error">❌ Data loading failed: ${error.message}</p>`;
+                }
+                
+                // Test 3: Search Functionality
+                resultsDiv.innerHTML += '<p>🔄 Testing search functionality...</p>';
+                
+                const searchTestDiv = document.getElementById('search-test');
+                try {
+                    const response = await fetch('http://localhost:5173/api/memories/search', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ query: 'SkyronJ', limit: 2 })
+                    });
+                    const data = await response.json();
+                    
+                    searchTestDiv.innerHTML += `<p class="success">✅ Search functionality works!</p>`;
+                    searchTestDiv.innerHTML += `<p>Found ${data.total} results for "SkyronJ"</p>`;
+                    
+                    if (data.results.length > 0) {
+                        const result = data.results[0];
+                        searchTestDiv.innerHTML += `<div style="margin-top: 10px; padding: 10px; background: #f5f5f5; border-radius: 5px;">`;
+                        searchTestDiv.innerHTML += `<p><strong>Score:</strong> ${result.score.toFixed(3)}</p>`;
+                        searchTestDiv.innerHTML += `<p><strong>ID:</strong> ${result.memory.id}</p>`;
+                        searchTestDiv.innerHTML += `<p><strong>Content:</strong> ${result.memory.content.substring(0, 100)}...</p>`;
+                        searchTestDiv.innerHTML += `</div>`;
+                    }
+                } catch (error) {
+                    searchTestDiv.innerHTML += `<p class="error">❌ Search failed: ${error.message}</p>`;
+                }
+                
+                resultsDiv.innerHTML += '<p class="success">🎉 Frontend testing complete!</p>';
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<p class="error">❌ Test failed: ${error.message}</p>`;
+                console.error('Test error:', error);
+            }
+        }
+        
+        // Run tests when page loads
+        testFrontend();
+    </script>
+</body>
+</html>

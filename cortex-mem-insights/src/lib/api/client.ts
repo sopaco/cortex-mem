@@ -3,6 +3,9 @@
 // 在生产模式下使用环境变量配置的URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+// 打印当前API基础URL以便调试
+console.log('API Base URL:', API_BASE_URL);
+
 // 通用请求函数
 async function request<T>(
   endpoint: string,
