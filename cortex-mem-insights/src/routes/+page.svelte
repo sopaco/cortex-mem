@@ -77,21 +77,21 @@
 				cortexMemService: {
 					status: serviceStatuses.mainService.status,
 					latency: serviceStatuses.mainService.latency,
-					version: '1.0.0',
+					version: '',
 					lastCheck: serviceStatuses.mainService.lastCheck
 				},
 				qdrant: {
 					status: serviceStatuses.vectorStore.status,
 					latency: serviceStatuses.vectorStore.latency,
-					version: '1.7.0',
+					version: '',
 					collectionCount: await getQdrantCollectionCount(),
 					lastCheck: serviceStatuses.vectorStore.lastCheck
 				},
 				llmService: {
 					status: serviceStatuses.llmService.status,
 					latency: serviceStatuses.llmService.latency,
-					provider: 'OpenAI/私有部署',
-					model: 'gpt-4/自定义模型',
+					provider: '',
+					model: '',
 					lastCheck: serviceStatuses.llmService.lastCheck
 				}
 			};
@@ -428,7 +428,7 @@
 	<!-- 欢迎标题 -->
 	<div>
 		<h1 class="text-3xl font-bold text-gray-900 dark:text-white">仪表盘</h1>
-		<p class="mt-2 text-gray-600 dark:text-gray-400">监控和分析 cortex-mem 记忆系统的运行状态</p>
+		<p class="mt-2 text-gray-600 dark:text-gray-400">监控和分析 Cortex Memory 系统的运行状态</p>
 	</div>
 
 	{#if isLoading}
@@ -549,13 +549,6 @@
 
 									<div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
 										<div>延迟: <span class="font-medium">{data.latency}ms</span></div>
-										<div>
-											{service === 'cortexMemService'
-												? `版本: ${data.version}`
-												: service === 'qdrant'
-													? `集合: ${data.collectionCount}`
-													: `模型: ${data.model}`}
-										</div>
 									</div>
 
 									{#if data.lastCheck}

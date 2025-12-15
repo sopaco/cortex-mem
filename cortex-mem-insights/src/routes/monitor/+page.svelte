@@ -98,21 +98,21 @@
 				cortexMemService: {
 					status: serviceStatuses.mainService.status,
 					latency: serviceStatuses.mainService.latency,
-					version: '1.0.0',
+					version: '',
 					lastCheck: serviceStatuses.mainService.lastCheck
 				},
 				qdrant: {
 					status: serviceStatuses.vectorStore.status,
 					latency: serviceStatuses.vectorStore.latency,
-					version: '1.7.0',
+					version: '',
 					collectionCount: await getQdrantCollectionCount(),
 					lastCheck: serviceStatuses.vectorStore.lastCheck
 				},
 				llmService: {
 					status: serviceStatuses.llmService.status,
 					latency: serviceStatuses.llmService.latency,
-					provider: 'OpenAI/私有部署',
-					model: 'gpt-4/自定义模型',
+					provider: '',
+					model: '',
 					lastCheck: serviceStatuses.llmService.lastCheck
 				},
 				memoryUsage: await calculateMemoryUsage(memories),
@@ -167,7 +167,7 @@
 		} catch (err) {
 			console.warn('获取版本信息失败:', err);
 		}
-		return '1.7.0'; // 默认版本
+		return '-.-.-'; // 默认版本
 	}
 
 	// 计算内存使用情况
@@ -827,13 +827,6 @@
 
 								<div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
 									<div>延迟: <span class="font-medium">{data.latency}ms</span></div>
-									<div>
-										{service === 'cortexMemService'
-											? `版本: ${data.version}`
-											: service === 'qdrant'
-												? `集合: ${data.collectionCount}`
-												: `模型: ${data.model}`}
-									</div>
 								</div>
 
 								{#if data.lastCheck}
