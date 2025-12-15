@@ -39,15 +39,11 @@
       isLoading = true;
       error = null;
       
-      console.log('加载记忆 - 开始');
       // 调用API获取记忆列表
       const response = await api.memory.list();
-      console.log('加载记忆 - API响应:', response);
-      console.log('加载记忆 - 记忆数量:', response.total);
-      console.log('加载记忆 - 第一条记忆:', response.memories[0]);
       
       // 转换API响应到前端数据结构
-      const transformedMemories = response.memories.map((memory: any) => {
+      memories = response.memories.map((memory: any) => {
         // 处理编码问题：尝试修复乱码
         let content = memory.content;
         try {
@@ -87,13 +83,6 @@
           updatedAt: memory.updated_at
         };
       });
-      
-      console.log('加载记忆 - 转换后的记忆数量:', transformedMemories.length);
-      console.log('加载记忆 - 转换后的第一条记忆:', transformedMemories[0]);
-      
-      // 确保memories数组被正确赋值
-      memories = transformedMemories;
-      console.log('加载记忆 - 最终memories数组长度:', memories.length);
       
     } catch (err) {
       console.error('加载记忆失败:', err);
@@ -184,10 +173,6 @@
   
   // 过滤和排序记忆 - 使用响应式变量
   $: filteredMemories = (() => {
-    console.log('filteredMemories 计算 - memories长度:', memories.length);
-    console.log('filteredMemories 计算 - searchQuery:', searchQuery);
-    console.log('filteredMemories 计算 - selectedType:', selectedType);
-    
     let result = [...memories];
     
     // 搜索过滤
@@ -235,9 +220,7 @@
       }
     });
     
-    const finalResult = result;
-    console.log('filteredMemories 计算 - 最终结果长度:', finalResult.length);
-    return finalResult;
+    return result;
   })();
   
   function toggleSort(column: string) {
