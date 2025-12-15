@@ -24,7 +24,7 @@
 	let selectedMemories: Set<string> = new Set();
 	let selectedMemoryIds: Set<string> = new Set();
 	let showBatchOperations = false;
-	
+
 	// 分页相关状态
 	let currentPage = 1;
 	let pageSize = 20;
@@ -33,9 +33,10 @@
 
 	// 计算全选状态
 	$: isAllSelected =
-		paginatedMemories.length > 0 && paginatedMemories.every(memory => selectedMemories.has(memory.id));
+		paginatedMemories.length > 0 &&
+		paginatedMemories.every((memory) => selectedMemories.has(memory.id));
 	$: isPartialSelected =
-		paginatedMemories.some(memory => selectedMemories.has(memory.id)) && !isAllSelected;
+		paginatedMemories.some((memory) => selectedMemories.has(memory.id)) && !isAllSelected;
 
 	// 排序状态响应式计算
 	$: console.log('排序状态变化:', { sortBy, sortOrder });
@@ -284,7 +285,12 @@
 		const startIndex = (currentPage - 1) * pageSize;
 		const endIndex = Math.min(startIndex + pageSize, filteredMemories.length);
 		paginatedMemories = filteredMemories.slice(startIndex, endIndex);
-		console.log('分页数据更新:', { currentPage, totalPages, totalItems: filteredMemories.length, pageItems: paginatedMemories.length });
+		console.log('分页数据更新:', {
+			currentPage,
+			totalPages,
+			totalItems: filteredMemories.length,
+			pageItems: paginatedMemories.length
+		});
 	}
 
 	function toggleSort(column: string) {
@@ -301,7 +307,7 @@
 		sortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
 		sortBy = newSortBy;
 		sortOrder = newSortOrder;
-		
+
 		// 排序变化时重置到第一页
 		currentPage = 1;
 	}
@@ -357,26 +363,26 @@
 		showBatchOperations = false;
 	}
 
-		// 创建响应式的选中状态映射
-		$: selectedMemoryMap = new Map();
-		$: {
-			console.log('选择状态变化:', { 
-				selectedCount: selectedMemories.size, 
-				totalCount: filteredMemories.length,
-				pageCount: paginatedMemories.length,
-				isAllSelected,
-				isPartialSelected,
-				selectedIds: Array.from(selectedMemories).slice(0, 3) // 只显示前3个用于调试
-			});
-			
-			// 为每个当前页的memory创建选中状态映射
-			const map = new Map();
-			paginatedMemories.forEach(memory => {
-				map.set(memory.id, selectedMemories.has(memory.id));
-			});
-			selectedMemoryMap = map;
-			console.log('selectedMemoryMap已更新:', selectedMemoryMap.size);
-		}
+	// 创建响应式的选中状态映射
+	$: selectedMemoryMap = new Map();
+	$: {
+		console.log('选择状态变化:', {
+			selectedCount: selectedMemories.size,
+			totalCount: filteredMemories.length,
+			pageCount: paginatedMemories.length,
+			isAllSelected,
+			isPartialSelected,
+			selectedIds: Array.from(selectedMemories).slice(0, 3) // 只显示前3个用于调试
+		});
+
+		// 为每个当前页的memory创建选中状态映射
+		const map = new Map();
+		paginatedMemories.forEach((memory) => {
+			map.set(memory.id, selectedMemories.has(memory.id));
+		});
+		selectedMemoryMap = map;
+		console.log('selectedMemoryMap已更新:', selectedMemoryMap.size);
+	}
 	// 批量操作功能
 	async function batchExport() {
 		const selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));
@@ -405,8 +411,6 @@
 		deselectAll();
 	}
 
-
-
 	async function batchOptimize() {
 		const selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));
 
@@ -416,7 +420,7 @@
 
 		try {
 			// 优化功能：在内容后添加优化标记
-			const updates = selected.map(memory => ({
+			const updates = selected.map((memory) => ({
 				id: memory.id,
 				content: `${memory.content}\n[已优化 ${new Date().toLocaleDateString()}]`
 			}));
@@ -435,7 +439,7 @@
 
 	async function batchDelete() {
 		const selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));
-		const memoryIds = selected.map(memory => memory.id);
+		const memoryIds = selected.map((memory) => memory.id);
 
 		if (!confirm(`确定要删除选中的 ${selected.length} 条记忆吗？此操作不可撤销。`)) {
 			return;
@@ -550,9 +554,17 @@
 		<!-- 统计信息 -->
 		<div class="mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
 			<span>
-				共 <span class="font-medium text-gray-700 dark:text-gray-300">{filteredMemories.length}</span>
-				条记忆， 显示第 <span class="font-medium text-gray-700 dark:text-gray-300">{(currentPage - 1) * pageSize + 1}</span> 到
-				<span class="font-medium text-gray-700 dark:text-gray-300">{Math.min(currentPage * pageSize, filteredMemories.length)}</span> 条
+				共 <span class="font-medium text-gray-700 dark:text-gray-300"
+					>{filteredMemories.length}</span
+				>
+				条记忆， 显示第
+				<span class="font-medium text-gray-700 dark:text-gray-300"
+					>{(currentPage - 1) * pageSize + 1}</span
+				>
+				到
+				<span class="font-medium text-gray-700 dark:text-gray-300"
+					>{Math.min(currentPage * pageSize, filteredMemories.length)}</span
+				> 条
 			</span>
 			<div class="flex items-center space-x-4">
 				<span>排序:</span>
@@ -756,12 +768,6 @@
 								</td>
 								<td class="px-6 py-4 whitespace-nowrap">
 									<div class="flex items-center">
-										<div class="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
-											<div
-												class={`h-2 rounded-full ${getImportanceColor(memory.importance)}`}
-												style={`width: ${memory.importance * 100}%`}
-											></div>
-										</div>
 										<span class={`text-sm font-medium ${getImportanceColor(memory.importance)}`}>
 											{formatImportance(memory.importance)}
 										</span>
@@ -788,54 +794,58 @@
 
 			<!-- 分页 -->
 			{#if totalPages > 1}
-			<div
-				class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700"
-			>
-				<div class="flex items-center justify-between">
-					<div class="text-sm text-gray-500 dark:text-gray-400">
-						显示第 <span class="font-medium">{(currentPage - 1) * pageSize + 1}</span> 到
-						<span class="font-medium">{Math.min(currentPage * pageSize, filteredMemories.length)}</span>
-						条， 共 <span class="font-medium">{filteredMemories.length}</span> 条，第 <span class="font-medium">{currentPage}</span> / {totalPages} 页
-					</div>
-					<div class="flex items-center space-x-2">
-						<button
-							class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-							disabled={currentPage === 1}
-							on:click={prevPage}
-						>
-							上一页
-						</button>
-						
-						<!-- 页码按钮 -->
-						{#each Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-							const startPage = Math.max(1, currentPage - 2);
-							const endPage = Math.min(totalPages, startPage + 4);
-							return startPage + i;
-						}) as page}
-							{#if page <= totalPages}
-								<button
-									class={`px-3 py-1 border rounded text-sm font-medium ${
-										page === currentPage
-											? 'bg-blue-500 text-white border-blue-500'
-											: 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-									}`}
-									on:click={() => goToPage(page)}
-								>
-									{page}
-								</button>
-							{/if}
-						{/each}
-						
-						<button
-							class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
-							disabled={currentPage === totalPages}
-							on:click={nextPage}
-						>
-							下一页
-						</button>
+				<div
+					class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700"
+				>
+					<div class="flex items-center justify-between">
+						<div class="text-sm text-gray-500 dark:text-gray-400">
+							显示第 <span class="font-medium">{(currentPage - 1) * pageSize + 1}</span> 到
+							<span class="font-medium"
+								>{Math.min(currentPage * pageSize, filteredMemories.length)}</span
+							>
+							条， 共 <span class="font-medium">{filteredMemories.length}</span> 条，第
+							<span class="font-medium">{currentPage}</span>
+							/ {totalPages} 页
+						</div>
+						<div class="flex items-center space-x-2">
+							<button
+								class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={currentPage === 1}
+								on:click={prevPage}
+							>
+								上一页
+							</button>
+
+							<!-- 页码按钮 -->
+							{#each Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+								const startPage = Math.max(1, currentPage - 2);
+								const endPage = Math.min(totalPages, startPage + 4);
+								return startPage + i;
+							}) as page}
+								{#if page <= totalPages}
+									<button
+										class={`px-3 py-1 border rounded text-sm font-medium ${
+											page === currentPage
+												? 'bg-blue-500 text-white border-blue-500'
+												: 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+										}`}
+										on:click={() => goToPage(page)}
+									>
+										{page}
+									</button>
+								{/if}
+							{/each}
+
+							<button
+								class="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+								disabled={currentPage === totalPages}
+								on:click={nextPage}
+							>
+								下一页
+							</button>
+						</div>
 					</div>
 				</div>
-			</div>
 			{/if}
 		{/if}
 	</div>
