@@ -1,0 +1,245 @@
+import { Elysia, t } from 'elysia';
+import { cors } from '@elysiajs/cors';
+
+// 系统状态接口
+interface SystemStatus {
+  status: 'healthy' | 'unhealthy';
+  vector_store: boolean;
+  llm_service: boolean;
+  timestamp: string;
+}
+
+// 性能指标接口
+interface PerformanceMetrics {
+  cpu_usage: number;
+  memory_usage: number;
+  disk_usage: number;
+  active_connections: number;
+  request_count: number;
+  error_rate: number;
+  response_time_avg: number;
+  timestamp: string;
+}
+
+// 系统信息接口
+interface SystemInfo {
+  version: string;
+  uptime: string;
+  platform: string;
+  arch: string;
+  node_version: string;
+  memory_total: number;
+  memory_used: number;
+  cpu_count: number;
+  hostname: string;
+}
+
+// 日志条目接口
+interface LogEntry {
+  timestamp: string;
+  level: 'info' | 'warn' | 'error' | 'debug';
+  message: string;
+  source: string;
+  metadata?: Record<string, any>;
+}
+
+// 模拟数据
+const mockSystemStatus: SystemStatus = {
+  status: 'healthy',
+  vector_store: true,
+  llm_service: true,
+  timestamp: new Date().toISOString(),
+};
+
+const mockPerformanceMetrics: PerformanceMetrics = {
+  cpu_usage: 45.2,
+  memory_usage: 68.7,
+  disk_usage: 32.1,
+  active_connections: 12,
+  request_count: 1250,
+  error_rate: 0.5,
+  response_time_avg: 125.3,
+  timestamp: new Date().toISOString(),
+};
+
+const mockSystemInfo: SystemInfo = {
+  version: '0.1.0',
+  uptime: '2 days, 3 hours, 45 minutes',
+  platform: 'win32',
+  arch: 'x64',
+  node_version: '22.12.0',
+  memory_total: 16384,
+  memory_used: 11264,
+  cpu_count: 8,
+  hostname: 'cortex-mem-insights',
+};
+
+const mockLogs: LogEntry[] = [
+  {
+    timestamp: new Date(Date.now() - 60000).toISOString(),
+    level: 'info',
+    message: 'System health check completed',
+    source: 'health-check',
+  },
+  {
+    timestamp: new Date(Date.now() - 120000).toISOString(),
+    level: 'info',
+    message: 'Memory search request processed',
+    source: 'memory-api',
+    metadata: { query: 'test', results: 5 },
+  },
+  {
+    timestamp: new Date(Date.now() - 180000).toISOString(),
+    level: 'warn',
+    message: 'High memory usage detected',
+    source: 'monitor',
+    metadata: { usage: 85.2 },
+  },
+  {
+    timestamp: new Date(Date.now() - 240000).toISOString(),
+    level: 'info',
+    message: 'Optimization job started',
+    source: 'optimization-api',
+    metadata: { job_id: 'opt-123' },
+  },
+  {
+    timestamp: new Date(Date.now() - 300000).toISOString(),
+    level: 'error',
+    message: 'Failed to connect to vector store',
+    source: 'vector-store',
+    metadata: { error: 'Connection timeout' },
+  },
+];
+
+// 创建系统API路由
+export const systemRoutes = new Elysia({ prefix: '/api/system' })
+  .use(cors())
+  
+  // 获取系统状态
+  .get('/status', () => {
+    return {
+      success: true,
+      data: mockSystemStatus,
+      timestamp: new Date().toISOString(),
+    };
+  })
+  
+  // 获取性能指标
+  .get('/metrics', () => {
+    return {
+      success: true,
+      data: mockPerformanceMetrics,
+      timestamp: new Date().toISOString(),
+    };
+  })
+  
+  // 获取系统信息
+  .get('/info', () => {
+    return {
+      success: true,
+      data: mockSystemInfo,
+      timestamp: new Date().toISOString(),
+    };
+  })
+  
+  // 获取实时日志
+  .get('/logs', ({ query }) => {
+    const { limit = 50, level, source } = query as {
+      limit?: number;
+      level?: string;
+      source?: string;
+    };
+    
+    let filteredLogs = [...mockLogs];
+    
+    if (level) {
+      filteredLogs = filteredLogs.filter(log => log.level === level);
+    }
+    
+    if (source) {
+      filteredLogs = filteredLogs.filter(log => log.source === source);
+    }
+    
+    filteredLogs = filteredLogs.slice(0, limit);
+    
+    return {
+      success: true,
+      data: filteredLogs,
+      total: filteredLogs.length,
+      timestamp: new Date().toISOString(),
+    };
+  })
+  
+  // 健康检查
+  .get('/health', () => {
+    return {
+      success: true,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      services: {
+        api: true,
+        database: true,
+        vector_store: true,
+        llm_service: true,
+      },
+    };
+  })
+  
+  // 获取资源使用情况
+  .get('/resources', () => {
+    return {
+      success: true,
+      data: {
+        memory: {
+          total: mockSystemInfo.memory_total,
+          used: mockSystemInfo.memory_used,
+          free: mockSystemInfo.memory_total - mockSystemInfo.memory_used,
+          percentage: (mockSystemInfo.memory_used / mockSystemInfo.memory_total) * 100,
+        },
+        cpu: {
+          usage: mockPerformanceMetrics.cpu_usage,
+          cores: mockSystemInfo.cpu_count,
+        },
+        disk: {
+          usage: mockPerformanceMetrics.disk_usage,
+        },
+        network: {
+          active_connections: mockPerformanceMetrics.active_connections,
+        },
+      },
+      timestamp: new Date().toISOString(),
+    };
+  })
+  
+  // 清理系统缓存
+  .post('/clear-cache', () => {
+    return {
+      success: true,
+      message: 'System cache cleared successfully',
+      timestamp: new Date().toISOString(),
+    };
+  })
+  
+  // 重启服务
+  .post('/restart', () => {
+    return {
+      success: true,
+      message: 'Service restart initiated',
+      timestamp: new Date().toISOString(),
+      restart_time: new Date(Date.now() + 5000).toISOString(),
+    };
+  })
+  
+  // 错误处理
+  .onError(({ code, error }) => {
+    console.error('System API error:', error);
+    
+    return {
+      success: false,
+      error: {
+        code: code || 'INTERNAL_ERROR',
+        message: error.message || 'An unexpected error occurred',
+      },
+      timestamp: new Date().toISOString(),
+    };
+  });
