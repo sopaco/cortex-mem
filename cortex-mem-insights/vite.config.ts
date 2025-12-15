@@ -6,12 +6,13 @@ export default defineConfig({
 	server: {
 		proxy: {
 			'/api': {
-				target: 'http://localhost:3001',
+				target: 'http://localhost:3000',
 				changeOrigin: true,
-				secure: false
+				secure: false,
+				rewrite: (path) => path.replace(/^\/api/, '') // 移除/api前缀，匹配cortex-mem-service的端点
 			},
 			'/health': {
-				target: 'http://localhost:3001',
+				target: 'http://localhost:3000',
 				changeOrigin: true,
 				secure: false
 			}

@@ -378,15 +378,17 @@
         <p class="text-gray-500 dark:text-gray-400 mb-6">
           {searchQuery || selectedType !== 'all' ? '尝试调整搜索条件' : '系统暂无记忆记录'}
         </p>
-        <button
-          class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
-          on:click={() => {
-            searchQuery = '';
-            selectedType = 'all';
-          }}
-        >
-          {searchQuery || selectedType !== 'all' ? '清除筛选条件' : '添加测试记忆'}
-        </button>
+        {#if searchQuery || selectedType !== 'all'}
+          <button
+            class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
+            on:click={() => {
+              searchQuery = '';
+              selectedType = 'all';
+            }}
+          >
+            清除筛选条件
+          </button>
+        {/if}
       </div>
     {:else}
       <!-- 记忆表格 -->

@@ -90,7 +90,4 @@
 
 <style>
   /* 自定义样式 */
-  .nav-icon {
-    font-size: 1.2rem;
-  }
 </style>
