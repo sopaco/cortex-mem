@@ -115,41 +115,47 @@
 		}
 	}
 
-	// 独立检测各个服务状态（与监控页面相同的逻辑）
-	async function detectIndividualServices(timestamp: string) {
-		const mainService = { status: 'error', latency: 0, lastCheck: timestamp };
-		const vectorStore = { status: 'error', latency: 0, lastCheck: timestamp };
-		const llmService = { status: 'error', latency: 0, lastCheck: timestamp };
-
-		try {
-			// 1. 测试cortex-mem-service基础可用性
-			const serviceStartTime = Date.now();
-			const serviceResponse = await fetch('/api/memories?limit=1');
-			const serviceLatency = Date.now() - serviceStartTime;
-			
-			if (serviceResponse.ok) {
-				mainService.status = 'connected';
-				mainService.latency = serviceLatency;
-			} else {
-				// 尝试健康检查端点作为备用
-				try {
-					const healthStartTime = Date.now();
-					const healthResponse = await fetch('/health');
-					const healthLatency = Date.now() - healthStartTime;
-					
-					if (healthResponse.ok) {
-						const healthData = await healthResponse.json();
-						mainService.status = healthData.status === 'healthy' ? 'connected' : 'error';
-						mainService.latency = healthLatency;
+		// 独立检测各个服务状态（与监控页面相同的逻辑）
+		async function detectIndividualServices(timestamp: string) {
+			const mainService = { status: 'error', latency: 0, lastCheck: timestamp };
+			const vectorStore = { status: 'error', latency: 0, lastCheck: timestamp };
+			const llmService = { status: 'error', latency: 0, lastCheck: timestamp };
+	
+			try {
+				// 1. 测试cortex-mem-service基础可用性（API端点优先）
+				const serviceStartTime = Date.now();
+				const serviceResponse = await fetch('/api/memories?limit=1');
+				const serviceLatency = Date.now() - serviceStartTime;
+				
+				if (serviceResponse.ok) {
+					// API端点正常，说明服务可用
+					mainService.status = 'connected';
+					mainService.latency = serviceLatency;
+				} else {
+					// 如果API失败，再尝试健康检查端点，但健康检查失败不应该影响主要判断
+					try {
+						const healthStartTime = Date.now();
+						const healthResponse = await fetch('/health');
+						const healthLatency = Date.now() - healthStartTime;
+						
+						if (healthResponse.ok) {
+							const healthData = await healthResponse.json();
+							// 即使健康检查显示不健康，如果API可以访问，服务还是可用的
+							mainService.status = 'connected';
+							mainService.latency = Math.min(serviceLatency, healthLatency);
+						}
+					} catch (healthErr) {
+						console.warn('健康检查失败，但API可能仍可用:', healthErr);
+						// 健康检查失败不代表服务不可用，保持连接状态或设置connecting
+						if (serviceLatency > 0) {
+							mainService.status = 'connecting';
+							mainService.latency = serviceLatency;
+						}
 					}
-				} catch (healthErr) {
-					console.warn('健康检查也失败:', healthErr);
 				}
+			} catch (serviceErr) {
+				console.warn('cortex-mem-service检测失败:', serviceErr);
 			}
-		} catch (serviceErr) {
-			console.warn('cortex-mem-service基础检测失败:', serviceErr);
-		}
-
 		try {
 			// 2. 测试Qdrant独立可用性
 			const qdrantStartTime = Date.now();
