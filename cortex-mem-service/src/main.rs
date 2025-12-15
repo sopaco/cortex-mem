@@ -60,7 +60,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/health", get(health_check))
         .route("/memories", post(create_memory).get(list_memories))
         .route("/memories/search", post(search_memories))
-        .route("/memories/{id}", get(get_memory))
         .layer(
             ServiceBuilder::new()
                 .layer(CorsLayer::permissive())
