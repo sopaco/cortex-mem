@@ -3,9 +3,9 @@ use qdrant_client::{
     Qdrant,
     qdrant::{
         Condition, CreateCollection, DeletePoints, Distance, FieldCondition, Filter, GetPoints,
-        Match, PointId, PointStruct, PointsIdsList, PointsSelector, ScoredPoint, ScrollPoints,
-        SearchPoints, UpsertPoints, VectorParams, VectorsConfig, condition, r#match, point_id,
-        points_selector, vectors_config,
+        Match, PointId, PointStruct, PointsIdsList, PointsSelector, Range, ScoredPoint,
+        ScrollPoints, SearchPoints, UpsertPoints, VectorParams, VectorsConfig, condition, r#match,
+        point_id, points_selector, vectors_config,
     },
 };
 use std::collections::HashMap;
@@ -327,6 +327,37 @@ impl QdrantVectorStore {
                     });
                 }
             }
+        }
+
+        // Filter by importance score (salience)
+        if let Some(min_importance) = filters.min_importance {
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "importance_score".to_string(),
+                    range: Some(Range {
+                        gt: None,
+                        gte: Some(min_importance as f64),
+                        lt: None,
+                        lte: None,
+                    }),
+                    ..Default::default()
+                })),
+            });
+        }
+
+        if let Some(max_importance) = filters.max_importance {
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "importance_score".to_string(),
+                    range: Some(Range {
+                        gt: None,
+                        gte: None,
+                        lt: Some(max_importance as f64),
+                        lte: None,
+                    }),
+                    ..Default::default()
+                })),
+            });
         }
 
         // Filter by custom fields (including keywords)

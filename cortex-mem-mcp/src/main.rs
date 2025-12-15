@@ -12,6 +12,10 @@ struct Cli {
     /// Path to the configuration file
     #[arg(short, long, default_value = "config.toml")]
     config: PathBuf,
+
+    /// Agent identifier for memory operations
+    #[arg(long)]
+    agent: Option<String>,
 }
 
 #[tokio::main]
@@ -27,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Using configuration file: {:?}", cli.config);
 
     // Create the service
-    let service = MemoryMcpService::with_config_path(cli.config)
+    let service = MemoryMcpService::with_config_path_and_agent(cli.config, cli.agent)
         .await
         .map_err(|e| anyhow!("Failed to initialize memory management service: {}", e))?;
 

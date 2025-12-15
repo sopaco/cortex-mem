@@ -1,0 +1,72 @@
+# 最小化评估配置
+
+[general]
+mode = "all"
+output_dir = "results"
+use_real_evaluators = true
+memory_config_path = "config/minimal_config.toml"  # 使用自身作为MemoryManager配置
+
+[recall_evaluation]
+enabled = true
+test_cases_path = "data/test_cases/lab_recall_dataset.json"
+k_values = [1, 3, 5]
+similarity_thresholds = [0.1, 0.2]  # 进一步降低阈值以便在真实LLM客户端下返回结果
+max_results_per_query = 10
+use_real_evaluator = true
+
+[effectiveness_evaluation]
+enabled = true
+test_cases_path = "data/test_cases/lab_effectiveness_dataset.json"
+verify_fact_extraction = true
+verify_classification = true
+verify_importance_evaluation = true
+use_real_evaluator = true
+
+# Main configuration for the cortex-memo-evaluation system
+
+[qdrant]
+url = "http://localhost:6334"  # localhost，使用真实LLM客户端和Qdrant向量存储
+collection_name = "cortex-memo-evaluation"
+# embedding_dim = 1024 # Optional, will be auto-detected if not specified
+timeout_secs = 30
+
+[llm]
+# api_base_url = "https://api-inference.modelscope.cn/v1"
+# api_key = "ms-51f44587-555a-4a75-8ee1-c97c9adc8fb7"
+# model_efficient = "Qwen/Qwen3-Next-80B-A3B-Instruct"
+# model_efficient = "Qwen/Qwen3-235B-A22B-Instruct-2507"
+
+api_base_url = "https://wanqing-api.corp.kuaishou.com/api/gateway/v1/endpoints"
+api_key = "fs2wzco3o7haz38df1jo4vavnvauxtuz3f0b"
+model_efficient = "ep-i4abhq-1764595896785685523"
+#
+temperature = 0.1
+max_tokens = 4096
+
+[server]
+host = "0.0.0.0"
+port = 3000
+cors_origins = ["*"]
+
+[embedding]
+api_base_url = "https://wanqing-api.corp.kuaishou.com/api/gateway/v1/endpoints"
+api_key = "fs2wzco3o7haz38df1jo4vavnvauxtuz3f0b"
+model_name = "ep-9kf01g-1762237999831608613"
+batch_size = 10
+timeout_secs = 30
+
+[memory]
+max_memories = 10000
+max_search_results = 50
+# memory_ttl_hours = 24 # Optional
+auto_summary_threshold = 4096
+auto_enhance = false
+deduplicate = true
+similarity_threshold = 0.65
+merge_threshold = 0.75
+search_similarity_threshold = 0.5
+
+[logging]
+enabled = true
+log_directory = "logs"
+level = "debug"
