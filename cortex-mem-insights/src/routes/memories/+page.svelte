@@ -170,10 +170,25 @@
 		}
 	}
 
-	function formatImportance(importance: number) {
-		return (importance * 100).toFixed(1) + '%';
-	}
-
+	  function formatImportance(importance: number) {
+	    return (importance * 100).toFixed(1) + '%';
+	  }
+	
+	  function formatDate(isoString: string): string {
+	    try {
+	      const date = new Date(isoString);
+	      return date.toLocaleString('zh-CN', {
+	        year: 'numeric',
+	        month: '2-digit',
+	        day: '2-digit',
+	        hour: '2-digit',
+	        minute: '2-digit',
+	        second: '2-digit'
+	      }).replace(/\//g, '-').replace(',', '');
+	    } catch {
+	      return isoString;
+	    }
+	  }
 	function getImportanceColor(importance: number) {
 		if (importance >= 0.9) return 'text-red-600 dark:text-red-400';
 		if (importance >= 0.7) return 'text-orange-600 dark:text-orange-400';
@@ -615,11 +630,6 @@
 							>
 								创建时间
 							</th>
-							<th
-								class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
-							>
-								操作
-							</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -675,31 +685,9 @@
 										{/if}
 									</div>
 								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-									{memory.createdAt}
-								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-									<div class="flex space-x-2">
-										<button
-											class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-											on:click={() => console.log('查看详情', memory.id)}
-										>
-											查看
-										</button>
-										<button
-											class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
-											on:click={() => console.log('编辑', memory.id)}
-										>
-											编辑
-										</button>
-										<button
-											class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-											on:click={() => console.log('删除', memory.id)}
-										>
-											删除
-										</button>
-									</div>
-								</td>
+								                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+								                  {formatDate(memory.createdAt)}
+								                </td>
 							</tr>
 						{/each}
 					</tbody>
