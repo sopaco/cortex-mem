@@ -30,26 +30,26 @@ use_real_evaluator = true
 
 [qdrant]
 url = "http://localhost:6334"
-collection_name = "evaluation_memories"
+collection_name = "cortex-memo-evaluation"
 timeout_secs = 30
 
 [llm]
-api_base_url = "http://localhost:11434"
-api_key = ""
-model_efficient = "llama3.2:3b"
-temperature = 0.7
-max_tokens = 1000
+api_base_url = "https://wanqing-api.corp.kuaishou.com/api/gateway/v1/endpoints"
+api_key = "fs2wzco3o7haz38df1jo4vavnvauxtuz3f0b"
+model_efficient = "ep-i4abhq-1764595896785685523"
+temperature = 0.1
+max_tokens = 4096
 
 [server]
 host = "0.0.0.0"
-port = 8080
+port = 3000
 cors_origins = ["*"]
 
 [embedding]
-api_base_url = "http://localhost:11434"
-model_name = "nomic-embed-text"
-api_key = ""
-batch_size = 32
+api_base_url = "https://wanqing-api.corp.kuaishou.com/api/gateway/v1/endpoints"
+api_key = "fs2wzco3o7haz38df1jo4vavnvauxtuz3f0b"
+model_name = "ep-9kf01g-1762237999831608613"
+batch_size = 10
 timeout_secs = 30
 
 [memory]

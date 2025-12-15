@@ -1,12 +1,10 @@
 use axum::{
-    routing::{get, post},
     Router,
+    routing::{get, post},
 };
 use clap::Parser;
 use cortex_mem_core::{
-    config::Config,
-    llm::create_llm_client,
-    memory::MemoryManager,
+    config::Config, llm::create_llm_client, memory::MemoryManager,
     vector_store::qdrant::QdrantVectorStore,
 };
 use std::{path::PathBuf, sync::Arc};
@@ -19,8 +17,10 @@ use tracing_subscriber;
 mod handlers;
 mod models;
 
-use handlers::{create_memory, get_memory, health_check, list_memories, search_memories};
-
+use handlers::{
+    batch_delete_memories, batch_update_memories, create_memory, delete_memory, get_memory,
+    health_check, list_memories, search_memories, update_memory,
+};
 
 /// Application state shared across handlers
 #[derive(Clone)]
@@ -60,7 +60,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/health", get(health_check))
         .route("/memories", post(create_memory).get(list_memories))
         .route("/memories/search", post(search_memories))
-        .route("/memories/{id}", get(get_memory))
+        .route(
+            "/memories/{id}",
+            get(get_memory).put(update_memory).delete(delete_memory),
+        )
+        .route("/memories/batch/delete", post(batch_delete_memories))
+        .route("/memories/batch/update", post(batch_update_memories))
         .layer(
             ServiceBuilder::new()
                 .layer(CorsLayer::permissive())

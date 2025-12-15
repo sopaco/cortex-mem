@@ -30,6 +30,7 @@ plotters = "0.3"    # 图表生成
 statrs = "0.16"     # 统计计算
 config = "0.15"     # 配置管理
 sha2 = "0.10"       # 哈希计算
+async-trait = "0.1" # 异步trait支持
 
 [dev-dependencies]
 tempfile = "3.8"

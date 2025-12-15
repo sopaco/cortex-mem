@@ -5,7 +5,9 @@
 pub mod generator;
 pub mod loader;
 pub mod types;
+pub mod lab_data_integration;
 
 pub use generator::*;
 pub use loader::*;
 pub use types::*;
+pub use lab_data_integration::*;

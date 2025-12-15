@@ -120,6 +120,14 @@ export const memoryApi = {
       body: JSON.stringify({ ids }),
     });
   },
+
+  // 批量更新
+  batchUpdate: (updates: { id: string; content: string }[]) => {
+    return request('/api/memories/batch/update', {
+      method: 'POST',
+      body: JSON.stringify({ updates }),
+    });
+  },
   
   // 获取统计信息
   statistics: () => {

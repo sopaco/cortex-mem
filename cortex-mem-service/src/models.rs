@@ -20,6 +20,34 @@ pub struct UpdateMemoryRequest {
     pub content: String,
 }
 
+/// Request to batch delete memories
+#[derive(Debug, Deserialize)]
+pub struct BatchDeleteRequest {
+    pub ids: Vec<String>,
+}
+
+/// Request to batch update memories
+#[derive(Debug, Deserialize)]
+pub struct BatchUpdateRequest {
+    pub updates: Vec<MemoryUpdate>,
+}
+
+/// Single memory update for batch operation
+#[derive(Debug, Deserialize)]
+pub struct MemoryUpdate {
+    pub id: String,
+    pub content: String,
+}
+
+/// Response for batch operations
+#[derive(Debug, Serialize)]
+pub struct BatchOperationResponse {
+    pub success_count: usize,
+    pub failure_count: usize,
+    pub errors: Vec<String>,
+    pub message: String,
+}
+
 /// Request to search memories
 #[derive(Debug, Deserialize)]
 pub struct SearchMemoryRequest {

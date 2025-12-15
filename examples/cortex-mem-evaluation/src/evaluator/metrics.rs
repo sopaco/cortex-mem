@@ -33,6 +33,10 @@ pub struct ThresholdMetrics {
     pub f1_score: f64,
     /// 返回结果的平均数量
     pub avg_results_returned: f64,
+    /// 查询成功率（可选）
+    pub success_rate: Option<f64>,
+    /// 平均延迟（毫秒，可选）
+    pub avg_latency_ms: Option<u64>,
 }
 
 /// 查询级别的结果
@@ -54,6 +58,8 @@ pub struct QueryResult {
     pub recall: f64,
     /// 平均精确率
     pub average_precision: f64,
+    /// 查询延迟（毫秒）
+    pub latency_ms: u64,
 }
 
 /// 记忆有效性评估指标
@@ -131,6 +137,8 @@ pub struct ImportanceMetrics {
     pub root_mean_squared_error: f64,
     /// 评分分布
     pub score_distribution: HashMap<usize, usize>,
+    /// 在容差范围内的比例
+    pub within_tolerance_rate: f64,
 }
 
 /// 去重指标
@@ -146,6 +154,8 @@ pub struct DeduplicationMetrics {
     pub duplicate_pairs_detected: usize,
     /// 实际重复对数量
     pub actual_duplicate_pairs: usize,
+    /// 平均合并质量
+    pub avg_merge_quality: f64,
 }
 
 /// 记忆更新指标

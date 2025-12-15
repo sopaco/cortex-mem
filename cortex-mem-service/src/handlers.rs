@@ -8,7 +8,7 @@ use cortex_mem_core::types::{Filters, MemoryMetadata, MemoryType, Message};
 
 use tracing::{error, info};
 
-use crate::{AppState, models::{CreateMemoryRequest, ErrorResponse, HealthResponse, ListMemoryQuery, ListResponse, MemoryMetadataResponse, MemoryResponse, ScoredMemoryResponse, SearchMemoryRequest, SearchResponse, SuccessResponse, UpdateMemoryRequest}};
+use crate::{AppState, models::{CreateMemoryRequest, ErrorResponse, HealthResponse, ListMemoryQuery, ListResponse, MemoryMetadataResponse, MemoryResponse, ScoredMemoryResponse, SearchMemoryRequest, SearchResponse, SuccessResponse, UpdateMemoryRequest, BatchDeleteRequest, BatchUpdateRequest, BatchOperationResponse}};
 
 /// Health check endpoint
 pub async fn health_check(
@@ -452,5 +452,96 @@ pub async fn list_memories(
                 }),
             ))
         }
+    }
+}
+
+
+
+
+/// Batch delete memories
+pub async fn batch_delete_memories(
+    State(state): State<AppState>,
+    Json(request): Json<BatchDeleteRequest>,
+) -> Result<Json<BatchOperationResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let mut success_count = 0;
+    let mut failure_count = 0;
+    let mut errors = Vec::new();
+
+    for memory_id in &request.ids {
+        match state.memory_manager.delete(memory_id).await {
+            Ok(()) => {
+                success_count += 1;
+                info!("Memory deleted in batch: {}", memory_id);
+            }
+            Err(e) => {
+                failure_count += 1;
+                let error_msg = format!("Failed to delete memory {}: {}", memory_id, e);
+                error!("{}", error_msg);
+                errors.push(error_msg);
+            }
+        }
+    }
+
+    let response = BatchOperationResponse {
+        success_count,
+        failure_count,
+        errors,
+        message: format!("Batch delete completed: {} succeeded, {} failed", success_count, failure_count),
+    };
+
+    if failure_count > 0 {
+        Err((
+            StatusCode::PARTIAL_CONTENT,
+            Json(ErrorResponse {
+                error: format!("Batch delete partially failed: {} errors", failure_count),
+                code: "BATCH_DELETE_PARTIAL_FAILURE".to_string(),
+            }),
+        ))
+    } else {
+        Ok(Json(response))
+    }
+}
+
+/// Batch update memories
+pub async fn batch_update_memories(
+    State(state): State<AppState>,
+    Json(request): Json<BatchUpdateRequest>,
+) -> Result<Json<BatchOperationResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let mut success_count = 0;
+    let mut failure_count = 0;
+    let mut errors = Vec::new();
+
+    for update in &request.updates {
+        match state.memory_manager.update(&update.id, update.content.clone()).await {
+            Ok(()) => {
+                success_count += 1;
+                info!("Memory updated in batch: {}", update.id);
+            }
+            Err(e) => {
+                failure_count += 1;
+                let error_msg = format!("Failed to update memory {}: {}", update.id, e);
+                error!("{}", error_msg);
+                errors.push(error_msg);
+            }
+        }
+    }
+
+    let response = BatchOperationResponse {
+        success_count,
+        failure_count,
+        errors,
+        message: format!("Batch update completed: {} succeeded, {} failed", success_count, failure_count),
+    };
+
+    if failure_count > 0 {
+        Err((
+            StatusCode::PARTIAL_CONTENT,
+            Json(ErrorResponse {
+                error: format!("Batch update partially failed: {} errors", failure_count),
+                code: "BATCH_UPDATE_PARTIAL_FAILURE".to_string(),
+            }),
+        ))
+    } else {
+        Ok(Json(response))
     }
 }
