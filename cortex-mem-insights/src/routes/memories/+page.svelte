@@ -365,19 +365,27 @@
 	async function batchOptimize() {
 		const selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));
 
-		// 优化功能：在内容后添加优化标记
-		for (const memory of selected) {
-			try {
-				const optimizedContent = `${memory.content}\n[已优化 ${new Date().toLocaleDateString()}]`;
-				await api.memory.update(memory.id, optimizedContent);
-			} catch (err) {
-				console.error(`优化记忆 ${memory.id} 失败:`, err);
-			}
+		if (!confirm(`确定要优化选中的 ${selected.length} 条记忆吗？`)) {
+			return;
 		}
 
-		console.log(`已优化 ${selected.length} 条记忆`);
-		await loadMemories(); // 重新加载数据
-		deselectAll();
+		try {
+			// 优化功能：在内容后添加优化标记
+			const updates = selected.map(memory => ({
+				id: memory.id,
+				content: `${memory.content}\n[已优化 ${new Date().toLocaleDateString()}]`
+			}));
+
+			// 使用批量更新API
+			const result = await api.memory.batchUpdate(updates);
+			console.log(`批量优化结果:`, result);
+			console.log(`已优化 ${selected.length} 条记忆`);
+			await loadMemories(); // 重新加载数据
+			deselectAll();
+		} catch (err) {
+			console.error('批量优化失败:', err);
+			alert(`批量优化失败: ${err instanceof Error ? err.message : '未知错误'}`);
+		}
 	}
 
 	async function batchDelete() {
