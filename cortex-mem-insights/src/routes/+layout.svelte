@@ -49,23 +49,6 @@
 						{/each}
 					</div>
 				</div>
-
-				<!-- 右侧操作 -->
-				<div class="flex items-center space-x-4">
-					<button
-						class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors duration-200"
-						on:click={() => console.log('刷新数据')}
-					>
-						刷新数据
-					</button>
-					<div class="relative">
-						<div
-							class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center cursor-pointer"
-						>
-							<span class="text-gray-600 dark:text-gray-300">👤</span>
-						</div>
-					</div>
-				</div>
 			</div>
 		</div>
 	</nav>

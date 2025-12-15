@@ -392,7 +392,7 @@
 				logs.push({
 					time: time.toLocaleTimeString('zh-CN', { hour12: false }),
 					level: 'info',
-					message: `记忆活动: ${memoryType} 类型记忆 ${memory.id.substring(0, 8)}...`
+					message: `记忆活动: ${memoryType} 类型记忆 ${memory.id.substring(0, 22)}...`
 				});
 			});
 		}
@@ -688,6 +688,19 @@
 		}
 	}
 
+	function getStatusLightColor(status: string) {
+		switch (status) {
+			case 'connected':
+				return 'bg-green-400 dark:bg-green-900/20';
+			case 'connecting':
+				return 'bg-yellow-500 dark:bg-yellow-900/20';
+			case 'disconnected':
+				return 'bg-red-500 dark:bg-red-900/20';
+			default:
+				return 'bg-gray-500 dark:bg-gray-800';
+		}
+	}
+
 	function getLevelColor(level: string) {
 		switch (level) {
 			case 'error':
@@ -807,7 +820,7 @@
 							<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
 								<div class="flex items-center justify-between mb-2">
 									<div class="flex items-center space-x-2">
-										<div class={`w-2 h-2 rounded-full ${getStatusColor(data.status)}`}></div>
+										<div class={`w-2 h-2 rounded-full ${getStatusLightColor(data.status)}`}></div>
 										<span class="font-medium text-gray-900 dark:text-white">
 											{service === 'cortexMemService'
 												? 'cortex-mem-service'
@@ -913,15 +926,6 @@
 						</div>
 					</div>
 				</div>
-
-				<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-					<button
-						on:click={() => console.log('资源优化')}
-						class="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium"
-					>
-						资源优化建议
-					</button>
-				</div>
 			</div>
 
 			<!-- 性能指标 -->
@@ -964,15 +968,6 @@
 							</div>
 						</div>
 					{/each}
-				</div>
-
-				<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-					<button
-						on:click={() => console.log('性能报告')}
-						class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium"
-					>
-						生成性能报告
-					</button>
 				</div>
 			</div>
 		</div>
@@ -1038,23 +1033,6 @@
 						</div>
 					{/each}
 				</div>
-
-				<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-					<div class="flex space-x-3">
-						<button
-							on:click={() => console.log('查看所有告警')}
-							class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium"
-						>
-							查看所有告警
-						</button>
-						<button
-							on:click={() => console.log('清空已处理')}
-							class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium"
-						>
-							清空已处理
-						</button>
-					</div>
-				</div>
 			</div>
 
 			<!-- 实时日志 -->
@@ -1099,23 +1077,6 @@
 							{/each}
 						</div>
 					{/if}
-				</div>
-
-				<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-					<div class="flex space-x-3">
-						<button
-							on:click={() => console.log('导出日志')}
-							class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium"
-						>
-							导出日志
-						</button>
-						<button
-							on:click={() => console.log('日志设置')}
-							class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium"
-						>
-							日志设置
-						</button>
-					</div>
 				</div>
 			</div>
 		</div>

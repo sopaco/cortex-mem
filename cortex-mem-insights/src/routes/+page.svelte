@@ -366,13 +366,26 @@
 	function getStatusColor(status: string) {
 		switch (status) {
 			case 'connected':
-				return 'text-green-500 bg-green-50 dark:bg-green-900/20';
+				return 'text-green-500 dark:bg-green-900/20';
 			case 'connecting':
-				return 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20';
+				return 'text-yellow-500 dark:bg-yellow-900/20';
 			case 'disconnected':
-				return 'text-red-500 bg-red-50 dark:bg-red-900/20';
+				return 'text-red-500 dark:bg-red-900/20';
 			default:
-				return 'text-gray-500 bg-gray-50 dark:bg-gray-800';
+				return 'text-gray-500 dark:bg-gray-800';
+		}
+	}
+
+	function getStatusLightColor(status: string) {
+		switch (status) {
+			case 'connected':
+				return 'bg-green-400 dark:bg-green-900/20';
+			case 'connecting':
+				return 'bg-yellow-500 dark:bg-yellow-900/20';
+			case 'disconnected':
+				return 'bg-red-500 dark:bg-red-900/20';
+			default:
+				return 'bg-gray-500 dark:bg-gray-800';
 		}
 	}
 
@@ -529,10 +542,10 @@
 								<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
 									<div class="flex items-center justify-between mb-2">
 										<div class="flex items-center space-x-2">
-											<div class={`w-2 h-2 rounded-full ${getStatusColor(data.status)}`}></div>
+											<div class={`w-2 h-2 rounded-full ${getStatusLightColor(data.status)}`}></div>
 											<span class="font-medium text-gray-900 dark:text-white">
 												{service === 'cortexMemService'
-													? 'cortex-mem-service'
+													? 'Cortex Memory Service'
 													: service === 'qdrant'
 														? 'Qdrant 数据库'
 														: 'LLM 服务'}
