@@ -21,6 +21,8 @@
   let sortOrder: 'asc' | 'desc' = 'desc';
   let error: string | null = null;
   let filteredMemories: Memory[] = [];
+  let selectedMemories: Set<string> = new Set();
+  let showBatchOperations = false;
   
   const memoryTypes = [
     { value: 'all', label: '全部类型' },
@@ -236,6 +238,117 @@
     if (sortBy !== column) return '↕️';
     return sortOrder === 'asc' ? '↑' : '↓';
   }
+
+  // 选择功能
+  function toggleSelectMemory(memoryId: string) {
+    if (selectedMemories.has(memoryId)) {
+      selectedMemories.delete(memoryId);
+    } else {
+      selectedMemories.add(memoryId);
+    }
+    selectedMemories = selectedMemories; // 触发响应式更新
+    showBatchOperations = selectedMemories.size > 0;
+  }
+
+  function selectAll() {
+    filteredMemories.forEach(memory => selectedMemories.add(memory.id));
+    selectedMemories = selectedMemories;
+    showBatchOperations = true;
+  }
+
+  function deselectAll() {
+    selectedMemories.clear();
+    selectedMemories = selectedMemories;
+    showBatchOperations = false;
+  }
+
+  function isSelected(memoryId: string) {
+    return selectedMemories.has(memoryId);
+  }
+
+  // 批量操作功能
+  async function batchExport() {
+    const selected = filteredMemories.filter(memory => selectedMemories.has(memory.id));
+    const exportData = selected.map(memory => ({
+      id: memory.id,
+      content: memory.content,
+      type: memory.type,
+      importance: memory.importance,
+      userId: memory.userId,
+      agentId: memory.agentId,
+      createdAt: memory.createdAt,
+      updatedAt: memory.updatedAt
+    }));
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `memories-export-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    console.log(`已导出 ${selected.length} 条记忆`);
+    deselectAll();
+  }
+
+  async function batchMark() {
+    const selected = filteredMemories.filter(memory => selectedMemories.has(memory.id));
+    
+    // 标记功能：在内容前添加标记
+    for (const memory of selected) {
+      try {
+        const markedContent = `🏷️ [已标记] ${memory.content}`;
+        await api.memory.update(memory.id, markedContent);
+      } catch (err) {
+        console.error(`标记记忆 ${memory.id} 失败:`, err);
+      }
+    }
+    
+    console.log(`已标记 ${selected.length} 条记忆`);
+    await loadMemories(); // 重新加载数据
+    deselectAll();
+  }
+
+  async function batchOptimize() {
+    const selected = filteredMemories.filter(memory => selectedMemories.has(memory.id));
+    
+    // 优化功能：在内容后添加优化标记
+    for (const memory of selected) {
+      try {
+        const optimizedContent = `${memory.content}\n[已优化 ${new Date().toLocaleDateString()}]`;
+        await api.memory.update(memory.id, optimizedContent);
+      } catch (err) {
+        console.error(`优化记忆 ${memory.id} 失败:`, err);
+      }
+    }
+    
+    console.log(`已优化 ${selected.length} 条记忆`);
+    await loadMemories(); // 重新加载数据
+    deselectAll();
+  }
+
+  async function batchDelete() {
+    const selected = filteredMemories.filter(memory => selectedMemories.has(memory.id));
+    
+    if (!confirm(`确定要删除选中的 ${selected.length} 条记忆吗？此操作不可撤销。`)) {
+      return;
+    }
+    
+    for (const memory of selected) {
+      try {
+        await api.memory.delete(memory.id);
+      } catch (err) {
+        console.error(`删除记忆 ${memory.id} 失败:`, err);
+      }
+    }
+    
+    console.log(`已删除 ${selected.length} 条记忆`);
+    await loadMemories(); // 重新加载数据
+    deselectAll();
+  }
 </script>
 
 <div class="space-y-6">
@@ -357,6 +470,51 @@
     </div>
   </div>
 
+  <!-- 批量操作栏 -->
+  {#if showBatchOperations}
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <span class="text-sm font-medium text-blue-800 dark:text-blue-300">
+            已选择 <span class="font-bold">{selectedMemories.size}</span> 条记忆
+          </span>
+          <button
+            class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+            on:click={deselectAll}
+          >
+            取消选择
+          </button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button
+            class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded font-medium transition-colors duration-200"
+            on:click={batchExport}
+          >
+            📤 批量导出
+          </button>
+          <button
+            class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded font-medium transition-colors duration-200"
+            on:click={batchMark}
+          >
+            🏷️ 批量标记
+          </button>
+          <button
+            class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded font-medium transition-colors duration-200"
+            on:click={batchOptimize}
+          >
+            ⚡ 批量优化
+          </button>
+          <button
+            class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded font-medium transition-colors duration-200"
+            on:click={batchDelete}
+          >
+            🗑️ 批量删除
+          </button>
+        </div>
+      </div>
+    </div>
+  {/if}
+
   <!-- 记忆列表 -->
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
     {#if isLoading}
@@ -397,6 +555,20 @@
           <thead class="bg-gray-50 dark:bg-gray-900/50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <input
+                  type="checkbox"
+                  class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                  checked={selectedMemories.size === filteredMemories.length && filteredMemories.length > 0}
+                  on:change={(e) => {
+                    if (e.currentTarget.checked) {
+                      selectAll();
+                    } else {
+                      deselectAll();
+                    }
+                  }}
+                />
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 ID
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -422,6 +594,14 @@
           <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
             {#each filteredMemories as memory}
               <tr class="hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors duration-150">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <input
+                    type="checkbox"
+                    class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
+                    checked={isSelected(memory.id)}
+                    on:change={() => toggleSelectMemory(memory.id)}
+                  />
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="text-sm font-medium text-gray-900 dark:text-white">
                     {memory.id}
@@ -531,37 +711,6 @@
         </div>
       </div>
     {/if}
-  </div>
-
-  <!-- 批量操作 -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">批量操作</h3>
-    <div class="flex flex-wrap gap-3">
-      <button
-        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
-        on:click={() => console.log('批量导出')}
-      >
-        批量导出
-      </button>
-      <button
-        class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors duration-200"
-        on:click={() => console.log('批量标记')}
-      >
-        批量标记
-      </button>
-      <button
-        class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition-colors duration-200"
-        on:click={() => console.log('批量优化')}
-      >
-        批量优化
-      </button>
-      <button
-        class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors duration-200"
-        on:click={() => console.log('批量删除')}
-      >
-        批量删除
-      </button>
-    </div>
   </div>
 </div>
 
