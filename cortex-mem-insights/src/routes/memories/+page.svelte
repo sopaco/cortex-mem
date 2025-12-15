@@ -31,6 +31,11 @@
 	let paginatedMemories: Memory[] = [];
 	let totalPages = 1;
 
+	// 弹窗相关状态
+	let showContentModal = false;
+	let selectedContent = '';
+	let selectedMemoryId = '';
+
 	// 计算全选状态
 	$: isAllSelected =
 		paginatedMemories.length > 0 &&
@@ -336,6 +341,19 @@
 		}
 	}
 
+	// 弹窗功能
+	function showFullContent(content: string, memoryId: string) {
+		selectedContent = content;
+		selectedMemoryId = memoryId;
+		showContentModal = true;
+	}
+
+	function hideContentModal() {
+		showContentModal = false;
+		selectedContent = '';
+		selectedMemoryId = '';
+	}
+
 	// 选择功能
 	function toggleSelectMemory(memoryId: string) {
 		// 创建新的Set以确保响应式更新
@@ -458,7 +476,7 @@
 	}
 </script>
 
-<div class="space-y-6">
+<div class="max-w-[95vw] mx-auto space-y-6">
 	<!-- 页面标题 -->
 	<div>
 		<h1 class="text-3xl font-bold text-gray-900 dark:text-white">记忆浏览器</h1>
@@ -689,7 +707,7 @@
 					<thead class="bg-gray-50 dark:bg-gray-900/50">
 						<tr>
 							<th
-								class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+								class="w-6 px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
 								<input
 									type="checkbox"
@@ -705,32 +723,32 @@
 								/>
 							</th>
 							<th
-								class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+								class="w-32 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
 								ID
 							</th>
 							<th
-								class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+								class="w-1/2 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
 								内容
 							</th>
 							<th
-								class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+								class="w-24 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
 								类型
 							</th>
 							<th
-								class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+								class="w-28 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
 								重要性
 							</th>
 							<th
-								class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+								class="w-32 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
 								用户/Agent
 							</th>
 							<th
-								class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
+								class="w-40 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
 								创建时间
 							</th>
@@ -739,7 +757,7 @@
 					<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
 						{#each paginatedMemories as memory}
 							<tr class="hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors duration-150">
-								<td class="px-6 py-4 whitespace-nowrap">
+								<td class="w-6 px-3 py-3 whitespace-nowrap">
 									<input
 										type="checkbox"
 										class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
@@ -747,43 +765,61 @@
 										on:change={() => toggleSelectMemory(memory.id)}
 									/>
 								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
-									<div class="text-sm font-medium text-gray-900 dark:text-white">
+								<td class="w-32 px-6 py-4 whitespace-nowrap">
+									<div class="text-sm font-medium text-gray-900 dark:text-white truncate">
 										{memory.id}
 									</div>
 								</td>
-								<td class="px-6 py-4">
-									<div class="max-w-md">
-										<div class="text-sm text-gray-900 dark:text-white truncate-2-lines">
+								<td class="w-1/2 px-6 py-4">
+									<div class="max-w-none">
+										<button
+											class="text-sm text-gray-900 dark:text-white truncate-2-lines cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-150 text-left w-full"
+											on:click={() => showFullContent(memory.content, memory.id)}
+											on:keydown={(e) => {
+												if (e.key === 'Enter' || e.key === ' ') {
+													e.preventDefault();
+													showFullContent(memory.content, memory.id);
+												}
+											}}
+											title="点击查看完整内容"
+											type="button"
+										>
 											{memory.content}
-										</div>
+										</button>
+										{#if memory.content.length > 100}
+											<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+												点击查看完整内容 ({memory.content.length} 字符)
+											</div>
+										{/if}
 									</div>
 								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
+								<td class="w-24 px-6 py-4 whitespace-nowrap">
 									<span
 										class={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(memory.type)}`}
 									>
 										{getTypeLabel(memory.type)}
 									</span>
 								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
+								<td class="w-28 px-6 py-4 whitespace-nowrap">
 									<div class="flex items-center">
 										<span class={`text-sm font-medium ${getImportanceColor(memory.importance)}`}>
 											{formatImportance(memory.importance)}
 										</span>
 									</div>
 								</td>
-								<td class="px-6 py-4 whitespace-nowrap">
+								<td class="w-32 px-6 py-4 whitespace-nowrap">
 									<div class="text-sm text-gray-500 dark:text-gray-400">
 										{#if memory.userId}
-											<div>{memory.userId}</div>
+											<div class="truncate">{memory.userId}</div>
 										{/if}
 										{#if memory.agentId}
-											<div>Agent: {memory.agentId}</div>
+											<div class="truncate">Agent: {memory.agentId}</div>
 										{/if}
 									</div>
 								</td>
-								<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+								<td
+									class="w-40 px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
+								>
 									{formatDate(memory.createdAt)}
 								</td>
 							</tr>
@@ -849,6 +885,46 @@
 			{/if}
 		{/if}
 	</div>
+
+	<!-- 内容弹窗 -->
+	{#if showContentModal}
+		<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+			<div
+				class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden"
+			>
+				<div
+					class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700"
+				>
+					<div>
+						<h3 class="text-lg font-semibold text-gray-900 dark:text-white">记忆内容详情</h3>
+						<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ID: {selectedMemoryId}</p>
+					</div>
+					<button
+						class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-150"
+						on:click={hideContentModal}
+					>
+						<span class="text-2xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+							>×</span
+						>
+					</button>
+				</div>
+				<div class="p-6 overflow-y-auto max-h-[60vh]">
+					<div class="prose prose-gray dark:prose-invert max-w-none">
+						<pre
+							class="whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100 font-sans leading-relaxed">{selectedContent}</pre>
+					</div>
+				</div>
+				<div class="flex justify-end p-6 border-t border-gray-200 dark:border-gray-700">
+					<button
+						class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200"
+						on:click={hideContentModal}
+					>
+						关闭
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
