@@ -2,12 +2,12 @@
 	import { onMount } from 'svelte';
 	import api from '$lib/api/client';
 
-	// 模拟数据
+	// 真实数据
 	let stats = {
 		totalMemories: 0,
-		todayAdded: 0,
 		optimizationCount: 0,
-		averageQuality: 0
+		averageQuality: 0,
+		qualityDistribution: { high: 0, medium: 0, low: 0 }
 	};
 
 	let systemStatus = {
@@ -54,84 +54,121 @@
 				llmService: healthData.llm_service ? 'connected' : 'error'
 			};
 
-			// 获取记忆统计
-			const memoriesResponse = await api.memory.list({ limit: 100 });
+			// 获取所有记忆数据用于分析
+			const memoriesResponse = await api.memory.list({ limit: 1000 });
 
 			// 计算统计数据
-			const today = new Date();
-			const todayMemories = memoriesResponse.memories.filter(
-				(m) => new Date(m.created_at).toDateString() === today.toDateString()
-			);
+			const memories = memoriesResponse.memories;
+			const totalCount = memories.length;
 
-			stats = {
-				totalMemories: memoriesResponse.total,
-				todayAdded: todayMemories.length,
-				optimizationCount: 0, // TODO: 获取实际优化计数
-				averageQuality: 0.75 // TODO: 计算实际平均质量
-			};
+			// 计算质量分布（基于记忆类型和元数据）
+			const qualityStats = calculateQualityDistribution(memories);
 
 			// 获取最近记忆
-			recentMemories = memoriesResponse.memories
+			recentMemories = memories
 				.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 				.slice(0, 5)
 				.map((memory) => ({
 					id: memory.id,
 					content: memory.content,
-					type: memory.metadata.memory_type,
-					importance: 0.7, // TODO: 从metadata获取实际重要性
+					type: memory.metadata.memory_type || 'Unknown',
+					importance: calculateImportanceScore(memory),
 					createdAt: formatDate(memory.created_at)
 				}));
+
+			stats = {
+				totalMemories: totalCount,
+				optimizationCount: 0, // TODO: 从优化API获取实际计数
+				averageQuality: qualityStats.average,
+				qualityDistribution: qualityStats.distribution
+			};
+
 		} catch (err) {
 			console.error('加载仪表板数据错误:', err);
 			throw err;
 		}
 	}
 
+	// 计算质量分布
+	function calculateQualityDistribution(memories: any[]) {
+		if (memories.length === 0) {
+			return { average: 0, distribution: { high: 0, medium: 0, low: 0 } };
+		}
+
+		let high = 0;
+		let medium = 0;
+		let low = 0;
+		let totalScore = 0;
+
+		memories.forEach(memory => {
+			const score = calculateImportanceScore(memory);
+			totalScore += score;
+
+			if (score >= 0.8) {
+				high++;
+			} else if (score >= 0.6) {
+				medium++;
+			} else {
+				low++;
+			}
+		});
+
+		const average = totalScore / memories.length;
+
+		return {
+			average,
+			distribution: { high, medium, low }
+		};
+	}
+
+	// 计算重要性评分
+	function calculateImportanceScore(memory: any) {
+		// 基于记忆类型、角色和自定义字段计算重要性
+		let score = 0.5; // 基础分数
+
+		const memoryType = memory.metadata?.memory_type?.toLowerCase() || '';
+		const role = memory.metadata?.role?.toLowerCase() || '';
+
+		// 根据记忆类型调整分数
+		if (memoryType.includes('procedural') || memoryType.includes('workflow')) {
+			score += 0.3;
+		} else if (memoryType.includes('personal')) {
+			score += 0.2;
+		} else if (memoryType.includes('conversational')) {
+			score += 0.1;
+		}
+
+		// 根据角色调整分数
+		if (role.includes('admin') || role.includes('system')) {
+			score += 0.2;
+		} else if (role.includes('user')) {
+			score += 0.1;
+		}
+
+		// 检查自定义字段中的重要性标识
+		if (memory.metadata?.custom?.importance) {
+			score += memory.metadata.custom.importance * 0.3;
+		}
+
+		return Math.min(1.0, Math.max(0.0, score));
+	}
+
 	function fallbackToMockData() {
-		console.log('回退到模拟数据');
+		console.log('回退到默认数据');
 		stats = {
-			totalMemories: 1245,
-			todayAdded: 23,
-			optimizationCount: 12,
-			averageQuality: 0.78
+			totalMemories: 0,
+			optimizationCount: 0,
+			averageQuality: 0.5,
+			qualityDistribution: { high: 0, medium: 0, low: 0 }
 		};
 
 		systemStatus = {
-			cortexMemService: 'connected',
-			qdrant: 'connected',
-			llmService: 'connected'
+			cortexMemService: 'connecting',
+			qdrant: 'connecting',
+			llmService: 'connecting'
 		};
 
-		recentMemories = [
-			{
-				id: 'mem_001',
-				content: '用户偏好：喜欢使用暗色主题，经常在晚上工作',
-				type: 'Personal',
-				importance: 0.9,
-				createdAt: '2025-12-13 14:30'
-			},
-			{
-				id: 'mem_002',
-				content: '项目需求：需要实现用户认证系统，支持OAuth2.0',
-				type: 'Factual',
-				importance: 0.8,
-				createdAt: '2025-12-13 13:45'
-			},
-			{
-				id: 'mem_003',
-				content: '对话历史：用户询问关于Rust异步编程的最佳实践',
-				type: 'Conversational',
-				importance: 0.7,
-				createdAt: '2025-12-13 12:20'
-			},
-			{
-				id: 'mem_004',
-				content: '系统配置：API超时时间设置为30秒，重试次数3次',
-				type: 'Procedural',
-				importance: 0.85,
-				createdAt: '2025-12-13 11:15'
-			}
-		];
+		recentMemories = [];
 
 		isLoading = false;
 	}
@@ -216,7 +253,7 @@
 		</div>
 	{:else}
 		<!-- 统计卡片 -->
-		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 			<!-- 总记忆数 -->
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
 				<div class="flex items-center justify-between">
@@ -233,50 +270,8 @@
 					</div>
 				</div>
 				<p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-					今日新增: <span class="font-medium text-green-600 dark:text-green-400"
-						>+{stats.todayAdded}</span
-					>
-				</p>
-			</div>
-
-			<!-- 今日新增 -->
-			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-green-500">
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">今日新增</p>
-						<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-							+{stats.todayAdded}
-						</p>
-					</div>
-					<div
-						class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center"
-					>
-						<span class="text-2xl">📈</span>
-					</div>
-				</div>
-				<p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-					较昨日: <span class="font-medium text-green-600 dark:text-green-400">+15%</span>
-				</p>
-			</div>
-
-			<!-- 优化次数 -->
-			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-purple-500">
-				<div class="flex items-center justify-between">
-					<div>
-						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">优化次数</p>
-						<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-							{stats.optimizationCount}
-						</p>
-					</div>
-					<div
-						class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center"
-					>
-						<span class="text-2xl">⚡</span>
-					</div>
-				</div>
-				<p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
-					平均质量: <span class="font-medium text-blue-600 dark:text-blue-400"
-						>{(stats.averageQuality * 100).toFixed(1)}%</span
+					高质量记忆: <span class="font-medium text-green-600 dark:text-green-400"
+						>{stats.qualityDistribution.high}</span
 					>
 				</p>
 			</div>
@@ -303,6 +298,31 @@
 							style={`width: ${stats.averageQuality * 100}%`}
 						></div>
 					</div>
+				</div>
+			</div>
+
+			<!-- 质量分布 -->
+			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-green-500">
+				<div class="flex items-center justify-between">
+					<div>
+						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">质量分布</p>
+						<p class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
+							{stats.qualityDistribution.high}/{stats.qualityDistribution.medium}/{stats.qualityDistribution.low}
+						</p>
+					</div>
+					<div
+						class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center"
+					>
+						<span class="text-2xl">📊</span>
+					</div>
+				</div>
+				<p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+					高/中/低质量记忆数量
+				</p>
+				<div class="mt-2 flex space-x-1">
+					<div class="flex-1 bg-green-200 dark:bg-green-800 rounded h-1"></div>
+					<div class="flex-1 bg-yellow-200 dark:bg-yellow-800 rounded h-1"></div>
+					<div class="flex-1 bg-red-200 dark:bg-red-800 rounded h-1"></div>
 				</div>
 			</div>
 		</div>

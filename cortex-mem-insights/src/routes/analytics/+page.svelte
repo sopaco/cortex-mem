@@ -1,45 +1,225 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import api from '$lib/api/client';
   
   let isLoading = true;
+  let error: string | null = null;
   
-  // 模拟数据
-  let typeDistribution = [
-    { type: '对话', count: 450, percentage: 36 },
-    { type: '事实', count: 320, percentage: 26 },
-    { type: '个人', count: 280, percentage: 22 },
-    { type: '流程', count: 195, percentage: 16 }
-  ];
+  // 真实数据
+  let typeDistribution: Array<{type: string, count: number, percentage: number}> = [];
+  let qualityDistribution: Array<{range: string, count: number, color: string}> = [];
+  let timeTrends: Array<{date: string, count: number}> = [];
+  let userStats: Array<{userId: string, memoryCount: number, avgImportance: number}> = [];
+  let summaryStats = {
+    totalMemories: 0,
+    averageQuality: 0,
+    activeUsers: 0,
+    optimizationCount: 0
+  };
   
-  let qualityDistribution = [
-    { range: '90-100%', count: 180, color: 'bg-green-500' },
-    { range: '70-89%', count: 420, color: 'bg-blue-500' },
-    { range: '50-69%', count: 380, color: 'bg-yellow-500' },
-    { range: '0-49%', count: 265, color: 'bg-red-500' }
-  ];
-  
-  let timeTrends = [
-    { date: '12-08', count: 45 },
-    { date: '12-09', count: 52 },
-    { date: '12-10', count: 48 },
-    { date: '12-11', count: 61 },
-    { date: '12-12', count: 55 },
-    { date: '12-13', count: 68 }
-  ];
-  
-  let userStats = [
-    { userId: 'user_001', memoryCount: 320, avgImportance: 0.82 },
-    { userId: 'user_002', memoryCount: 280, avgImportance: 0.76 },
-    { userId: 'user_003', memoryCount: 195, avgImportance: 0.71 },
-    { userId: 'user_004', memoryCount: 150, avgImportance: 0.68 },
-    { userId: 'user_005', memoryCount: 120, avgImportance: 0.74 }
-  ];
-  
-  onMount(() => {
-    setTimeout(() => {
+  onMount(async () => {
+    try {
+      await loadAnalyticsData();
+    } catch (err) {
+      console.error('加载统计数据失败:', err);
+      error = err instanceof Error ? err.message : '加载数据失败';
+      loadDefaultData();
+    } finally {
       isLoading = false;
-    }, 1000);
+    }
   });
+  
+  async function loadAnalyticsData() {
+    try {
+      // 获取所有记忆数据用于分析
+      const memoriesResponse = await api.memory.list({ limit: 1000 });
+      const memories = memoriesResponse.memories;
+      
+      if (memories.length === 0) {
+        loadDefaultData();
+        return;
+      }
+      
+      // 计算统计数据
+      summaryStats = {
+        totalMemories: memories.length,
+        averageQuality: calculateAverageQuality(memories),
+        activeUsers: calculateActiveUsers(memories),
+        optimizationCount: 0 // TODO: 从优化API获取
+      };
+      
+      // 计算类型分布
+      typeDistribution = calculateTypeDistribution(memories);
+      
+      // 计算质量分布
+      qualityDistribution = calculateQualityDistribution(memories);
+      
+      // 计算时间趋势
+      timeTrends = calculateTimeTrends(memories);
+      
+      // 计算用户统计
+      userStats = calculateUserStats(memories);
+      
+    } catch (err) {
+      console.error('分析数据错误:', err);
+      throw err;
+    }
+  }
+  
+  function loadDefaultData() {
+    summaryStats = {
+      totalMemories: 0,
+      averageQuality: 0,
+      activeUsers: 0,
+      optimizationCount: 0
+    };
+    typeDistribution = [];
+    qualityDistribution = [
+      { range: '90-100%', count: 0, color: 'bg-green-500' },
+      { range: '70-89%', count: 0, color: 'bg-blue-500' },
+      { range: '50-69%', count: 0, color: 'bg-yellow-500' },
+      { range: '0-49%', count: 0, color: 'bg-red-500' }
+    ];
+    timeTrends = [];
+    userStats = [];
+  }
+  
+  function calculateAverageQuality(memories: any[]): number {
+    if (memories.length === 0) return 0;
+    
+    const totalScore = memories.reduce((sum, memory) => {
+      return sum + calculateImportanceScore(memory);
+    }, 0);
+    
+    return totalScore / memories.length;
+  }
+  
+  function calculateImportanceScore(memory: any): number {
+    let score = 0.5;
+    
+    const memoryType = memory.metadata?.memory_type?.toLowerCase() || '';
+    const role = memory.metadata?.role?.toLowerCase() || '';
+    
+    if (memoryType.includes('procedural') || memoryType.includes('workflow')) {
+      score += 0.3;
+    } else if (memoryType.includes('personal')) {
+      score += 0.2;
+    } else if (memoryType.includes('conversational')) {
+      score += 0.1;
+    }
+    
+    if (role.includes('admin') || role.includes('system')) {
+      score += 0.2;
+    } else if (role.includes('user')) {
+      score += 0.1;
+    }
+    
+    if (memory.metadata?.custom?.importance) {
+      score += memory.metadata.custom.importance * 0.3;
+    }
+    
+    return Math.min(1.0, Math.max(0.0, score));
+  }
+  
+  function calculateActiveUsers(memories: any[]): number {
+    const users = new Set();
+    memories.forEach(memory => {
+      if (memory.metadata?.user_id) {
+        users.add(memory.metadata.user_id);
+      }
+    });
+    return users.size;
+  }
+  
+  function calculateTypeDistribution(memories: any[]): Array<{type: string, count: number, percentage: number}> {
+    const typeCounts: Record<string, number> = {};
+    
+    memories.forEach(memory => {
+      const type = memory.metadata?.memory_type || 'Unknown';
+      typeCounts[type] = (typeCounts[type] || 0) + 1;
+    });
+    
+    const total = memories.length;
+    return Object.entries(typeCounts)
+      .map(([type, count]) => ({
+        type,
+        count,
+        percentage: Math.round((count / total) * 100)
+      }))
+      .sort((a, b) => b.count - a.count);
+  }
+  
+  function calculateQualityDistribution(memories: any[]): Array<{range: string, count: number, color: string}> {
+    let high = 0; // 90-100%
+    let good = 0; // 70-89%
+    let medium = 0; // 50-69%
+    let low = 0; // 0-49%
+    
+    memories.forEach(memory => {
+      const score = calculateImportanceScore(memory);
+      if (score >= 0.9) {
+        high++;
+      } else if (score >= 0.7) {
+        good++;
+      } else if (score >= 0.5) {
+        medium++;
+      } else {
+        low++;
+      }
+    });
+    
+    return [
+      { range: '90-100%', count: high, color: 'bg-green-500' },
+      { range: '70-89%', count: good, color: 'bg-blue-500' },
+      { range: '50-69%', count: medium, color: 'bg-yellow-500' },
+      { range: '0-49%', count: low, color: 'bg-red-500' }
+    ];
+  }
+  
+  function calculateTimeTrends(memories: any[]): Array<{date: string, count: number}> {
+    const dateCounts: Record<string, number> = {};
+    
+    // 获取最近7天
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+      dateCounts[dateStr] = 0;
+    }
+    
+    memories.forEach(memory => {
+      const date = new Date(memory.created_at);
+      const dateStr = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+      if (dateCounts.hasOwnProperty(dateStr)) {
+        dateCounts[dateStr]++;
+      }
+    });
+    
+    return Object.entries(dateCounts).map(([date, count]) => ({ date, count }));
+  }
+  
+  function calculateUserStats(memories: any[]): Array<{userId: string, memoryCount: number, avgImportance: number}> {
+    const userData: Record<string, {count: number, totalScore: number}> = {};
+    
+    memories.forEach(memory => {
+      const userId = memory.metadata?.user_id || 'unknown';
+      if (!userData[userId]) {
+        userData[userId] = { count: 0, totalScore: 0 };
+      }
+      userData[userId].count++;
+      userData[userId].totalScore += calculateImportanceScore(memory);
+    });
+    
+    return Object.entries(userData)
+      .map(([userId, data]) => ({
+        userId,
+        memoryCount: data.count,
+        avgImportance: data.totalScore / data.count
+      }))
+      .sort((a, b) => b.memoryCount - a.memoryCount)
+      .slice(0, 5); // 只显示前5个用户
+  }
   
   function getPercentageColor(percentage: number) {
     if (percentage >= 30) return 'text-blue-600 dark:text-blue-400';
@@ -68,31 +248,44 @@
         </div>
       {/each}
     </div>
+  {:else if error}
+    <!-- 错误状态 -->
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
+      <div class="flex items-center">
+        <div class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mr-3">
+          <span class="text-red-600 dark:text-red-400">⚠️</span>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium text-red-800 dark:text-red-200">加载失败</h3>
+          <p class="text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      </div>
+    </div>
   {:else}
     <!-- 统计概览 -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <p class="text-sm font-medium text-gray-600 dark:text-gray-400">总记忆数</p>
-        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">1,245</p>
-        <p class="mt-2 text-sm text-green-600 dark:text-green-400">较上周 +12%</p>
+        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{summaryStats.totalMemories.toLocaleString()}</p>
+        <p class="mt-2 text-sm text-green-600 dark:text-green-400">当前总数</p>
       </div>
       
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <p class="text-sm font-medium text-gray-600 dark:text-gray-400">平均质量</p>
-        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">78.2%</p>
-        <p class="mt-2 text-sm text-blue-600 dark:text-blue-400">较上周 +5%</p>
+        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{(summaryStats.averageQuality * 100).toFixed(1)}%</p>
+        <p class="mt-2 text-sm text-blue-600 dark:text-blue-400">基于重要性评分</p>
       </div>
       
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <p class="text-sm font-medium text-gray-600 dark:text-gray-400">活跃用户</p>
-        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">8</p>
-        <p class="mt-2 text-sm text-purple-600 dark:text-purple-400">较上周 +2</p>
+        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{summaryStats.activeUsers}</p>
+        <p class="mt-2 text-sm text-purple-600 dark:text-purple-400">有记忆的用户</p>
       </div>
       
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
         <p class="text-sm font-medium text-gray-600 dark:text-gray-400">优化次数</p>
-        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">12</p>
-        <p class="mt-2 text-sm text-yellow-600 dark:text-yellow-400">节省 45MB</p>
+        <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{summaryStats.optimizationCount}</p>
+        <p class="mt-2 text-sm text-yellow-600 dark:text-yellow-400">历史优化记录</p>
       </div>
     </div>
 
@@ -133,7 +326,7 @@
         
         <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
           <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-            <span>总计: 1,245 条记忆</span>
+            <span>总计: {summaryStats.totalMemories} 条记忆</span>
             <button
               class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
               on:click={() => console.log('查看详情')}
@@ -264,7 +457,7 @@
                       <div class="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
                         <div
                           class="h-2 rounded-full bg-blue-500"
-                          style={`width: ${(user.memoryCount / 320) * 100}%`}
+                          style={`width: ${summaryStats.totalMemories > 0 ? (user.memoryCount / summaryStats.totalMemories) * 100 : 0}%`}
                         ></div>
                       </div>
                       <span class="text-sm font-medium">
@@ -282,11 +475,11 @@
                     </span>
                   </td>
                   <td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                    {((user.memoryCount / 1245) * 100).toFixed(1)}%
+                    {summaryStats.totalMemories > 0 ? ((user.memoryCount / summaryStats.totalMemories) * 100).toFixed(1) : '0.0'}%
                   </td>
                   <td class="px-4 py-3">
-                    <span class="text-green-600 dark:text-green-400 text-sm font-medium">
-                      +{Math.floor(Math.random() * 15)}%
+                    <span class="text-gray-600 dark:text-gray-400 text-sm font-medium">
+                      数据不足
                     </span>
                   </td>
                 </tr>
@@ -298,7 +491,7 @@
         <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
           <div class="flex items-center justify-between">
             <span class="text-sm text-gray-500 dark:text-gray-400">
-              前5用户占总记忆的 {(userStats.reduce((sum, user) => sum + user.memoryCount, 0) / 1245 * 100).toFixed(1)}%
+              前{userStats.length}用户占总记忆的 {summaryStats.totalMemories > 0 ? ((userStats.reduce((sum, user) => sum + user.memoryCount, 0) / summaryStats.totalMemories) * 100).toFixed(1) : '0.0'}%
             </span>
             <button
               class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium"
