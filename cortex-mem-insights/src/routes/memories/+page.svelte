@@ -314,24 +314,24 @@
 		showBatchOperations = false;
 	}
 
-	// 响应式更新selectedMemoryIds，确保子项复选框能正确更新
-	$: {
-		console.log('选择状态变化:', {
-			selectedCount: selectedMemories.size,
-			totalCount: filteredMemories.length,
-			isAllSelected,
-			selectedMemoryIds: Array.from(selectedMemories).slice(0, 3) // 只显示前3个用于调试
-		});
-		selectedMemoryIds = new Set(selectedMemories);
-		console.log('selectedMemoryIds已更新:', selectedMemoryIds.size);
-	}
-
-	function isSelected(memoryId: string) {
-		const result = selectedMemoryIds.has(memoryId);
-		console.log('isSelected检查:', memoryId, result);
-		return result;
-	}
-
+		// 创建响应式的选中状态映射
+		$: selectedMemoryMap = new Map();
+		$: {
+			console.log('选择状态变化:', { 
+				selectedCount: selectedMemories.size, 
+				totalCount: filteredMemories.length,
+				isAllSelected,
+				selectedIds: Array.from(selectedMemories).slice(0, 3) // 只显示前3个用于调试
+			});
+			
+			// 为每个memory创建选中状态映射
+			const map = new Map();
+			filteredMemories.forEach(memory => {
+				map.set(memory.id, selectedMemories.has(memory.id));
+			});
+			selectedMemoryMap = map;
+			console.log('selectedMemoryMap已更新:', selectedMemoryMap.size);
+		}
 	// 批量操作功能
 	async function batchExport() {
 		const selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));
@@ -680,7 +680,7 @@
 									<input
 										type="checkbox"
 										class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500"
-										checked={isSelected(memory.id)}
+										checked={selectedMemoryMap.get(memory.id) || false}
 										on:change={() => toggleSelectMemory(memory.id)}
 									/>
 								</td>
