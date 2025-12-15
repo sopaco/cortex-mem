@@ -360,23 +360,7 @@
 		deselectAll();
 	}
 
-	async function batchMark() {
-		const selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));
 
-		// 标记功能：在内容前添加标记
-		for (const memory of selected) {
-			try {
-				const markedContent = `🏷️ [已标记] ${memory.content}`;
-				await api.memory.update(memory.id, markedContent);
-			} catch (err) {
-				console.error(`标记记忆 ${memory.id} 失败:`, err);
-			}
-		}
-
-		console.log(`已标记 ${selected.length} 条记忆`);
-		await loadMemories(); // 重新加载数据
-		deselectAll();
-	}
 
 	async function batchOptimize() {
 		const selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));
@@ -398,22 +382,22 @@
 
 	async function batchDelete() {
 		const selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));
+		const memoryIds = selected.map(memory => memory.id);
 
 		if (!confirm(`确定要删除选中的 ${selected.length} 条记忆吗？此操作不可撤销。`)) {
 			return;
 		}
 
-		for (const memory of selected) {
-			try {
-				await api.memory.delete(memory.id);
-			} catch (err) {
-				console.error(`删除记忆 ${memory.id} 失败:`, err);
-			}
+		try {
+			// 使用批量删除API
+			await api.memory.batchDelete(memoryIds);
+			console.log(`已删除 ${selected.length} 条记忆`);
+			await loadMemories(); // 重新加载数据
+			deselectAll();
+		} catch (err) {
+			console.error('批量删除失败:', err);
+			alert(`批量删除失败: ${err instanceof Error ? err.message : '未知错误'}`);
 		}
-
-		console.log(`已删除 ${selected.length} 条记忆`);
-		await loadMemories(); // 重新加载数据
-		deselectAll();
 	}
 </script>
 
@@ -561,12 +545,7 @@
 					>
 						📤 批量导出
 					</button>
-					<button
-						class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded font-medium transition-colors duration-200"
-						on:click={batchMark}
-					>
-						🏷️ 批量标记
-					</button>
+
 					<button
 						class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded font-medium transition-colors duration-200"
 						on:click={batchOptimize}
