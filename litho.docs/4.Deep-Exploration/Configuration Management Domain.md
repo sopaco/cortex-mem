@@ -107,13 +107,13 @@ This reduces configuration burden by allowing users to specify only non-default 
 
 ```mermaid
 graph TD
-    A[Start] --> B[Call Config::load(path)]
-    B --> C[Read TOML file]
-    C --> D[Parse content with toml::from_str]
-    D --> E{Parse successful?}
-    E -->|Yes| F[Return Config object]
-    E -->|No| G[Propagate error via anyhow]
-    F --> H[Components access config fields]
+    A[开始] --> B[调用配置加载]
+    B --> C[读取TOML文件]
+    C --> D[解析内容]
+    D --> E{解析是否成功}
+    E -->|"是"| F[返回配置对象]
+    E -->|"否"| G[传播错误]
+    F --> H[组件访问配置字段]
     G --> H
 ```
 

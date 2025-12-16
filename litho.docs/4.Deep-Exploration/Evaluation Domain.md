@@ -55,22 +55,22 @@ The runner operates through several key methods:
 
 ```mermaid
 graph TD
-    A[Command Line Input] --> B[ExperimentRunner]
-    B --> C{Load Configuration}
-    C --> D[ExperimentConfig]
-    D --> E[Create Output Directory]
-    B --> F[create_memory_manager_for_real_evaluation]
-    F --> G[MemoryManager]
-    B --> H[DatasetLoader::load_recall_dataset]
-    H --> I[RecallTestDataset]
-    B --> J[DatasetLoader::load_effectiveness_dataset]
-    J --> K[EffectivenessTestDataset]
-    B --> L[RealRecallEvaluator.evaluate()]
-    L --> M[RecallMetrics]
-    B --> N[RealEffectivenessEvaluator.evaluate()]
-    N --> O[EffectivenessMetrics]
-    B --> P[Write JSON Results]
-    B --> Q[Generate real_evaluation_report.md]
+    A[命令行输入] --> B[实验运行器]
+    B --> C{加载配置}
+    C --> D[实验配置]
+    D --> E[创建输出目录]
+    B --> F[创建内存管理器]
+    F --> G[内存管理器]
+    B --> H[加载召回数据集]
+    H --> I[召回测试数据集]
+    B --> J[加载效果数据集]
+    J --> K[效果测试数据集]
+    B --> L[执行召回评估]
+    L --> M[召回指标]
+    B --> N[执行效果评估]
+    N --> O[效果指标]
+    B --> P[写入JSON结果]
+    B --> Q[生成评估报告]
 ```
 
 ### 3.2 Step-by-Step Execution Sequence
