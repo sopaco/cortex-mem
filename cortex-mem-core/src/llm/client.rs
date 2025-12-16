@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use async_trait::async_trait;
 use rig::providers::openai::CompletionModel;
 use rig::{
@@ -7,6 +9,7 @@ use rig::{
     embeddings::EmbeddingsBuilder,
     providers::openai::{Client, EmbeddingModel as OpenAIEmbeddingModel},
 };
+use tokio::time::sleep;
 use tracing::{debug, error, info};
 
 use crate::{
@@ -181,6 +184,8 @@ impl LLMClient for OpenAILLMClient {
             .build()
             .await
             .map_err(|e| MemoryError::LLM(e.to_string()))?;
+
+        sleep(Duration::from_secs(2)).await;
 
         if let Some((_, embedding)) = embeddings.first() {
             debug!("Generated embedding for text length: {}", text.len());

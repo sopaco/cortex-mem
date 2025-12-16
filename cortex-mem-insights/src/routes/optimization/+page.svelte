@@ -1,10 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { optimizationApi } from '$lib/api/client';
   
   let isLoading = true;
   let isOptimizing = false;
   let optimizationProgress = 0;
   let optimizationStatus = 'idle'; // idle, analyzing, executing, completed, failed
+  let currentJobId: string | null = null;
+  let pollInterval: number | null = null;
+  let errorMessage: string | null = null;
   
   // 优化策略
   const strategies = [
@@ -35,11 +39,46 @@
     { type: '分类不当', count: 12, severity: 'low', description: '类型与内容不匹配的记忆' }
   ];
   
-  onMount(() => {
-    setTimeout(() => {
-      isLoading = false;
-    }, 1000);
+  onMount(async () => {
+    // 加载优化历史和检测问题
+    await loadOptimizationData();
+    isLoading = false;
   });
+
+  async function loadOptimizationData() {
+    try {
+      // 加载优化历史
+      const historyResponse = await optimizationApi.history({ limit: 10 });
+      if (historyResponse.success && historyResponse.data) {
+        optimizationHistory = historyResponse.data.history.map((h: any) => ({
+          id: h.job_id,
+          strategy: h.strategy || '未知',
+          status: h.status,
+          startedAt: new Date(h.start_time).toLocaleString('zh-CN'),
+          duration: h.duration ? `${Math.floor(h.duration / 60000)}分钟` : '未知',
+          memoriesAffected: h.memories_affected || 0,
+          spaceSaved: h.space_saved ? `${h.space_saved.toFixed(1)}MB` : '0MB',
+        }));
+      }
+
+      // 分析检测问题
+      const analyzeResponse = await optimizationApi.analyze({});
+      if (analyzeResponse.success && analyzeResponse.data) {
+        const data = analyzeResponse.data;
+        if (data.issues && Array.isArray(data.issues)) {
+          detectedIssues = data.issues.map((issue: any) => ({
+            type: issue.kind || issue.type || '未知问题',
+            count: issue.affected_memories?.length || 0,
+            severity: issue.severity?.toLowerCase() || 'low',
+            description: issue.description || '',
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('加载优化数据失败:', error);
+      errorMessage = '加载数据失败，请刷新页面重试';
+    }
+  }
   
   function getStatusColor(status: string) {
     switch (status) {
@@ -59,43 +98,106 @@
     }
   }
   
-  function simulateOptimization() {
+  async function startOptimization() {
     if (isOptimizing) return;
     
+    errorMessage = null;
     isOptimizing = true;
     optimizationStatus = 'analyzing';
     optimizationProgress = 0;
     
-    const interval = setInterval(() => {
-      optimizationProgress += 2;
+    try {
+      // 启动优化任务
+      const response = await optimizationApi.optimize({
+        strategy: selectedStrategy,
+        dry_run: previewMode,
+        aggressive: aggressiveMode,
+        timeout_minutes: timeoutMinutes,
+      });
       
-      if (optimizationProgress <= 30) {
-        optimizationStatus = 'analyzing';
-      } else if (optimizationProgress <= 80) {
-        optimizationStatus = 'executing';
-      } else if (optimizationProgress >= 100) {
-        optimizationStatus = 'completed';
-        isOptimizing = false;
-        clearInterval(interval);
-        
-        // 添加到历史记录
-        optimizationHistory.unshift({
-          id: `opt_${Date.now()}`,
-          strategy: strategies.find(s => s.id === selectedStrategy)?.name || '未知',
-          status: 'completed',
-          startedAt: new Date().toLocaleString('zh-CN'),
-          duration: `${Math.floor(Math.random() * 30) + 20}分钟`,
-          memoriesAffected: Math.floor(Math.random() * 100) + 50,
-          spaceSaved: `${(Math.random() * 20 + 5).toFixed(1)}MB`
-        });
+      if (!response.success || !response.data) {
+        throw new Error(response.error?.message || '启动优化失败');
       }
-    }, 100);
+      
+      currentJobId = response.data.job_id;
+      
+      // 开始轮询状态
+      startPolling();
+    } catch (error) {
+      console.error('启动优化失败:', error);
+      errorMessage = error instanceof Error ? error.message : '启动优化失败';
+      isOptimizing = false;
+      optimizationStatus = 'failed';
+    }
   }
   
-  function cancelOptimization() {
-    isOptimizing = false;
-    optimizationStatus = 'failed';
-    optimizationProgress = 0;
+  function startPolling() {
+    if (!currentJobId) return;
+    
+    // 每2秒轮询一次
+    pollInterval = window.setInterval(async () => {
+      if (!currentJobId) {
+        stopPolling();
+        return;
+      }
+      
+      try {
+        const response = await optimizationApi.getStatus(currentJobId);
+        
+        if (!response.success || !response.data) {
+          throw new Error('获取状态失败');
+        }
+        
+        const jobState = response.data;
+        optimizationProgress = jobState.progress || 0;
+        
+        // 更新状态
+        if (jobState.status === 'running') {
+          optimizationStatus = jobState.current_phase?.includes('分析') ? 'analyzing' : 'executing';
+        } else if (jobState.status === 'completed') {
+          optimizationStatus = 'completed';
+          isOptimizing = false;
+          stopPolling();
+          
+          // 刷新历史记录
+          await loadOptimizationData();
+        } else if (jobState.status === 'failed' || jobState.status === 'cancelled') {
+          optimizationStatus = 'failed';
+          isOptimizing = false;
+          stopPolling();
+          errorMessage = jobState.logs?.[jobState.logs.length - 1] || '优化失败';
+        }
+      } catch (error) {
+        console.error('轮询状态失败:', error);
+        stopPolling();
+        isOptimizing = false;
+        optimizationStatus = 'failed';
+        errorMessage = '获取优化状态失败';
+      }
+    }, 2000);
+  }
+  
+  function stopPolling() {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+  }
+  
+  async function cancelOptimization() {
+    if (!currentJobId) return;
+    
+    try {
+      await optimizationApi.cancel(currentJobId);
+      stopPolling();
+      isOptimizing = false;
+      optimizationStatus = 'failed';
+      optimizationProgress = 0;
+      currentJobId = null;
+    } catch (error) {
+      console.error('取消优化失败:', error);
+      errorMessage = '取消优化失败';
+    }
   }
   
   function getEstimatedImpact() {
@@ -116,6 +218,24 @@
       检测和优化记忆数据，提升系统性能和信息密度
     </p>
   </div>
+
+  <!-- 错误提示 -->
+  {#if errorMessage}
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+      <div class="flex items-center">
+        <svg class="w-5 h-5 text-red-600 dark:text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+        </svg>
+        <span class="text-red-800 dark:text-red-200">{errorMessage}</span>
+        <button 
+          on:click={() => errorMessage = null}
+          class="ml-auto text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  {/if}
 
   {#if isLoading}
     <!-- 加载状态 -->
@@ -267,7 +387,7 @@
               </button>
             {:else}
               <button
-                on:click={simulateOptimization}
+                on:click={startOptimization}
                 class="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
               >
                 {previewMode ? '分析问题' : '开始优化'}
