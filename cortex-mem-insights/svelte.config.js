@@ -14,7 +14,7 @@ const config = {
 			assets: 'build',
 			fallback: 'index.html', // SPA模式,所有路由返回index.html
 			precompress: false,
-			strict: true
+			strict: false // 关闭strict模式,允许动态路由在客户端渲染
 		})
 	}
 };

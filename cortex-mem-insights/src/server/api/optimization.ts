@@ -53,7 +53,84 @@ export const optimizationRoutes = new Elysia({ prefix: '/api/optimization' })
     })
   })
   
-  // 获取优化状态
+  // 获取优化历史 - 必须在 /:jobId 之前定义,避免 "history" 被当作 jobId
+  .get('/history', async ({ query }) => {
+    try {
+      const result = await cortexMemService.getOptimizationHistory({
+        limit: query.limit ? parseInt(query.limit) : 20,
+        offset: query.offset ? parseInt(query.offset) : 0,
+        status: query.status,
+        start_date: query.start_date,
+        end_date: query.end_date,
+      });
+      return result;
+    } catch (error) {
+      console.error('获取优化历史失败:', error);
+      return {
+        success: false,
+        error: {
+          code: 'GET_HISTORY_FAILED',
+          message: error instanceof Error ? error.message : '获取历史失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }, {
+    query: t.Object({
+      limit: t.Optional(t.String()),
+      offset: t.Optional(t.String()),
+      status: t.Optional(t.String()),
+      start_date: t.Optional(t.String()),
+      end_date: t.Optional(t.String()),
+    })
+  })
+  
+  // 获取优化统计 - 也要在 /:jobId 之前
+  .get('/statistics', async () => {
+    try {
+      const result = await cortexMemService.getOptimizationStatistics();
+      return result;
+    } catch (error) {
+      console.error('获取优化统计失败:', error);
+      return {
+        success: false,
+        error: {
+          code: 'GET_STATISTICS_FAILED',
+          message: error instanceof Error ? error.message : '获取统计失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  })
+  
+  // 分析优化问题（预览）- 也要在 /:jobId 之前
+  .post('/analyze', async ({ body }) => {
+    try {
+      const result = await cortexMemService.analyzeOptimization(body);
+      return result;
+    } catch (error) {
+      console.error('分析优化问题失败:', error);
+      return {
+        success: false,
+        error: {
+          code: 'ANALYZE_FAILED',
+          message: error instanceof Error ? error.message : '分析失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }, {
+    body: t.Object({
+      memory_type: t.Optional(t.String()),
+      user_id: t.Optional(t.String()),
+      agent_id: t.Optional(t.String()),
+      run_id: t.Optional(t.String()),
+      actor_id: t.Optional(t.String()),
+      similarity_threshold: t.Optional(t.Number({ default: 0.7 })),
+    })
+  })
+  
+  // 获取优化状态 - 动态路由必须放在静态路由之后
   .get('/:jobId', async ({ params }) => {
     try {
       const result = await cortexMemService.getOptimizationStatus(params.jobId);
@@ -97,84 +174,7 @@ export const optimizationRoutes = new Elysia({ prefix: '/api/optimization' })
     })
   })
   
-  // 获取优化历史
-  .get('/history', async ({ query }) => {
-    try {
-      const result = await cortexMemService.getOptimizationHistory({
-        limit: query.limit ? parseInt(query.limit) : 20,
-        offset: query.offset ? parseInt(query.offset) : 0,
-        status: query.status,
-        start_date: query.start_date,
-        end_date: query.end_date,
-      });
-      return result;
-    } catch (error) {
-      console.error('获取优化历史失败:', error);
-      return {
-        success: false,
-        error: {
-          code: 'GET_HISTORY_FAILED',
-          message: error instanceof Error ? error.message : '获取历史失败',
-        },
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }, {
-    query: t.Object({
-      limit: t.Optional(t.String()),
-      offset: t.Optional(t.String()),
-      status: t.Optional(t.String()),
-      start_date: t.Optional(t.String()),
-      end_date: t.Optional(t.String()),
-    })
-  })
-  
-  // 分析优化问题（预览）
-  .post('/analyze', async ({ body }) => {
-    try {
-      const result = await cortexMemService.analyzeOptimization(body);
-      return result;
-    } catch (error) {
-      console.error('分析优化问题失败:', error);
-      return {
-        success: false,
-        error: {
-          code: 'ANALYZE_FAILED',
-          message: error instanceof Error ? error.message : '分析失败',
-        },
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }, {
-    body: t.Object({
-      memory_type: t.Optional(t.String()),
-      user_id: t.Optional(t.String()),
-      agent_id: t.Optional(t.String()),
-      run_id: t.Optional(t.String()),
-      actor_id: t.Optional(t.String()),
-      similarity_threshold: t.Optional(t.Number({ default: 0.7 })),
-    })
-  })
-  
-  // 获取优化统计
-  .get('/statistics', async () => {
-    try {
-      const result = await cortexMemService.getOptimizationStatistics();
-      return result;
-    } catch (error) {
-      console.error('获取优化统计失败:', error);
-      return {
-        success: false,
-        error: {
-          code: 'GET_STATISTICS_FAILED',
-          message: error instanceof Error ? error.message : '获取统计失败',
-        },
-        timestamp: new Date().toISOString(),
-      };
-    }
-  })
-  
-  // 清理旧的历史记录
+  // 清理旧的历史记录 - 也要在 /:jobId 之前
   .post('/cleanup', async ({ body }) => {
     try {
       const result = await cortexMemService.cleanupOptimizationHistory(body.max_age_days);

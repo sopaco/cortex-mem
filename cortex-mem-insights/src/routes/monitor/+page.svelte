@@ -958,7 +958,7 @@
 												? 'bg-yellow-500'
 												: 'bg-green-500'
 									}`}
-									style={`width: ${(metric.value / metric.threshold) * 100}%`}
+									style={`width: ${Math.min(metric.value / metric.threshold, 1) * 100}%`}
 								></div>
 							</div>
 
