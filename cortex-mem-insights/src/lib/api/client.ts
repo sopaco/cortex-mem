@@ -198,6 +198,21 @@ export const optimizationApi = {
     });
   },
   
+  // 分析优化问题（预览模式）
+  analyze: (params?: {
+    memory_type?: string;
+    user_id?: string;
+    agent_id?: string;
+    run_id?: string;
+    actor_id?: string;
+    similarity_threshold?: number;
+  }) => {
+    return request('/api/optimization/analyze', {
+      method: 'POST',
+      body: JSON.stringify(params || {}),
+    });
+  },
+  
   // 获取优化统计
   statistics: () => {
     return request('/api/optimization/statistics');

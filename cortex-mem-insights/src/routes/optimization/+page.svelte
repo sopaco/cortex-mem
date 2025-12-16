@@ -45,7 +45,7 @@
     isLoading = false;
   });
 
-  async function loadOptimizationData() {
+  async function loadOptimizationData(skipAnalyze = false) {
     try {
       // 加载优化历史
       const historyResponse = await optimizationApi.history({ limit: 10 });
@@ -61,17 +61,19 @@
         }));
       }
 
-      // 分析检测问题
-      const analyzeResponse = await optimizationApi.analyze({});
-      if (analyzeResponse.success && analyzeResponse.data) {
-        const data = analyzeResponse.data;
-        if (data.issues && Array.isArray(data.issues)) {
-          detectedIssues = data.issues.map((issue: any) => ({
-            type: issue.kind || issue.type || '未知问题',
-            count: issue.affected_memories?.length || 0,
-            severity: issue.severity?.toLowerCase() || 'low',
-            description: issue.description || '',
-          }));
+      // 分析检测问题（可选，避免重复分析）
+      if (!skipAnalyze) {
+        const analyzeResponse = await optimizationApi.analyze({});
+        if (analyzeResponse.success && analyzeResponse.data) {
+          const data = analyzeResponse.data;
+          if (data.issues && Array.isArray(data.issues)) {
+            detectedIssues = data.issues.map((issue: any) => ({
+              type: issue.kind || issue.type || '未知问题',
+              count: issue.affected_memories?.length || 0,
+              severity: issue.severity?.toLowerCase() || 'low',
+              description: issue.description || '',
+            }));
+          }
         }
       }
     } catch (error) {
@@ -159,8 +161,8 @@
           isOptimizing = false;
           stopPolling();
           
-          // 刷新历史记录
-          await loadOptimizationData();
+          // 刷新历史记录（跳过分析，避免重复调用）
+          await loadOptimizationData(true);
         } else if (jobState.status === 'failed' || jobState.status === 'cancelled') {
           optimizationStatus = 'failed';
           isOptimizing = false;
