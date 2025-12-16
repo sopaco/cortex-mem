@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-node';
+import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -8,11 +8,13 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		// 使用 Node adapter 以便部署
+		// 使用 Static adapter 生成纯静态文件,由Elysia托管
 		adapter: adapter({
-			out: 'build',
+			pages: 'build',
+			assets: 'build',
+			fallback: 'index.html', // SPA模式,所有路由返回index.html
 			precompress: false,
-			envPrefix: ''
+			strict: true
 		})
 	}
 };

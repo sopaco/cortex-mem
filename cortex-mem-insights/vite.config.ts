@@ -7,11 +7,9 @@ export default defineConfig({
 		port: 5173, // 固定端口，避免冲突
 		proxy: {
 			'/api': {
-				target: 'http://localhost:3001', // 代理到bun service (如需直连cortex-mem-service改为3000)
+				target: 'http://localhost:15173', // dev模式代理到API服务器
 				changeOrigin: true,
 				secure: false,
-				// 注意：bun service的路由是/api/optimization，所以不移除/api前缀
-				// 如果直连cortex-mem-service，需要添加 rewrite: (path) => path.replace(/^\/api/, '')
 				configure: (proxy, _options) => {
 					proxy.on('error', (err, _req, _res) => {
 						console.log('代理错误:', err);
@@ -22,7 +20,7 @@ export default defineConfig({
 				}
 			},
 			'/health': {
-				target: 'http://localhost:3000',
+				target: 'http://localhost:15173',
 				changeOrigin: true,
 				secure: false
 			}

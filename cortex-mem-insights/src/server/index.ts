@@ -34,7 +34,7 @@ export type App = typeof app;
 
 // 启动服务器（仅在直接运行时）
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 15173;
   app.listen(port, () => {
     console.log(`🚀 cortex-mem-insights API 运行在 http://localhost:${port}`);
   });
