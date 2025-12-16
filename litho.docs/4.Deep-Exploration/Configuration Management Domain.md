@@ -148,9 +148,9 @@ collection_name = "memo-rs"
 timeout_secs = 30
 
 [llm]
-api_base_url = "https://wanqing-api.corp.kuaishou.com/api/gateway/v1/endpoints"
-api_key = "fs2wzco3o7haz38df1jo4vavnvauxtuz3f0b"
-model_efficient = "ep-i4abhq-1764595896785685523"
+api_base_url = ""
+api_key = ""
+model_efficient = ""
 temperature = 0.1
 max_tokens = 4096
 ```
