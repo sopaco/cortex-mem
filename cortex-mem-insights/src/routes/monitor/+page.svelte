@@ -115,7 +115,7 @@
 					status: serviceStatuses.vectorStore.status,
 					latency: serviceStatuses.vectorStore.latency,
 					version: '',
-					collectionCount: await getQdrantCollectionCount(),
+					collectionCount: 0,
 					lastCheck: serviceStatuses.vectorStore.lastCheck
 				},
 				llmService: {
@@ -213,32 +213,6 @@
 		} catch (err) {
 			return { percentage: 10 + Math.random() * 20 };
 		}
-	}
-
-	// 获取Qdrant集合数量
-	async function getQdrantCollectionCount(): Promise<number> {
-		try {
-			// 尝试直接调用Qdrant API
-			const response = await fetch('http://localhost:6334/collections');
-			if (response.ok) {
-				const data = await response.json();
-				return data.result?.collections?.length || 0;
-			}
-		} catch (qdrantErr) {
-			console.warn('Qdrant集合检测失败:', qdrantErr);
-		}
-
-		// 备用方案：通过记忆数量估算
-		try {
-			const memoriesResponse = await api.memory.list({ limit: 1 });
-			if (memoriesResponse && memoriesResponse.total > 0) {
-				return Math.min(5, Math.floor(memoriesResponse.total / 100) + 1);
-			}
-		} catch (memoryErr) {
-			console.warn('记忆数量获取失败:', memoryErr);
-		}
-
-		return 0; // 默认值
 	}
 
 	// 计算网络统计
@@ -607,26 +581,26 @@
 		}
 
 		try {
-					// 2. 通过insights server API获取向量存储状态
-					const vectorStoreStartTime = Date.now();
-					const vectorStoreResponse = await fetch('/api/system/vector-store/status');
-					const vectorStoreLatency = Date.now() - vectorStoreStartTime;
-			
-					if (vectorStoreResponse.ok) {
-						const vectorStoreData = await vectorStoreResponse.json();
-						if (vectorStoreData.success && vectorStoreData.data) {
-							vectorStore.status = vectorStoreData.data.status;
-							vectorStore.latency = vectorStoreLatency;
-						} else {
-							vectorStore.status = 'error';
-						}
-					} else {
-						vectorStore.status = 'error';
-					}
-				} catch (vectorStoreErr) {
-					console.warn('获取向量存储状态失败:', vectorStoreErr);
+			// 2. 通过insights server API获取向量存储状态
+			const vectorStoreStartTime = Date.now();
+			const vectorStoreResponse = await fetch('/api/system/vector-store/status');
+			const vectorStoreLatency = Date.now() - vectorStoreStartTime;
+
+			if (vectorStoreResponse.ok) {
+				const vectorStoreData = await vectorStoreResponse.json();
+				if (vectorStoreData.success && vectorStoreData.data) {
+					vectorStore.status = vectorStoreData.data.status;
+					vectorStore.latency = vectorStoreLatency;
+				} else {
 					vectorStore.status = 'error';
 				}
+			} else {
+				vectorStore.status = 'error';
+			}
+		} catch (vectorStoreErr) {
+			console.warn('获取向量存储状态失败:', vectorStoreErr);
+			vectorStore.status = 'error';
+		}
 		try {
 			// 3. 通过insights server API获取LLM服务状态
 			const llmStartTime = Date.now();
@@ -637,7 +611,7 @@
 				const llmData = await llmResponse.json();
 				if (llmData.success && llmData.data) {
 					const { overall_status, completion_model, embedding_model } = llmData.data;
-					
+
 					// 更新LLM服务状态
 					llmService.status = overall_status === 'healthy' ? 'connected' : 'error';
 					llmService.latency = llmLatency;
@@ -651,7 +625,7 @@
 						latency: completion_model.latency_ms,
 						error: completion_model.error_message
 					};
-					
+
 					llmService.embeddingModel = {
 						available: embedding_model.available,
 						latency: embedding_model.latency_ms,
@@ -831,7 +805,7 @@
 										<div class={`w-2 h-2 rounded-full ${getStatusLightColor(data.status)}`}></div>
 										<span class="font-medium text-gray-900 dark:text-white">
 											{service === 'cortexMemService'
-												? 'cortex-mem-service'
+												? 'Cortex Memory Service'
 												: service === 'qdrant'
 													? 'Qdrant 数据库'
 													: 'LLM 服务'}

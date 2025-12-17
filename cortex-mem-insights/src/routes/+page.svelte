@@ -48,29 +48,28 @@
 	}> = [];
 
 	let isLoading = true;
+	let isDetectingServices = false;
 	let error: string | null = null;
 
 	onMount(async () => {
 		try {
-			// 尝试加载实际数据
-			await loadDashboardData();
+			// 先加载基本数据，不等待服务检测
+			await loadBasicData();
+			// 异步检测服务状态，不阻塞页面
+			detectServicesAsync();
 		} catch (err) {
 			console.error('加载仪表板数据失败:', err);
 			error = err instanceof Error ? err.message : '加载数据失败';
-			// 回退到模拟数据
 			fallbackToMockData();
 		} finally {
 			isLoading = false;
 		}
 	});
 
-	async function loadDashboardData() {
+	// 加载基本数据，不等待服务检测
+	async function loadBasicData() {
 		try {
-			const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
 			let memories: any[] = [];
-
-			// 独立检测各个服务的状态
-			const serviceStatuses = await detectIndividualServices(timestamp);
 
 			// 获取记忆统计（这也可以验证服务的实际可用性）
 			try {
@@ -81,30 +80,6 @@
 				console.warn('获取记忆列表失败:', memoryErr);
 				memories = [];
 			}
-
-			// 更新系统状态（不包含memoryUsage、cpuUsage、network，因为仪表盘不需要）
-			systemStatus = {
-				cortexMemService: {
-					status: serviceStatuses.mainService.status,
-					latency: serviceStatuses.mainService.latency,
-					version: '',
-					lastCheck: serviceStatuses.mainService.lastCheck
-				},
-				qdrant: {
-					status: serviceStatuses.vectorStore.status,
-					latency: serviceStatuses.vectorStore.latency,
-					version: '',
-					collectionCount: await getQdrantCollectionCount(),
-					lastCheck: serviceStatuses.vectorStore.lastCheck
-				},
-				llmService: {
-					status: serviceStatuses.llmService.status,
-					latency: serviceStatuses.llmService.latency,
-					provider: '',
-					model: '',
-					lastCheck: serviceStatuses.llmService.lastCheck
-				}
-			};
 
 			// 计算统计数据
 			const totalCount = memories.length;
@@ -130,17 +105,79 @@
 				averageQuality: qualityStats.average,
 				qualityDistribution: qualityStats.distribution
 			};
+
+			// 初始化系统状态为检测中
+			const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+			systemStatus = {
+				cortexMemService: {
+					status: 'detecting',
+					latency: 0,
+					version: '',
+					lastCheck: timestamp
+				},
+				qdrant: {
+					status: 'detecting',
+					latency: 0,
+					version: '',
+					collectionCount: 0,
+					lastCheck: timestamp
+				},
+				llmService: {
+					status: 'detecting',
+					latency: 0,
+					provider: '',
+					model: '',
+					lastCheck: timestamp
+				}
+			};
 		} catch (err) {
-			console.error('加载仪表板数据错误:', err);
+			console.error('加载基本数据错误:', err);
 			throw err;
+		}
+	}
+
+	// 异步检测服务状态
+	async function detectServicesAsync() {
+		isDetectingServices = true;
+		try {
+			const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+			const serviceStatuses = await detectIndividualServices(timestamp);
+
+			// 更新系统状态
+			systemStatus = {
+				cortexMemService: {
+					status: serviceStatuses.mainService.status,
+					latency: serviceStatuses.mainService.latency,
+					version: '',
+					lastCheck: serviceStatuses.mainService.lastCheck
+				},
+				qdrant: {
+					status: serviceStatuses.vectorStore.status,
+					latency: serviceStatuses.vectorStore.latency,
+					version: '',
+					collectionCount: 0,
+					lastCheck: serviceStatuses.vectorStore.lastCheck
+				},
+				llmService: {
+					status: serviceStatuses.llmService.status,
+					latency: serviceStatuses.llmService.latency,
+					provider: '',
+					model: '',
+					lastCheck: serviceStatuses.llmService.lastCheck
+				}
+			};
+		} catch (err) {
+			console.error('异步检测服务状态失败:', err);
+		} finally {
+			isDetectingServices = false;
 		}
 	}
 
 	// 独立检测各个服务状态（与监控页面相同的逻辑）
 	async function detectIndividualServices(timestamp: string) {
-		const mainService = { status: 'error', latency: 0, lastCheck: timestamp };
-		const vectorStore = { status: 'error', latency: 0, lastCheck: timestamp };
-		const llmService = { status: 'error', latency: 0, lastCheck: timestamp };
+		const mainService = { status: 'detecting', latency: 0, lastCheck: timestamp };
+		const vectorStore = { status: 'detecting', latency: 0, lastCheck: timestamp };
+		const llmService = { status: 'detecting', latency: 0, lastCheck: timestamp };
 
 		try {
 			// 1. 测试cortex-mem-service基础可用性（API端点优先）
@@ -176,6 +213,7 @@
 			}
 		} catch (serviceErr) {
 			console.warn('cortex-mem-service检测失败:', serviceErr);
+			mainService.status = 'detecting';
 		}
 		try {
 			// 2. 通过insights server API获取向量存储状态
@@ -192,11 +230,11 @@
 					vectorStore.status = 'error';
 				}
 			} else {
-				vectorStore.status = 'error';
+				vectorStore.status = 'detecting';
 			}
 		} catch (vectorStoreErr) {
 			console.warn('获取向量存储状态失败:', vectorStoreErr);
-			vectorStore.status = 'error';
+			vectorStore.status = 'detecting';
 		}
 
 		try {
@@ -230,44 +268,20 @@
 						error: embedding_model.error_message
 					};
 				} else {
-					llmService.status = 'error';
+					llmService.status = 'detecting';
 				}
 			} else {
-				llmService.status = 'error';
+				llmService.status = 'detecting';
 			}
 		} catch (llmErr) {
 			console.warn('获取LLM服务状态失败:', llmErr);
-			llmService.status = 'error';
+			llmService.status = 'detecting';
 		}
 
 		return { mainService, vectorStore, llmService };
 	}
 
-	// 获取Qdrant集合数量
-	async function getQdrantCollectionCount(): Promise<number> {
-		try {
-			// 尝试直接调用Qdrant API
-			const response = await fetch('http://localhost:6334/collections');
-			if (response.ok) {
-				const data = await response.json();
-				return data.result?.collections?.length || 0;
-			}
-		} catch (qdrantErr) {
-			console.warn('Qdrant集合检测失败:', qdrantErr);
-		}
-
-		// 备用方案：通过记忆数量估算
-		try {
-			const memoriesResponse = await api.memory.list({ limit: 1 });
-			if (memoriesResponse && memoriesResponse.total > 0) {
-				return Math.min(5, Math.floor(memoriesResponse.total / 100) + 1);
-			}
-		} catch (memoryErr) {
-			console.warn('记忆数量获取失败:', memoryErr);
-		}
-
-		return 0; // 默认值
-	}
+	// 获取Qdrant集合数量 - 已移除API调用
 
 	// 计算质量分布
 	function calculateQualityDistribution(memories: any[]) {
@@ -346,20 +360,20 @@
 
 		systemStatus = {
 			cortexMemService: {
-				status: 'connecting',
+				status: 'detecting',
 				latency: 0,
 				version: '1.0.0',
 				lastCheck: timestamp
 			},
 			qdrant: {
-				status: 'connecting',
+				status: 'detecting',
 				latency: 0,
 				version: '1.7.0',
 				collectionCount: 0,
 				lastCheck: timestamp
 			},
 			llmService: {
-				status: 'connecting',
+				status: 'detecting',
 				latency: 0,
 				provider: 'Unknown',
 				model: 'Unknown',
@@ -378,6 +392,8 @@
 				return 'text-green-500 dark:bg-green-900/20';
 			case 'connecting':
 				return 'text-yellow-500 dark:bg-yellow-900/20';
+			case 'detecting':
+				return 'text-blue-500 dark:bg-blue-900/20';
 			case 'disconnected':
 				return 'text-red-500 dark:bg-red-900/20';
 			default:
@@ -391,6 +407,8 @@
 				return 'bg-green-400 dark:bg-green-900/20';
 			case 'connecting':
 				return 'bg-yellow-500 dark:bg-yellow-900/20';
+			case 'detecting':
+				return 'bg-blue-400 dark:bg-blue-900/20 animate-pulse';
 			case 'disconnected':
 				return 'bg-red-500 dark:bg-red-900/20';
 			default:
@@ -404,6 +422,8 @@
 				return '已连接';
 			case 'connecting':
 				return '连接中';
+			case 'detecting':
+				return '检测中';
 			case 'disconnected':
 				return '已断开';
 			default:
@@ -561,16 +581,20 @@
 											</span>
 										</div>
 										<span class={`text-sm font-medium ${getStatusColor(data.status)}`}>
-											{data.status === 'connected'
-												? '已连接'
-												: data.status === 'connecting'
-													? '连接中'
-													: '已断开'}
+											{getStatusText(data.status)}
 										</span>
 									</div>
 
 									<div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
-										<div>延迟: <span class="font-medium">{data.latency}ms</span></div>
+										<div>
+											延迟: <span class="font-medium">
+												{#if data.status === 'detecting'}
+													<span class="animate-pulse">检测中...</span>
+												{:else}
+													{data.latency}ms
+												{/if}
+											</span>
+										</div>
 									</div>
 
 									{#if data.lastCheck}
@@ -585,10 +609,11 @@
 
 					<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
 						<button
-							on:click={() => loadDashboardData()}
-							class="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
+							on:click={() => detectServicesAsync()}
+							disabled={isDetectingServices}
+							class="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors duration-200"
 						>
-							重新检查所有服务
+							{isDetectingServices ? '检测中...' : '重新检查所有服务'}
 						</button>
 					</div>
 				</div>
