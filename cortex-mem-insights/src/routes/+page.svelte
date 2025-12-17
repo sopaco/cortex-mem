@@ -25,7 +25,17 @@
 			latency: 0,
 			provider: 'Unknown',
 			model: 'Unknown',
-			lastCheck: ''
+			lastCheck: '',
+			completionModel: {
+				available: false,
+				latency: 0,
+				error: null as string | null
+			},
+			embeddingModel: {
+				available: false,
+				latency: 0,
+				error: null as string | null
+			}
 		}
 	};
 
@@ -168,67 +178,66 @@
 			console.warn('cortex-mem-service检测失败:', serviceErr);
 		}
 		try {
-			// 2. 测试Qdrant独立可用性
-			const qdrantStartTime = Date.now();
-			const qdrantResponse = await fetch('http://localhost:6334/health');
-			const qdrantLatency = Date.now() - qdrantStartTime;
+			// 2. 通过insights server API获取向量存储状态
+			const vectorStoreStartTime = Date.now();
+			const vectorStoreResponse = await fetch('/api/system/vector-store/status');
+			const vectorStoreLatency = Date.now() - vectorStoreStartTime;
 
-			if (qdrantResponse.ok) {
-				const qdrantData = await qdrantResponse.json();
-				vectorStore.status = qdrantData.status === 'ok' ? 'connected' : 'error';
-				vectorStore.latency = qdrantLatency;
-			}
-		} catch (qdrantErr) {
-			console.warn('Qdrant直接检测失败:', qdrantErr);
-			// 备用方案：通过cortex-mem-service的向量操作来测试
-			try {
-				const searchStartTime = Date.now();
-				const searchResponse = await api.memory.search('test');
-				const searchLatency = Date.now() - searchStartTime;
-
-				if (searchResponse && typeof searchResponse === 'object') {
-					vectorStore.status = 'connected';
-					vectorStore.latency = searchLatency;
+			if (vectorStoreResponse.ok) {
+				const vectorStoreData = await vectorStoreResponse.json();
+				if (vectorStoreData.success && vectorStoreData.data) {
+					vectorStore.status = vectorStoreData.data.status;
+					vectorStore.latency = vectorStoreLatency;
+				} else {
+					vectorStore.status = 'error';
 				}
-			} catch (searchErr) {
-				console.warn('向量搜索测试也失败:', searchErr);
+			} else {
 				vectorStore.status = 'error';
 			}
+		} catch (vectorStoreErr) {
+			console.warn('获取向量存储状态失败:', vectorStoreErr);
+			vectorStore.status = 'error';
 		}
 
 		try {
-			// 3. 测试LLM服务独立可用性（通过创建记忆来测试）
+			// 3. 通过insights server API获取LLM服务状态
 			const llmStartTime = Date.now();
-			const testMemory = await api.memory.create('LLM health check test', {
-				user_id: 'health-check',
-				memory_type: 'conversational'
-			});
+			const llmResponse = await fetch('/api/system/llm/status');
 			const llmLatency = Date.now() - llmStartTime;
 
-			if (testMemory && testMemory.id) {
-				llmService.status = 'connected';
-				llmService.latency = llmLatency;
+			if (llmResponse.ok) {
+				const llmData = await llmResponse.json();
+				if (llmData.success && llmData.data) {
+					const { overall_status, completion_model, embedding_model } = llmData.data;
+					
+					// 更新LLM服务状态
+					llmService.status = overall_status === 'healthy' ? 'connected' : 'error';
+					llmService.latency = llmLatency;
+					llmService.provider = completion_model.provider;
+					llmService.model = `${completion_model.model_name} / ${embedding_model.model_name}`;
+					llmService.lastCheck = new Date().toISOString();
 
-				// 清理测试记忆
-				try {
-					await api.memory.delete(testMemory.id);
-				} catch (cleanupErr) {
-					console.warn('清理测试记忆失败:', cleanupErr);
+					// 更新模型详细信息
+					llmService.completionModel = {
+						available: completion_model.available,
+						latency: completion_model.latency_ms,
+						error: completion_model.error_message
+					};
+					
+					llmService.embeddingModel = {
+						available: embedding_model.available,
+						latency: embedding_model.latency_ms,
+						error: embedding_model.error_message
+					};
+				} else {
+					llmService.status = 'error';
 				}
+			} else {
+				llmService.status = 'error';
 			}
 		} catch (llmErr) {
-			console.warn('LLM服务测试失败:', llmErr);
-			// 备用方案：通过健康检查数据推断
-			try {
-				const healthResponse = await fetch('/health');
-				if (healthResponse.ok) {
-					const healthData = await healthResponse.json();
-					llmService.status = healthData.llm_service ? 'connected' : 'error';
-					llmService.latency = 200; // 估算值
-				}
-			} catch (healthErr) {
-				console.warn('健康检查LLM检测也失败:', healthErr);
-			}
+			console.warn('获取LLM服务状态失败:', llmErr);
+			llmService.status = 'error';
 		}
 
 		return { mainService, vectorStore, llmService };

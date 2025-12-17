@@ -1,5 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { cors } from '@elysiajs/cors';
+import { cortexMemService } from '../integrations/cortex-mem';
 
 // 系统状态接口
 interface SystemStatus {
@@ -116,12 +117,95 @@ export const systemRoutes = new Elysia({ prefix: '/api/system' })
   .use(cors())
   
   // 获取系统状态
-  .get('/status', () => {
-    return {
-      success: true,
-      data: mockSystemStatus,
-      timestamp: new Date().toISOString(),
-    };
+  .get('/status', async () => {
+    try {
+      // 获取真实的cortex-mem-service状态
+      const llmStatus = await cortexMemService.getLLMStatus();
+      const healthCheck = await cortexMemService.healthCheck();
+      
+      // 检查Qdrant状态（通过cortex-mem-service的健康检查）
+      const vectorStoreStatus = healthCheck.vector_store;
+      const llmServiceStatus = healthCheck.llm_service;
+
+      const systemStatus = {
+        status: vectorStoreStatus && llmServiceStatus ? 'healthy' : 'unhealthy',
+        vector_store: vectorStoreStatus,
+        llm_service: llmServiceStatus,
+        llm_details: {
+          completion_model: llmStatus.completion_model,
+          embedding_model: llmStatus.embedding_model,
+          overall_status: llmStatus.overall_status,
+        },
+        timestamp: new Date().toISOString(),
+      };
+
+      return {
+        success: true,
+        data: systemStatus,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('获取系统状态失败:', error);
+      return {
+        success: false,
+        error: {
+          code: 'STATUS_CHECK_FAILED',
+          message: error instanceof Error ? error.message : '获取系统状态失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  })
+  
+  // 获取向量存储状态
+  .get('/vector-store/status', async () => {
+    try {
+      const healthCheck = await cortexMemService.healthCheck();
+      
+      return {
+        success: true,
+        data: {
+          status: healthCheck.vector_store ? 'connected' : 'disconnected',
+          available: healthCheck.vector_store,
+          type: 'qdrant',
+          last_check: healthCheck.timestamp,
+        },
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('获取向量存储状态失败:', error);
+      return {
+        success: false,
+        error: {
+          code: 'VECTOR_STORE_CHECK_FAILED',
+          message: error instanceof Error ? error.message : '获取向量存储状态失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  })
+  
+  // 获取LLM服务详细状态
+  .get('/llm/status', async () => {
+    try {
+      const llmStatus = await cortexMemService.getLLMStatus();
+      
+      return {
+        success: true,
+        data: llmStatus,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      console.error('获取LLM服务状态失败:', error);
+      return {
+        success: false,
+        error: {
+          code: 'LLM_STATUS_CHECK_FAILED',
+          message: error instanceof Error ? error.message : '获取LLM服务状态失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
   })
   
   // 获取性能指标

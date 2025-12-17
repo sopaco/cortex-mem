@@ -557,6 +557,84 @@ export class CortexMemServiceClient {
       };
     }
   }
+
+  // LLM服务状态检测
+  
+  // 获取详细的LLM服务状态
+  async getLLMStatus(): Promise<{
+    overall_status: string;
+    completion_model: {
+      available: boolean;
+      provider: string;
+      model_name: string;
+      latency_ms?: number;
+      error_message?: string;
+      last_check: string;
+    };
+    embedding_model: {
+      available: boolean;
+      provider: string;
+      model_name: string;
+      latency_ms?: number;
+      error_message?: string;
+      last_check: string;
+    };
+    timestamp: string;
+  }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/llm/status`);
+      
+      if (!response.ok) {
+        throw new Error(`Get LLM status failed: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('获取LLM状态错误:', error);
+      return {
+        overall_status: 'error',
+        completion_model: {
+          available: false,
+          provider: 'unknown',
+          model_name: 'unknown',
+          error_message: error instanceof Error ? error.message : 'Failed to connect',
+          last_check: new Date().toISOString(),
+        },
+        embedding_model: {
+          available: false,
+          provider: 'unknown',
+          model_name: 'unknown',
+          error_message: error instanceof Error ? error.message : 'Failed to connect',
+          last_check: new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 简单的LLM健康检查
+  async llmHealthCheck(): Promise<{
+    completion_model_available: boolean;
+    embedding_model_available: boolean;
+    timestamp: string;
+  }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/llm/health-check`);
+      
+      if (!response.ok) {
+        throw new Error(`LLM health check failed: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('LLM健康检查错误:', error);
+      return {
+        completion_model_available: false,
+        embedding_model_available: false,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
 }
 
 // 创建默认客户端实例
