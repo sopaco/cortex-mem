@@ -208,6 +208,16 @@ export const optimizationApi = {
     });
   },
   
+  // 清理请求
+  cleanup: (params?: {
+    max_age_days?: number;
+  }) => {
+    return request('/api/optimization/cleanup', {
+      method: 'POST',
+      body: JSON.stringify(params || {}),
+    });
+  },
+  
   // 获取优化统计
   statistics: () => {
     return request('/api/optimization/statistics');
