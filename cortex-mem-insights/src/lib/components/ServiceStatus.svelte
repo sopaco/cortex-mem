@@ -85,100 +85,165 @@
 		try {
 			// 1. 测试cortex-mem-service基础可用性（API端点优先）
 			const serviceStartTime = Date.now();
-			const serviceResponse = await fetch('/api/memories?limit=1');
-			const serviceLatency = Date.now() - serviceStartTime;
+			
+			// 创建带超时的请求
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
+			
+			try {
+				const serviceResponse = await fetch('/api/memories?limit=1', {
+					signal: controller.signal
+				});
+				clearTimeout(timeoutId);
+				const serviceLatency = Date.now() - serviceStartTime;
 
-			if (serviceResponse.ok) {
-				// API端点正常，说明服务可用
-				mainService.status = 'connected';
-				mainService.latency = serviceLatency;
-			} else {
-				// 如果API失败，再尝试健康检查端点，但健康检查失败不应该影响主要判断
-				try {
-					const healthStartTime = Date.now();
-					const healthResponse = await fetch('/health');
-					const healthLatency = Date.now() - healthStartTime;
-
-					if (healthResponse.ok) {
-						const healthData = await healthResponse.json();
-						// 即使健康检查显示不健康，如果API可以访问，服务还是可用的
-						mainService.status = 'connected';
-						mainService.latency = Math.min(serviceLatency, healthLatency);
-					}
-				} catch (healthErr) {
-					console.warn('健康检查失败，但API可能仍可用:', healthErr);
-					// 健康检查失败不代表服务不可用，保持连接状态或设置connecting
-					if (serviceLatency > 0) {
+				if (serviceResponse.ok) {
+					// 尝试解析响应内容，确保不是空响应或错误响应
+					try {
+						const responseText = await serviceResponse.text();
+						if (responseText && responseText.length > 0) {
+							// 尝试解析为JSON，确保返回的是有效的API响应
+							const responseData = JSON.parse(responseText);
+							if (responseData && typeof responseData === 'object') {
+								mainService.status = 'connected';
+								mainService.latency = serviceLatency;
+							} else {
+								throw new Error('Invalid response format');
+							}
+						} else {
+							throw new Error('Empty response');
+						}
+					} catch (parseErr) {
+						console.warn('API响应解析失败:', parseErr);
 						mainService.status = 'connecting';
 						mainService.latency = serviceLatency;
 					}
+				} else {
+					// HTTP错误状态码
+					console.warn(`API请求失败: HTTP ${serviceResponse.status}`);
+					mainService.status = 'connecting';
+					mainService.latency = serviceLatency;
 				}
+			} catch (fetchErr) {
+				clearTimeout(timeoutId);
+				if (fetchErr.name === 'AbortError') {
+					console.warn('API请求超时');
+					mainService.status = 'disconnected';
+				} else {
+					console.warn('cortex-mem-service检测失败:', fetchErr);
+					mainService.status = 'connecting';
+				}
+				mainService.latency = Date.now() - serviceStartTime;
 			}
 		} catch (serviceErr) {
-			console.warn('cortex-mem-service检测失败:', serviceErr);
+			console.warn('cortex-mem-service检测异常:', serviceErr);
 			mainService.status = 'connecting';
 		}
 
 		try {
 			// 2. 通过insights server API获取向量存储状态
 			const vectorStoreStartTime = Date.now();
-			const vectorStoreResponse = await fetch('/api/system/vector-store/status');
-			const vectorStoreLatency = Date.now() - vectorStoreStartTime;
+			
+			// 创建带超时的请求
+			const vectorStoreController = new AbortController();
+			const vectorStoreTimeoutId = setTimeout(() => vectorStoreController.abort(), 3000); // 3秒超时
+			
+			try {
+				const vectorStoreResponse = await fetch('/api/system/vector-store/status', {
+					signal: vectorStoreController.signal
+				});
+				clearTimeout(vectorStoreTimeoutId);
+				const vectorStoreLatency = Date.now() - vectorStoreStartTime;
 
-			if (vectorStoreResponse.ok) {
-				const vectorStoreData = await vectorStoreResponse.json();
-				if (vectorStoreData.success && vectorStoreData.data) {
-					vectorStore.status = vectorStoreData.data.status;
-					vectorStore.latency = vectorStoreLatency;
+				if (vectorStoreResponse.ok) {
+					const vectorStoreData = await vectorStoreResponse.json();
+					if (vectorStoreData.success && vectorStoreData.data) {
+						vectorStore.status = vectorStoreData.data.status;
+						vectorStore.latency = vectorStoreLatency;
+					} else {
+						console.warn('向量存储API返回无效数据:', vectorStoreData);
+						vectorStore.status = 'connecting';
+					}
 				} else {
+					console.warn(`向量存储API请求失败: HTTP ${vectorStoreResponse.status}`);
 					vectorStore.status = 'connecting';
 				}
-			} else {
-				vectorStore.status = 'connecting';
+			} catch (vectorStoreFetchErr) {
+				clearTimeout(vectorStoreTimeoutId);
+				if (vectorStoreFetchErr.name === 'AbortError') {
+					console.warn('向量存储API请求超时');
+					vectorStore.status = 'disconnected';
+				} else {
+					console.warn('获取向量存储状态失败:', vectorStoreFetchErr);
+					vectorStore.status = 'connecting';
+				}
+				vectorStore.latency = Date.now() - vectorStoreStartTime;
 			}
 		} catch (vectorStoreErr) {
-			console.warn('获取向量存储状态失败:', vectorStoreErr);
+			console.warn('向量存储检测异常:', vectorStoreErr);
 			vectorStore.status = 'connecting';
 		}
 
 		try {
 			// 3. 通过insights server API获取LLM服务状态
 			const llmStartTime = Date.now();
-			const llmResponse = await fetch('/api/system/llm/status');
-			const llmLatency = Date.now() - llmStartTime;
+			
+			// 创建带超时的请求
+			const llmController = new AbortController();
+			const llmTimeoutId = setTimeout(() => llmController.abort(), 3000); // 3秒超时
+			
+			try {
+				const llmResponse = await fetch('/api/system/llm/status', {
+					signal: llmController.signal
+				});
+				clearTimeout(llmTimeoutId);
+				const llmLatency = Date.now() - llmStartTime;
 
-			if (llmResponse.ok) {
-				const llmData = await llmResponse.json();
-				if (llmData.success && llmData.data) {
-					const { overall_status, completion_model, embedding_model } = llmData.data;
+				if (llmResponse.ok) {
+					const llmData = await llmResponse.json();
+					if (llmData.success && llmData.data) {
+						const { overall_status, completion_model, embedding_model } = llmData.data;
 
-					// 更新LLM服务状态
-					llmService.status = overall_status === 'healthy' ? 'connected' : 'connecting';
-					llmService.latency = llmLatency;
-					llmService.provider = completion_model.provider;
-					llmService.model = `${completion_model.model_name} / ${embedding_model.model_name}`;
-					llmService.lastCheck = new Date().toISOString();
+						// 更新LLM服务状态
+						llmService.status = overall_status === 'healthy' ? 'connected' : 'connecting';
+						llmService.latency = llmLatency;
+						llmService.provider = completion_model.provider;
+						llmService.model = `${completion_model.model_name} / ${embedding_model.model_name}`;
+						llmService.lastCheck = new Date().toISOString();
 
-					// 更新模型详细信息
-					llmService.completionModel = {
-						available: completion_model.available,
-						latency: completion_model.latency_ms,
-						error: completion_model.error_message
-					};
+						// 更新模型详细信息
+						llmService.completionModel = {
+							available: completion_model.available,
+							latency: completion_model.latency_ms,
+							error: completion_model.error_message
+						};
 
-					llmService.embeddingModel = {
-						available: embedding_model.available,
-						latency: embedding_model.latency_ms,
-						error: embedding_model.error_message
-					};
+						llmService.embeddingModel = {
+							available: embedding_model.available,
+							latency: embedding_model.latency_ms,
+							error: embedding_model.error_message
+						};
+					} else {
+						console.warn('LLM API返回无效数据:', llmData);
+						llmService.status = 'connecting';
+					}
 				} else {
+					console.warn(`LLM API请求失败: HTTP ${llmResponse.status}`);
 					llmService.status = 'connecting';
 				}
-			} else {
-				llmService.status = 'connecting';
+			} catch (llmFetchErr) {
+				clearTimeout(llmTimeoutId);
+				if (llmFetchErr.name === 'AbortError') {
+					console.warn('LLM API请求超时');
+					llmService.status = 'disconnected';
+				} else {
+					console.warn('获取LLM服务状态失败:', llmFetchErr);
+					llmService.status = 'connecting';
+				}
+				llmService.latency = Date.now() - llmStartTime;
 			}
 		} catch (llmErr) {
-			console.warn('获取LLM服务状态失败:', llmErr);
+			console.warn('LLM服务检测异常:', llmErr);
 			llmService.status = 'connecting';
 		}
 
