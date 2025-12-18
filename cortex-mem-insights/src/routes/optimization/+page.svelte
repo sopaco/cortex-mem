@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { optimizationApi } from '$lib/api/client';
+  import IssueDetailModal from '$lib/components/IssueDetailModal.svelte';
   
   let isLoading = true;
   let isOptimizing = false;
@@ -9,6 +10,10 @@
   let currentJobId: string | null = null;
   let pollInterval: number | null = null;
   let errorMessage: string | null = null;
+  
+  // 模态框状态
+  let selectedIssue: any = null;
+  let showDetailModal = false;
   
   // 优化策略
   const strategies = [
@@ -72,14 +77,25 @@
               count: issue.affected_memories?.length || 0,
               severity: issue.severity?.toLowerCase() || 'low',
               description: issue.description || '',
+              affected_memories: issue.affected_memories || [], // 保存affected_memories
             }));
           }
         }
       }
     } catch (error) {
       console.error('加载优化数据失败:', error);
-      errorMessage = '加载数据失败，请刷新页面重试';
+      errorMessage = '加载数据失败,请刷新页面重试';
     }
+  }
+  
+  function showIssueDetail(issue: any) {
+    selectedIssue = issue;
+    showDetailModal = true;
+  }
+  
+  function closeDetailModal() {
+    showDetailModal = false;
+    selectedIssue = null;
   }
   
   function getStatusColor(status: string) {
@@ -507,7 +523,7 @@
             </div>
             <div class="mt-3">
               <button
-                on:click={() => console.log('查看详情', issue.type)}
+                on:click={() => showIssueDetail(issue)}
                 class="w-full px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
               >
                 查看详情
@@ -627,3 +643,9 @@
     </div>
   {/if}
 </div>
+
+<!-- 问题详情模态框 -->
+<IssueDetailModal 
+  issue={selectedIssue} 
+  onClose={closeDetailModal}
+/>
