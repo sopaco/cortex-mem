@@ -1,5 +1,7 @@
 # Cortex Memory
-A high-performance Agent long-term memory system powered by Rust, capable of autonomous iteration. Supports MCP, CLI, HTTP calls, and provides a Memory Insights management tool.
+A **high-performance** Agent long-term **memory system** powered by Rust, provides intelligent memory storage, retrieval, and management capabilities for conversational AI systems.
+
+Capable of autonomous iteration. It supports **MCP**, **Command Line**, **HTTP API** calls, and provides a **Memory Insights management tool**.
 
 ![Banner](assets/blend_1_banner_800.jpg)
 
@@ -7,8 +9,6 @@ A high-performance Agent long-term memory system powered by Rust, capable of aut
 [![Documentation](https://docs.rs/cortex-mem/badge.svg)](https://docs.rs/cortex-mem)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Build Status](https://github.com/sopaco/cortex-mem/workflows/CI/badge.svg)](https://github.com/sopaco/cortex-mem/actions)
-
-A high-performance memory system for AI agents written in Rust, inspired by [mem0](https://github.com/mem0ai/mem0). Cortex Memory provides intelligent memory storage, retrieval, and management capabilities for conversational AI systems.
 
 ## ✨ Features
 
