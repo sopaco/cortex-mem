@@ -431,10 +431,13 @@
 	}
 
 	function acknowledgeAlert(alertId: string) {
-		const alert = alerts.find((a) => a.id === alertId);
-		if (alert) {
-			alert.acknowledged = true;
-		}
+		// 使用Svelte的响应式更新方式
+		alerts = alerts.map((a) => {
+			if (a.id === alertId) {
+				return { ...a, acknowledged: true };
+			}
+			return a;
+		});
 	}
 </script>
 
@@ -505,9 +508,9 @@
 		<!-- 系统状态概览 -->
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 			<!-- 服务状态 -->
-			<ServiceStatus 
-				title="服务状态" 
-				showRefreshButton={true} 
+			<ServiceStatus
+				title="服务状态"
+				showRefreshButton={true}
 				autoDetect={true}
 				on:statusUpdate={(event) => {
 					// 服务状态由组件内部处理，这里不需要更新外部状态
@@ -527,44 +530,45 @@
 								{systemMetrics.memoryUsage.percentage.toFixed(1)}%
 							</span>
 						</div>
-										<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-											<div
-												class={`h-3 rounded-full ${
-													systemMetrics.memoryUsage.percentage > 80
-														? 'bg-red-500'
-														: systemMetrics.memoryUsage.percentage > 60
-															? 'bg-yellow-500'
-															: 'bg-green-500'
-													}`}
-												style={`width: ${systemMetrics.memoryUsage.percentage}%`}
-											></div>
-										</div>
-										<div class="flex justify-between mt-1 text-sm text-gray-500 dark:text-gray-400">
-											<span>{systemMetrics.memoryUsage.used.toFixed(1)} MB</span>
-											<span>{systemMetrics.memoryUsage.total} MB</span>
-										</div>					</div>
+						<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+							<div
+								class={`h-3 rounded-full ${
+									systemMetrics.memoryUsage.percentage > 80
+										? 'bg-red-500'
+										: systemMetrics.memoryUsage.percentage > 60
+											? 'bg-yellow-500'
+											: 'bg-green-500'
+								}`}
+								style={`width: ${systemMetrics.memoryUsage.percentage}%`}
+							></div>
+						</div>
+						<div class="flex justify-between mt-1 text-sm text-gray-500 dark:text-gray-400">
+							<span>{systemMetrics.memoryUsage.used.toFixed(1)} MB</span>
+							<span>{systemMetrics.memoryUsage.total} MB</span>
+						</div>
+					</div>
 
-										<!-- CPU使用 -->
-										<div>
-											<div class="flex justify-between mb-2">
-												<span class="text-sm font-medium text-gray-700 dark:text-gray-300">CPU使用</span>
-												<span class="text-sm font-medium text-gray-900 dark:text-white">
-													{systemMetrics.cpuUsage.percentage.toFixed(1)}%
-												</span>
-											</div>
-											<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-												<div
-													class={`h-3 rounded-full ${
-														systemMetrics.cpuUsage.percentage > 70
-															? 'bg-red-500'
-															: systemMetrics.cpuUsage.percentage > 40
-																? 'bg-yellow-500'
-																: 'bg-green-500'
-														}`}
-													style={`width: ${systemMetrics.cpuUsage.percentage}%`}
-												></div>
-											</div>
-										</div>
+					<!-- CPU使用 -->
+					<div>
+						<div class="flex justify-between mb-2">
+							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">CPU使用</span>
+							<span class="text-sm font-medium text-gray-900 dark:text-white">
+								{systemMetrics.cpuUsage.percentage.toFixed(1)}%
+							</span>
+						</div>
+						<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+							<div
+								class={`h-3 rounded-full ${
+									systemMetrics.cpuUsage.percentage > 70
+										? 'bg-red-500'
+										: systemMetrics.cpuUsage.percentage > 40
+											? 'bg-yellow-500'
+											: 'bg-green-500'
+								}`}
+								style={`width: ${systemMetrics.cpuUsage.percentage}%`}
+							></div>
+						</div>
+					</div>
 					<!-- 网络 -->
 					<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
 						<div class="text-sm font-medium text-gray-900 dark:text-white mb-2">网络状态</div>
@@ -671,14 +675,6 @@
 										{alert.time}
 									</p>
 								</div>
-								{#if !alert.acknowledged}
-									<button
-										on:click={() => acknowledgeAlert(alert.id)}
-										class="ml-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
-									>
-										确认
-									</button>
-								{/if}
 							</div>
 						</div>
 					{/each}
