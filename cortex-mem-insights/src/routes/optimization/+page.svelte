@@ -72,19 +72,51 @@
         if (analyzeResponse.success && analyzeResponse.data) {
           const data = analyzeResponse.data;
           if (data.issues && Array.isArray(data.issues)) {
-            detectedIssues = data.issues.map((issue: any) => ({
-              type: issue.kind || issue.type || '未知问题',
-              count: issue.affected_memories?.length || 0,
-              severity: issue.severity?.toLowerCase() || 'low',
-              description: issue.description || '',
-              affected_memories: issue.affected_memories || [], // 保存affected_memories
-            }));
+            // 按问题类型归类汇总
+            const issueMap = new Map<string, any>();
+            
+            data.issues.forEach((issue: any) => {
+              const kind = issue.kind || issue.type || '未知问题';
+              const severity = issue.severity?.toLowerCase() || 'low';
+              
+              if (issueMap.has(kind)) {
+                // 合并同类问题
+                const existing = issueMap.get(kind);
+                existing.count += issue.affected_memories?.length || 0;
+                existing.affected_memories.push(...(issue.affected_memories || []));
+                // 取最高严重程度
+                if (getSeverityLevel(severity) > getSeverityLevel(existing.severity)) {
+                  existing.severity = severity;
+                }
+              } else {
+                // 新问题类型
+                issueMap.set(kind, {
+                  type: kind,
+                  count: issue.affected_memories?.length || 0,
+                  severity: severity,
+                  description: issue.description || '',
+                  affected_memories: issue.affected_memories || [],
+                });
+              }
+            });
+            
+            detectedIssues = Array.from(issueMap.values());
           }
         }
       }
     } catch (error) {
       console.error('加载优化数据失败:', error);
       errorMessage = '加载数据失败,请刷新页面重试';
+    }
+  }
+  
+  function getSeverityLevel(severity: string): number {
+    switch (severity) {
+      case 'critical': return 4;
+      case 'high': return 3;
+      case 'medium': return 2;
+      case 'low': return 1;
+      default: return 0;
     }
   }
   
