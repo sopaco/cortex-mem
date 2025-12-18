@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import api from '$lib/api/client';
+	import ServiceStatus from '$lib/components/ServiceStatus.svelte';
 
 	// 真实数据
 	let stats = {
@@ -48,15 +49,11 @@
 	}> = [];
 
 	let isLoading = true;
-	let isDetectingServices = false;
 	let error: string | null = null;
 
 	onMount(async () => {
 		try {
-			// 先加载基本数据，不等待服务检测
 			await loadBasicData();
-			// 异步检测服务状态，不阻塞页面
-			detectServicesAsync();
 		} catch (err) {
 			console.error('加载仪表板数据失败:', err);
 			error = err instanceof Error ? err.message : '加载数据失败';
@@ -137,149 +134,7 @@
 	}
 
 	// 异步检测服务状态
-	async function detectServicesAsync() {
-		isDetectingServices = true;
-		try {
-			const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-			const serviceStatuses = await detectIndividualServices(timestamp);
-
-			// 更新系统状态
-			systemStatus = {
-				cortexMemService: {
-					status: serviceStatuses.mainService.status,
-					latency: serviceStatuses.mainService.latency,
-					version: '',
-					lastCheck: serviceStatuses.mainService.lastCheck
-				},
-				qdrant: {
-					status: serviceStatuses.vectorStore.status,
-					latency: serviceStatuses.vectorStore.latency,
-					version: '',
-					collectionCount: 0,
-					lastCheck: serviceStatuses.vectorStore.lastCheck
-				},
-				llmService: {
-					status: serviceStatuses.llmService.status,
-					latency: serviceStatuses.llmService.latency,
-					provider: '',
-					model: '',
-					lastCheck: serviceStatuses.llmService.lastCheck
-				}
-			};
-		} catch (err) {
-			console.error('异步检测服务状态失败:', err);
-		} finally {
-			isDetectingServices = false;
-		}
-	}
-
-	// 独立检测各个服务状态（与监控页面相同的逻辑）
-	async function detectIndividualServices(timestamp: string) {
-		const mainService = { status: 'detecting', latency: 0, lastCheck: timestamp };
-		const vectorStore = { status: 'detecting', latency: 0, lastCheck: timestamp };
-		const llmService = { status: 'detecting', latency: 0, lastCheck: timestamp };
-
-		try {
-			// 1. 测试cortex-mem-service基础可用性（API端点优先）
-			const serviceStartTime = Date.now();
-			const serviceResponse = await fetch('/api/memories?limit=1');
-			const serviceLatency = Date.now() - serviceStartTime;
-
-			if (serviceResponse.ok) {
-				// API端点正常，说明服务可用
-				mainService.status = 'connected';
-				mainService.latency = serviceLatency;
-			} else {
-				// 如果API失败，再尝试健康检查端点，但健康检查失败不应该影响主要判断
-				try {
-					const healthStartTime = Date.now();
-					const healthResponse = await fetch('/health');
-					const healthLatency = Date.now() - healthStartTime;
-
-					if (healthResponse.ok) {
-						const healthData = await healthResponse.json();
-						// 即使健康检查显示不健康，如果API可以访问，服务还是可用的
-						mainService.status = 'connected';
-						mainService.latency = Math.min(serviceLatency, healthLatency);
-					}
-				} catch (healthErr) {
-					console.warn('健康检查失败，但API可能仍可用:', healthErr);
-					// 健康检查失败不代表服务不可用，保持连接状态或设置connecting
-					if (serviceLatency > 0) {
-						mainService.status = 'connecting';
-						mainService.latency = serviceLatency;
-					}
-				}
-			}
-		} catch (serviceErr) {
-			console.warn('cortex-mem-service检测失败:', serviceErr);
-			mainService.status = 'detecting';
-		}
-		try {
-			// 2. 通过insights server API获取向量存储状态
-			const vectorStoreStartTime = Date.now();
-			const vectorStoreResponse = await fetch('/api/system/vector-store/status');
-			const vectorStoreLatency = Date.now() - vectorStoreStartTime;
-
-			if (vectorStoreResponse.ok) {
-				const vectorStoreData = await vectorStoreResponse.json();
-				if (vectorStoreData.success && vectorStoreData.data) {
-					vectorStore.status = vectorStoreData.data.status;
-					vectorStore.latency = vectorStoreLatency;
-				} else {
-					vectorStore.status = 'error';
-				}
-			} else {
-				vectorStore.status = 'detecting';
-			}
-		} catch (vectorStoreErr) {
-			console.warn('获取向量存储状态失败:', vectorStoreErr);
-			vectorStore.status = 'detecting';
-		}
-
-		try {
-			// 3. 通过insights server API获取LLM服务状态
-			const llmStartTime = Date.now();
-			const llmResponse = await fetch('/api/system/llm/status');
-			const llmLatency = Date.now() - llmStartTime;
-
-			if (llmResponse.ok) {
-				const llmData = await llmResponse.json();
-				if (llmData.success && llmData.data) {
-					const { overall_status, completion_model, embedding_model } = llmData.data;
-					
-					// 更新LLM服务状态
-					llmService.status = overall_status === 'healthy' ? 'connected' : 'error';
-					llmService.latency = llmLatency;
-					llmService.provider = completion_model.provider;
-					llmService.model = `${completion_model.model_name} / ${embedding_model.model_name}`;
-					llmService.lastCheck = new Date().toISOString();
-
-					// 更新模型详细信息
-					llmService.completionModel = {
-						available: completion_model.available,
-						latency: completion_model.latency_ms,
-						error: completion_model.error_message
-					};
-					
-					llmService.embeddingModel = {
-						available: embedding_model.available,
-						latency: embedding_model.latency_ms,
-						error: embedding_model.error_message
-					};
-				} else {
-					llmService.status = 'detecting';
-				}
-			} else {
-				llmService.status = 'detecting';
-			}
-		} catch (llmErr) {
-			console.warn('获取LLM服务状态失败:', llmErr);
-			llmService.status = 'detecting';
-		}
-
-		return { mainService, vectorStore, llmService };
-	}
+	// 服务状态检测逻辑已移至ServiceStatus组件
 
 	// 获取Qdrant集合数量 - 已移除API调用
 
@@ -386,50 +241,7 @@
 		isLoading = false;
 	}
 
-	function getStatusColor(status: string) {
-		switch (status) {
-			case 'connected':
-				return 'text-green-500 dark:bg-green-900/20';
-			case 'connecting':
-				return 'text-yellow-500 dark:bg-yellow-900/20';
-			case 'detecting':
-				return 'text-blue-500 dark:bg-blue-900/20';
-			case 'disconnected':
-				return 'text-red-500 dark:bg-red-900/20';
-			default:
-				return 'text-gray-500 dark:bg-gray-800';
-		}
-	}
-
-	function getStatusLightColor(status: string) {
-		switch (status) {
-			case 'connected':
-				return 'bg-green-400 dark:bg-green-900/20';
-			case 'connecting':
-				return 'bg-yellow-500 dark:bg-yellow-900/20';
-			case 'detecting':
-				return 'bg-blue-400 dark:bg-blue-900/20 animate-pulse';
-			case 'disconnected':
-				return 'bg-red-500 dark:bg-red-900/20';
-			default:
-				return 'bg-gray-500 dark:bg-gray-800';
-		}
-	}
-
-	function getStatusText(status: string) {
-		switch (status) {
-			case 'connected':
-				return '已连接';
-			case 'connecting':
-				return '连接中';
-			case 'detecting':
-				return '检测中';
-			case 'disconnected':
-				return '已断开';
-			default:
-				return '未知';
-		}
-	}
+	// 服务状态相关函数已移至ServiceStatus组件
 
 	function formatImportance(importance: number) {
 		if (importance >= 0.9) return '极高';
@@ -562,61 +374,14 @@
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 			<!-- 系统状态 -->
 			<div class="lg:col-span-1">
-				<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-					<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">服务状态</h2>
-
-					<div class="space-y-4">
-						{#each Object.entries(systemStatus) as [service, data]}
-							{#if data && typeof data === 'object' && data.status}
-								<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-									<div class="flex items-center justify-between mb-2">
-										<div class="flex items-center space-x-2">
-											<div class={`w-2 h-2 rounded-full ${getStatusLightColor(data.status)}`}></div>
-											<span class="font-medium text-gray-900 dark:text-white">
-												{service === 'cortexMemService'
-													? 'Cortex Memory Service'
-													: service === 'qdrant'
-														? 'Qdrant 数据库'
-														: 'LLM 服务'}
-											</span>
-										</div>
-										<span class={`text-sm font-medium ${getStatusColor(data.status)}`}>
-											{getStatusText(data.status)}
-										</span>
-									</div>
-
-									<div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
-										<div>
-											延迟: <span class="font-medium">
-												{#if data.status === 'detecting'}
-													<span class="animate-pulse">检测中...</span>
-												{:else}
-													{data.latency}ms
-												{/if}
-											</span>
-										</div>
-									</div>
-
-									{#if data.lastCheck}
-										<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-											最后检查: {data.lastCheck}
-										</div>
-									{/if}
-								</div>
-							{/if}
-						{/each}
-					</div>
-
-					<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-						<button
-							on:click={() => detectServicesAsync()}
-							disabled={isDetectingServices}
-							class="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors duration-200"
-						>
-							{isDetectingServices ? '检测中...' : '重新检查所有服务'}
-						</button>
-					</div>
-				</div>
+				<ServiceStatus 
+					title="服务状态" 
+					showRefreshButton={true} 
+					autoDetect={true}
+					on:statusUpdate={(event) => {
+						systemStatus = event.detail.systemStatus;
+					}}
+				/>
 			</div>
 
 			<!-- 最近记忆 -->

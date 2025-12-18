@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import api from '$lib/api/client';
+	import ServiceStatus from '$lib/components/ServiceStatus.svelte';
 
 	let isLoading = true;
 	let error: string | null = null;
@@ -8,33 +9,8 @@
 	let refreshInterval: number;
 	let lastUpdate: string = '';
 
-	// 真实系统状态
-	let systemStatus = {
-		cortexMemService: { status: 'connecting', latency: 0, version: '1.0.0', lastCheck: '' },
-		qdrant: {
-			status: 'connecting',
-			latency: 0,
-			version: '1.7.0',
-			collectionCount: 0,
-			lastCheck: ''
-		},
-		llmService: {
-			status: 'connecting',
-			latency: 0,
-			provider: 'Unknown',
-			model: 'Unknown',
-			lastCheck: '',
-			completionModel: {
-				available: false,
-				latency: 0,
-				error: null as string | null
-			},
-			embeddingModel: {
-				available: false,
-				latency: 0,
-				error: null as string | null
-			}
-		},
+	// 系统指标（服务状态由ServiceStatus组件处理）
+	let systemMetrics = {
 		memoryUsage: { used: 0, total: 1024, percentage: 0 },
 		cpuUsage: { percentage: 0 },
 		network: { activeConnections: 0, throughput: '0 MB/s' }
@@ -63,7 +39,7 @@
 
 	onMount(async () => {
 		try {
-			await loadSystemData();
+			await loadPerformanceMetrics();
 		} catch (err) {
 			console.error('加载系统数据失败:', err);
 			error = err instanceof Error ? err.message : '加载数据失败';
@@ -85,15 +61,13 @@
 		}
 	});
 
-	async function loadSystemData() {
+	// 加载系统性能指标
+	async function loadPerformanceMetrics() {
 		try {
 			const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
 			let memories: any[] = [];
 
-			// 独立检测各个服务的状态
-			const serviceStatuses = await detectIndividualServices(timestamp);
-
-			// 获取记忆统计（这也可以验证服务的实际可用性）
+			// 获取记忆统计
 			try {
 				const memoriesResponse = await api.memory.list({ limit: 1000 });
 				memories = memoriesResponse.memories || [];
@@ -103,43 +77,23 @@
 				memories = [];
 			}
 
-			// 更新系统状态
-			systemStatus = {
-				cortexMemService: {
-					status: serviceStatuses.mainService.status,
-					latency: serviceStatuses.mainService.latency,
-					version: '',
-					lastCheck: serviceStatuses.mainService.lastCheck
-				},
-				qdrant: {
-					status: serviceStatuses.vectorStore.status,
-					latency: serviceStatuses.vectorStore.latency,
-					version: '',
-					collectionCount: 0,
-					lastCheck: serviceStatuses.vectorStore.lastCheck
-				},
-				llmService: {
-					status: serviceStatuses.llmService.status,
-					latency: serviceStatuses.llmService.latency,
-					provider: '',
-					model: '',
-					lastCheck: serviceStatuses.llmService.lastCheck
-				},
+			// 计算系统指标
+			systemMetrics = {
 				memoryUsage: await calculateMemoryUsage(memories),
 				cpuUsage: await calculateCpuUsage(),
 				network: await calculateNetworkStats()
 			};
 
-			// 计算真实性能指标
+			// 计算性能指标
 			performanceMetrics = await calculatePerformanceMetrics();
 
-			// 生成基于真实数据的日志和告警
+			// 生成日志和告警
 			realtimeLogs = await generateRealtimeLogs(memories, timestamp);
-			alerts = await generateAlerts(systemStatus);
+			alerts = await generateAlerts();
 
 			lastUpdate = timestamp;
 		} catch (err) {
-			console.error('系统数据加载错误:', err);
+			console.error('性能指标加载错误:', err);
 			throw err;
 		}
 	}
@@ -296,48 +250,7 @@
 			message: `系统监控数据更新，共 ${memories.length} 条记忆记录`
 		});
 
-		// 添加服务状态日志
-		if (systemStatus.cortexMemService.status === 'connected') {
-			logs.push({
-				time: currentTime,
-				level: 'info',
-				message: `cortex-mem-service 正常响应，延迟 ${systemStatus.cortexMemService.latency}ms`
-			});
-		} else {
-			logs.push({
-				time: currentTime,
-				level: 'error',
-				message: `cortex-mem-service 连接失败，延迟 ${systemStatus.cortexMemService.latency}ms`
-			});
-		}
-
-		if (systemStatus.qdrant.status === 'connected') {
-			logs.push({
-				time: currentTime,
-				level: 'info',
-				message: `Qdrant 向量数据库连接正常，延迟 ${systemStatus.qdrant.latency}ms`
-			});
-		} else {
-			logs.push({
-				time: currentTime,
-				level: 'error',
-				message: `Qdrant 向量数据库连接失败`
-			});
-		}
-
-		if (systemStatus.llmService.status === 'connected') {
-			logs.push({
-				time: currentTime,
-				level: 'info',
-				message: `LLM 服务连接正常，延迟 ${systemStatus.llmService.latency}ms`
-			});
-		} else {
-			logs.push({
-				time: currentTime,
-				level: 'error',
-				message: `LLM 服务连接失败`
-			});
-		}
+		// 服务状态日志已移至ServiceStatus组件处理
 
 		// 添加性能指标日志
 		performanceMetrics.forEach((metric) => {
@@ -351,19 +264,19 @@
 		});
 
 		// 添加资源使用日志
-		if (systemStatus.memoryUsage.percentage > 70) {
+		if (systemMetrics.memoryUsage.percentage > 70) {
 			logs.push({
 				time: currentTime,
 				level: 'warning',
-				message: `内存使用率较高: ${systemStatus.memoryUsage.percentage.toFixed(1)}% (${systemStatus.memoryUsage.used.toFixed(1)}MB/${systemStatus.memoryUsage.total}MB)`
+				message: `内存使用率较高: ${systemMetrics.memoryUsage.percentage.toFixed(1)}% (${systemMetrics.memoryUsage.used.toFixed(1)}MB/${systemMetrics.memoryUsage.total}MB)`
 			});
 		}
 
-		if (systemStatus.cpuUsage.percentage > 60) {
+		if (systemMetrics.cpuUsage.percentage > 60) {
 			logs.push({
 				time: currentTime,
 				level: 'info',
-				message: `CPU 使用率: ${systemStatus.cpuUsage.percentage.toFixed(1)}%`
+				message: `CPU 使用率: ${systemMetrics.cpuUsage.percentage.toFixed(1)}%`
 			});
 		}
 
@@ -381,106 +294,56 @@
 			});
 		}
 
-		// 添加数据库集合信息
-		if (systemStatus.qdrant.collectionCount > 0) {
-			logs.push({
-				time: currentTime,
-				level: 'info',
-				message: `Qdrant 数据库包含 ${systemStatus.qdrant.collectionCount} 个集合`
-			});
-		}
-
 		// 添加网络状态日志
 		logs.push({
 			time: currentTime,
 			level: 'info',
-			message: `网络状态: ${systemStatus.network.activeConnections} 个活跃连接，吞吐量 ${systemStatus.network.throughput}`
+			message: `网络状态: ${systemMetrics.network.activeConnections} 个活跃连接，吞吐量 ${systemMetrics.network.throughput}`
 		});
 
 		return logs.slice(0, 12); // 保留最近12条日志
 	}
 
-	async function generateAlerts(
-		status: typeof systemStatus
-	): Promise<
+	async function generateAlerts(): Promise<
 		Array<{ id: string; level: string; message: string; time: string; acknowledged: boolean }>
 	> {
 		const alerts = [];
 		const now = new Date();
 		const timestamp = now.toLocaleTimeString('zh-CN', { hour12: false });
 
-		// 1. 检查核心服务状态
-		if (status.cortexMemService.status === 'error') {
-			alerts.push({
-				id: `alert_${Date.now()}_main_service`,
-				level: 'error',
-				message: `cortex-mem-service 服务异常 (延迟: ${status.cortexMemService.latency}ms)`,
-				time: timestamp,
-				acknowledged: false
-			});
-		}
+		// 服务状态告警已移至ServiceStatus组件处理
 
-		// 2. 检查向量数据库状态
-		if (status.qdrant.status === 'error') {
-			alerts.push({
-				id: `alert_${Date.now()}_qdrant`,
-				level: 'error',
-				message: 'Qdrant 向量数据库连接失败',
-				time: timestamp,
-				acknowledged: false
-			});
-		} else if (status.qdrant.latency > 500) {
-			alerts.push({
-				id: `alert_${Date.now()}_qdrant_latency`,
-				level: 'warning',
-				message: `Qdrant 数据库响应延迟过高: ${status.qdrant.latency}ms`,
-				time: timestamp,
-				acknowledged: false
-			});
-		}
-
-		// 3. 检查LLM服务状态
-		if (status.llmService.status === 'error') {
-			alerts.push({
-				id: `alert_${Date.now()}_llm`,
-				level: 'error',
-				message: 'LLM 服务连接失败',
-				time: timestamp,
-				acknowledged: false
-			});
-		}
-
-		// 4. 检查内存使用率
-		if (status.memoryUsage.percentage > 85) {
+		// 1. 检查内存使用率
+		if (systemMetrics.memoryUsage.percentage > 85) {
 			alerts.push({
 				id: `alert_${Date.now()}_memory_critical`,
 				level: 'error',
-				message: `内存使用率严重过高: ${status.memoryUsage.percentage.toFixed(1)}% (${status.memoryUsage.used.toFixed(1)}MB/${status.memoryUsage.total}MB)`,
+				message: `内存使用率严重过高: ${systemMetrics.memoryUsage.percentage.toFixed(1)}% (${systemMetrics.memoryUsage.used.toFixed(1)}MB/${systemMetrics.memoryUsage.total}MB)`,
 				time: timestamp,
 				acknowledged: false
 			});
-		} else if (status.memoryUsage.percentage > 70) {
+		} else if (systemMetrics.memoryUsage.percentage > 70) {
 			alerts.push({
 				id: `alert_${Date.now()}_memory_warning`,
 				level: 'warning',
-				message: `内存使用率较高: ${status.memoryUsage.percentage.toFixed(1)}%`,
+				message: `内存使用率较高: ${systemMetrics.memoryUsage.percentage.toFixed(1)}%`,
 				time: timestamp,
 				acknowledged: false
 			});
 		}
 
-		// 5. 检查CPU使用率
-		if (status.cpuUsage.percentage > 80) {
+		// 2. 检查CPU使用率
+		if (systemMetrics.cpuUsage.percentage > 80) {
 			alerts.push({
 				id: `alert_${Date.now()}_cpu_high`,
 				level: 'warning',
-				message: `CPU 使用率过高: ${status.cpuUsage.percentage.toFixed(1)}%`,
+				message: `CPU 使用率过高: ${systemMetrics.cpuUsage.percentage.toFixed(1)}%`,
 				time: timestamp,
 				acknowledged: false
 			});
 		}
 
-		// 6. 检查性能指标
+		// 3. 检查性能指标
 		performanceMetrics.forEach((metric) => {
 			if (metric.value > metric.threshold) {
 				const level = metric.value > metric.threshold * 1.5 ? 'error' : 'warning';
@@ -494,34 +357,12 @@
 			}
 		});
 
-		// 7. 检查API延迟
-		if (status.cortexMemService.latency > 1000) {
-			alerts.push({
-				id: `alert_${Date.now()}_api_latency`,
-				level: 'warning',
-				message: `API响应延迟过高: ${status.cortexMemService.latency}ms`,
-				time: timestamp,
-				acknowledged: false
-			});
-		}
-
-		// 8. 检查数据库集合数量
-		if (status.qdrant.collectionCount === 0) {
-			alerts.push({
-				id: `alert_${Date.now()}_collections`,
-				level: 'warning',
-				message: 'Qdrant 数据库中没有集合',
-				time: timestamp,
-				acknowledged: false
-			});
-		}
-
-		// 9. 检查网络连接数
-		if (status.network.activeConnections > 40) {
+		// 4. 检查网络连接数
+		if (systemMetrics.network.activeConnections > 40) {
 			alerts.push({
 				id: `alert_${Date.now()}_connections`,
 				level: 'info',
-				message: `网络连接数较高: ${status.network.activeConnections}`,
+				message: `网络连接数较高: ${systemMetrics.network.activeConnections}`,
 				time: timestamp,
 				acknowledged: false
 			});
@@ -532,118 +373,13 @@
 
 	async function updateMetrics() {
 		try {
-			await loadSystemData();
+			await loadPerformanceMetrics();
 		} catch (err) {
 			console.error('更新指标失败:', err);
 		}
 	}
 
-	// 独立检测各个服务状态
-	async function detectIndividualServices(timestamp: string) {
-		const mainService = { status: 'error', latency: 0, lastCheck: timestamp };
-		const vectorStore = { status: 'error', latency: 0, lastCheck: timestamp };
-		const llmService = { status: 'error', latency: 0, lastCheck: timestamp };
-
-		try {
-			// 1. 测试cortex-mem-service基础可用性（API端点优先）
-			const serviceStartTime = Date.now();
-			const serviceResponse = await fetch('/api/memories?limit=1');
-			const serviceLatency = Date.now() - serviceStartTime;
-
-			if (serviceResponse.ok) {
-				// API端点正常，说明服务可用
-				mainService.status = 'connected';
-				mainService.latency = serviceLatency;
-			} else {
-				// 如果API失败，再尝试健康检查端点，但健康检查失败不应该影响主要判断
-				try {
-					const healthStartTime = Date.now();
-					const healthResponse = await fetch('/health');
-					const healthLatency = Date.now() - healthStartTime;
-
-					if (healthResponse.ok) {
-						const healthData = await healthResponse.json();
-						// 即使健康检查显示不健康，如果API可以访问，服务还是可用的
-						mainService.status = 'connected';
-						mainService.latency = Math.min(serviceLatency, healthLatency);
-					}
-				} catch (healthErr) {
-					console.warn('健康检查失败，但API可能仍可用:', healthErr);
-					// 健康检查失败不代表服务不可用，保持连接状态或设置connecting
-					if (serviceLatency > 0) {
-						mainService.status = 'connecting';
-						mainService.latency = serviceLatency;
-					}
-				}
-			}
-		} catch (serviceErr) {
-			console.warn('cortex-mem-service检测失败:', serviceErr);
-		}
-
-		try {
-			// 2. 通过insights server API获取向量存储状态
-			const vectorStoreStartTime = Date.now();
-			const vectorStoreResponse = await fetch('/api/system/vector-store/status');
-			const vectorStoreLatency = Date.now() - vectorStoreStartTime;
-
-			if (vectorStoreResponse.ok) {
-				const vectorStoreData = await vectorStoreResponse.json();
-				if (vectorStoreData.success && vectorStoreData.data) {
-					vectorStore.status = vectorStoreData.data.status;
-					vectorStore.latency = vectorStoreLatency;
-				} else {
-					vectorStore.status = 'error';
-				}
-			} else {
-				vectorStore.status = 'error';
-			}
-		} catch (vectorStoreErr) {
-			console.warn('获取向量存储状态失败:', vectorStoreErr);
-			vectorStore.status = 'error';
-		}
-		try {
-			// 3. 通过insights server API获取LLM服务状态
-			const llmStartTime = Date.now();
-			const llmResponse = await fetch('/api/system/llm/status');
-			const llmLatency = Date.now() - llmStartTime;
-
-			if (llmResponse.ok) {
-				const llmData = await llmResponse.json();
-				if (llmData.success && llmData.data) {
-					const { overall_status, completion_model, embedding_model } = llmData.data;
-
-					// 更新LLM服务状态
-					llmService.status = overall_status === 'healthy' ? 'connected' : 'error';
-					llmService.latency = llmLatency;
-					llmService.provider = completion_model.provider;
-					llmService.model = `${completion_model.model_name} / ${embedding_model.model_name}`;
-					llmService.lastCheck = new Date().toISOString();
-
-					// 更新模型详细信息
-					llmService.completionModel = {
-						available: completion_model.available,
-						latency: completion_model.latency_ms,
-						error: completion_model.error_message
-					};
-
-					llmService.embeddingModel = {
-						available: embedding_model.available,
-						latency: embedding_model.latency_ms,
-						error: embedding_model.error_message
-					};
-				} else {
-					llmService.status = 'error';
-				}
-			} else {
-				llmService.status = 'error';
-			}
-		} catch (llmErr) {
-			console.warn('获取LLM服务状态失败:', llmErr);
-			llmService.status = 'error';
-		}
-
-		return { mainService, vectorStore, llmService };
-	}
+	// 服务状态检测逻辑已移至ServiceStatus组件
 
 	function toggleAutoRefresh() {
 		autoRefresh = !autoRefresh;
@@ -657,31 +393,7 @@
 		}
 	}
 
-	function getStatusColor(status: string) {
-		switch (status) {
-			case 'connected':
-				return 'text-green-500';
-			case 'connecting':
-				return 'text-yellow-500';
-			case 'disconnected':
-				return 'text-red-500';
-			default:
-				return 'text-gray-500';
-		}
-	}
-
-	function getStatusLightColor(status: string) {
-		switch (status) {
-			case 'connected':
-				return 'bg-green-400 dark:bg-green-900/20';
-			case 'connecting':
-				return 'bg-yellow-500 dark:bg-yellow-900/20';
-			case 'disconnected':
-				return 'bg-red-500 dark:bg-red-900/20';
-			default:
-				return 'bg-gray-500 dark:bg-gray-800';
-		}
-	}
+	// 服务状态相关函数已移至ServiceStatus组件
 
 	function getLevelColor(level: string) {
 		switch (level) {
@@ -793,56 +505,14 @@
 		<!-- 系统状态概览 -->
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 			<!-- 服务状态 -->
-			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">服务状态</h2>
-
-				<div class="space-y-4">
-					{#each Object.entries(systemStatus).slice(0, 3) as [service, data]}
-						{#if data && typeof data === 'object' && data.status}
-							<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-								<div class="flex items-center justify-between mb-2">
-									<div class="flex items-center space-x-2">
-										<div class={`w-2 h-2 rounded-full ${getStatusLightColor(data.status)}`}></div>
-										<span class="font-medium text-gray-900 dark:text-white">
-											{service === 'cortexMemService'
-												? 'Cortex Memory Service'
-												: service === 'qdrant'
-													? 'Qdrant 数据库'
-													: 'LLM 服务'}
-										</span>
-									</div>
-									<span class={`text-sm font-medium ${getStatusColor(data.status)}`}>
-										{data.status === 'connected'
-											? '已连接'
-											: data.status === 'connecting'
-												? '连接中'
-												: '已断开'}
-									</span>
-								</div>
-
-								<div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
-									<div>延迟: <span class="font-medium">{data.latency}ms</span></div>
-								</div>
-
-								{#if data.lastCheck}
-									<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-										最后检查: {data.lastCheck}
-									</div>
-								{/if}
-							</div>
-						{/if}
-					{/each}
-				</div>
-
-				<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-					<button
-						on:click={updateMetrics}
-						class="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
-					>
-						重新检查所有服务
-					</button>
-				</div>
-			</div>
+			<ServiceStatus 
+				title="服务状态" 
+				showRefreshButton={true} 
+				autoDetect={true}
+				on:statusUpdate={(event) => {
+					// 服务状态由组件内部处理，这里不需要更新外部状态
+				}}
+			/>
 
 			<!-- 资源使用 -->
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
@@ -854,57 +524,55 @@
 						<div class="flex justify-between mb-2">
 							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">内存使用</span>
 							<span class="text-sm font-medium text-gray-900 dark:text-white">
-								{systemStatus.memoryUsage.percentage.toFixed(1)}%
+								{systemMetrics.memoryUsage.percentage.toFixed(1)}%
 							</span>
 						</div>
-						<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-							<div
-								class={`h-3 rounded-full ${
-									systemStatus.memoryUsage.percentage > 80
-										? 'bg-red-500'
-										: systemStatus.memoryUsage.percentage > 60
-											? 'bg-yellow-500'
-											: 'bg-green-500'
-								}`}
-								style={`width: ${systemStatus.memoryUsage.percentage}%`}
-							></div>
-						</div>
-						<div class="flex justify-between mt-1 text-sm text-gray-500 dark:text-gray-400">
-							<span>{systemStatus.memoryUsage.used.toFixed(1)} MB</span>
-							<span>{systemStatus.memoryUsage.total} MB</span>
-						</div>
-					</div>
+										<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+											<div
+												class={`h-3 rounded-full ${
+													systemMetrics.memoryUsage.percentage > 80
+														? 'bg-red-500'
+														: systemMetrics.memoryUsage.percentage > 60
+															? 'bg-yellow-500'
+															: 'bg-green-500'
+													}`}
+												style={`width: ${systemMetrics.memoryUsage.percentage}%`}
+											></div>
+										</div>
+										<div class="flex justify-between mt-1 text-sm text-gray-500 dark:text-gray-400">
+											<span>{systemMetrics.memoryUsage.used.toFixed(1)} MB</span>
+											<span>{systemMetrics.memoryUsage.total} MB</span>
+										</div>					</div>
 
-					<!-- CPU使用 -->
-					<div>
-						<div class="flex justify-between mb-2">
-							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">CPU使用</span>
-							<span class="text-sm font-medium text-gray-900 dark:text-white">
-								{systemStatus.cpuUsage.percentage.toFixed(1)}%
-							</span>
-						</div>
-						<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-							<div
-								class={`h-3 rounded-full ${
-									systemStatus.cpuUsage.percentage > 70
-										? 'bg-red-500'
-										: systemStatus.cpuUsage.percentage > 40
-											? 'bg-yellow-500'
-											: 'bg-green-500'
-								}`}
-								style={`width: ${systemStatus.cpuUsage.percentage}%`}
-							></div>
-						</div>
-					</div>
-
+										<!-- CPU使用 -->
+										<div>
+											<div class="flex justify-between mb-2">
+												<span class="text-sm font-medium text-gray-700 dark:text-gray-300">CPU使用</span>
+												<span class="text-sm font-medium text-gray-900 dark:text-white">
+													{systemMetrics.cpuUsage.percentage.toFixed(1)}%
+												</span>
+											</div>
+											<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+												<div
+													class={`h-3 rounded-full ${
+														systemMetrics.cpuUsage.percentage > 70
+															? 'bg-red-500'
+															: systemMetrics.cpuUsage.percentage > 40
+																? 'bg-yellow-500'
+																: 'bg-green-500'
+														}`}
+													style={`width: ${systemMetrics.cpuUsage.percentage}%`}
+												></div>
+											</div>
+										</div>
 					<!-- 网络 -->
 					<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
 						<div class="text-sm font-medium text-gray-900 dark:text-white mb-2">网络状态</div>
 						<div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
 							<div>
-								活跃连接: <span class="font-medium">{systemStatus.network.activeConnections}</span>
+								活跃连接: <span class="font-medium">{systemMetrics.network.activeConnections}</span>
 							</div>
-							<div>吞吐量: <span class="font-medium">{systemStatus.network.throughput}</span></div>
+							<div>吞吐量: <span class="font-medium">{systemMetrics.network.throughput}</span></div>
 						</div>
 					</div>
 				</div>
