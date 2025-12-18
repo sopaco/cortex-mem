@@ -129,6 +129,7 @@ export const systemRoutes = new Elysia({ prefix: '/api/system' })
 
       const systemStatus = {
         status: vectorStoreStatus && llmServiceStatus ? 'healthy' : 'unhealthy',
+        cortex_mem_service: true, // cortex-mem-service可用
         vector_store: vectorStoreStatus,
         llm_service: llmServiceStatus,
         llm_details: {
@@ -148,10 +149,30 @@ export const systemRoutes = new Elysia({ prefix: '/api/system' })
       console.error('获取系统状态失败 - cortex-mem-service不可用:', error);
       // 当cortex-mem-service不可用时，返回错误状态
       return {
-        success: false,
-        error: {
-          code: 'CORTEX_MEM_SERVICE_UNAVAILABLE',
-          message: error instanceof Error ? error.message : 'Cortex Memory Service不可用',
+        success: true, // 仍然返回success: true，但数据中标记服务不可用
+        data: {
+          status: 'unhealthy',
+          cortex_mem_service: false,
+          vector_store: false,
+          llm_service: false,
+          llm_details: {
+            completion_model: {
+              available: false,
+              provider: 'unknown',
+              model_name: 'unknown',
+              error_message: error instanceof Error ? error.message : 'Cortex Memory Service不可用',
+              last_check: new Date().toISOString(),
+            },
+            embedding_model: {
+              available: false,
+              provider: 'unknown',
+              model_name: 'unknown',
+              error_message: error instanceof Error ? error.message : 'Cortex Memory Service不可用',
+              last_check: new Date().toISOString(),
+            },
+            overall_status: 'error',
+          },
+          timestamp: new Date().toISOString(),
         },
         timestamp: new Date().toISOString(),
       };
@@ -257,19 +278,39 @@ export const systemRoutes = new Elysia({ prefix: '/api/system' })
     };
   })
   
-  // 健康检查
-  .get('/health', () => {
-    return {
-      success: true,
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      services: {
-        api: true,
-        database: true,
-        vector_store: true,
-        llm_service: true,
-      },
-    };
+  // 健康检查 - 返回insights server自身的健康状态
+  .get('/health', async () => {
+    try {
+      // 检查cortex-mem-service的健康状态
+      const healthCheck = await cortexMemService.healthCheck();
+      
+      return {
+        success: true,
+        status: healthCheck.status === 'healthy' ? 'healthy' : 'unhealthy',
+        timestamp: new Date().toISOString(),
+        services: {
+          cortex_mem_service: true,
+          vector_store: healthCheck.vector_store,
+          llm_service: healthCheck.llm_service,
+        },
+      };
+    } catch (error) {
+      console.error('健康检查失败 - cortex-mem-service不可用:', error);
+      return {
+        success: false,
+        status: 'unhealthy',
+        timestamp: new Date().toISOString(),
+        services: {
+          cortex_mem_service: false,
+          vector_store: false,
+          llm_service: false,
+        },
+        error: {
+          code: 'CORTEX_MEM_SERVICE_UNAVAILABLE',
+          message: error instanceof Error ? error.message : 'Cortex Memory Service不可用',
+        },
+      };
+    }
   })
   
   // 获取资源使用情况

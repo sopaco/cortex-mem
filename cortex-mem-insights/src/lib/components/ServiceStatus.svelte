@@ -82,8 +82,11 @@
 		const vectorStore: ServiceStatus = { status: 'detecting', latency: 0, lastCheck: timestamp };
 		const llmService: ServiceStatus = { status: 'detecting', latency: 0, lastCheck: timestamp };
 
+		// 首先通过/api/system/status检测cortex-mem-service的可用性
+		let cortexMemServiceAvailable = false;
+		
 		try {
-			// 1. 测试cortex-mem-service基础可用性（API端点优先）
+			// 1. 通过insights server的/api/system/status检测cortex-mem-service
 			const serviceStartTime = Date.now();
 			
 			// 创建带超时的请求
@@ -91,43 +94,39 @@
 			const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
 			
 			try {
-				const serviceResponse = await fetch('/api/memories?limit=1', {
+				const serviceResponse = await fetch('/api/system/status', {
 					signal: controller.signal
 				});
 				clearTimeout(timeoutId);
 				const serviceLatency = Date.now() - serviceStartTime;
 
 				if (serviceResponse.ok) {
-					// 尝试解析响应内容，确保不是空响应或错误响应
-					try {
-						const responseText = await serviceResponse.text();
-						if (responseText && responseText.length > 0) {
-							// 尝试解析为JSON，确保返回的是有效的API响应
-							const responseData = JSON.parse(responseText);
-							if (responseData && typeof responseData === 'object') {
-								mainService.status = 'connected';
-								mainService.latency = serviceLatency;
-							} else {
-								throw new Error('Invalid response format');
-							}
+					const responseData = await serviceResponse.json();
+					// 检查cortex_mem_service字段
+					if (responseData.success && responseData.data) {
+						const cortexMemStatus = responseData.data.cortex_mem_service;
+						if (cortexMemStatus === true) {
+							mainService.status = 'connected';
+							mainService.latency = serviceLatency;
+							cortexMemServiceAvailable = true;
 						} else {
-							throw new Error('Empty response');
+							mainService.status = 'disconnected';
+							mainService.latency = serviceLatency;
 						}
-					} catch (parseErr) {
-						console.warn('API响应解析失败:', parseErr);
+					} else {
 						mainService.status = 'disconnected';
 						mainService.latency = serviceLatency;
 					}
 				} else {
 					// HTTP错误状态码
-					console.warn(`API请求失败: HTTP ${serviceResponse.status}`);
+					console.warn(`cortex-mem-service状态检查失败: HTTP ${serviceResponse.status}`);
 					mainService.status = 'disconnected';
 					mainService.latency = serviceLatency;
 				}
 			} catch (fetchErr) {
 				clearTimeout(timeoutId);
 				if (fetchErr.name === 'AbortError') {
-					console.warn('API请求超时');
+					console.warn('cortex-mem-service状态检查超时');
 					mainService.status = 'disconnected';
 				} else {
 					console.warn('cortex-mem-service检测失败:', fetchErr);
@@ -138,6 +137,18 @@
 		} catch (serviceErr) {
 			console.warn('cortex-mem-service检测异常:', serviceErr);
 			mainService.status = 'disconnected';
+		}
+
+		// 如果cortex-mem-service不可用，则Qdrant和LLM服务也标记为不可用
+		if (!cortexMemServiceAvailable) {
+			console.warn('cortex-mem-service不可用，Qdrant和LLM服务也将标记为不可用');
+			vectorStore.status = 'disconnected';
+			vectorStore.latency = 0;
+			llmService.status = 'disconnected';
+			llmService.latency = 0;
+			llmService.provider = 'unknown';
+			llmService.model = 'unknown / unknown';
+			return { mainService, vectorStore, llmService };
 		}
 
 		try {
