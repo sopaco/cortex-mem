@@ -1,4 +1,7 @@
-# Cortex Memory - Rust Agent Memory System
+# Cortex Memory
+A high-performance Agent long-term memory system powered by Rust, capable of autonomous iteration. Supports MCP, CLI, HTTP calls, and provides a Memory Insights management tool.
+
+![Banner](assets/blend_1_banner_800.jpg)
 
 [![Crates.io](https://img.shields.io/crates/v/cortex-mem)](https://crates.io/crates/cortex-mem)
 [![Documentation](https://docs.rs/cortex-mem/badge.svg)](https://docs.rs/cortex-mem)
@@ -247,4 +250,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Qdrant Documentation](https://qdrant.tech/documentation/)
 - [OpenAI API Documentation](https://platform.openai.com/docs/)
 - [Rig Framework](https://github.com/0xPlaygrounds/rig)
-
