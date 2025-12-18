@@ -10,21 +10,11 @@ export class CortexMemServiceClient {
   
   // 健康检查
   async healthCheck(): Promise<HealthResponse> {
-    try {
-      const response = await fetch(`${this.baseUrl}/health`);
-      if (!response.ok) {
-        throw new Error(`Health check failed: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Health check error:', error);
-      return {
-        status: 'unhealthy',
-        vector_store: false,
-        llm_service: false,
-        timestamp: new Date().toISOString()
-      };
+    const response = await fetch(`${this.baseUrl}/health`);
+    if (!response.ok) {
+      throw new Error(`Health check failed: ${response.statusText}`);
     }
+    return await response.json();
   }
   
   // 获取记忆列表
@@ -324,6 +314,285 @@ export class CortexMemServiceClient {
         recent_activity: [],
       };
     }
+  }
+
+  // 优化相关方法
+  
+  // 启动优化任务
+  async optimize(params?: {
+    memory_type?: string;
+    user_id?: string;
+    agent_id?: string;
+    run_id?: string;
+    actor_id?: string;
+    similarity_threshold?: number;
+    dry_run?: boolean;
+    verbose?: boolean;
+    strategy?: string;
+    aggressive?: boolean;
+    timeout_minutes?: number;
+  }): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/optimization`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params || {}),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('启动优化失败 - 错误响应:', errorText);
+        throw new Error(`Optimize failed: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('启动优化错误:', error);
+      return {
+        success: false,
+        error: {
+          code: 'OPTIMIZE_FAILED',
+          message: error instanceof Error ? error.message : '启动优化失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 获取优化任务状态
+  async getOptimizationStatus(jobId: string): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/optimization/${jobId}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          return {
+            success: false,
+            error: {
+              code: 'JOB_NOT_FOUND',
+              message: `优化任务 ${jobId} 不存在`,
+            },
+            timestamp: new Date().toISOString(),
+          };
+        }
+        throw new Error(`Get optimization status failed: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('获取优化状态错误:', error);
+      return {
+        success: false,
+        error: {
+          code: 'GET_STATUS_FAILED',
+          message: error instanceof Error ? error.message : '获取状态失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 取消优化任务
+  async cancelOptimization(jobId: string): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/optimization/${jobId}/cancel`, {
+        method: 'POST',
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('取消优化失败 - 错误响应:', errorText);
+        throw new Error(`Cancel optimization failed: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('取消优化错误:', error);
+      return {
+        success: false,
+        error: {
+          code: 'CANCEL_FAILED',
+          message: error instanceof Error ? error.message : '取消优化失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 获取优化历史
+  async getOptimizationHistory(params?: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+    start_date?: string;
+    end_date?: string;
+  }): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.offset) queryParams.append('offset', params.offset.toString());
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.start_date) queryParams.append('start_date', params.start_date);
+      if (params?.end_date) queryParams.append('end_date', params.end_date);
+      
+      const url = `${this.baseUrl}/optimization/history${queryParams.toString() ? `?${queryParams}` : ''}`;
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`Get optimization history failed: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('获取优化历史错误:', error);
+      return {
+        success: false,
+        error: {
+          code: 'GET_HISTORY_FAILED',
+          message: error instanceof Error ? error.message : '获取历史失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 分析优化问题（预览模式）
+  async analyzeOptimization(params?: {
+    memory_type?: string;
+    user_id?: string;
+    agent_id?: string;
+    run_id?: string;
+    actor_id?: string;
+    similarity_threshold?: number;
+  }): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/optimization/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(params || {}),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('分析优化失败 - 错误响应:', errorText);
+        throw new Error(`Analyze optimization failed: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('分析优化错误:', error);
+      return {
+        success: false,
+        error: {
+          code: 'ANALYZE_FAILED',
+          message: error instanceof Error ? error.message : '分析失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 获取优化统计
+  async getOptimizationStatistics(): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/optimization/statistics`);
+      
+      if (!response.ok) {
+        throw new Error(`Get optimization statistics failed: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('获取优化统计错误:', error);
+      return {
+        success: false,
+        error: {
+          code: 'GET_STATISTICS_FAILED',
+          message: error instanceof Error ? error.message : '获取统计失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // 清理优化历史
+  async cleanupOptimizationHistory(maxAgeDays?: number): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/optimization/cleanup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ max_age_days: maxAgeDays || 7 }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Cleanup optimization history failed: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('清理优化历史错误:', error);
+      return {
+        success: false,
+        error: {
+          code: 'CLEANUP_FAILED',
+          message: error instanceof Error ? error.message : '清理失败',
+        },
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+
+  // LLM服务状态检测
+  
+  // 获取详细的LLM服务状态
+  async getLLMStatus(): Promise<{
+    overall_status: string;
+    completion_model: {
+      available: boolean;
+      provider: string;
+      model_name: string;
+      latency_ms?: number;
+      error_message?: string;
+      last_check: string;
+    };
+    embedding_model: {
+      available: boolean;
+      provider: string;
+      model_name: string;
+      latency_ms?: number;
+      error_message?: string;
+      last_check: string;
+    };
+    timestamp: string;
+  }> {
+    const response = await fetch(`${this.baseUrl}/llm/status`);
+    
+    if (!response.ok) {
+      throw new Error(`Get LLM status failed: ${response.statusText}`);
+    }
+    
+    return await response.json();
+  }
+
+  // 简单的LLM健康检查
+  async llmHealthCheck(): Promise<{
+    completion_model_available: boolean;
+    embedding_model_available: boolean;
+    timestamp: string;
+  }> {
+    const response = await fetch(`${this.baseUrl}/llm/health-check`);
+    
+    if (!response.ok) {
+      throw new Error(`LLM health check failed: ${response.statusText}`);
+    }
+    
+    return await response.json();
   }
 }
 

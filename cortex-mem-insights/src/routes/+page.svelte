@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import api from '$lib/api/client';
+	import ServiceStatus from '$lib/components/ServiceStatus.svelte';
 
 	// 真实数据
 	let stats = {
@@ -25,7 +26,17 @@
 			latency: 0,
 			provider: 'Unknown',
 			model: 'Unknown',
-			lastCheck: ''
+			lastCheck: '',
+			completionModel: {
+				available: false,
+				latency: 0,
+				error: null as string | null
+			},
+			embeddingModel: {
+				available: false,
+				latency: 0,
+				error: null as string | null
+			}
 		}
 	};
 
@@ -42,25 +53,20 @@
 
 	onMount(async () => {
 		try {
-			// 尝试加载实际数据
-			await loadDashboardData();
+			await loadBasicData();
 		} catch (err) {
 			console.error('加载仪表板数据失败:', err);
 			error = err instanceof Error ? err.message : '加载数据失败';
-			// 回退到模拟数据
 			fallbackToMockData();
 		} finally {
 			isLoading = false;
 		}
 	});
 
-	async function loadDashboardData() {
+	// 加载基本数据，不等待服务检测
+	async function loadBasicData() {
 		try {
-			const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
 			let memories: any[] = [];
-
-			// 独立检测各个服务的状态
-			const serviceStatuses = await detectIndividualServices(timestamp);
 
 			// 获取记忆统计（这也可以验证服务的实际可用性）
 			try {
@@ -71,30 +77,6 @@
 				console.warn('获取记忆列表失败:', memoryErr);
 				memories = [];
 			}
-
-			// 更新系统状态（不包含memoryUsage、cpuUsage、network，因为仪表盘不需要）
-			systemStatus = {
-				cortexMemService: {
-					status: serviceStatuses.mainService.status,
-					latency: serviceStatuses.mainService.latency,
-					version: '',
-					lastCheck: serviceStatuses.mainService.lastCheck
-				},
-				qdrant: {
-					status: serviceStatuses.vectorStore.status,
-					latency: serviceStatuses.vectorStore.latency,
-					version: '',
-					collectionCount: await getQdrantCollectionCount(),
-					lastCheck: serviceStatuses.vectorStore.lastCheck
-				},
-				llmService: {
-					status: serviceStatuses.llmService.status,
-					latency: serviceStatuses.llmService.latency,
-					provider: '',
-					model: '',
-					lastCheck: serviceStatuses.llmService.lastCheck
-				}
-			};
 
 			// 计算统计数据
 			const totalCount = memories.length;
@@ -120,145 +102,41 @@
 				averageQuality: qualityStats.average,
 				qualityDistribution: qualityStats.distribution
 			};
+
+			// 初始化系统状态为检测中
+			const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+			systemStatus = {
+				cortexMemService: {
+					status: 'detecting',
+					latency: 0,
+					version: '',
+					lastCheck: timestamp
+				},
+				qdrant: {
+					status: 'detecting',
+					latency: 0,
+					version: '',
+					collectionCount: 0,
+					lastCheck: timestamp
+				},
+				llmService: {
+					status: 'detecting',
+					latency: 0,
+					provider: '',
+					model: '',
+					lastCheck: timestamp
+				}
+			};
 		} catch (err) {
-			console.error('加载仪表板数据错误:', err);
+			console.error('加载基本数据错误:', err);
 			throw err;
 		}
 	}
 
-	// 独立检测各个服务状态（与监控页面相同的逻辑）
-	async function detectIndividualServices(timestamp: string) {
-		const mainService = { status: 'error', latency: 0, lastCheck: timestamp };
-		const vectorStore = { status: 'error', latency: 0, lastCheck: timestamp };
-		const llmService = { status: 'error', latency: 0, lastCheck: timestamp };
+	// 异步检测服务状态
+	// 服务状态检测逻辑已移至ServiceStatus组件
 
-		try {
-			// 1. 测试cortex-mem-service基础可用性（API端点优先）
-			const serviceStartTime = Date.now();
-			const serviceResponse = await fetch('/api/memories?limit=1');
-			const serviceLatency = Date.now() - serviceStartTime;
-
-			if (serviceResponse.ok) {
-				// API端点正常，说明服务可用
-				mainService.status = 'connected';
-				mainService.latency = serviceLatency;
-			} else {
-				// 如果API失败，再尝试健康检查端点，但健康检查失败不应该影响主要判断
-				try {
-					const healthStartTime = Date.now();
-					const healthResponse = await fetch('/health');
-					const healthLatency = Date.now() - healthStartTime;
-
-					if (healthResponse.ok) {
-						const healthData = await healthResponse.json();
-						// 即使健康检查显示不健康，如果API可以访问，服务还是可用的
-						mainService.status = 'connected';
-						mainService.latency = Math.min(serviceLatency, healthLatency);
-					}
-				} catch (healthErr) {
-					console.warn('健康检查失败，但API可能仍可用:', healthErr);
-					// 健康检查失败不代表服务不可用，保持连接状态或设置connecting
-					if (serviceLatency > 0) {
-						mainService.status = 'connecting';
-						mainService.latency = serviceLatency;
-					}
-				}
-			}
-		} catch (serviceErr) {
-			console.warn('cortex-mem-service检测失败:', serviceErr);
-		}
-		try {
-			// 2. 测试Qdrant独立可用性
-			const qdrantStartTime = Date.now();
-			const qdrantResponse = await fetch('http://localhost:6334/health');
-			const qdrantLatency = Date.now() - qdrantStartTime;
-
-			if (qdrantResponse.ok) {
-				const qdrantData = await qdrantResponse.json();
-				vectorStore.status = qdrantData.status === 'ok' ? 'connected' : 'error';
-				vectorStore.latency = qdrantLatency;
-			}
-		} catch (qdrantErr) {
-			console.warn('Qdrant直接检测失败:', qdrantErr);
-			// 备用方案：通过cortex-mem-service的向量操作来测试
-			try {
-				const searchStartTime = Date.now();
-				const searchResponse = await api.memory.search('test');
-				const searchLatency = Date.now() - searchStartTime;
-
-				if (searchResponse && typeof searchResponse === 'object') {
-					vectorStore.status = 'connected';
-					vectorStore.latency = searchLatency;
-				}
-			} catch (searchErr) {
-				console.warn('向量搜索测试也失败:', searchErr);
-				vectorStore.status = 'error';
-			}
-		}
-
-		try {
-			// 3. 测试LLM服务独立可用性（通过创建记忆来测试）
-			const llmStartTime = Date.now();
-			const testMemory = await api.memory.create('LLM health check test', {
-				user_id: 'health-check',
-				memory_type: 'conversational'
-			});
-			const llmLatency = Date.now() - llmStartTime;
-
-			if (testMemory && testMemory.id) {
-				llmService.status = 'connected';
-				llmService.latency = llmLatency;
-
-				// 清理测试记忆
-				try {
-					await api.memory.delete(testMemory.id);
-				} catch (cleanupErr) {
-					console.warn('清理测试记忆失败:', cleanupErr);
-				}
-			}
-		} catch (llmErr) {
-			console.warn('LLM服务测试失败:', llmErr);
-			// 备用方案：通过健康检查数据推断
-			try {
-				const healthResponse = await fetch('/health');
-				if (healthResponse.ok) {
-					const healthData = await healthResponse.json();
-					llmService.status = healthData.llm_service ? 'connected' : 'error';
-					llmService.latency = 200; // 估算值
-				}
-			} catch (healthErr) {
-				console.warn('健康检查LLM检测也失败:', healthErr);
-			}
-		}
-
-		return { mainService, vectorStore, llmService };
-	}
-
-	// 获取Qdrant集合数量
-	async function getQdrantCollectionCount(): Promise<number> {
-		try {
-			// 尝试直接调用Qdrant API
-			const response = await fetch('http://localhost:6334/collections');
-			if (response.ok) {
-				const data = await response.json();
-				return data.result?.collections?.length || 0;
-			}
-		} catch (qdrantErr) {
-			console.warn('Qdrant集合检测失败:', qdrantErr);
-		}
-
-		// 备用方案：通过记忆数量估算
-		try {
-			const memoriesResponse = await api.memory.list({ limit: 1 });
-			if (memoriesResponse && memoriesResponse.total > 0) {
-				return Math.min(5, Math.floor(memoriesResponse.total / 100) + 1);
-			}
-		} catch (memoryErr) {
-			console.warn('记忆数量获取失败:', memoryErr);
-		}
-
-		return 0; // 默认值
-	}
+	// 获取Qdrant集合数量 - 已移除API调用
 
 	// 计算质量分布
 	function calculateQualityDistribution(memories: any[]) {
@@ -337,20 +215,20 @@
 
 		systemStatus = {
 			cortexMemService: {
-				status: 'connecting',
+				status: 'detecting',
 				latency: 0,
 				version: '1.0.0',
 				lastCheck: timestamp
 			},
 			qdrant: {
-				status: 'connecting',
+				status: 'detecting',
 				latency: 0,
 				version: '1.7.0',
 				collectionCount: 0,
 				lastCheck: timestamp
 			},
 			llmService: {
-				status: 'connecting',
+				status: 'detecting',
 				latency: 0,
 				provider: 'Unknown',
 				model: 'Unknown',
@@ -363,44 +241,7 @@
 		isLoading = false;
 	}
 
-	function getStatusColor(status: string) {
-		switch (status) {
-			case 'connected':
-				return 'text-green-500 dark:bg-green-900/20';
-			case 'connecting':
-				return 'text-yellow-500 dark:bg-yellow-900/20';
-			case 'disconnected':
-				return 'text-red-500 dark:bg-red-900/20';
-			default:
-				return 'text-gray-500 dark:bg-gray-800';
-		}
-	}
-
-	function getStatusLightColor(status: string) {
-		switch (status) {
-			case 'connected':
-				return 'bg-green-400 dark:bg-green-900/20';
-			case 'connecting':
-				return 'bg-yellow-500 dark:bg-yellow-900/20';
-			case 'disconnected':
-				return 'bg-red-500 dark:bg-red-900/20';
-			default:
-				return 'bg-gray-500 dark:bg-gray-800';
-		}
-	}
-
-	function getStatusText(status: string) {
-		switch (status) {
-			case 'connected':
-				return '已连接';
-			case 'connecting':
-				return '连接中';
-			case 'disconnected':
-				return '已断开';
-			default:
-				return '未知';
-		}
-	}
+	// 服务状态相关函数已移至ServiceStatus组件
 
 	function formatImportance(importance: number) {
 		if (importance >= 0.9) return '极高';
@@ -533,56 +374,14 @@
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 			<!-- 系统状态 -->
 			<div class="lg:col-span-1">
-				<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-					<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">服务状态</h2>
-
-					<div class="space-y-4">
-						{#each Object.entries(systemStatus) as [service, data]}
-							{#if data && typeof data === 'object' && data.status}
-								<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-									<div class="flex items-center justify-between mb-2">
-										<div class="flex items-center space-x-2">
-											<div class={`w-2 h-2 rounded-full ${getStatusLightColor(data.status)}`}></div>
-											<span class="font-medium text-gray-900 dark:text-white">
-												{service === 'cortexMemService'
-													? 'Cortex Memory Service'
-													: service === 'qdrant'
-														? 'Qdrant 数据库'
-														: 'LLM 服务'}
-											</span>
-										</div>
-										<span class={`text-sm font-medium ${getStatusColor(data.status)}`}>
-											{data.status === 'connected'
-												? '已连接'
-												: data.status === 'connecting'
-													? '连接中'
-													: '已断开'}
-										</span>
-									</div>
-
-									<div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
-										<div>延迟: <span class="font-medium">{data.latency}ms</span></div>
-									</div>
-
-									{#if data.lastCheck}
-										<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-											最后检查: {data.lastCheck}
-										</div>
-									{/if}
-								</div>
-							{/if}
-						{/each}
-					</div>
-
-					<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-						<button
-							on:click={() => loadDashboardData()}
-							class="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
-						>
-							重新检查所有服务
-						</button>
-					</div>
-				</div>
+				<ServiceStatus 
+					title="服务状态" 
+					showRefreshButton={true} 
+					autoDetect={true}
+					on:statusUpdate={(event) => {
+						systemStatus = event.detail.systemStatus;
+					}}
+				/>
 			</div>
 
 			<!-- 最近记忆 -->

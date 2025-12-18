@@ -17,16 +17,14 @@
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
 	<!-- 导航栏 -->
-	<nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+	<nav class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 			<div class="flex justify-between h-16">
 				<div class="flex">
 					<!-- Logo -->
 					<div class="flex-shrink-0 flex items-center">
 						<div class="flex items-center space-x-2">
-							<div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-								<span class="text-white font-bold">CM</span>
-							</div>
+							<img src="/favicon.png" alt="Cortex Memory" class="w-8 h-8 rounded-lg" />
 							<span class="text-xl font-bold text-gray-900 dark:text-white">
 								Cortex Memory Insights
 							</span>

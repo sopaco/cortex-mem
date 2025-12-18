@@ -16,16 +16,24 @@ use tracing_subscriber;
 
 mod handlers;
 mod models;
+mod optimization_handlers;
 
 use handlers::{
-    batch_delete_memories, batch_update_memories, create_memory, delete_memory, get_memory,
-    health_check, list_memories, search_memories, update_memory,
+
+    batch_delete_memories, batch_update_memories, create_memory, delete_memory, get_memory, health_check, list_memories, search_memories, update_memory, get_llm_status, llm_health_check,
+
+};
+use optimization_handlers::{
+    analyze_optimization, cancel_optimization, cleanup_history, get_optimization_history,
+    get_optimization_statistics, get_optimization_status, start_optimization,
+    OptimizationJobState,
 };
 
 /// Application state shared across handlers
 #[derive(Clone)]
 pub struct AppState {
     pub memory_manager: Arc<MemoryManager>,
+    pub optimization_jobs: Arc<tokio::sync::RwLock<std::collections::HashMap<String, OptimizationJobState>>>,
 }
 
 #[derive(Parser)]
@@ -53,6 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create application state
     let app_state = AppState {
         memory_manager: Arc::new(memory_manager),
+        optimization_jobs: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
     };
 
     // Build the application router
@@ -66,6 +75,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .route("/memories/batch/delete", post(batch_delete_memories))
         .route("/memories/batch/update", post(batch_update_memories))
+        // Optimization routes
+        .route("/optimization", post(start_optimization))
+        .route("/optimization/{job_id}", get(get_optimization_status))
+        .route("/optimization/{job_id}/cancel", post(cancel_optimization))
+        .route("/optimization/history", get(get_optimization_history))
+        .route("/optimization/analyze", post(analyze_optimization))
+        .route("/optimization/statistics", get(get_optimization_statistics))
+        .route("/optimization/cleanup", post(cleanup_history))
+        // LLM service status routes
+        .route("/llm/status", get(get_llm_status))
+        .route("/llm/health-check", get(llm_health_check))
         .layer(
             ServiceBuilder::new()
                 .layer(CorsLayer::permissive())

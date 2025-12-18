@@ -5,10 +5,19 @@ use axum::{
 };
 use chrono::Utc;
 use cortex_mem_core::types::{Filters, MemoryMetadata, MemoryType, Message};
+use std::time::Instant;
 
 use tracing::{error, info};
 
-use crate::{AppState, models::{CreateMemoryRequest, ErrorResponse, HealthResponse, ListMemoryQuery, ListResponse, MemoryMetadataResponse, MemoryResponse, ScoredMemoryResponse, SearchMemoryRequest, SearchResponse, SuccessResponse, UpdateMemoryRequest, BatchDeleteRequest, BatchUpdateRequest, BatchOperationResponse}};
+use crate::{
+    AppState,
+    models::{
+        BatchDeleteRequest, BatchOperationResponse, BatchUpdateRequest, CreateMemoryRequest,
+        ErrorResponse, HealthResponse, LLMHealthResponse, LLMStatusResponse, ListMemoryQuery,
+        ListResponse, MemoryMetadataResponse, MemoryResponse, ModelStatus, ScoredMemoryResponse,
+        SearchMemoryRequest, SearchResponse, SuccessResponse, UpdateMemoryRequest,
+    },
+};
 
 /// Health check endpoint
 pub async fn health_check(
@@ -455,9 +464,6 @@ pub async fn list_memories(
     }
 }
 
-
-
-
 /// Batch delete memories
 pub async fn batch_delete_memories(
     State(state): State<AppState>,
@@ -486,7 +492,10 @@ pub async fn batch_delete_memories(
         success_count,
         failure_count,
         errors,
-        message: format!("Batch delete completed: {} succeeded, {} failed", success_count, failure_count),
+        message: format!(
+            "Batch delete completed: {} succeeded, {} failed",
+            success_count, failure_count
+        ),
     };
 
     if failure_count > 0 {
@@ -512,7 +521,11 @@ pub async fn batch_update_memories(
     let mut errors = Vec::new();
 
     for update in &request.updates {
-        match state.memory_manager.update(&update.id, update.content.clone()).await {
+        match state
+            .memory_manager
+            .update(&update.id, update.content.clone())
+            .await
+        {
             Ok(()) => {
                 success_count += 1;
                 info!("Memory updated in batch: {}", update.id);
@@ -530,7 +543,10 @@ pub async fn batch_update_memories(
         success_count,
         failure_count,
         errors,
-        message: format!("Batch update completed: {} succeeded, {} failed", success_count, failure_count),
+        message: format!(
+            "Batch update completed: {} succeeded, {} failed",
+            success_count, failure_count
+        ),
     };
 
     if failure_count > 0 {
@@ -544,4 +560,115 @@ pub async fn batch_update_memories(
     } else {
         Ok(Json(response))
     }
+}
+
+/// Get detailed LLM service status including both completion and embedding models
+pub async fn get_llm_status(
+    State(state): State<AppState>,
+) -> Result<Json<LLMStatusResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let timestamp = Utc::now().to_rfc3339();
+
+    // Check completion model (text generation)
+    let completion_start = Instant::now();
+    let (completion_available, completion_error) = match state
+        .memory_manager
+        .llm_client()
+        .complete("只给我返回“health”单词，不要输出其他内容")
+        .await
+    {
+        Ok(_) => (true, None),
+        Err(e) => {
+            error!("Completion model health check failed: {}", e);
+            (false, Some(e.to_string()))
+        }
+    };
+    let completion_latency = completion_start.elapsed().as_millis() as u64;
+
+    // Check embedding model
+    let embedding_start = Instant::now();
+    let (embedding_available, embedding_error) = match state
+        .memory_manager
+        .llm_client()
+        .embed("health check")
+        .await
+    {
+        Ok(_) => (true, None),
+        Err(e) => {
+            error!("Embedding model health check failed: {}", e);
+            (false, Some(e.to_string()))
+        }
+    };
+    let embedding_latency = embedding_start.elapsed().as_millis() as u64;
+
+    let overall_healthy = completion_available && embedding_available;
+    let overall_status = if overall_healthy {
+        "healthy".to_string()
+    } else {
+        "unhealthy".to_string()
+    };
+
+    let response = LLMStatusResponse {
+        overall_status,
+        completion_model: ModelStatus {
+            available: completion_available,
+            provider: "openai".to_string(),
+            model_name: "cortex-memory-llm".to_string(), // TODO: Get actual model name from config
+            latency_ms: if completion_available {
+                Some(completion_latency)
+            } else {
+                None
+            },
+            error_message: completion_error,
+            last_check: timestamp.clone(),
+        },
+        embedding_model: ModelStatus {
+            available: embedding_available,
+            provider: "openai".to_string(),
+            model_name: "cortex-memory-embed".to_string(), // TODO: Get actual model name from config
+            latency_ms: if embedding_available {
+                Some(embedding_latency)
+            } else {
+                None
+            },
+            error_message: embedding_error,
+            last_check: timestamp.clone(),
+        },
+        timestamp,
+    };
+
+    Ok(Json(response))
+}
+
+/// Simple LLM health check endpoint
+pub async fn llm_health_check(
+    State(state): State<AppState>,
+) -> Result<Json<LLMHealthResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // Quick health check for both models
+    let (completion_available, embedding_available) = tokio::join!(
+        async {
+            match state
+                .memory_manager
+                .llm_client()
+                .complete("只给我返回“health”单词，不要输出其他内容")
+                .await
+            {
+                Ok(_) => true,
+                Err(_) => false,
+            }
+        },
+        async {
+            match state.memory_manager.llm_client().embed("Hi").await {
+                Ok(_) => true,
+                Err(_) => false,
+            }
+        }
+    );
+
+    let response = LLMHealthResponse {
+        completion_model_available: completion_available,
+        embedding_model_available: embedding_available,
+        timestamp: Utc::now().to_rfc3339(),
+    };
+
+    Ok(Json(response))
 }

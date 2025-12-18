@@ -176,10 +176,13 @@ impl OptimizationDetector {
                     continue;
                 }
 
-                // 计算语义相似度
-                let similarity = self
-                    .calculate_semantic_similarity(&memory_i.content, &memory_j.content)
-                    .await?;
+                // 使用已存储的embedding计算语义相似度（避免重复调用embed API）
+                let similarity = self.calculate_semantic_similarity_from_embeddings(
+                    &memory_i.embedding,
+                    &memory_j.embedding,
+                    &memory_i.content,
+                    &memory_j.content,
+                );
 
                 if similarity >= self.config.duplicate_threshold {
                     similar_memories.push(memory_j.clone());
@@ -495,26 +498,25 @@ impl OptimizationDetector {
         Ok(issues)
     }
 
-    /// 计算记忆的语义相似度
-    async fn calculate_semantic_similarity(&self, content1: &str, content2: &str) -> Result<f32> {
-        // 使用LLM客户端计算embedding并计算余弦相似度
-        let llm_client = self.memory_manager.llm_client();
-
-        // 获取两个内容的embedding
-        let embedding1 = llm_client.embed(content1).await?;
-        let embedding2 = llm_client.embed(content2).await?;
-
-        // 计算余弦相似度
-        let similarity = self.cosine_similarity(&embedding1, &embedding2);
+    /// 计算记忆的语义相似度（使用已存储的embedding）
+    fn calculate_semantic_similarity_from_embeddings(
+        &self, 
+        embedding1: &[f32], 
+        embedding2: &[f32],
+        content1_preview: &str,
+        content2_preview: &str,
+    ) -> f32 {
+        // 直接计算余弦相似度，无需重新生成embedding
+        let similarity = self.cosine_similarity(embedding1, embedding2);
 
         tracing::debug!(
             "语义相似度计算: {} vs {} = {:.3}",
-            content1.chars().take(50).collect::<String>(),
-            content2.chars().take(50).collect::<String>(),
+            content1_preview.chars().take(50).collect::<String>(),
+            content2_preview.chars().take(50).collect::<String>(),
             similarity
         );
 
-        Ok(similarity)
+        similarity
     }
 
     /// 计算余弦相似度

@@ -900,7 +900,7 @@
 						<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ID: {selectedMemoryId}</p>
 					</div>
 					<button
-						class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-150"
+						class="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-150"
 						on:click={hideContentModal}
 					>
 						<span class="text-2xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"

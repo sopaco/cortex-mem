@@ -1,31 +1,31 @@
 # Project Analysis Summary Report (Full Version)
 
-Generation Time: 2025-12-15 12:23:02 UTC
+Generation Time: 2025-12-18 03:35:17 UTC
 
 ## Execution Timing Statistics
 
-- **Total Execution Time**: 2553.79 seconds
-- **Preprocessing Phase**: 494.11 seconds (19.3%)
-- **Research Phase**: 890.04 seconds (34.9%)
-- **Document Generation Phase**: 1169.64 seconds (45.8%)
+- **Total Execution Time**: 1148.89 seconds
+- **Preprocessing Phase**: 228.35 seconds (19.9%)
+- **Research Phase**: 389.49 seconds (33.9%)
+- **Document Generation Phase**: 531.05 seconds (46.2%)
 - **Output Phase**: 0.00 seconds (0.0%)
-- **Summary Generation Time**: 0.001 seconds
+- **Summary Generation Time**: 0.002 seconds
 
 ## Cache Performance Statistics and Savings
 
 ### Performance Metrics
-- **Cache Hit Rate**: 84.6%
-- **Total Operations**: 188
-- **Cache Hits**: 159 times
-- **Cache Misses**: 29 times
-- **Cache Writes**: 30 times
+- **Cache Hit Rate**: 82.1%
+- **Total Operations**: 179
+- **Cache Hits**: 147 times
+- **Cache Misses**: 32 times
+- **Cache Writes**: 33 times
 
 ### Savings
-- **Inference Time Saved**: 938.3 seconds
-- **Tokens Saved**: 304880 input + 124954 output = 429834 total
-- **Estimated Cost Savings**: $0.2410
-- **Performance Improvement**: 84.6%
-- **Efficiency Improvement Ratio**: 0.4x (saved time / actual execution time)
+- **Inference Time Saved**: 831.1 seconds
+- **Tokens Saved**: 249575 input + 108543 output = 358118 total
+- **Estimated Cost Savings**: $0.2010
+- **Performance Improvement**: 82.1%
+- **Efficiency Improvement Ratio**: 0.7x (saved time / actual execution time)
 
 ## Core Research Data Summary
 
@@ -36,73 +36,77 @@ Provides core objectives, user roles, and system boundary information for the pr
 
 ```json
 {
-  "business_value": "Enables AI agents to maintain persistent, context-aware memory across interactions, improving continuity and intelligence of AI systems. Provides tools for memory optimization, analysis, and monitoring to ensure high-quality knowledge retention.",
+  "business_value": "Enables AI agents to maintain long-term context and knowledge across interactions, improving their effectiveness, consistency, and intelligence by providing reliable memory management capabilities with optimization, analysis, and visualization tools.",
   "confidence_score": 0.95,
   "external_systems": [
     {
-      "description": "Vector database used for storing and retrieving memory embeddings",
-      "interaction_type": "Data Storage",
+      "description": "Vector database used for storing and retrieving memories using semantic search",
+      "interaction_type": "Database Storage",
       "name": "Qdrant"
     },
     {
-      "description": "External language models used for generating embeddings and processing memory content",
+      "description": "External language model APIs used for processing and understanding memory content",
       "interaction_type": "API Integration",
       "name": "LLM Services"
     },
     {
-      "description": "Console-based user interface for interactive agent conversations",
+      "description": "Web browsers and other HTTP clients that interact with the insights dashboard",
       "interaction_type": "User Interface",
-      "name": "Terminal Interface"
+      "name": "HTTP Clients"
+    },
+    {
+      "description": "Terminal applications that use the CLI tools to interact with the memory system",
+      "interaction_type": "User Interface",
+      "name": "Command Line Interface"
     }
   ],
-  "project_description": "An intelligent memory management system that enables AI agents to store, retrieve, and optimize memories using vector databases and LLMs. The system provides multiple interfaces including CLI, HTTP service, MCP server, and web dashboard for comprehensive memory lifecycle management.",
+  "project_description": "A comprehensive memory management system for AI agents that provides persistent, searchable, and optimizable memory storage with advanced features like semantic search, deduplication, optimization, and analytics.",
   "project_name": "cortex-mem",
   "project_type": "FullStackApp",
   "system_boundary": {
     "excluded_components": [
       "Core LLM model training",
-      "Vector database implementation",
-      "Operating system level resources",
-      "Network infrastructure management"
+      "Vector embedding model development",
+      "Operating system level resource management",
+      "Network infrastructure provisioning"
     ],
     "included_components": [
-      "Memory storage and retrieval",
+      "Memory CRUD operations",
       "Semantic search with vector embeddings",
       "Memory optimization and deduplication",
-      "Web-based analytics dashboard",
-      "CLI interface for administration",
-      "HTTP API service",
-      "MCP protocol server",
+      "Analytics and visualization dashboard",
+      "REST API service",
+      "Command-line interface",
       "Evaluation framework"
     ],
-    "scope": "The cortex-mem system provides a complete platform for AI agent memory management, including storage, retrieval, optimization, and analysis capabilities."
+    "scope": "The cortex-mem system provides a complete memory management solution for AI agents, including storage, retrieval, optimization, and analysis capabilities."
   },
   "target_users": [
     {
-      "description": "Developers building AI agents that require persistent memory capabilities",
+      "description": "Software engineers building AI-powered applications that require persistent memory capabilities",
       "name": "AI Agent Developers",
       "needs": [
-        "Integrate memory storage into AI agents",
-        "Retrieve relevant context efficiently",
-        "Optimize memory quality and relevance"
+        "Integrate memory management into AI agents",
+        "Access memories through APIs and CLI",
+        "Monitor agent memory performance"
       ]
     },
     {
-      "description": "Operators managing memory infrastructure for AI systems",
+      "description": "Operations personnel managing AI agent infrastructure",
       "name": "System Administrators",
       "needs": [
-        "Monitor memory system health",
-        "Perform maintenance operations",
-        "Analyze memory usage patterns"
+        "Monitor system health and status",
+        "Optimize memory usage",
+        "Analyze memory patterns and trends"
       ]
     },
     {
-      "description": "Researchers evaluating memory system performance",
+      "description": "Researchers evaluating AI agent memory systems",
       "name": "Research Scientists",
       "needs": [
-        "Benchmark memory recall and effectiveness",
-        "Generate test datasets",
-        "Visualize evaluation metrics"
+        "Benchmark memory system performance",
+        "Evaluate recall and effectiveness",
+        "Generate test datasets for validation"
       ]
     }
   ]
@@ -114,146 +118,116 @@ Provides high-level domain division, module relationships, and core business pro
 
 ```json
 {
-  "architecture_summary": "The cortex-mem system follows a modular, service-oriented architecture with clear separation of concerns. It centers around a core memory management engine (cortex-mem-core) that provides fundamental capabilities for storing, retrieving, and optimizing memories using vector embeddings and LLMs. Multiple entry points and interfaces (CLI, HTTP service, MCP server, web dashboard) expose these capabilities to different user types. The system integrates with external services like Qdrant for vector storage and LLM providers for embedding generation, while maintaining a comprehensive evaluation framework for quality assurance.",
+  "architecture_summary": "The cortex-mem system follows a modular, layered architecture with clear separation of concerns. It centers around a core memory management engine (cortex-mem-core) that provides fundamental capabilities for storing, retrieving, and optimizing memories using vector databases and LLMs. This core is exposed through multiple interfaces: a REST API service (cortex-mem-service), a command-line interface (cortex-mem-cli), an MCP protocol adapter (cortex-mem-mcp), and various example applications. A comprehensive insights dashboard (cortex-mem-insights) provides visualization and analytics. The system includes a sophisticated evaluation framework for testing performance and effectiveness. Configuration is centrally managed and supports TOML-based external configuration files.",
   "business_flows": [
     {
-      "description": "Core process for creating, retrieving, updating, and deleting memory entries in the system",
-      "entry_point": "User initiates memory operation through CLI, API, or web interface",
+      "description": "Core process for creating, retrieving, updating, and deleting memories in the system",
+      "entry_point": "HTTP API endpoint /memories or CLI command 'add'",
       "importance": 9.5,
       "involved_domains_count": 4,
       "name": "Memory Management Process",
       "steps": [
         {
-          "code_entry_point": "cortex-mem-cli/src/main.rs",
-          "domain_module": "User Interface Domain",
-          "operation": "User issues memory command via CLI (e.g., add, search, delete)",
+          "code_entry_point": "cortex-mem-service/src/handlers.rs:create_memory or cortex-mem-cli/src/commands/add.rs",
+          "domain_module": "Memory Management Domain",
+          "operation": "Receive create memory request via API or CLI",
           "step": 1,
-          "sub_module": "Command Line Interface"
+          "sub_module": "Memory Operations"
         },
         {
-          "code_entry_point": "cortex-mem-config/src/lib.rs",
-          "domain_module": "Configuration Management Domain",
-          "operation": "System loads configuration including vector store and LLM settings",
+          "code_entry_point": "cortex-mem-core/src/llm/client.rs",
+          "domain_module": "Memory Storage Domain",
+          "operation": "Generate embeddings for memory content using LLM client",
           "step": 2,
-          "sub_module": "Config Loader"
-        },
-        {
-          "code_entry_point": "cortex-mem-core/src/memory/manager.rs",
-          "domain_module": "Memory Core Domain",
-          "operation": "MemoryManager orchestrates the operation, coordinating between vector store and LLM client",
-          "step": 3,
-          "sub_module": "Memory Manager"
+          "sub_module": "Vector Store Integration"
         },
         {
           "code_entry_point": "cortex-mem-core/src/vector_store/qdrant.rs",
-          "domain_module": "Storage Integration Domain",
-          "operation": "Data is stored/retrieved from Qdrant vector database using semantic search capabilities",
+          "domain_module": "Memory Storage Domain",
+          "operation": "Store memory with embeddings in Qdrant vector database",
+          "step": 3,
+          "sub_module": "Vector Store Integration"
+        },
+        {
+          "code_entry_point": "cortex-mem-core/src/memory/manager.rs",
+          "domain_module": "Memory Management Domain",
+          "operation": "Return success response with memory ID to client",
           "step": 4,
-          "sub_module": "Vector Store Adapter"
+          "sub_module": "Memory Lifecycle Management"
         }
       ]
     },
     {
-      "description": "Process for improving memory quality through deduplication, relevance filtering, and quality assessment",
-      "entry_point": "User triggers optimization via CLI optimize command or web dashboard",
+      "description": "Process for analyzing and improving the quality of stored memories through deduplication, relevance tuning, and quality enhancement",
+      "entry_point": "HTTP API endpoint /optimization/start or CLI command 'optimize'",
       "importance": 8.0,
       "involved_domains_count": 4,
       "name": "Memory Optimization Process",
       "steps": [
         {
-          "code_entry_point": "cortex-mem-cli/src/commands/optimize.rs",
-          "domain_module": "User Interface Domain",
-          "operation": "User selects optimization strategy and parameters through CLI or web UI",
+          "code_entry_point": "cortex-mem-service/src/optimization_handlers.rs:start_optimization or cortex-mem-cli/src/commands/optimize.rs",
+          "domain_module": "Optimization Domain",
+          "operation": "Receive optimization request with optional filters and strategy",
           "step": 1,
-          "sub_module": "Optimization Interface"
+          "sub_module": "Optimization Orchestration"
         },
         {
-          "code_entry_point": "cortex-mem-core/src/memory/optimization_analyzer.rs",
-          "domain_module": "Memory Core Domain",
-          "operation": "System analyzes existing memories to identify optimization opportunities",
+          "code_entry_point": "cortex-mem-core/src/memory/optimization_detector.rs",
+          "domain_module": "Memory Analysis Domain",
+          "operation": "Analyze existing memories to detect duplicates, low-quality entries, and relevance issues",
           "step": 2,
-          "sub_module": "Optimization Engine"
-        },
-        {
-          "code_entry_point": "cortex-mem-core/src/llm/client.rs",
-          "domain_module": "AI Processing Domain",
-          "operation": "LLM generates embeddings and assesses memory content for similarity and quality",
-          "step": 3,
-          "sub_module": "LLM Client"
+          "sub_module": "Memory Quality Assessment"
         },
         {
           "code_entry_point": "cortex-mem-core/src/memory/optimizer.rs",
-          "domain_module": "Memory Core Domain",
-          "operation": "System executes optimization plan, removing duplicates and low-quality memories",
+          "domain_module": "Optimization Domain",
+          "operation": "Execute optimization plan using LLM to improve memory quality and remove duplicates",
+          "step": 3,
+          "sub_module": "Optimization Execution"
+        },
+        {
+          "code_entry_point": "cortex-mem-core/src/memory/result_reporter.rs",
+          "domain_module": "Optimization Domain",
+          "operation": "Generate optimization report and return results to client",
           "step": 4,
-          "sub_module": "Optimizer"
+          "sub_module": "Optimization Reporting"
         }
       ]
     },
     {
-      "description": "Process for monitoring system health, performance metrics, and resource utilization",
-      "entry_point": "User accesses monitoring dashboard or checks system status endpoint",
-      "importance": 7.5,
+      "description": "Process for finding relevant memories based on semantic queries or metadata filters",
+      "entry_point": "HTTP API endpoint /memories/search or CLI command 'search'",
+      "importance": 9.0,
       "involved_domains_count": 3,
-      "name": "System Monitoring Process",
+      "name": "Memory Search Process",
       "steps": [
         {
-          "code_entry_point": "cortex-mem-insights/src/routes/monitor/+page.svelte",
-          "domain_module": "User Interface Domain",
-          "operation": "User navigates to system monitor page in web interface",
+          "code_entry_point": "cortex-mem-service/src/handlers.rs:search_memories or cortex-mem-cli/src/commands/search.rs",
+          "domain_module": "Memory Management Domain",
+          "operation": "Receive search request with query text and/or metadata filters",
           "step": 1,
-          "sub_module": "Monitoring Dashboard"
+          "sub_module": "Memory Operations"
         },
         {
-          "code_entry_point": "cortex-mem-insights/src/server/api/system.ts",
-          "domain_module": "Service Layer Domain",
-          "operation": "Backend API collects metrics from cortex-mem-service, Qdrant, and LLM services",
+          "code_entry_point": "cortex-mem-core/src/llm/client.rs",
+          "domain_module": "Memory Storage Domain",
+          "operation": "Generate embedding for query text using LLM client",
           "step": 2,
-          "sub_module": "System API"
+          "sub_module": "Vector Store Integration"
         },
         {
-          "code_entry_point": "cortex-mem-insights/src/lib/stores/system.ts",
-          "domain_module": "Integration Layer Domain",
-          "operation": "System performs health checks on dependent services and calculates derived metrics",
+          "code_entry_point": "cortex-mem-core/src/vector_store/qdrant.rs",
+          "domain_module": "Memory Storage Domain",
+          "operation": "Perform semantic search in Qdrant vector database using query embedding",
           "step": 3,
-          "sub_module": "External Service Monitor"
-        }
-      ]
-    },
-    {
-      "description": "Process for systematically evaluating memory system performance, effectiveness, and recall capabilities",
-      "entry_point": "Researcher runs evaluation script or accesses evaluation dashboard",
-      "importance": 8.5,
-      "involved_domains_count": 4,
-      "name": "Evaluation Framework Process",
-      "steps": [
-        {
-          "code_entry_point": "examples/cortex-mem-evaluation/src/dataset/generator.rs",
-          "domain_module": "Evaluation Domain",
-          "operation": "System generates or loads test dataset for evaluation",
-          "step": 1,
-          "sub_module": "Dataset Generator"
+          "sub_module": "Vector Store Integration"
         },
         {
-          "code_entry_point": "examples/cortex-mem-evaluation/src/runner/experiment_runner.rs",
-          "domain_module": "Evaluation Domain",
-          "operation": "Runner orchestrates evaluation workflow, executing tests against memory system",
-          "step": 2,
-          "sub_module": "Experiment Runner"
-        },
-        {
-          "code_entry_point": "examples/cortex-mem-evaluation/src/memory/mod.rs",
-          "domain_module": "Memory Core Domain",
-          "operation": "Memory system processes evaluation queries and operations",
-          "step": 3,
-          "sub_module": "Memory Manager"
-        },
-        {
-          "code_entry_point": "examples/cortex-mem-evaluation/src/evaluator/metrics.rs",
-          "domain_module": "Evaluation Domain",
-          "operation": "System calculates evaluation metrics (precision, recall, F1) and generates reports",
+          "code_entry_point": "cortex-mem-core/src/memory/manager.rs",
+          "domain_module": "Memory Management Domain",
+          "operation": "Apply metadata filters and return ranked list of matching memories",
           "step": 4,
-          "sub_module": "Metrics Analyzer"
+          "sub_module": "Memory Retrieval"
         }
       ]
     }
@@ -262,435 +236,88 @@ Provides high-level domain division, module relationships, and core business pro
   "domain_modules": [
     {
       "code_paths": [
-        "cortex-mem-core/src/",
-        "cortex-mem-core/Cargo.toml"
-      ],
-      "complexity": 8.5,
-      "description": "Core functionality for memory storage, retrieval, and management using vector embeddings and LLMs",
-      "domain_type": "Core Business Domain",
-      "importance": 9.0,
-      "name": "Memory Core Domain",
-      "sub_modules": [
-        {
-          "code_paths": [
-            "cortex-mem-core/src/memory/manager.rs"
-          ],
-          "description": "Central component that orchestrates all memory operations, coordinating between vector store and LLM client",
-          "importance": 9.5,
-          "key_functions": [
-            "Create new memories",
-            "Retrieve memories by ID",
-            "Search memories semantically",
-            "Update memory metadata",
-            "Delete memories"
-          ],
-          "name": "Memory Manager"
-        },
-        {
-          "code_paths": [
-            "cortex-mem-core/src/memory/optimization_analyzer.rs",
-            "cortex-mem-core/src/memory/optimizer.rs"
-          ],
-          "description": "System for improving memory quality through deduplication, relevance filtering, and quality assessment",
-          "importance": 8.0,
-          "key_functions": [
-            "Analyze memory quality",
-            "Detect duplicates",
-            "Generate optimization plans",
-            "Execute optimization strategies"
-          ],
-          "name": "Optimization Engine"
-        },
-        {
-          "code_paths": [
-            "cortex-mem-core/src/memory/classification.rs",
-            "cortex-mem-core/src/memory/importance.rs"
-          ],
-          "description": "Automated system for categorizing memories by type and importance",
-          "importance": 7.5,
-          "key_functions": [
-            "Classify memory type",
-            "Assess importance level",
-            "Extract topics and keywords",
-            "Determine memory relevance"
-          ],
-          "name": "Classification System"
-        }
-      ]
-    },
-    {
-      "code_paths": [
-        "cortex-mem-cli/",
-        "cortex-mem-insights/",
-        "examples/cortex-mem-tars/"
-      ],
-      "complexity": 7.0,
-      "description": "All user-facing interfaces and interaction points for the memory system",
-      "domain_type": "User Experience Domain",
-      "importance": 8.0,
-      "name": "User Interface Domain",
-      "sub_modules": [
-        {
-          "code_paths": [
-            "cortex-mem-cli/src/main.rs",
-            "cortex-mem-cli/src/commands/"
-          ],
-          "description": "Text-based interface for advanced users and automation scripts",
-          "importance": 8.5,
-          "key_functions": [
-            "Add memories via command line",
-            "Search memories with filters",
-            "List stored memories",
-            "Delete specific memories",
-            "Optimize memory collection"
-          ],
-          "name": "Command Line Interface"
-        },
-        {
-          "code_paths": [
-            "cortex-mem-insights/src/routes/",
-            "cortex-mem-insights/src/lib/stores/"
-          ],
-          "description": "Graphical interface for monitoring, analyzing, and managing memories",
-          "importance": 8.0,
-          "key_functions": [
-            "Visualize memory statistics",
-            "Monitor system health",
-            "Perform batch operations",
-            "View optimization history",
-            "Explore memory relationships"
-          ],
-          "name": "Web Dashboard"
-        },
-        {
-          "code_paths": [
-            "cortex-mem-insights/src/routes/optimization/+page.svelte",
-            "cortex-mem-cli/src/commands/optimize.rs"
-          ],
-          "description": "Specialized interface for configuring and executing memory optimization tasks",
-          "importance": 7.5,
-          "key_functions": [
-            "Select optimization strategy",
-            "Preview optimization impact",
-            "Execute optimization jobs",
-            "Monitor optimization progress",
-            "Review optimization results"
-          ],
-          "name": "Optimization Interface"
-        }
-      ]
-    },
-    {
-      "code_paths": [
-        "cortex-mem-service/",
-        "cortex-mem-mcp/",
-        "cortex-mem-insights/src/server/"
-      ],
-      "complexity": 7.5,
-      "description": "APIs and services that expose memory functionality to external systems",
-      "domain_type": "Infrastructure Domain",
-      "importance": 8.5,
-      "name": "Service Layer Domain",
-      "sub_modules": [
-        {
-          "code_paths": [
-            "cortex-mem-service/src/main.rs",
-            "cortex-mem-service/src/handlers.rs"
-          ],
-          "description": "RESTful interface for programmatic access to memory functions",
-          "importance": 8.5,
-          "key_functions": [
-            "Handle HTTP requests for CRUD operations",
-            "Implement authentication and authorization",
-            "Provide JSON responses",
-            "Support CORS for web clients",
-            "Serve health check endpoints"
-          ],
-          "name": "HTTP API Service"
-        },
-        {
-          "code_paths": [
-            "cortex-mem-mcp/src/main.rs",
-            "cortex-mem-mcp/src/lib.rs"
-          ],
-          "description": "Protocol server for AI agent memory control using MCP standard",
-          "importance": 7.5,
-          "key_functions": [
-            "Handle MCP tool calls",
-            "Translate MCP requests to memory operations",
-            "Serve agent-specific memory endpoints",
-            "Maintain session state for agents"
-          ],
-          "name": "MCP Server"
-        },
-        {
-          "code_paths": [
-            "cortex-mem-insights/src/server/api/",
-            "cortex-mem-insights/src/lib/api/client.ts"
-          ],
-          "description": "Internal API layer that aggregates data from multiple sources for the web dashboard",
-          "importance": 8.0,
-          "key_functions": [
-            "Aggregate metrics from multiple services",
-            "Transform data for frontend consumption",
-            "Cache frequently accessed data",
-            "Handle error fallbacks gracefully"
-          ],
-          "name": "System API"
-        }
-      ]
-    },
-    {
-      "code_paths": [
-        "cortex-mem-config/",
-        "config.toml",
-        "examples/cortex-mem-evaluation/config/"
-      ],
-      "complexity": 6.0,
-      "description": "System for managing application configuration across different environments",
-      "domain_type": "Infrastructure Domain",
-      "importance": 7.0,
-      "name": "Configuration Management Domain",
-      "sub_modules": [
-        {
-          "code_paths": [
-            "cortex-mem-config/src/lib.rs"
-          ],
-          "description": "Component responsible for loading and parsing configuration files",
-          "importance": 7.0,
-          "key_functions": [
-            "Load TOML configuration files",
-            "Validate configuration structure",
-            "Provide default values",
-            "Expose config to other components"
-          ],
-          "name": "Config Loader"
-        },
-        {
-          "code_paths": [
-            "cortex-mem-config/src/lib.rs",
-            "examples/cortex-mem-evaluation/config/"
-          ],
-          "description": "Management of environment-specific settings and secrets",
-          "importance": 6.5,
-          "key_functions": [
-            "Handle multiple config sources",
-            "Support environment variable overrides",
-            "Manage sensitive credentials",
-            "Validate config integrity"
-          ],
-          "name": "Environment Configuration"
-        }
-      ]
-    },
-    {
-      "code_paths": [
-        "cortex-mem-core/src/vector_store/"
-      ],
-      "complexity": 7.5,
-      "description": "Components that handle persistence and retrieval of data from external storage systems",
-      "domain_type": "Infrastructure Domain",
-      "importance": 8.0,
-      "name": "Storage Integration Domain",
-      "sub_modules": [
-        {
-          "code_paths": [
-            "cortex-mem-core/src/vector_store/qdrant.rs"
-          ],
-          "description": "Interface between application logic and vector database",
-          "importance": 8.5,
-          "key_functions": [
-            "Store embeddings in vector database",
-            "Perform semantic similarity searches",
-            "Manage vector database connections",
-            "Handle vector-specific query operations"
-          ],
-          "name": "Vector Store Adapter"
-        },
-        {
-          "code_paths": [
-            "cortex-mem-core/src/vector_store/qdrant.rs"
-          ],
-          "description": "Specific implementation for Qdrant vector database",
-          "importance": 8.0,
-          "key_functions": [
-            "Connect to Qdrant cluster",
-            "Create and manage collections",
-            "Upsert vectors with metadata",
-            "Query vectors by similarity"
-          ],
-          "name": "Qdrant Integration"
-        }
-      ]
-    },
-    {
-      "code_paths": [
-        "cortex-mem-core/src/llm/",
-        "cortex-mem-core/src/memory/extractor.rs"
+        "cortex-mem-core/src/memory/manager.rs",
+        "cortex-mem-core/src/memory/updater.rs",
+        "cortex-mem-core/src/memory/classification.rs",
+        "cortex-mem-core/src/memory/importance.rs"
       ],
       "complexity": 8.0,
-      "description": "Components that leverage AI models for processing memory content",
+      "description": "Core domain responsible for managing the lifecycle of memories including creation, retrieval, update, deletion, and basic operations. This domain provides the primary interface for interacting with stored memories and handles the orchestration of memory-related operations.",
       "domain_type": "Core Business Domain",
-      "importance": 8.0,
-      "name": "AI Processing Domain",
+      "importance": 9.5,
+      "name": "Memory Management Domain",
       "sub_modules": [
         {
           "code_paths": [
-            "cortex-mem-core/src/llm/client.rs"
+            "cortex-mem-core/src/memory/manager.rs",
+            "cortex-mem-service/src/handlers.rs",
+            "cortex-mem-cli/src/commands/*.rs"
           ],
-          "description": "Interface to external language models for generating embeddings and processing text",
+          "description": "Handles CRUD operations for memories and basic manipulation functions",
+          "importance": 9.0,
+          "key_functions": [
+            "Create memory",
+            "Retrieve memory by ID",
+            "Update memory",
+            "Delete memory",
+            "List memories with filtering"
+          ],
+          "name": "Memory Operations"
+        },
+        {
+          "code_paths": [
+            "cortex-mem-core/src/memory/manager.rs",
+            "cortex-mem-core/src/memory/updater.rs"
+          ],
+          "description": "Manages the full lifecycle of memories from creation to archival or deletion",
           "importance": 8.5,
           "key_functions": [
-            "Generate text embeddings",
-            "Process natural language queries",
-            "Extract structured information",
-            "Classify text content"
+            "Memory versioning",
+            "Status tracking",
+            "Archival policies",
+            "Batch operations"
           ],
-          "name": "LLM Client"
+          "name": "Memory Lifecycle Management"
         },
         {
           "code_paths": [
-            "cortex-mem-core/src/memory/extractor.rs"
+            "cortex-mem-core/src/memory/manager.rs",
+            "cortex-mem-service/src/handlers.rs"
           ],
-          "description": "System for extracting key information from memory content",
-          "importance": 7.5,
+          "description": "Specialized functionality for retrieving memories based on various criteria",
+          "importance": 9.0,
           "key_functions": [
-            "Extract topics and keywords",
-            "Identify entities and relationships",
-            "Summarize content",
-            "Detect sentiment and tone"
+            "Get memory by ID",
+            "List memories with pagination",
+            "Filter by metadata",
+            "Batch retrieval"
           ],
-          "name": "Content Extractor"
-        }
-      ]
-    },
-    {
-      "code_paths": [
-        "examples/cortex-mem-evaluation/"
-      ],
-      "complexity": 8.5,
-      "description": "Framework for testing, benchmarking, and validating memory system performance",
-      "domain_type": "Quality Assurance Domain",
-      "importance": 8.0,
-      "name": "Evaluation Domain",
-      "sub_modules": [
-        {
-          "code_paths": [
-            "examples/cortex-mem-evaluation/src/dataset/generator.rs",
-            "examples/cortex-mem-evaluation/src/dataset/lab_data_integration.rs"
-          ],
-          "description": "Tool for creating synthetic and real-world test datasets",
-          "importance": 8.0,
-          "key_functions": [
-            "Generate random test data",
-            "Integrate real laboratory data",
-            "Create recall test cases",
-            "Produce effectiveness test scenarios"
-          ],
-          "name": "Dataset Generator"
-        },
-        {
-          "code_paths": [
-            "examples/cortex-mem-evaluation/src/runner/experiment_runner.rs"
-          ],
-          "description": "Orchestrator for running comprehensive evaluation experiments",
-          "importance": 8.5,
-          "key_functions": [
-            "Load test datasets",
-            "Execute evaluation workflows",
-            "Coordinate multiple evaluators",
-            "Generate detailed reports"
-          ],
-          "name": "Experiment Runner"
-        },
-        {
-          "code_paths": [
-            "examples/cortex-mem-evaluation/src/evaluator/metrics.rs",
-            "examples/cortex-mem-evaluation/src/report/visualizer.rs"
-          ],
-          "description": "System for calculating and interpreting evaluation results",
-          "importance": 8.0,
-          "key_functions": [
-            "Calculate precision and recall",
-            "Compute F1 scores",
-            "Analyze latency and throughput",
-            "Generate visualization data"
-          ],
-          "name": "Metrics Analyzer"
+          "name": "Memory Retrieval"
         }
       ]
     }
   ],
   "domain_relations": [
     {
-      "description": "User interfaces call service layer APIs to perform memory operations and retrieve system status",
-      "from_domain": "User Interface Domain",
+      "description": "Memory Management Domain depends on Memory Storage Domain to persist and retrieve memories from the vector database. The manager components call into vector store implementations to perform actual storage operations.",
+      "from_domain": "Memory Management Domain",
+      "relation_type": "Service Dependency",
+      "strength": 9.5,
+      "to_domain": "Memory Storage Domain"
+    },
+    {
+      "description": "Optimization processes require access to managed memories through the Memory Management Domain's APIs to analyze and modify existing memory entries.",
+      "from_domain": "Optimization Domain",
       "relation_type": "Service Call",
-      "strength": 9.0,
-      "to_domain": "Service Layer Domain"
+      "strength": 8.5,
+      "to_domain": "Memory Management Domain"
     },
     {
-      "description": "Some interfaces directly use core memory components, particularly in example applications",
-      "from_domain": "User Interface Domain",
-      "relation_type": "Direct Usage",
-      "strength": 7.0,
-      "to_domain": "Memory Core Domain"
-    },
-    {
-      "description": "All service implementations depend on the memory core domain for business logic execution",
-      "from_domain": "Service Layer Domain",
-      "relation_type": "Service Call",
-      "strength": 10.0,
-      "to_domain": "Memory Core Domain"
-    },
-    {
-      "description": "Services may directly interact with storage components for certain operations",
-      "from_domain": "Service Layer Domain",
+      "description": "The insights dashboard needs to retrieve memory data from the Memory Management Domain to display in visualizations and analytics views.",
+      "from_domain": "Insights & Analytics Domain",
       "relation_type": "Data Dependency",
       "strength": 8.0,
-      "to_domain": "Storage Integration Domain"
-    },
-    {
-      "description": "Memory core components directly compose storage integration components to persist data",
-      "from_domain": "Memory Core Domain",
-      "relation_type": "Composition",
-      "strength": 9.5,
-      "to_domain": "Storage Integration Domain"
-    },
-    {
-      "description": "Core memory operations require AI processing for embedding generation and content analysis",
-      "from_domain": "Memory Core Domain",
-      "relation_type": "Service Call",
-      "strength": 9.0,
-      "to_domain": "AI Processing Domain"
-    },
-    {
-      "description": "Evaluation framework tests the memory core domain's functionality and performance",
-      "from_domain": "Evaluation Domain",
-      "relation_type": "Testing Dependency",
-      "strength": 8.5,
-      "to_domain": "Memory Core Domain"
-    },
-    {
-      "description": "Interfaces depend on configuration for connection settings and behavior",
-      "from_domain": "User Interface Domain",
-      "relation_type": "Configuration Dependency",
-      "strength": 7.0,
-      "to_domain": "Configuration Management Domain"
-    },
-    {
-      "description": "Services require configuration for ports, security, and upstream dependencies",
-      "from_domain": "Service Layer Domain",
-      "relation_type": "Configuration Dependency",
-      "strength": 8.0,
-      "to_domain": "Configuration Management Domain"
-    },
-    {
-      "description": "Core memory system depends heavily on configuration for vector store and LLM settings",
-      "from_domain": "Memory Core Domain",
-      "relation_type": "Configuration Dependency",
-      "strength": 9.0,
-      "to_domain": "Configuration Management Domain"
+      "to_domain": "Memory Management Domain"
     }
   ]
 }
@@ -702,25 +329,20 @@ Contains static analysis results of the codebase and business process analysis.
 ```json
 {
   "main_workflow": {
-    "description": "The core workflow of the system revolves around managing AI agent memories through a comprehensive lifecycle of creation, retrieval, optimization, and analysis. Users interact with the system via multiple interfaces (CLI, HTTP API, MCP server, or web dashboard) to store contextual information as memories. When a memory is created, the system uses an LLM client to generate embeddings which are stored in a Qdrant vector database along with metadata. These memories can later be retrieved through semantic search queries or filtered lookups based on user, agent, type, or keywords. The MemoryManager component orchestrates these operations by coordinating between the vector store for data persistence and the LLM client for content processing. This workflow enables AI agents to maintain context across interactions, improving their intelligence and continuity.",
-    "flowchart_mermaid": "graph TD\n    A[User/Agent] --> B{Choose Interface}\n    B --> C[CLI]\n    B --> D[HTTP API]\n    B --> E[MCP Server]\n    B --> F[Web Dashboard]\n    C --> G[MemoryManager]\n    D --> G\n    E --> G\n    F --> G\n    G --> H[LLM Client]\n    G --> I[Qdrant Vector Store]\n    H -->|Generate Embeddings| J[Create Memory]\n    I -->|Store/Retrieve Vectors| J\n    J --> K[Semantic Search]\n    K --> L[Return Relevant Memories]\n    L --> M[AI Agent Response]",
+    "description": "The core workflow for creating, retrieving, updating, and deleting memories in the system. This process begins with a user or application initiating a memory operation through either the HTTP API endpoint or CLI command. The system then processes the request by generating embeddings for the memory content using an LLM client, storing the memory with its embeddings in the Qdrant vector database, and returning a success response with the memory ID to the client.",
+    "flowchart_mermaid": "graph TD\n    A[User/Application] --> B{Initiate Memory Operation}\n    B --> C[HTTP API / CLI Command]\n    C --> D[Process Request]\n    D --> E[Generate Embeddings via LLM Client]\n    E --> F[Store in Qdrant Vector Database]\n    F --> G[Return Success Response with Memory ID]\n    G --> A",
     "name": "Memory Management Process"
   },
   "other_important_workflows": [
     {
-      "description": "This workflow focuses on maintaining high-quality memory storage by identifying and addressing issues like duplication, irrelevance, and low quality. Users can initiate optimization through CLI commands or the web dashboard, selecting strategies such as deduplication, relevance filtering, or quality assessment. The system analyzes existing memories using the Optimization Engine, which leverages LLM capabilities to compare content similarity and assess importance levels. It generates an optimization plan that identifies candidates for removal or consolidation. Before execution, users can preview the impact through a dry-run mode. The actual optimization is performed by the Optimizer component, which safely removes redundant entries while preserving valuable knowledge. This process ensures efficient storage utilization and improves retrieval accuracy over time.",
-      "flowchart_mermaid": "graph TD\n    A[User] --> B{Initiate Optimization}\n    B --> C[Select Strategy]\n    C --> D[Deduplication]\n    C --> E[Relevance Filter]\n    C --> F[Quality Assessment]\n    D --> G[Optimization Analyzer]\n    E --> G\n    F --> G\n    G --> H[LLM Client]\n    H -->|Compare Content Similarity| I[Identify Duplicates]\n    G -->|Assess Importance| J[Flag Low-Quality]\n    I --> K[Generate Plan]\n    J --> K\n    K --> L[Preview Impact]\n    L --> M{Confirm Execution?}\n    M -->|Yes| N[Optimizer]\n    M -->|No| O[Cancel]\n    N --> P[Update Memory Store]\n    P --> Q[Report Results]",
+      "description": "A critical workflow for analyzing and improving the quality of stored memories through deduplication, relevance tuning, and quality enhancement. This process starts when a user or system initiates an optimization request with optional filters and strategy parameters. The system analyzes existing memories to detect issues like duplicates and low-quality entries, executes an optimization plan using LLMs to improve memory quality, and generates a comprehensive report of the optimization results.",
+      "flowchart_mermaid": "graph TD\n    A[User/System] --> B{Initiate Optimization}\n    B --> C[Send Optimization Request with Filters]\n    C --> D[Analyze Memories for Issues]\n    D --> E[Detect Duplicates & Quality Problems]\n    E --> F[Execute Optimization Plan via LLM]\n    F --> G[Generate Optimization Report]\n    G --> A",
       "name": "Memory Optimization Process"
     },
     {
-      "description": "This workflow provides visibility into the health and performance of the entire memory management system. Through the web-based monitoring dashboard, users can view real-time metrics about service status, resource utilization, and operational performance. The system performs health checks on critical components including the cortex-mem-service, Qdrant vector database, and connected LLM services. It collects metrics on memory usage, CPU load, network latency, and request throughput. The monitoring system employs fallback detection methods to ensure reliability even when some services are degraded. Users can view historical trends, set up alerts, and access detailed logs to troubleshoot issues. This proactive monitoring helps maintain system stability and quickly identify potential bottlenecks.",
-      "flowchart_mermaid": "graph TD\n    A[Monitoring Dashboard] --> B[Check Service Health]\n    B --> C[cortex-mem-service]\n    B --> D[Qdrant DB]\n    B --> E[LLM Service]\n    C --> F{Service Responsive?}\n    D --> F\n    E --> F\n    F -->|Yes| G[Collect Metrics]\n    F -->|No| H[Trigger Alert]\n    G --> I[Memory Usage]\n    G --> J[CPU Load]\n    G --> K[Network Latency]\n    G --> L[Request Throughput]\n    I --> M[Visualize Dashboard]\n    J --> M\n    K --> M\n    L --> M\n    H --> N[Notify Admin]\n    M --> O[User Action]",
-      "name": "System Monitoring Process"
-    },
-    {
-      "description": "This workflow enables systematic assessment of the memory system's effectiveness, recall capability, and performance characteristics. Researchers or developers can run evaluations using either synthetic datasets or real-world data integrated from laboratory sources. The Experiment Runner orchestrates the evaluation process by loading test cases, executing them against the memory system, and collecting results. Different evaluators focus on specific aspects: Recall Evaluator measures precision and recall metrics, Effectiveness Evaluator assesses fact extraction and classification accuracy, while Performance Evaluator benchmarks latency and throughput. The framework supports both isolated testing and comprehensive experiments combining multiple evaluation types. After execution, it generates detailed reports with metrics like F1 score, MAP, and NDCG, helping stakeholders understand system capabilities and identify areas for improvement.",
-      "flowchart_mermaid": "graph TD\n    A[Researcher] --> B[Start Evaluation]\n    B --> C{Choose Dataset}\n    C --> D[Synthetic Data]\n    C --> E[Real Laboratory Data]\n    D --> F[Dataset Generator]\n    E --> F\n    F --> G[Test Cases]\n    G --> H[Experiment Runner]\n    H --> I[Recall Evaluator]\n    H --> J[Effectiveness Evaluator]\n    H --> K[Performance Evaluator]\n    I -->|Precision, Recall, F1| L[Metric Collection]\n    J -->|Fact Extraction, Classification| L\n    K -->|Latency, Throughput| L\n    L --> M[Generate Report]\n    M --> N[JSON Results]\n    M --> O[Markdown Summary]\n    M --> P[Visualization Data]\n    N --> Q[Analysis]\n    O --> Q\n    P --> Q",
-      "name": "Evaluation Framework Process"
+      "description": "The primary workflow for finding relevant memories based on semantic queries or metadata filters. This process begins when a user or application sends a search request containing query text and/or metadata filters. The system generates an embedding for the query text using an LLM client, performs a semantic search in the Qdrant vector database using the query embedding, applies additional metadata filters, and returns a ranked list of matching memories to the client.",
+      "flowchart_mermaid": "graph TD\n    A[User/Application] --> B{Initiate Search}\n    B --> C[Send Search Request with Query]\n    C --> D[Generate Query Embedding via LLM]\n    D --> E[Semantic Search in Qdrant DB]\n    E --> F[Apply Metadata Filters]\n    F --> G[Return Ranked Matching Memories]\n    G --> A",
+      "name": "Memory Search Process"
     }
   ]
 }
@@ -1007,25 +629,24 @@ Code analysis results from preprocessing phase, including definitions of functio
   {
     "code_dossier": {
       "code_purpose": "entry",
-      "description": "Main entry point for the Elysia.js server application. Sets up CORS, health check endpoint, registers API route modules, handles errors, and starts the server when run directly.",
+      "description": "Project execution entry point for the cortex-mem-insights API server. Initializes and configures the Elysia framework with CORS, routes, and error handling, then starts the HTTP server.",
       "file_path": "cortex-mem-insights/src/server/index.ts",
       "functions": [
-        "Server startup condition check",
-        "Error handling via onError",
-        "Health check endpoint"
+        "app.listen",
+        "app.onError"
       ],
       "importance_score": 1.0,
       "interfaces": [
-        "App (type export)"
+        "App"
       ],
       "name": "index.ts",
-      "source_summary": "import { Elysia } from 'elysia';\nimport { cors } from '@elysiajs/cors';\nimport { memoryRoutes } from './api/memory';\nimport { optimizationRoutes } from './api/optimization';\nimport { systemRoutes } from './api/system';\n\n// 创建Elysia应用\nconst app = new Elysia()\n  .use(cors({\n    origin: ['http://localhost:5173', 'http://localhost:3000'],\n    credentials: true,\n    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],\n    allowedHeaders: ['Content-Type', 'Authorization']\n  }))\n  .get('/health', () => ({\n    status: 'healthy',\n    timestamp: new Date().toISOString(),\n    service: 'cortex-mem-insights-api'\n  }))\n  .use(memoryRoutes)\n  .use(optimizationRoutes)\n  .use(systemRoutes)\n  .onError(({ code, error }) => {\n    console.error(`API Error [${code}]:`, error);\n    return {\n      error: error.message,\n      code,\n      timestamp: new Date().toISOString()\n    };\n  });\n\n// 导出类型化的Elysia实例\nexport type App = typeof app;\n\n// 启动服务器（仅在直接运行时）\nif (import.meta.url === `file://${process.argv[1]}`) {\n  const port = process.env.PORT ? parseInt(process.env.PORT) : 3001;\n  app.listen(port, () => {\n    console.log(`🚀 cortex-mem-insights API 运行在 http://localhost:${port}`);\n  });\n}\n\nexport { app };"
+      "source_summary": "import { Elysia } from 'elysia';\nimport { cors } from '@elysiajs/cors';\nimport { memoryRoutes } from './api/memory';\nimport { optimizationRoutes } from './api/optimization';\nimport { systemRoutes } from './api/system';\n\n// 创建Elysia应用\nconst app = new Elysia()\n  .use(cors({\n    origin: ['http://localhost:5173', 'http://localhost:3000'],\n    credentials: true,\n    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],\n    allowedHeaders: ['Content-Type', 'Authorization']\n  }))\n  .get('/health', () => ({\n    status: 'healthy',\n    timestamp: new Date().toISOString(),\n    service: 'cortex-mem-insights-api'\n  }))\n  .use(memoryRoutes)\n  .use(optimizationRoutes)\n  .use(systemRoutes)\n  .onError(({ code, error }) => {\n    console.error(`API Error [${code}]:`, error);\n    return {\n      error: error.message,\n      code,\n      timestamp: new Date().toISOString()\n    };\n  });\n\n// 导出类型化的Elysia实例\nexport type App = typeof app;\n\n// 启动服务器（仅在直接运行时）\nif (import.meta.url === `file://${process.argv[1]}`) {\n  const port = process.env.PORT ? parseInt(process.env.PORT) : 15173;\n  app.listen(port, () => {\n    console.log(`🚀 cortex-mem-insights API 运行在 http://localhost:${port}`);\n  });\n}\n\nexport { app };"
     },
     "complexity_metrics": {
       "cyclomatic_complexity": 2.0,
       "lines_of_code": 43,
       "number_of_classes": 0,
-      "number_of_functions": 0
+      "number_of_functions": 2
     },
     "dependencies": [
       {
@@ -1037,7 +658,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "module",
+        "dependency_type": "plugin",
         "is_external": true,
         "line_number": 2,
         "name": "@elysiajs/cors",
@@ -1069,10 +690,10 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       }
     ],
-    "detailed_description": "This file serves as the main entry point for the 'cortex-mem-insights' backend server built with Elysia.js, a TypeScript-based framework. It initializes the application by creating an Elysia instance, applying CORS middleware to allow cross-origin requests from specific development origins (localhost:5173 and localhost:3000), and defining a simple health check endpoint at '/health' that returns service status and metadata. The core functionality is modularized through the registration of three route modules: memoryRoutes, optimizationRoutes, and systemRoutes, which are imported from dedicated API directories. An error handler is attached using .onError to log errors server-side and return structured error responses. The server only starts listening on a specified or default port (3001) when this file is executed directly (via command line), allowing it to be both runnable and importable as a module. A typed App instance is exported to support type-safe integration in testing or extended configurations.",
+    "detailed_description": "This component serves as the main entry point for the backend API server built using the Elysia framework. It sets up the core application instance with CORS middleware to allow cross-origin requests from specific development origins. The server defines a health check endpoint for monitoring and integrates modular route handlers for memory, optimization, and system-related functionalities. Centralized error handling is implemented to log errors and return structured error responses. The server only starts listening when the file is executed directly, enabling reuse of the app instance in testing or other contexts. A typed export (App) is provided for type safety in TypeScript applications.",
     "interfaces": [
       {
-        "description": "Exports the type of the Elysia application instance for use in type-safe integrations, such as testing or plugin extensions.",
+        "description": "Exported type definition for the Elysia application instance, enabling type-safe usage in other modules",
         "interface_type": "type",
         "name": "App",
         "parameters": [],
@@ -1081,11 +702,11 @@ Code analysis results from preprocessing phase, including definitions of functio
       }
     ],
     "responsibilities": [
-      "Initialize and configure the Elysia.js application server",
-      "Register global middleware (CORS) with secure and appropriate policies",
-      "Aggregate and mount modular API route handlers for memory, optimization, and system features",
-      "Provide a health check endpoint for service monitoring and liveness probing",
-      "Handle and log uncaught application errors with structured responses"
+      "Initialize and configure the Elysia server instance with essential middleware",
+      "Register API routes for memory, optimization, and system modules",
+      "Provide a health check endpoint for service availability monitoring",
+      "Implement centralized error handling for consistent API error responses",
+      "Start the HTTP server when executed directly as the main entry point"
     ]
   },
   {
@@ -1577,7 +1198,7 @@ Code analysis results from preprocessing phase, including definitions of functio
   {
     "code_dossier": {
       "code_purpose": "entry",
-      "description": "Project execution entry point for the Cortex Memory Service, responsible for initializing the application, loading configuration, creating the memory manager, and starting the HTTP server.",
+      "description": "Project execution entry point for the Cortex Memory Service, responsible for initializing the application, setting up the HTTP server with Axum, parsing command-line arguments, loading configuration, creating the memory manager, and routing requests to appropriate handlers.",
       "file_path": "cortex-mem-service/src/main.rs",
       "functions": [
         "main",
@@ -1586,16 +1207,14 @@ Code analysis results from preprocessing phase, including definitions of functio
       "importance_score": 1.0,
       "interfaces": [
         "AppState",
-        "Cli",
-        "main",
-        "create_memory_manager"
+        "Cli"
       ],
       "name": "main.rs",
-      "source_summary": "use axum::{\n    Router,\n    routing::{get, post},\n};\nuse clap::Parser;\nuse cortex_mem_core::{\n    config::Config, llm::create_llm_client, memory::MemoryManager,\n    vector_store::qdrant::QdrantVectorStore,\n};\nuse std::{path::PathBuf, sync::Arc};\nuse tokio::net::TcpListener;\nuse tower::ServiceBuilder;\nuse tower_http::cors::CorsLayer;\nuse tracing::info;\nuse tracing_subscriber;\n\nmod handlers;\nmod models;\n\nuse handlers::{\n    batch_delete_memories, batch_update_memories, create_memory, delete_memory, get_memory,\n    health_check, list_memories, search_memories, update_memory,\n};\n\n/// Application state shared across handlers\n#[derive(Clone)]\npub struct AppState {\n    pub memory_manager: Arc<MemoryManager>,\n}\n\n#[derive(Parser)]\n#[command(name = \"cortex-mem-service\")]\n#[command(about = \"Rust Agent Memory System HTTP Service\")]\nstruct Cli {\n    /// Path to the configuration file\n    #[arg(short, long, default_value = \"config.toml\")]\n    config: PathBuf,\n}\n\n#[tokio::main]\nasync fn main() -> Result<(), Box<dyn std::error::Error>> {\n    // Initialize tracing\n    tracing_subscriber::fmt::init();\n\n    let cli = Cli::parse();\n\n    // Load configuration\n    let config = Config::load(&cli.config)?;\n\n    // Create memory manager\n    let memory_manager = create_memory_manager(&config).await?;\n\n    // Create application state\n    let app_state = AppState {\n        memory_manager: Arc::new(memory_manager),\n    };\n\n    // Build the application router\n    let app = Router::new()\n        .route(\"/health\", get(health_check))\n        .route(\"/memories\", post(create_memory).get(list_memories))\n        .route(\"/memories/search\", post(search_memories))\n        .route(\n            \"/memories/{id}\",\n            get(get_memory).put(update_memory).delete(delete_memory),\n        )\n        .route(\"/memories/batch/delete\", post(batch_delete_memories))\n        .route(\"/memories/batch/update\", post(batch_update_memories))\n        .layer(\n            ServiceBuilder::new()\n                .layer(CorsLayer::permissive())\n                .into_inner(),\n        )\n        .with_state(app_state);\n\n    // Start the server\n    let addr = format!(\"{}:{}\", config.server.host, config.server.port);\n\n    info!(\"Starting cortex-mem-service on {}\", addr);\n\n    let listener = TcpListener::bind(&addr).await?;\n    axum::serve(listener, app).await?;\n\n    Ok(())\n}\n\nasync fn create_memory_manager(\n    config: &Config,\n) -> Result<MemoryManager, Box<dyn std::error::Error>> {\n    // Create vector store\n    let vector_store = QdrantVectorStore::new(&config.qdrant).await?;\n\n    // Create LLM client\n    let llm_client = create_llm_client(&config.llm, &config.embedding)?;\n\n    // Create memory manager\n    let memory_manager =\n        MemoryManager::new(Box::new(vector_store), llm_client, config.memory.clone());\n\n    info!(\"Memory manager initialized successfully\");\n    Ok(memory_manager)\n}\n"
+      "source_summary": "use axum::{\n    Router,\n    routing::{get, post},\n};\nuse clap::Parser;\nuse cortex_mem_core::{\n    config::Config, llm::create_llm_client, memory::MemoryManager,\n    vector_store::qdrant::QdrantVectorStore,\n};\nuse std::{path::PathBuf, sync::Arc};\nuse tokio::net::TcpListener;\nuse tower::ServiceBuilder;\nuse tower_http::cors::CorsLayer;\nuse tracing::info;\nuse tracing_subscriber;\n\nmod handlers;\nmod models;\nmod optimization_handlers;\n\nuse handlers::{\n\n    batch_delete_memories, batch_update_memories, create_memory, delete_memory, get_memory, health_check, list_memories, search_memories, update_memory, get_llm_status, llm_health_check,\n\n};\nuse optimization_handlers::{\n    analyze_optimization, cancel_optimization, cleanup_history, get_optimization_history,\n    get_optimization_statistics, get_optimization_status, start_optimization,\n    OptimizationJobState,\n};\n\n/// Application state shared across handlers\n#[derive(Clone)]\npub struct AppState {\n    pub memory_manager: Arc<MemoryManager>,\n    pub optimization_jobs: Arc<tokio::sync::RwLock<std::collections::HashMap<String, OptimizationJobState>>>,\n}\n\n#[derive(Parser)]\n#[command(name = \"cortex-mem-service\")]\n#[command(about = \"Rust Agent Memory System HTTP Service\")]\nstruct Cli {\n    /// Path to the configuration file\n    #[arg(short, long, default_value = \"config.toml\")]\n    config: PathBuf,\n}\n\n#[tokio::main]\nasync fn main() -> Result<(), Box<dyn std::error::Error>> {\n    // Initialize tracing\n    tracing_subscriber::fmt::init();\n\n    let cli = Cli::parse();\n\n    // Load configuration\n    let config = Config::load(&cli.config)?;\n\n    // Create memory manager\n    let memory_manager = create_memory_manager(&config).await?;\n\n    // Create application state\n    let app_state = AppState {\n        memory_manager: Arc::new(memory_manager),\n        optimization_jobs: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),\n    };\n\n    // Build the application router\n    let app = Router::new()\n        .route(\"/health\", get(health_check))\n        .route(\"/memories\", post(create_memory).get(list_memories))\n        .route(\"/memories/search\", post(search_memories))\n        .route(\n            \"/memories/{id}\",\n            get(get_memory).put(update_memory).delete(delete_memory),\n        )\n        .route(\"/memories/batch/delete\", post(batch_delete_memories))\n        .route(\"/memories/batch/update\", post(batch_update_memories))\n        // Optimization routes\n        .route(\"/optimization\", post(start_optimization))\n        .route(\"/optimization/{job_id}\", get(get_optimization_status))\n        .route(\"/optimization/{job_id}/cancel\", post(cancel_optimization))\n        .route(\"/optimization/history\", get(get_optimization_history))\n        .route(\"/optimization/analyze\", post(analyze_optimization))\n        .route(\"/optimization/statistics\", get(get_optimization_statistics))\n        .route(\"/optimization/cleanup\", post(cleanup_history))\n        // LLM service status routes\n        .route(\"/llm/status\", get(get_llm_status))\n        .route(\"/llm/health-check\", get(llm_health_check))\n        .layer(\n            ServiceBuilder::new()\n                .layer(CorsLayer::permissive())\n                .into_inner(),\n        )\n        .with_state(app_state);\n\n    // Start the server\n    let addr = format!(\"{}:{}\", config.server.host, config.server.port);\n\n    info!(\"Starting cortex-mem-service on {}\", addr);\n\n    let listener = TcpListener::bind(&addr).await?;\n    axum::serve(listener, app).await?;\n\n    Ok(())\n}\n\nasync fn create_memory_manager(\n    config: &Config,\n) -> Result<MemoryManager, Box<dyn std::error::Error>> {\n    // Create vector store\n    let vector_store = QdrantVectorStore::new(&config.qdrant).await?;\n\n    // Create LLM client\n    let llm_client = create_llm_client(&config.llm, &config.embedding)?;\n\n    // Create memory manager\n    let memory_manager =\n        MemoryManager::new(Box::new(vector_store), llm_client, config.memory.clone());\n\n    info!(\"Memory manager initialized successfully\");\n    Ok(memory_manager)\n}\n"
     },
     "complexity_metrics": {
       "cyclomatic_complexity": 1.0,
-      "lines_of_code": 102,
+      "lines_of_code": 122,
       "number_of_classes": 2,
       "number_of_functions": 2
     },
@@ -1611,7 +1230,7 @@ Code analysis results from preprocessing phase, including definitions of functio
       {
         "dependency_type": "cli",
         "is_external": true,
-        "line_number": 5,
+        "line_number": 6,
         "name": "clap",
         "path": null,
         "version": null
@@ -1619,15 +1238,15 @@ Code analysis results from preprocessing phase, including definitions of functio
       {
         "dependency_type": "internal",
         "is_external": false,
-        "line_number": 6,
+        "line_number": 7,
         "name": "cortex_mem_core",
-        "path": "cortex-mem-core",
+        "path": "./cortex-mem-core",
         "version": null
       },
       {
         "dependency_type": "standard_library",
         "is_external": false,
-        "line_number": 9,
+        "line_number": 10,
         "name": "std",
         "path": null,
         "version": null
@@ -1635,7 +1254,7 @@ Code analysis results from preprocessing phase, including definitions of functio
       {
         "dependency_type": "runtime",
         "is_external": true,
-        "line_number": 10,
+        "line_number": 11,
         "name": "tokio",
         "path": null,
         "version": null
@@ -1643,7 +1262,7 @@ Code analysis results from preprocessing phase, including definitions of functio
       {
         "dependency_type": "middleware",
         "is_external": true,
-        "line_number": 11,
+        "line_number": 12,
         "name": "tower",
         "path": null,
         "version": null
@@ -1651,76 +1270,89 @@ Code analysis results from preprocessing phase, including definitions of functio
       {
         "dependency_type": "middleware",
         "is_external": true,
-        "line_number": 12,
+        "line_number": 13,
         "name": "tower_http",
         "path": null,
         "version": null
       },
       {
-        "dependency_type": "observability",
+        "dependency_type": "logging",
         "is_external": true,
-        "line_number": 13,
+        "line_number": 14,
         "name": "tracing",
         "path": null,
         "version": null
       },
       {
-        "dependency_type": "observability",
+        "dependency_type": "logging",
         "is_external": true,
-        "line_number": 14,
+        "line_number": 15,
         "name": "tracing_subscriber",
         "path": null,
         "version": null
+      },
+      {
+        "dependency_type": "module",
+        "is_external": false,
+        "line_number": 21,
+        "name": "handlers",
+        "path": "./cortex-mem-service/src/handlers.rs",
+        "version": null
       }
     ],
-    "detailed_description": "The main.rs file serves as the entry point for the Cortex Memory Service, a Rust-based HTTP service for managing agent memories. It initializes tracing for observability, parses command-line arguments to locate the configuration file, loads the configuration, and constructs the MemoryManager using Qdrant as the vector store and an LLM client for embedding generation. The application uses Axum to define RESTful routes for memory operations such as create, read, update, delete, search, and batch operations. CORS is enabled for all origins. The AppState struct wraps the shared MemoryManager behind an Arc for safe concurrent access across request handlers. The service binds to a TCP listener and serves the router, logging the startup address.",
+    "detailed_description": "This file serves as the main entry point for the Cortex Memory Service, a Rust-based HTTP service for managing agent memories. It uses Axum for routing HTTP requests, Tokio for async runtime, and Clap for command-line argument parsing. The application initializes a tracing subscriber for logging, parses command-line arguments to get the config file path (defaulting to 'config.toml'), loads the configuration, creates a MemoryManager instance (via create_memory_manager helper), and sets up shared application state (AppState) containing the memory manager and optimization job tracking. The router is built with numerous endpoints for CRUD operations on memories (create, read, update, delete, search, list), batch operations, health checks, and optimization tasks (start, status, cancel, cleanup). It also includes routes for checking LLM service status. The server binds to a TCP listener based on the config and starts serving requests. The create_memory_manager function is responsible for initializing the Qdrant vector store, creating an LLM client, and constructing the MemoryManager, which is the core service handling all memory operations.",
     "interfaces": [
       {
-        "description": "Shared application state passed to all request handlers, containing the thread-safe reference to MemoryManager.",
+        "description": "Shared application state passed to all request handlers. Contains the MemoryManager for data operations and a thread-safe map to track optimization job states.",
         "interface_type": "struct",
         "name": "AppState",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Thread-safe reference to the core memory management service",
+            "is_optional": false,
+            "name": "memory_manager",
+            "param_type": "Arc<MemoryManager>"
+          },
+          {
+            "description": "Thread-safe storage for tracking the state of ongoing memory optimization jobs",
+            "is_optional": false,
+            "name": "optimization_jobs",
+            "param_type": "Arc<RwLock<HashMap<String, OptimizationJobState>>>"
+          }
+        ],
         "return_type": null,
         "visibility": "public"
       },
       {
-        "description": "Command-line argument parser using clap, defines the --config flag with a default value.",
+        "description": "Command-line interface configuration parsed using Clap. Defines the arguments the application accepts when started.",
         "interface_type": "struct",
         "name": "Cli",
-        "parameters": [],
+        "parameters": [
+          {
+            "description": "Path to the configuration file, defaults to 'config.toml'",
+            "is_optional": false,
+            "name": "config",
+            "param_type": "PathBuf"
+          }
+        ],
         "return_type": null,
-        "visibility": "private"
+        "visibility": "public"
       },
       {
-        "description": "Asynchronous entry point that initializes the app, sets up state, configures routes, and starts the HTTP server.",
+        "description": "The primary entry point of the application. Initializes the runtime, parses CLI args, loads config, sets up services, builds the router, and starts the HTTP server.",
         "interface_type": "function",
         "name": "main",
         "parameters": [],
         "return_type": "Result<(), Box<dyn std::error::Error>>",
-        "visibility": "private"
-      },
-      {
-        "description": "Helper function that constructs the MemoryManager by initializing Qdrant vector store and LLM client based on configuration.",
-        "interface_type": "function",
-        "name": "create_memory_manager",
-        "parameters": [
-          {
-            "description": "Reference to the application configuration",
-            "is_optional": false,
-            "name": "config",
-            "param_type": "&Config"
-          }
-        ],
-        "return_type": "Result<MemoryManager, Box<dyn std::error::Error>>",
-        "visibility": "private"
+        "visibility": "public"
       }
     ],
     "responsibilities": [
-      "Initialize the application runtime and global tracing subscriber",
-      "Parse command-line arguments and load configuration from file",
-      "Construct and initialize core components: vector store, LLM client, and memory manager",
-      "Define and configure the HTTP API router with routes and shared application state",
-      "Bind and serve the HTTP server on the configured host and port"
+      "Initialize the application runtime and logging infrastructure",
+      "Parse command-line arguments and load application configuration",
+      "Construct and initialize core service components (MemoryManager, LLM client, vector store)",
+      "Define and configure the HTTP API router with all endpoints",
+      "Manage shared application state and server lifecycle"
     ]
   },
   {
@@ -2972,7 +2604,7 @@ Code analysis results from preprocessing phase, including definitions of functio
   {
     "code_dossier": {
       "code_purpose": "api",
-      "description": "API client for interacting with the Cortex Memory Service, providing CRUD operations and search capabilities for memory entities.",
+      "description": "API客户端类，用于与Cortex-mem-service后端服务通信，提供记忆管理、搜索、统计和优化等功能。",
       "file_path": "cortex-mem-insights/src/server/integrations/cortex-mem.ts",
       "functions": [
         "healthCheck",
@@ -2983,23 +2615,29 @@ Code analysis results from preprocessing phase, including definitions of functio
         "updateMemory",
         "deleteMemory",
         "batchDelete",
-        "getStatistics"
+        "getStatistics",
+        "optimize",
+        "getOptimizationStatus",
+        "cancelOptimization",
+        "getOptimizationHistory",
+        "analyzeOptimization",
+        "getOptimizationStatistics",
+        "cleanupOptimizationHistory",
+        "getLLMStatus",
+        "llmHealthCheck"
       ],
       "importance_score": 0.8,
       "interfaces": [
-        "MemoryResponse",
-        "SearchResponse",
-        "ListResponse",
-        "HealthResponse"
+        "CortexMemServiceClient"
       ],
       "name": "cortex-mem.ts",
-      "source_summary": "import { MemoryResponse, SearchResponse, ListResponse, HealthResponse } from '../api/types';\n\n// Cortex-mem-service API 客户端\nexport class CortexMemServiceClient {\n  private baseUrl: string;\n  \n  constructor(baseUrl: string = 'http://localhost:3000') {\n    this.baseUrl = baseUrl;\n  }\n  \n  // 健康检查\n  async healthCheck(): Promise<HealthResponse> {\n    try {\n      const response = await fetch(`${this.baseUrl}/health`);\n      if (!response.ok) {\n        throw new Error(`Health check failed: ${response.statusText}`);\n      }\n      return await response.json();\n    } catch (error) {\n      console.error('Health check error:', error);\n      return {\n        status: 'unhealthy',\n        vector_store: false,\n        llm_service: false,\n        timestamp: new Date().toISOString()\n      };\n    }\n  }\n  \n  // 获取记忆列表\n  async listMemories(params?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    memory_type?: string;\n    limit?: number;\n  }): Promise<ListResponse> {\n    try {\n      const queryParams = new URLSearchParams();\n      if (params?.user_id) queryParams.append('user_id', params.user_id);\n      if (params?.agent_id) queryParams.append('agent_id', params.agent_id);\n      if (params?.run_id) queryParams.append('run_id', params.run_id);\n      if (params?.actor_id) queryParams.append('actor_id', params.actor_id);\n      if (params?.memory_type) queryParams.append('memory_type', params.memory_type);\n      if (params?.limit) queryParams.append('limit', params.limit.toString());\n      \n      const url = `${this.baseUrl}/memories${queryParams.toString() ? `?${queryParams}` : ''}`;\n      \n      const response = await fetch(url);\n      \n      if (!response.ok) {\n        const errorText = await response.text();\n        console.error('获取记忆列表失败 - 错误响应:', errorText);\n        throw new Error(`List memories failed: ${response.statusText}`);\n      }\n      \n      const result = await response.json();\n      return result;\n    } catch (error) {\n      console.error('获取记忆列表错误:', error);\n      return {\n        total: 0,\n        memories: [],\n      };\n    }\n  }\n  \n  // 搜索记忆\n  async searchMemories(query: string, params?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    memory_type?: string;\n    limit?: number;\n    similarity_threshold?: number;\n  }): Promise<SearchResponse> {\n    try {\n      const requestBody = {\n        query,\n        user_id: params?.user_id,\n        agent_id: params?.agent_id,\n        run_id: params?.run_id,\n        actor_id: params?.actor_id,\n        memory_type: params?.memory_type,\n        limit: params?.limit,\n        similarity_threshold: params?.similarity_threshold,\n      };\n      \n      const response = await fetch(`${this.baseUrl}/memories/search`, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json',\n        },\n        body: JSON.stringify(requestBody),\n      });\n      \n      if (!response.ok) {\n        const errorText = await response.text();\n        console.error('搜索记忆失败 - 错误响应:', errorText);\n        throw new Error(`Search memories failed: ${response.statusText}`);\n      }\n      \n      const result = await response.json();\n      return result;\n    } catch (error) {\n      console.error('搜索记忆错误:', error);\n      return {\n        total: 0,\n        results: [],\n      };\n    }\n  }\n  \n  // 获取单个记忆\n  async getMemory(id: string): Promise<MemoryResponse | null> {\n    try {\n      const response = await fetch(`${this.baseUrl}/memories/${id}`);\n      \n      if (!response.ok) {\n        if (response.status === 404) {\n          return null;\n        }\n        throw new Error(`Get memory failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('Get memory error:', error);\n      return null;\n    }\n  }\n  \n  // 创建记忆\n  async createMemory(content: string, metadata?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    role?: string;\n    memory_type?: string;\n    custom?: Record<string, any>;\n  }): Promise<{ success: boolean; id?: string; message: string }> {\n    try {\n      const requestBody = {\n        content,\n        user_id: metadata?.user_id,\n        agent_id: metadata?.agent_id,\n        run_id: metadata?.run_id,\n        actor_id: metadata?.actor_id,\n        role: metadata?.role,\n        memory_type: metadata?.memory_type,\n        custom: metadata?.custom,\n      };\n      \n      const response = await fetch(`${this.baseUrl}/memories`, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json',\n        },\n        body: JSON.stringify(requestBody),\n      });\n      \n      if (!response.ok) {\n        throw new Error(`Create memory failed: ${response.statusText}`);\n      }\n      \n      const result = await response.json();\n      return {\n        success: true,\n        id: result.id,\n        message: result.message,\n      };\n    } catch (error) {\n      console.error('Create memory error:', error);\n      return {\n        success: false,\n        message: error instanceof Error ? error.message : 'Failed to create memory',\n      };\n    }\n  }\n  \n  // 更新记忆\n  async updateMemory(id: string, content: string): Promise<{ success: boolean; message: string }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/memories/${id}`, {\n        method: 'PUT',\n        headers: {\n          'Content-Type': 'application/json',\n        },\n        body: JSON.stringify({ content }),\n      });\n      \n      if (!response.ok) {\n        throw new Error(`Update memory failed: ${response.statusText}`);\n      }\n      \n      const result = await response.json();\n      return {\n        success: true,\n        message: result.message,\n      };\n    } catch (error) {\n      console.error('Update memory error:', error);\n      return {\n        success: false,\n        message: error instanceof Error ? error.message : 'Failed to update memory',\n      };\n    }\n  }\n  \n  // 删除记忆\n  async deleteMemory(id: string): Promise<{ success: boolean; message: string }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/memories/${id}`, {\n        method: 'DELETE',\n      });\n      \n      if (!response.ok) {\n        throw new Error(`Delete memory failed: ${response.statusText}`);\n      }\n      \n      const result = await response.json();\n      return {\n        success: true,\n        message: result.message,\n      };\n    } catch (error) {\n      console.error('Delete memory error:', error);\n      return {\n        success: false,\n        message: error instanceof Error ? error.message : 'Failed to delete memory',\n      };\n    }\n  }\n  \n  // 批量操作\n  async batchDelete(ids: string[]): Promise<{ success: boolean; message: string; failed: string[] }> {\n    const failed: string[] = [];\n    \n    for (const id of ids) {\n      try {\n        await this.deleteMemory(id);\n      } catch (error) {\n        failed.push(id);\n      }\n    }\n    \n    return {\n      success: failed.length === 0,\n      message: failed.length === 0 \n        ? 'All memories deleted successfully' \n        : `Failed to delete ${failed.length} memories`,\n      failed,\n    };\n  }\n  \n  // 统计信息\n  async getStatistics(): Promise<{\n    total_memories: number;\n    by_type: Record<string, number>;\n    by_user: Record<string, number>;\n    by_agent: Record<string, number>;\n    recent_activity: Array<{ date: string; count: number }>;\n  }> {\n    try {\n      // 获取所有记忆\n      const listResponse = await this.listMemories({ limit: 1000 });\n      \n      // 统计类型分布\n      const byType: Record<string, number> = {};\n      const byUser: Record<string, number> = {};\n      const byAgent: Record<string, number> = {};\n      \n      // 按日期统计最近活动（最近7天）\n      const recentActivity: Array<{ date: string; count: number }> = [];\n      const today = new Date();\n      \n      for (let i = 6; i >= 0; i--) {\n        const date = new Date(today);\n        date.setDate(date.getDate() - i);\n        const dateStr = date.toISOString().split('T')[0];\n        recentActivity.push({ date: dateStr, count: 0 });\n      }\n      \n      for (const memory of listResponse.memories) {\n        // 统计类型\n        const type = memory.metadata.memory_type;\n        byType[type] = (byType[type] || 0) + 1;\n        \n        // 统计用户\n        if (memory.metadata.user_id) {\n          byUser[memory.metadata.user_id] = (byUser[memory.metadata.user_id] || 0) + 1;\n        }\n        \n        // 统计代理\n        if (memory.metadata.agent_id) {\n          byAgent[memory.metadata.agent_id] = (byAgent[memory.metadata.agent_id] || 0) + 1;\n        }\n        \n        // 统计最近活动\n        const memoryDate = new Date(memory.created_at).toISOString().split('T')[0];\n        const activityEntry = recentActivity.find(a => a.date === memoryDate);\n        if (activityEntry) {\n          activityEntry.count++;\n        }\n      }\n      \n      return {\n        total_memories: listResponse.total,\n        by_type: byType,\n        by_user: byUser,\n        by_agent: byAgent,\n        recent_activity: recentActivity,\n      };\n    } catch (error) {\n      console.error('Get statistics error:', error);\n      return {\n        total_memories: 0,\n        by_type: {},\n        by_user: {},\n        by_agent: {},\n        recent_activity: [],\n      };\n    }\n  }\n}\n\n// 创建默认客户端实例\nexport const cortexMemService = new CortexMemServiceClient(\n  process.env.CORTEX_MEM_SERVICE_URL || 'http://localhost:3000'\n);"
+      "source_summary": "import { MemoryResponse, SearchResponse, ListResponse, HealthResponse } from '../api/types';\n\n// Cortex-mem-service API 客户端\nexport class CortexMemServiceClient {\n  private baseUrl: string;\n  \n  constructor(baseUrl: string = 'http://localhost:3000') {\n    this.baseUrl = baseUrl;\n  }\n  \n  // 健康检查\n  async healthCheck(): Promise<HealthResponse> {\n    try {\n      const response = await fetch(`${this.baseUrl}/health`);\n      if (!response.ok) {\n        throw new Error(`Health check failed: ${response.statusText}`);\n      }\n      return await response.json();\n    } catch (error) {\n      console.error('Health check error:', error);\n      return {\n        status: 'unhealthy',\n        vector_store: false,\n        llm_service: false,\n        timestamp: new Date().toISOString()\n      };\n    }\n  }\n  \n  // 获取记忆列表\n  async listMemories(params?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    memory_type?: string;\n    limit?: number;\n  }): Promise<ListResponse> {\n    try {\n      const queryParams = new URLSearchParams();\n      if (params?.user_id) queryParams.append('user_id', params.user_id);\n      if (params?.agent_id) queryParams.append('agent_id', params.agent_id);\n      if (params?.run_id) queryParams.append('run_id', params.run_id);\n      if (params?.actor_id) queryParams.append('actor_id', params.actor_id);\n      if (params?.memory_type) queryParams.append('memory_type', params.memory_type);\n      if (params?.limit) queryParams.append('limit', params.limit.toString());\n      \n      const url = `${this.baseUrl}/memories${queryParams.toString() ? `?${queryParams}` : ''}`;\n      \n      const response = await fetch(url);\n      \n      if (!response.ok) {\n        const errorText = await response.text();\n        console.error('获取记忆列表失败 - 错误响应:', errorText);\n        throw new Error(`List memories failed: ${response.statusText}`);\n      }\n      \n      const result = await response.json();\n      return result;\n    } catch (error) {\n      console.error('获取记忆列表错误:', error);\n      return {\n        total: 0,\n        memories: [],\n      };\n    }\n  }\n  \n  // 搜索记忆\n  async searchMemories(query: string, params?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    memory_type?: string;\n    limit?: number;\n    similarity_threshold?: number;\n  }): Promise<SearchResponse> {\n    try {\n      const requestBody = {\n        query,\n        user_id: params?.user_id,\n        agent_id: params?.agent_id,\n        run_id: params?.run_id,\n        actor_id: params?.actor_id,\n        memory_type: params?.memory_type,\n        limit: params?.limit,\n        similarity_threshold: params?.similarity_threshold,\n      };\n      \n      const response = await fetch(`${this.baseUrl}/memories/search`, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json',\n        },\n        body: JSON.stringify(requestBody),\n      });\n      \n      if (!response.ok) {\n        const errorText = await response.text();\n        console.error('搜索记忆失败 - 错误响应:', errorText);\n        throw new Error(`Search memories failed: ${response.statusText}`);\n      }\n      \n      const result = await response.json();\n      return result;\n    } catch (error) {\n      console.error('搜索记忆错误:', error);\n      return {\n        total: 0,\n        results: [],\n      };\n    }\n  }\n  \n  // 获取单个记忆\n  async getMemory(id: string): Promise<MemoryResponse | null> {\n    try {\n      const response = await fetch(`${this.baseUrl}/memories/${id}`);\n      \n      if (!response.ok) {\n        if (response.status === 404) {\n          return null;\n        }\n        throw new Error(`Get memory failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('Get memory error:', error);\n      return null;\n    }\n  }\n  \n  // 创建记忆\n  async createMemory(content: string, metadata?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    role?: string;\n    memory_type?: string;\n    custom?: Record<string, any>;\n  }): Promise<{ success: boolean; id?: string; message: string }> {\n    try {\n      const requestBody = {\n        content,\n        user_id: metadata?.user_id,\n        agent_id: metadata?.agent_id,\n        run_id: metadata?.run_id,\n        actor_id: metadata?.actor_id,\n        role: metadata?.role,\n        memory_type: metadata?.memory_type,\n        custom: metadata?.custom,\n      };\n      \n      const response = await fetch(`${this.baseUrl}/memories`, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json',\n        },\n        body: JSON.stringify(requestBody),\n      });\n      \n      if (!response.ok) {\n        throw new Error(`Create memory failed: ${response.statusText}`);\n      }\n      \n      const result = await response.json();\n      return {\n        success: true,\n        id: result.id,\n        message: result.message,\n      };\n    } catch (error) {\n      console.error('Create memory error:', error);\n      return {\n        success: false,\n        message: error instanceof Error ? error.message : 'Failed to create memory',\n      };\n    }\n  }\n  \n  // 更新记忆\n  async updateMemory(id: string, content: string): Promise<{ success: boolean; message: string }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/memories/${id}`, {\n        method: 'PUT',\n        headers: {\n          'Content-Type': 'application/json',\n        },\n        body: JSON.stringify({ content }),\n      });\n      \n      if (!response.ok) {\n        throw new Error(`Update memory failed: ${response.statusText}`);\n      }\n      \n      const result = await response.json();\n      return {\n        success: true,\n        message: result.message,\n      };\n    } catch (error) {\n      console.error('Update memory error:', error);\n      return {\n        success: false,\n        message: error instanceof Error ? error.message : 'Failed to update memory',\n      };\n    }\n  }\n  \n  // 删除记忆\n  async deleteMemory(id: string): Promise<{ success: boolean; message: string }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/memories/${id}`, {\n        method: 'DELETE',\n      });\n      \n      if (!response.ok) {\n        throw new Error(`Delete memory failed: ${response.statusText}`);\n      }\n      \n      const result = await response.json();\n      return {\n        success: true,\n        message: result.message,\n      };\n    } catch (error) {\n      console.error('Delete memory error:', error);\n      return {\n        success: false,\n        message: error instanceof Error ? error.message : 'Failed to delete memory',\n      };\n    }\n  }\n  \n  // 批量操作\n  async batchDelete(ids: string[]): Promise<{ success: boolean; message: string; failed: string[] }> {\n    const failed: string[] = [];\n    \n    for (const id of ids) {\n      try {\n        await this.deleteMemory(id);\n      } catch (error) {\n        failed.push(id);\n      }\n    }\n    \n    return {\n      success: failed.length === 0,\n      message: failed.length === 0 \n        ? 'All memories deleted successfully' \n        : `Failed to delete ${failed.length} memories`,\n      failed,\n    };\n  }\n  \n  // 统计信息\n  async getStatistics(): Promise<{\n    total_memories: number;\n    by_type: Record<string, number>;\n    by_user: Record<string, number>;\n    by_agent: Record<string, number>;\n    recent_activity: Array<{ date: string; count: number }>;\n  }> {\n    try {\n      // 获取所有记忆\n      const listResponse = await this.listMemories({ limit: 1000 });\n      \n      // 统计类型分布\n      const byType: Record<string, number> = {};\n      const byUser: Record<string, number> = {};\n      const byAgent: Record<string, number> = {};\n      \n      // 按日期统计最近活动（最近7天）\n      const recentActivity: Array<{ date: string; count: number }> = [];\n      const today = new Date();\n      \n      for (let i = 6; i >= 0; i--) {\n        const date = new Date(today);\n        date.setDate(date.getDate() - i);\n        const dateStr = date.toISOString().split('T')[0];\n        recentActivity.push({ date: dateStr, count: 0 });\n      }\n      \n      for (const memory of listResponse.memories) {\n        // 统计类型\n        const type = memory.metadata.memory_type;\n        byType[type] = (byType[type] || 0) + 1;\n        \n        // 统计用户\n        if (memory.metadata.user_id) {\n          byUser[memory.metadata.user_id] = (byUser[memory.metadata.user_id] || 0) + 1;\n        }\n        \n        // 统计代理\n        if (memory.metadata.agent_id) {\n          byAgent[memory.metadata.agent_id] = (byAgent[memory.metadata.agent_id] || 0) + 1;\n        }\n        \n        // 统计最近活动\n        const memoryDate = new Date(memory.created_at).toISOString().split('T')[0];\n        const activityEntry = recentActivity.find(a => a.date === memoryDate);\n        if (activityEntry) {\n          activityEntry.count++;\n        }\n      }\n      \n      return {\n        total_memories: listResponse.total,\n        by_type: byType,\n        by_user: byUser,\n        by_agent: byAgent,\n        recent_activity: recentActivity,\n      };\n    } catch (error) {\n      console.error('Get statistics error:', error);\n      return {\n        total_memories: 0,\n        by_type: {},\n        by_user: {},\n        by_agent: {},\n        recent_activity: [],\n      };\n    }\n  }\n\n  // 优化相关方法\n  \n  // 启动优化任务\n  async optimize(params?: {\n    memory_type?: string;\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    similarity_threshold?: number;\n    dry_run?: boolean;\n    verbose?: boolean;\n    strategy?: string;\n    aggressive?: boolean;\n    timeout_minutes?: number;\n  }): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/optimization`, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json',\n        },\n        body: JSON.stringify(params || {}),\n      });\n      \n      if (!response.ok) {\n        const errorText = await response.text();\n        console.error('启动优化失败 - 错误响应:', errorText);\n        throw new Error(`Optimize failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('启动优化错误:', error);\n      return {\n        success: false,\n        error: {\n          code: 'OPTIMIZE_FAILED',\n          message: error instanceof Error ? error.message : '启动优化失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }\n\n  // 获取优化任务状态\n  async getOptimizationStatus(jobId: string): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/optimization/${jobId}`);\n      \n      if (!response.ok) {\n        if (response.status === 404) {\n          return {\n            success: false,\n            error: {\n              code: 'JOB_NOT_FOUND',\n              message: `优化任务 ${jobId} 不存在`,\n            },\n            timestamp: new Date().toISOString(),\n          };\n        }\n        throw new Error(`Get optimization status failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('获取优化状态错误:', error);\n      return {\n        success: false,\n        error: {\n          code: 'GET_STATUS_FAILED',\n          message: error instanceof Error ? error.message : '获取状态失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }\n\n  // 取消优化任务\n  async cancelOptimization(jobId: string): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/optimization/${jobId}/cancel`, {\n        method: 'POST',\n      });\n      \n      if (!response.ok) {\n        const errorText = await response.text();\n        console.error('取消优化失败 - 错误响应:', errorText);\n        throw new Error(`Cancel optimization failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('取消优化错误:', error);\n      return {\n        success: false,\n        error: {\n          code: 'CANCEL_FAILED',\n          message: error instanceof Error ? error.message : '取消优化失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }\n\n  // 获取优化历史\n  async getOptimizationHistory(params?: {\n    limit?: number;\n    offset?: number;\n    status?: string;\n    start_date?: string;\n    end_date?: string;\n  }): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {\n    try {\n      const queryParams = new URLSearchParams();\n      if (params?.limit) queryParams.append('limit', params.limit.toString());\n      if (params?.offset) queryParams.append('offset', params.offset.toString());\n      if (params?.status) queryParams.append('status', params.status);\n      if (params?.start_date) queryParams.append('start_date', params.start_date);\n      if (params?.end_date) queryParams.append('end_date', params.end_date);\n      \n      const url = `${this.baseUrl}/optimization/history${queryParams.toString() ? `?${queryParams}` : ''}`;\n      const response = await fetch(url);\n      \n      if (!response.ok) {\n        throw new Error(`Get optimization history failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('获取优化历史错误:', error);\n      return {\n        success: false,\n        error: {\n          code: 'GET_HISTORY_FAILED',\n          message: error instanceof Error ? error.message : '获取历史失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }\n\n  // 分析优化问题（预览模式）\n  async analyzeOptimization(params?: {\n    memory_type?: string;\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    similarity_threshold?: number;\n  }): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/optimization/analyze`, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json',\n        },\n        body: JSON.stringify(params || {}),\n      });\n      \n      if (!response.ok) {\n        const errorText = await response.text();\n        console.error('分析优化失败 - 错误响应:', errorText);\n        throw new Error(`Analyze optimization failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('分析优化错误:', error);\n      return {\n        success: false,\n        error: {\n          code: 'ANALYZE_FAILED',\n          message: error instanceof Error ? error.message : '分析失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }\n\n  // 获取优化统计\n  async getOptimizationStatistics(): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/optimization/statistics`);\n      \n      if (!response.ok) {\n        throw new Error(`Get optimization statistics failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('获取优化统计错误:', error);\n      return {\n        success: false,\n        error: {\n          code: 'GET_STATISTICS_FAILED',\n          message: error instanceof Error ? error.message : '获取统计失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }\n\n  // 清理优化历史\n  async cleanupOptimizationHistory(maxAgeDays?: number): Promise<{ success: boolean; data?: any; error?: any; timestamp: string }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/optimization/cleanup`, {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json',\n        },\n        body: JSON.stringify({ max_age_days: maxAgeDays || 7 }),\n      });\n      \n      if (!response.ok) {\n        throw new Error(`Cleanup optimization history failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('清理优化历史错误:', error);\n      return {\n        success: false,\n        error: {\n          code: 'CLEANUP_FAILED',\n          message: error instanceof Error ? error.message : '清理失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }\n\n  // LLM服务状态检测\n  \n  // 获取详细的LLM服务状态\n  async getLLMStatus(): Promise<{\n    overall_status: string;\n    completion_model: {\n      available: boolean;\n      provider: string;\n      model_name: string;\n      latency_ms?: number;\n      error_message?: string;\n      last_check: string;\n    };\n    embedding_model: {\n      available: boolean;\n      provider: string;\n      model_name: string;\n      latency_ms?: number;\n      error_message?: string;\n      last_check: string;\n    };\n    timestamp: string;\n  }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/llm/status`);\n      \n      if (!response.ok) {\n        throw new Error(`Get LLM status failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('获取LLM状态错误:', error);\n      return {\n        overall_status: 'error',\n        completion_model: {\n          available: false,\n          provider: 'unknown',\n          model_name: 'unknown',\n          error_message: error instanceof Error ? error.message : 'Failed to connect',\n          last_check: new Date().toISOString(),\n        },\n        embedding_model: {\n          available: false,\n          provider: 'unknown',\n          model_name: 'unknown',\n          error_message: error instanceof Error ? error.message : 'Failed to connect',\n          last_check: new Date().toISOString(),\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }\n\n  // 简单的LLM健康检查\n  async llmHealthCheck(): Promise<{\n    completion_model_available: boolean;\n    embedding_model_available: boolean;\n    timestamp: string;\n  }> {\n    try {\n      const response = await fetch(`${this.baseUrl}/llm/health-check`);\n      \n      if (!response.ok) {\n        throw new Error(`LLM health check failed: ${response.statusText}`);\n      }\n      \n      return await response.json();\n    } catch (error) {\n      console.error('LLM健康检查错误:', error);\n      return {\n        completion_model_available: false,\n        embedding_model_available: false,\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }\n}\n\n// 创建默认客户端实例\nexport const cortexMemService = new CortexMemServiceClient(\n  process.env.CORTEX_MEM_SERVICE_URL || 'http://localhost:3000'\n);"
     },
     "complexity_metrics": {
-      "cyclomatic_complexity": 21.0,
-      "lines_of_code": 333,
+      "cyclomatic_complexity": 36.0,
+      "lines_of_code": 643,
       "number_of_classes": 1,
-      "number_of_functions": 9
+      "number_of_functions": 23
     },
     "dependencies": [
       {
@@ -3011,154 +2649,23 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       }
     ],
-    "detailed_description": "This component implements a TypeScript client for the Cortex Memory Service API. It provides comprehensive functionality to interact with a remote memory storage system, including health checking, CRUD operations (create, read, update, delete) for memory records, searching with query parameters, batch deletion, and statistical analysis. The client uses the Fetch API to make HTTP requests and handles errors gracefully by logging them and returning fallback responses. It supports various filtering options through query parameters and request body metadata, enabling targeted operations on memory data associated with users, agents, roles, and custom types. The statistics method aggregates data across multiple dimensions for analytics purposes.",
+    "detailed_description": "该组件是一个TypeScript编写的API客户端，封装了对cortex-mem-service服务的HTTP调用。它提供了完整的记忆生命周期管理功能（CRUD）、基于语义的搜索、批量操作、系统健康检查、LLM服务状态检测以及记忆优化相关的任务管理（启动、状态查询、取消、历史记录等）。所有方法均采用异步模式并包含完整的错误处理和日志记录，返回结构化的结果对象。客户端支持可配置的基础URL，并导出一个默认实例以便在应用中全局使用。",
     "interfaces": [
       {
-        "description": "Checks the health status of the Cortex Memory Service",
-        "interface_type": "method",
-        "name": "healthCheck",
+        "description": "Cortex-mem-service API客户端主类",
+        "interface_type": "class",
+        "name": "CortexMemServiceClient",
         "parameters": [],
-        "return_type": "Promise<HealthResponse>",
-        "visibility": "public"
-      },
-      {
-        "description": "Retrieves a list of memories with optional filtering",
-        "interface_type": "method",
-        "name": "listMemories",
-        "parameters": [
-          {
-            "description": "Filtering parameters including user_id, agent_id, run_id, actor_id, memory_type, and limit",
-            "is_optional": true,
-            "name": "params",
-            "param_type": "object"
-          }
-        ],
-        "return_type": "Promise<ListResponse>",
-        "visibility": "public"
-      },
-      {
-        "description": "Performs semantic search on memories using the provided query",
-        "interface_type": "method",
-        "name": "searchMemories",
-        "parameters": [
-          {
-            "description": "Search query string",
-            "is_optional": false,
-            "name": "query",
-            "param_type": "string"
-          },
-          {
-            "description": "Search parameters including filters and similarity threshold",
-            "is_optional": true,
-            "name": "params",
-            "param_type": "object"
-          }
-        ],
-        "return_type": "Promise<SearchResponse>",
-        "visibility": "public"
-      },
-      {
-        "description": "Retrieves a specific memory record by ID, returning null if not found",
-        "interface_type": "method",
-        "name": "getMemory",
-        "parameters": [
-          {
-            "description": "Memory record ID",
-            "is_optional": false,
-            "name": "id",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "Promise<MemoryResponse | null>",
-        "visibility": "public"
-      },
-      {
-        "description": "Creates a new memory record with content and metadata",
-        "interface_type": "method",
-        "name": "createMemory",
-        "parameters": [
-          {
-            "description": "Memory content",
-            "is_optional": false,
-            "name": "content",
-            "param_type": "string"
-          },
-          {
-            "description": "Additional metadata including user, agent, role, type, and custom fields",
-            "is_optional": true,
-            "name": "metadata",
-            "param_type": "object"
-          }
-        ],
-        "return_type": "Promise<{ success: boolean; id?: string; message: string }>",
-        "visibility": "public"
-      },
-      {
-        "description": "Updates the content of an existing memory record",
-        "interface_type": "method",
-        "name": "updateMemory",
-        "parameters": [
-          {
-            "description": "Memory record ID",
-            "is_optional": false,
-            "name": "id",
-            "param_type": "string"
-          },
-          {
-            "description": "New memory content",
-            "is_optional": false,
-            "name": "content",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "Promise<{ success: boolean; message: string }>",
-        "visibility": "public"
-      },
-      {
-        "description": "Deletes a memory record by ID",
-        "interface_type": "method",
-        "name": "deleteMemory",
-        "parameters": [
-          {
-            "description": "Memory record ID",
-            "is_optional": false,
-            "name": "id",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "Promise<{ success: boolean; message: string }>",
-        "visibility": "public"
-      },
-      {
-        "description": "Performs batch deletion of multiple memory records",
-        "interface_type": "method",
-        "name": "batchDelete",
-        "parameters": [
-          {
-            "description": "Array of memory record IDs to delete",
-            "is_optional": false,
-            "name": "ids",
-            "param_type": "string[]"
-          }
-        ],
-        "return_type": "Promise<{ success: boolean; message: string; failed: string[] }>",
-        "visibility": "public"
-      },
-      {
-        "description": "Retrieves statistical information about memory records across various dimensions",
-        "interface_type": "method",
-        "name": "getStatistics",
-        "parameters": [],
-        "return_type": "Promise<{ total_memories: number; by_type: Record<string, number>; by_user: Record<string, number>; by_agent: Record<string, number>; recent_activity: Array<{ date: string; count: number }> }>",
-        "visibility": "public"
+        "return_type": null,
+        "visibility": "export"
       }
     ],
     "responsibilities": [
-      "Provide HTTP client interface to Cortex Memory Service API",
-      "Implement CRUD operations for memory entities with proper error handling",
-      "Support advanced search and filtering capabilities for memory data",
-      "Handle API request/response serialization and error recovery",
-      "Provide utility functions for batch operations and statistical analysis"
+      "提供与cortex-mem-service后端服务的HTTP通信接口",
+      "实现记忆数据的增删改查及搜索功能",
+      "管理记忆优化任务的生命周期（启动、查询、取消、清理）",
+      "监控和报告系统健康状态及LLM服务可用性",
+      "提供记忆数据的统计分析功能"
     ]
   },
   {
@@ -3399,31 +2906,33 @@ Code analysis results from preprocessing phase, including definitions of functio
   {
     "code_dossier": {
       "code_purpose": "api",
-      "description": "Provides REST API endpoints for memory optimization tasks including starting, monitoring, canceling, analyzing, and cleaning up optimization jobs. Integrates with external cortex-mem-cli for actual optimization logic.",
+      "description": "API routes for memory optimization operations including optimization execution, history retrieval, status checks, and cleanup.",
       "file_path": "cortex-mem-insights/src/server/api/optimization.ts",
       "functions": [
-        "executeOptimization",
-        "parseOptimizationAnalysis",
-        "parseOptimizationResult",
-        "extractNumber"
+        "optimize",
+        "getOptimizationHistory",
+        "getOptimizationStatistics",
+        "analyzeOptimization",
+        "getOptimizationStatus",
+        "cancelOptimization",
+        "cleanupOptimizationHistory"
       ],
       "importance_score": 0.8,
       "interfaces": [
-        "OptimizationRequest",
-        "OptimizationProgress"
+        "OptimizationRequest"
       ],
       "name": "optimization.ts",
-      "source_summary": "import { Elysia, t } from 'elysia';\nimport { cortexMemCli } from '../integrations/cortex-mem-cli';\n\n// 类型定义\ninterface OptimizationRequest {\n  memory_type?: string;\n  user_id?: string;\n  agent_id?: string;\n  run_id?: string;\n  actor_id?: string;\n  similarity_threshold?: number;\n  dry_run?: boolean;\n  verbose?: boolean;\n}\n\ninterface OptimizationProgress {\n  job_id: string;\n  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';\n  progress: number;\n  current_stage?: string;\n  logs: string[];\n  result?: any;\n  start_time: string;\n  end_time?: string;\n  duration?: number;\n}\n\n// 优化状态存储（内存中）\nconst optimizationState = new Map<string, OptimizationProgress>();\n\n// 优化API路由\nexport const optimizationRoutes = new Elysia({ prefix: '/api/optimization' })\n  // 启动优化\n  .post('/', async ({ body }) => {\n    const jobId = `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n    \n    // 初始化状态\n    optimizationState.set(jobId, {\n      job_id: jobId,\n      status: 'pending',\n      progress: 0,\n      logs: [`优化任务 ${jobId} 已创建`],\n      start_time: new Date().toISOString(),\n    });\n    \n    // 异步执行优化\n    executeOptimization(jobId, body).catch(error => {\n      const state = optimizationState.get(jobId);\n      if (state) {\n        state.status = 'failed';\n        state.logs.push(`优化失败: ${error.message}`);\n        state.end_time = new Date().toISOString();\n        state.duration = new Date(state.end_time).getTime() - new Date(state.start_time).getTime();\n        optimizationState.set(jobId, state);\n      }\n    });\n    \n    return {\n      success: true,\n      data: {\n        job_id: jobId,\n        message: '优化任务已启动',\n        status: 'pending',\n        start_time: optimizationState.get(jobId)?.start_time,\n      },\n      timestamp: new Date().toISOString(),\n    };\n  }, {\n    body: t.Object({\n      memory_type: t.Optional(t.String()),\n      user_id: t.Optional(t.String()),\n      agent_id: t.Optional(t.String()),\n      run_id: t.Optional(t.String()),\n      actor_id: t.Optional(t.String()),\n      similarity_threshold: t.Optional(t.Number({ default: 0.7 })),\n      dry_run: t.Optional(t.Boolean({ default: false })),\n      verbose: t.Optional(t.Boolean({ default: false })),\n    })\n  })\n  \n  // 获取优化状态\n  .get('/:jobId', async ({ params }) => {\n    const state = optimizationState.get(params.jobId);\n    if (!state) {\n      return {\n        success: false,\n        error: {\n          code: 'JOB_NOT_FOUND',\n          message: `优化任务 ${params.jobId} 不存在`,\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n    \n    return {\n      success: true,\n      data: state,\n      timestamp: new Date().toISOString(),\n    };\n  }, {\n    params: t.Object({\n      jobId: t.String()\n    })\n  })\n  \n  // 取消优化\n  .post('/:jobId/cancel', async ({ params }) => {\n    const state = optimizationState.get(params.jobId);\n    if (!state) {\n      return {\n        success: false,\n        error: {\n          code: 'JOB_NOT_FOUND',\n          message: `优化任务 ${params.jobId} 不存在`,\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n    \n    if (state.status === 'completed' || state.status === 'failed' || state.status === 'cancelled') {\n      return {\n        success: false,\n        error: {\n          code: 'JOB_COMPLETED',\n          message: `优化任务 ${params.jobId} 已结束，无法取消`,\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n    \n    state.status = 'cancelled';\n    state.logs.push('优化任务已被用户取消');\n    state.end_time = new Date().toISOString();\n    state.duration = new Date(state.end_time).getTime() - new Date(state.start_time).getTime();\n    optimizationState.set(params.jobId, state);\n    \n    return {\n      success: true,\n      data: {\n        job_id: params.jobId,\n        message: '优化任务已取消',\n        status: 'cancelled',\n        cancelled_at: state.end_time,\n      },\n      timestamp: new Date().toISOString(),\n    };\n  }, {\n    params: t.Object({\n      jobId: t.String()\n    })\n  })\n  \n  // 获取优化历史\n  .get('/history', async ({ query }) => {\n    const limit = query.limit ? parseInt(query.limit) : 20;\n    const offset = query.offset ? parseInt(query.offset) : 0;\n    const status = query.status;\n    const startDate = query.start_date;\n    const endDate = query.end_date;\n    \n    let history = Array.from(optimizationState.values());\n    \n    // 应用过滤器\n    if (status) {\n      history = history.filter(job => job.status === status);\n    }\n    \n    if (startDate) {\n      const start = new Date(startDate);\n      history = history.filter(job => new Date(job.start_time) >= start);\n    }\n    \n    if (endDate) {\n      const end = new Date(endDate);\n      history = history.filter(job => new Date(job.start_time) <= end);\n    }\n    \n    // 按开始时间倒序排序\n    history.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());\n    \n    // 分页\n    const total = history.length;\n    const paginatedHistory = history.slice(offset, offset + limit);\n    \n    // 简化历史记录\n    const simplifiedHistory = paginatedHistory.map(job => ({\n      job_id: job.job_id,\n      status: job.status,\n      start_time: job.start_time,\n      end_time: job.end_time,\n      duration: job.duration,\n      logs_count: job.logs.length,\n      has_result: !!job.result,\n    }));\n    \n    return {\n      success: true,\n      data: {\n        total,\n        history: simplifiedHistory,\n        pagination: {\n          limit,\n          offset,\n          total,\n        },\n      },\n      timestamp: new Date().toISOString(),\n    };\n  }, {\n    query: t.Object({\n      limit: t.Optional(t.String()),\n      offset: t.Optional(t.String()),\n      status: t.Optional(t.String()),\n      start_date: t.Optional(t.String()),\n      end_date: t.Optional(t.String()),\n    })\n  })\n  \n  // 分析优化问题（预览）\n  .post('/analyze', async ({ body }) => {\n    try {\n      // 使用cortex-mem-cli进行实际分析\n      const result = await cortexMemCli.optimize({\n        ...body,\n        dry_run: true,\n        verbose: true,\n      });\n      \n      if (!result.success) {\n        return {\n          success: false,\n          error: {\n            code: 'ANALYSIS_FAILED',\n            message: result.error || '分析失败',\n          },\n          timestamp: new Date().toISOString(),\n        };\n      }\n      \n      // 解析CLI输出\n      const analysisResult = parseOptimizationAnalysis(result.data);\n      \n      return {\n        success: true,\n        data: analysisResult,\n        timestamp: new Date().toISOString(),\n      };\n    } catch (error) {\n      console.error('分析优化问题失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'INTERNAL_ERROR',\n          message: error instanceof Error ? error.message : '分析失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }, {\n    body: t.Object({\n      memory_type: t.Optional(t.String()),\n      user_id: t.Optional(t.String()),\n      agent_id: t.Optional(t.String()),\n      run_id: t.Optional(t.String()),\n      actor_id: t.Optional(t.String()),\n      similarity_threshold: t.Optional(t.Number({ default: 0.7 })),\n    })\n  })\n  \n  // 获取优化统计\n  .get('/statistics', async () => {\n    try {\n      const history = Array.from(optimizationState.values());\n      \n      const statistics = {\n        total_jobs: history.length,\n        successful_jobs: history.filter(job => job.status === 'completed').length,\n        failed_jobs: history.filter(job => job.status === 'failed').length,\n        cancelled_jobs: history.filter(job => job.status === 'cancelled').length,\n        total_memories_processed: history.reduce((sum, job) => \n          sum + (job.result?.memories_affected || 0), 0),\n        total_memories_deduplicated: history.reduce((sum, job) => \n          sum + (job.result?.deduplicated || 0), 0),\n        total_memories_merged: history.reduce((sum, job) => \n          sum + (job.result?.merged || 0), 0),\n        total_memories_enhanced: history.reduce((sum, job) => \n          sum + (job.result?.enhanced || 0), 0),\n        avg_duration: history.length > 0 \n          ? history.reduce((sum, job) => sum + (job.duration || 0), 0) / history.length\n          : 0,\n        last_run: history.length > 0 \n          ? history.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())[0].start_time\n          : null,\n      };\n      \n      return {\n        success: true,\n        data: statistics,\n        timestamp: new Date().toISOString(),\n      };\n    } catch (error) {\n      console.error('获取优化统计失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'INTERNAL_ERROR',\n          message: error instanceof Error ? error.message : '获取统计失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  })\n  \n  // 清理旧的历史记录\n  .post('/cleanup', async ({ body }) => {\n    try {\n      const cutoffTime = Date.now() - (body.max_age_days * 24 * 60 * 60 * 1000);\n      \n      let deleted = 0;\n      for (const [id, state] of optimizationState.entries()) {\n        const timestamp = parseInt(id.split('_')[1]);\n        if (!isNaN(timestamp) && timestamp < cutoffTime) {\n          optimizationState.delete(id);\n          deleted++;\n        }\n      }\n      \n      return {\n        success: true,\n        data: {\n          deleted,\n          remaining: optimizationState.size,\n          message: `已清理 ${deleted} 条旧记录`,\n        },\n        timestamp: new Date().toISOString(),\n      };\n    } catch (error) {\n      console.error('清理历史记录失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'INTERNAL_ERROR',\n          message: error instanceof Error ? error.message : '清理失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }, {\n    body: t.Object({\n      max_age_days: t.Number({ default: 7 })\n    })\n  });\n\n// 异步执行优化任务\nasync function executeOptimization(jobId: string, request: OptimizationRequest) {\n  const state = optimizationState.get(jobId);\n  if (!state) return;\n  \n  try {\n    // 更新状态为运行中\n    state.status = 'running';\n    state.current_stage = '准备优化';\n    state.progress = 10;\n    state.logs.push('开始准备优化任务...');\n    optimizationState.set(jobId, state);\n    \n    // 调用cortex-mem-cli进行优化\n    state.current_stage = '执行优化命令';\n    state.progress = 30;\n    state.logs.push('正在执行cortex-mem-cli optimize命令...');\n    optimizationState.set(jobId, state);\n    \n    const result = await cortexMemCli.optimize(request);\n    \n    if (!result.success) {\n      throw new Error(result.error || '优化命令执行失败');\n    }\n    \n    // 解析结果\n    state.current_stage = '处理优化结果';\n    state.progress = 80;\n    state.logs.push('优化命令执行成功，正在处理结果...');\n    optimizationState.set(jobId, state);\n    \n    const optimizationResult = parseOptimizationResult(result.data);\n    \n    // 完成\n    state.status = 'completed';\n    state.progress = 100;\n    state.current_stage = '完成';\n    state.result = optimizationResult;\n    state.end_time = new Date().toISOString();\n    state.duration = new Date(state.end_time).getTime() - new Date(state.start_time).getTime();\n    state.logs.push('优化任务完成');\n    optimizationState.set(jobId, state);\n    \n  } catch (error) {\n    const state = optimizationState.get(jobId);\n    if (state) {\n      state.status = 'failed';\n      state.logs.push(`执行失败: ${error instanceof Error ? error.message : '未知错误'}`);\n      state.end_time = new Date().toISOString();\n      state.duration = new Date(state.end_time).getTime() - new Date(state.start_time).getTime();\n      optimizationState.set(jobId, state);\n    }\n    console.error('优化任务执行失败:', error);\n  }\n}\n\n// 解析优化分析结果\nfunction parseOptimizationAnalysis(data: any) {\n  if (!data) {\n    return {\n      issues: [],\n      summary: {\n        total_issues: 0,\n        total_affected_memories: 0,\n        estimated_savings_mb: 0,\n        estimated_duration_minutes: 0,\n      },\n      recommendations: [],\n    };\n  }\n  \n  // 尝试从CLI输出中解析信息\n  const output = data.output || JSON.stringify(data);\n  \n  // 简单的解析逻辑（实际项目中需要根据CLI的实际输出格式进行调整）\n  const issues = [];\n  \n  // 检查重复记忆\n  const duplicateMatch = output.match(/duplicate.*?(\\d+)/i);\n  if (duplicateMatch) {\n    issues.push({\n      type: '重复记忆',\n      count: parseInt(duplicateMatch[1]),\n      severity: 'high' as const,\n      description: '语义相似度超过阈值的记忆',\n    });\n  }\n  \n  // 检查低质量记忆\n  const lowQualityMatch = output.match(/low.*?quality.*?(\\d+)/i);\n  if (lowQualityMatch) {\n    issues.push({\n      type: '低质量记忆',\n      count: parseInt(lowQualityMatch[1]),\n      severity: 'medium' as const,\n      description: '重要性评分较低的记忆',\n    });\n  }\n  \n  // 检查过时记忆\n  const outdatedMatch = output.match(/outdated.*?(\\d+)/i);\n  if (outdatedMatch) {\n    issues.push({\n      type: '过时记忆',\n      count: parseInt(outdatedMatch[1]),\n      severity: 'low' as const,\n      description: '长时间未更新的记忆',\n    });\n  }\n  \n  const totalAffected = issues.reduce((sum, issue) => sum + issue.count, 0);\n  \n  return {\n    issues,\n    summary: {\n      total_issues: issues.length,\n      total_affected_memories: totalAffected,\n      estimated_savings_mb: parseFloat((totalAffected * 0.15).toFixed(2)),\n      estimated_duration_minutes: Math.ceil(totalAffected / 10),\n    },\n    recommendations: issues.map(issue => ({\n      type: issue.type,\n      action: issue.severity === 'high' ? '立即处理' : \n              issue.severity === 'medium' ? '建议处理' : '可选处理',\n      priority: issue.severity,\n    })),\n  };\n}\n\n// 解析优化结果\nfunction parseOptimizationResult(data: any) {\n  if (!data) {\n    return {\n      memories_affected: 0,\n      deduplicated: 0,\n      merged: 0,\n      enhanced: 0,\n      errors: 0,\n      space_saved_mb: 0,\n      duration_seconds: 0,\n    };\n  }\n  \n  const output = data.output || JSON.stringify(data);\n  \n  // 简单的解析逻辑\n  return {\n    memories_affected: extractNumber(output, /memories.*?affected.*?(\\d+)/i) || 0,\n    deduplicated: extractNumber(output, /deduplicated.*?(\\d+)/i) || 0,\n    merged: extractNumber(output, /merged.*?(\\d+)/i) || 0,\n    enhanced: extractNumber(output, /enhanced.*?(\\d+)/i) || 0,\n    errors: extractNumber(output, /errors.*?(\\d+)/i) || 0,\n    space_saved_mb: extractNumber(output, /space.*?saved.*?([\\d.]+)/i) || 0,\n    duration_seconds: extractNumber(output, /duration.*?([\\d.]+)/i) || 0,\n  };\n}\n\n// 从文本中提取数字\nfunction extractNumber(text: string, pattern: RegExp): number {\n  const match = text.match(pattern);\n  return match ? parseFloat(match[1]) : 0;\n}"
+      "source_summary": "import { Elysia, t } from 'elysia';\nimport { cortexMemService } from '../integrations/cortex-mem';\n\n// 类型定义\ninterface OptimizationRequest {\n  memory_type?: string;\n  user_id?: string;\n  agent_id?: string;\n  run_id?: string;\n  actor_id?: string;\n  similarity_threshold?: number;\n  dry_run?: boolean;\n  verbose?: boolean;\n  strategy?: string;\n  aggressive?: boolean;\n  timeout_minutes?: number;\n}\n\n\n\n// 优化API路由\nexport const optimizationRoutes = new Elysia({ prefix: '/api/optimization' })\n  // 启动优化\n  .post('/', async ({ body }) => {\n    try {\n      // 直接调用cortex-mem-service的API\n      const result = await cortexMemService.optimize(body);\n      return result;\n    } catch (error) {\n      console.error('启动优化失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'OPTIMIZE_FAILED',\n          message: error instanceof Error ? error.message : '启动优化失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }, {\n    body: t.Object({\n      memory_type: t.Optional(t.String()),\n      user_id: t.Optional(t.String()),\n      agent_id: t.Optional(t.String()),\n      run_id: t.Optional(t.String()),\n      actor_id: t.Optional(t.String()),\n      similarity_threshold: t.Optional(t.Number({ default: 0.7 })),\n      dry_run: t.Optional(t.Boolean({ default: false })),\n      verbose: t.Optional(t.Boolean({ default: false })),\n      strategy: t.Optional(t.String()),\n      aggressive: t.Optional(t.Boolean({ default: false })),\n      timeout_minutes: t.Optional(t.Number()),\n    })\n  })\n  \n  // 获取优化历史 - 必须在 /:jobId 之前定义,避免 \"history\" 被当作 jobId\n  .get('/history', async ({ query }) => {\n    try {\n      const result = await cortexMemService.getOptimizationHistory({\n        limit: query.limit ? parseInt(query.limit) : 20,\n        offset: query.offset ? parseInt(query.offset) : 0,\n        status: query.status,\n        start_date: query.start_date,\n        end_date: query.end_date,\n      });\n      return result;\n    } catch (error) {\n      console.error('获取优化历史失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'GET_HISTORY_FAILED',\n          message: error instanceof Error ? error.message : '获取历史失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }, {\n    query: t.Object({\n      limit: t.Optional(t.String()),\n      offset: t.Optional(t.String()),\n      status: t.Optional(t.String()),\n      start_date: t.Optional(t.String()),\n      end_date: t.Optional(t.String()),\n    })\n  })\n  \n  // 获取优化统计 - 也要在 /:jobId 之前\n  .get('/statistics', async () => {\n    try {\n      const result = await cortexMemService.getOptimizationStatistics();\n      return result;\n    } catch (error) {\n      console.error('获取优化统计失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'GET_STATISTICS_FAILED',\n          message: error instanceof Error ? error.message : '获取统计失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  })\n  \n  // 分析优化问题（预览）- 也要在 /:jobId 之前\n  .post('/analyze', async ({ body }) => {\n    try {\n      const result = await cortexMemService.analyzeOptimization(body);\n      return result;\n    } catch (error) {\n      console.error('分析优化问题失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'ANALYZE_FAILED',\n          message: error instanceof Error ? error.message : '分析失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }, {\n    body: t.Object({\n      memory_type: t.Optional(t.String()),\n      user_id: t.Optional(t.String()),\n      agent_id: t.Optional(t.String()),\n      run_id: t.Optional(t.String()),\n      actor_id: t.Optional(t.String()),\n      similarity_threshold: t.Optional(t.Number({ default: 0.7 })),\n    })\n  })\n  \n  // 获取优化状态 - 动态路由必须放在静态路由之后\n  .get('/:jobId', async ({ params }) => {\n    try {\n      const result = await cortexMemService.getOptimizationStatus(params.jobId);\n      return result;\n    } catch (error) {\n      console.error('获取优化状态失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'GET_STATUS_FAILED',\n          message: error instanceof Error ? error.message : '获取状态失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }, {\n    params: t.Object({\n      jobId: t.String()\n    })\n  })\n  \n  // 取消优化\n  .post('/:jobId/cancel', async ({ params }) => {\n    try {\n      const result = await cortexMemService.cancelOptimization(params.jobId);\n      return result;\n    } catch (error) {\n      console.error('取消优化失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'CANCEL_FAILED',\n          message: error instanceof Error ? error.message : '取消优化失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }, {\n    params: t.Object({\n      jobId: t.String()\n    })\n  })\n  \n  // 清理旧的历史记录 - 也要在 /:jobId 之前\n  .post('/cleanup', async ({ body }) => {\n    try {\n      const result = await cortexMemService.cleanupOptimizationHistory(body.max_age_days);\n      return result;\n    } catch (error) {\n      console.error('清理历史记录失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'CLEANUP_FAILED',\n          message: error instanceof Error ? error.message : '清理失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  }, {\n    body: t.Object({\n      max_age_days: t.Number({ default: 7 })\n    })\n  });"
     },
     "complexity_metrics": {
-      "cyclomatic_complexity": 21.0,
-      "lines_of_code": 515,
+      "cyclomatic_complexity": 1.0,
+      "lines_of_code": 197,
       "number_of_classes": 0,
-      "number_of_functions": 4
+      "number_of_functions": 6
     },
     "dependencies": [
       {
-        "dependency_type": "import",
+        "dependency_type": "module",
         "is_external": true,
         "line_number": 1,
         "name": "elysia",
@@ -3431,7 +2940,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "module",
         "is_external": true,
         "line_number": 1,
         "name": "t",
@@ -3439,151 +2948,98 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "import",
-        "is_external": true,
+        "dependency_type": "service",
+        "is_external": false,
         "line_number": 2,
-        "name": "cortexMemCli",
-        "path": "../integrations/cortex-mem-cli",
+        "name": "cortexMemService",
+        "path": "../integrations/cortex-mem",
         "version": null
       }
     ],
-    "detailed_description": "This API component manages memory optimization jobs in the system. It exposes multiple endpoints to handle the full lifecycle of optimization tasks: starting new jobs (/), checking status by jobId (/:jobId), canceling running jobs (/:jobId/cancel), viewing job history (/history), analyzing potential optimizations (/analyze), retrieving statistics (/statistics), and cleaning up old records (/cleanup). Each job is assigned a unique ID and its state is tracked in memory using a Map. The actual optimization work is delegated to an external CLI tool (cortex-mem-cli) via asynchronous execution. The component maintains detailed job state including progress percentage, current stage, logs, timing information, and results. It supports filtering, pagination, and aggregation for historical data. The /analyze endpoint provides dry-run capabilities to preview optimization impact before execution. All responses follow a consistent success/error pattern with timestamps.",
+    "detailed_description": "This component defines a set of API endpoints using the Elysia framework to manage memory optimization tasks. It provides functionality to start an optimization job, analyze potential issues, retrieve historical records and statistics, check the status of a specific job, cancel running jobs, and clean up old history. All logic is delegated to an external service `cortexMemService`, making this a thin API layer. The routes are carefully ordered to prevent dynamic segments like `/:jobId` from shadowing static ones such as `/history`. Input validation is implemented via Elysia's type system (`t.Object`, etc.), ensuring robust handling of optional parameters with defaults. Error handling is centralized with structured error responses containing codes and timestamps.",
     "interfaces": [
       {
-        "description": "Request parameters for optimization operations",
+        "description": "Defines optional input parameters for optimization operations including memory type, user/agent/run/actor IDs, similarity threshold, dry-run mode, verbosity, strategy, aggressiveness, and timeout.",
         "interface_type": "interface",
         "name": "OptimizationRequest",
         "parameters": [
           {
-            "description": "Type of memory to optimize",
+            "description": null,
             "is_optional": true,
             "name": "memory_type",
             "param_type": "string"
           },
           {
-            "description": "User identifier",
+            "description": null,
             "is_optional": true,
             "name": "user_id",
             "param_type": "string"
           },
           {
-            "description": "Agent identifier",
+            "description": null,
             "is_optional": true,
             "name": "agent_id",
             "param_type": "string"
           },
           {
-            "description": "Run identifier",
+            "description": null,
             "is_optional": true,
             "name": "run_id",
             "param_type": "string"
           },
           {
-            "description": "Actor identifier",
+            "description": null,
             "is_optional": true,
             "name": "actor_id",
             "param_type": "string"
           },
           {
-            "description": "Threshold for similarity detection",
+            "description": null,
             "is_optional": true,
             "name": "similarity_threshold",
             "param_type": "number"
           },
           {
-            "description": "Whether to perform a dry run",
+            "description": null,
             "is_optional": true,
             "name": "dry_run",
             "param_type": "boolean"
           },
           {
-            "description": "Whether to enable verbose logging",
+            "description": null,
             "is_optional": true,
             "name": "verbose",
             "param_type": "boolean"
-          }
-        ],
-        "return_type": null,
-        "visibility": "private"
-      },
-      {
-        "description": "Tracks the progress and state of an optimization job",
-        "interface_type": "interface",
-        "name": "OptimizationProgress",
-        "parameters": [
+          },
           {
-            "description": "Unique identifier for the optimization job",
-            "is_optional": false,
-            "name": "job_id",
+            "description": null,
+            "is_optional": true,
+            "name": "strategy",
             "param_type": "string"
           },
           {
-            "description": "Current status of the job",
-            "is_optional": false,
-            "name": "status",
-            "param_type": "'pending' | 'running' | 'completed' | 'failed' | 'cancelled'"
-          },
-          {
-            "description": "Progress percentage (0-100)",
-            "is_optional": false,
-            "name": "progress",
-            "param_type": "number"
-          },
-          {
-            "description": "Current stage of optimization",
+            "description": null,
             "is_optional": true,
-            "name": "current_stage",
-            "param_type": "string"
+            "name": "aggressive",
+            "param_type": "boolean"
           },
           {
-            "description": "Log messages from the optimization process",
-            "is_optional": false,
-            "name": "logs",
-            "param_type": "string[]"
-          },
-          {
-            "description": "Result data from completed optimization",
+            "description": null,
             "is_optional": true,
-            "name": "result",
-            "param_type": "any"
-          },
-          {
-            "description": "ISO timestamp when job started",
-            "is_optional": false,
-            "name": "start_time",
-            "param_type": "string"
-          },
-          {
-            "description": "ISO timestamp when job ended",
-            "is_optional": true,
-            "name": "end_time",
-            "param_type": "string"
-          },
-          {
-            "description": "Duration in milliseconds",
-            "is_optional": true,
-            "name": "duration",
+            "name": "timeout_minutes",
             "param_type": "number"
           }
         ],
         "return_type": null,
         "visibility": "private"
-      },
-      {
-        "description": "Elysia router instance containing all optimization API endpoints",
-        "interface_type": "variable",
-        "name": "optimizationRoutes",
-        "parameters": [],
-        "return_type": "Elysia",
-        "visibility": "public"
       }
     ],
     "responsibilities": [
-      "Manage the lifecycle of memory optimization jobs (start, monitor, cancel)",
-      "Provide API endpoints for optimization task management and monitoring",
-      "Track and store optimization job states in memory",
-      "Integrate with external cortex-mem-cli for actual memory optimization logic",
-      "Provide analytics and statistics on historical optimization activities"
+      "Expose RESTful API endpoints for initiating and managing memory optimization processes",
+      "Validate incoming request payloads and query parameters using type-safe schemas",
+      "Delegate business logic execution to the cortex-mem-service integration layer",
+      "Provide structured error responses with appropriate error codes and messages",
+      "Ensure correct routing precedence by placing static paths before dynamic ones"
     ]
   },
   {
@@ -3788,17 +3244,19 @@ Code analysis results from preprocessing phase, including definitions of functio
   {
     "code_dossier": {
       "code_purpose": "api",
-      "description": "Provides system-level monitoring, health check, performance metrics, and administrative operations via RESTful endpoints. Serves as the backend API interface for system observability and control.",
+      "description": "Provides system monitoring and management endpoints for health checks, performance metrics, logs, and resource usage in the Cortex-Mem Insights backend.",
       "file_path": "cortex-mem-insights/src/server/api/system.ts",
       "functions": [
-        "GET /status",
-        "GET /metrics",
-        "GET /info",
-        "GET /logs",
-        "GET /health",
-        "GET /resources",
-        "POST /clear-cache",
-        "POST /restart"
+        "systemRoutes.get('/status')",
+        "systemRoutes.get('/vector-store/status')",
+        "systemRoutes.get('/llm/status')",
+        "systemRoutes.get('/metrics')",
+        "systemRoutes.get('/info')",
+        "systemRoutes.get('/logs')",
+        "systemRoutes.get('/health')",
+        "systemRoutes.get('/resources')",
+        "systemRoutes.post('/clear-cache')",
+        "systemRoutes.post('/restart')"
       ],
       "importance_score": 0.8,
       "interfaces": [
@@ -3808,13 +3266,13 @@ Code analysis results from preprocessing phase, including definitions of functio
         "LogEntry"
       ],
       "name": "system.ts",
-      "source_summary": "import { Elysia, t } from 'elysia';\nimport { cors } from '@elysiajs/cors';\n\n// 系统状态接口\ninterface SystemStatus {\n  status: 'healthy' | 'unhealthy';\n  vector_store: boolean;\n  llm_service: boolean;\n  timestamp: string;\n}\n\n// 性能指标接口\ninterface PerformanceMetrics {\n  cpu_usage: number;\n  memory_usage: number;\n  disk_usage: number;\n  active_connections: number;\n  request_count: number;\n  error_rate: number;\n  response_time_avg: number;\n  timestamp: string;\n}\n\n// 系统信息接口\ninterface SystemInfo {\n  version: string;\n  uptime: string;\n  platform: string;\n  arch: string;\n  node_version: string;\n  memory_total: number;\n  memory_used: number;\n  cpu_count: number;\n  hostname: string;\n}\n\n// 日志条目接口\ninterface LogEntry {\n  timestamp: string;\n  level: 'info' | 'warn' | 'error' | 'debug';\n  message: string;\n  source: string;\n  metadata?: Record<string, any>;\n}\n\n// 模拟数据\nconst mockSystemStatus: SystemStatus = {\n  status: 'healthy',\n  vector_store: true,\n  llm_service: true,\n  timestamp: new Date().toISOString(),\n};\n\nconst mockPerformanceMetrics: PerformanceMetrics = {\n  cpu_usage: 45.2,\n  memory_usage: 68.7,\n  disk_usage: 32.1,\n  active_connections: 12,\n  request_count: 1250,\n  error_rate: 0.5,\n  response_time_avg: 125.3,\n  timestamp: new Date().toISOString(),\n};\n\nconst mockSystemInfo: SystemInfo = {\n  version: '0.1.0',\n  uptime: '2 days, 3 hours, 45 minutes',\n  platform: 'win32',\n  arch: 'x64',\n  node_version: '22.12.0',\n  memory_total: 16384,\n  memory_used: 11264,\n  cpu_count: 8,\n  hostname: 'cortex-mem-insights',\n};\n\nconst mockLogs: LogEntry[] = [\n  {\n    timestamp: new Date(Date.now() - 60000).toISOString(),\n    level: 'info',\n    message: 'System health check completed',\n    source: 'health-check',\n  },\n  {\n    timestamp: new Date(Date.now() - 120000).toISOString(),\n    level: 'info',\n    message: 'Memory search request processed',\n    source: 'memory-api',\n    metadata: { query: 'test', results: 5 },\n  },\n  {\n    timestamp: new Date(Date.now() - 180000).toISOString(),\n    level: 'warn',\n    message: 'High memory usage detected',\n    source: 'monitor',\n    metadata: { usage: 85.2 },\n  },\n  {\n    timestamp: new Date(Date.now() - 240000).toISOString(),\n    level: 'info',\n    message: 'Optimization job started',\n    source: 'optimization-api',\n    metadata: { job_id: 'opt-123' },\n  },\n  {\n    timestamp: new Date(Date.now() - 300000).toISOString(),\n    level: 'error',\n    message: 'Failed to connect to vector store',\n    source: 'vector-store',\n    metadata: { error: 'Connection timeout' },\n  },\n];\n\n// 创建系统API路由\nexport const systemRoutes = new Elysia({ prefix: '/api/system' })\n  .use(cors())\n  \n  // 获取系统状态\n  .get('/status', () => {\n    return {\n      success: true,\n      data: mockSystemStatus,\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 获取性能指标\n  .get('/metrics', () => {\n    return {\n      success: true,\n      data: mockPerformanceMetrics,\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 获取系统信息\n  .get('/info', () => {\n    return {\n      success: true,\n      data: mockSystemInfo,\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 获取实时日志\n  .get('/logs', ({ query }) => {\n    const { limit = 50, level, source } = query as {\n      limit?: number;\n      level?: string;\n      source?: string;\n    };\n    \n    let filteredLogs = [...mockLogs];\n    \n    if (level) {\n      filteredLogs = filteredLogs.filter(log => log.level === level);\n    }\n    \n    if (source) {\n      filteredLogs = filteredLogs.filter(log => log.source === source);\n    }\n    \n    filteredLogs = filteredLogs.slice(0, limit);\n    \n    return {\n      success: true,\n      data: filteredLogs,\n      total: filteredLogs.length,\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 健康检查\n  .get('/health', () => {\n    return {\n      success: true,\n      status: 'healthy',\n      timestamp: new Date().toISOString(),\n      services: {\n        api: true,\n        database: true,\n        vector_store: true,\n        llm_service: true,\n      },\n    };\n  })\n  \n  // 获取资源使用情况\n  .get('/resources', () => {\n    return {\n      success: true,\n      data: {\n        memory: {\n          total: mockSystemInfo.memory_total,\n          used: mockSystemInfo.memory_used,\n          free: mockSystemInfo.memory_total - mockSystemInfo.memory_used,\n          percentage: (mockSystemInfo.memory_used / mockSystemInfo.memory_total) * 100,\n        },\n        cpu: {\n          usage: mockPerformanceMetrics.cpu_usage,\n          cores: mockSystemInfo.cpu_count,\n        },\n        disk: {\n          usage: mockPerformanceMetrics.disk_usage,\n        },\n        network: {\n          active_connections: mockPerformanceMetrics.active_connections,\n        },\n      },\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 清理系统缓存\n  .post('/clear-cache', () => {\n    return {\n      success: true,\n      message: 'System cache cleared successfully',\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 重启服务\n  .post('/restart', () => {\n    return {\n      success: true,\n      message: 'Service restart initiated',\n      timestamp: new Date().toISOString(),\n      restart_time: new Date(Date.now() + 5000).toISOString(),\n    };\n  })\n  \n  // 错误处理\n  .onError(({ code, error }) => {\n    console.error('System API error:', error);\n    \n    return {\n      success: false,\n      error: {\n        code: code || 'INTERNAL_ERROR',\n        message: error.message || 'An unexpected error occurred',\n      },\n      timestamp: new Date().toISOString(),\n    };\n  });"
+      "source_summary": "import { Elysia, t } from 'elysia';\nimport { cors } from '@elysiajs/cors';\nimport { cortexMemService } from '../integrations/cortex-mem';\n\n// 系统状态接口\ninterface SystemStatus {\n  status: 'healthy' | 'unhealthy';\n  vector_store: boolean;\n  llm_service: boolean;\n  timestamp: string;\n}\n\n// 性能指标接口\ninterface PerformanceMetrics {\n  cpu_usage: number;\n  memory_usage: number;\n  disk_usage: number;\n  active_connections: number;\n  request_count: number;\n  error_rate: number;\n  response_time_avg: number;\n  timestamp: string;\n}\n\n// 系统信息接口\ninterface SystemInfo {\n  version: string;\n  uptime: string;\n  platform: string;\n  arch: string;\n  node_version: string;\n  memory_total: number;\n  memory_used: number;\n  cpu_count: number;\n  hostname: string;\n}\n\n// 日志条目接口\ninterface LogEntry {\n  timestamp: string;\n  level: 'info' | 'warn' | 'error' | 'debug';\n  message: string;\n  source: string;\n  metadata?: Record<string, any>;\n}\n\n// 模拟数据\nconst mockSystemStatus: SystemStatus = {\n  status: 'healthy',\n  vector_store: true,\n  llm_service: true,\n  timestamp: new Date().toISOString(),\n};\n\nconst mockPerformanceMetrics: PerformanceMetrics = {\n  cpu_usage: 45.2,\n  memory_usage: 68.7,\n  disk_usage: 32.1,\n  active_connections: 12,\n  request_count: 1250,\n  error_rate: 0.5,\n  response_time_avg: 125.3,\n  timestamp: new Date().toISOString(),\n};\n\nconst mockSystemInfo: SystemInfo = {\n  version: '0.1.0',\n  uptime: '2 days, 3 hours, 45 minutes',\n  platform: 'win32',\n  arch: 'x64',\n  node_version: '22.12.0',\n  memory_total: 16384,\n  memory_used: 11264,\n  cpu_count: 8,\n  hostname: 'cortex-mem-insights',\n};\n\nconst mockLogs: LogEntry[] = [\n  {\n    timestamp: new Date(Date.now() - 60000).toISOString(),\n    level: 'info',\n    message: 'System health check completed',\n    source: 'health-check',\n  },\n  {\n    timestamp: new Date(Date.now() - 120000).toISOString(),\n    level: 'info',\n    message: 'Memory search request processed',\n    source: 'memory-api',\n    metadata: { query: 'test', results: 5 },\n  },\n  {\n    timestamp: new Date(Date.now() - 180000).toISOString(),\n    level: 'warn',\n    message: 'High memory usage detected',\n    source: 'monitor',\n    metadata: { usage: 85.2 },\n  },\n  {\n    timestamp: new Date(Date.now() - 240000).toISOString(),\n    level: 'info',\n    message: 'Optimization job started',\n    source: 'optimization-api',\n    metadata: { job_id: 'opt-123' },\n  },\n  {\n    timestamp: new Date(Date.now() - 300000).toISOString(),\n    level: 'error',\n    message: 'Failed to connect to vector store',\n    source: 'vector-store',\n    metadata: { error: 'Connection timeout' },\n  },\n];\n\n// 创建系统API路由\nexport const systemRoutes = new Elysia({ prefix: '/api/system' })\n  .use(cors())\n  \n  // 获取系统状态\n  .get('/status', async () => {\n    try {\n      // 获取真实的cortex-mem-service状态\n      const llmStatus = await cortexMemService.getLLMStatus();\n      const healthCheck = await cortexMemService.healthCheck();\n      \n      // 检查Qdrant状态（通过cortex-mem-service的健康检查）\n      const vectorStoreStatus = healthCheck.vector_store;\n      const llmServiceStatus = healthCheck.llm_service;\n\n      const systemStatus = {\n        status: vectorStoreStatus && llmServiceStatus ? 'healthy' : 'unhealthy',\n        vector_store: vectorStoreStatus,\n        llm_service: llmServiceStatus,\n        llm_details: {\n          completion_model: llmStatus.completion_model,\n          embedding_model: llmStatus.embedding_model,\n          overall_status: llmStatus.overall_status,\n        },\n        timestamp: new Date().toISOString(),\n      };\n\n      return {\n        success: true,\n        data: systemStatus,\n        timestamp: new Date().toISOString(),\n      };\n    } catch (error) {\n      console.error('获取系统状态失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'STATUS_CHECK_FAILED',\n          message: error instanceof Error ? error.message : '获取系统状态失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  })\n  \n  // 获取向量存储状态\n  .get('/vector-store/status', async () => {\n    try {\n      const healthCheck = await cortexMemService.healthCheck();\n      \n      return {\n        success: true,\n        data: {\n          status: healthCheck.vector_store ? 'connected' : 'disconnected',\n          available: healthCheck.vector_store,\n          type: 'qdrant',\n          last_check: healthCheck.timestamp,\n        },\n        timestamp: new Date().toISOString(),\n      };\n    } catch (error) {\n      console.error('获取向量存储状态失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'VECTOR_STORE_CHECK_FAILED',\n          message: error instanceof Error ? error.message : '获取向量存储状态失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  })\n  \n  // 获取LLM服务详细状态\n  .get('/llm/status', async () => {\n    try {\n      const llmStatus = await cortexMemService.getLLMStatus();\n      \n      return {\n        success: true,\n        data: llmStatus,\n        timestamp: new Date().toISOString(),\n      };\n    } catch (error) {\n      console.error('获取LLM服务状态失败:', error);\n      return {\n        success: false,\n        error: {\n          code: 'LLM_STATUS_CHECK_FAILED',\n          message: error instanceof Error ? error.message : '获取LLM服务状态失败',\n        },\n        timestamp: new Date().toISOString(),\n      };\n    }\n  })\n  \n  // 获取性能指标\n  .get('/metrics', () => {\n    return {\n      success: true,\n      data: mockPerformanceMetrics,\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 获取系统信息\n  .get('/info', () => {\n    return {\n      success: true,\n      data: mockSystemInfo,\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 获取实时日志\n  .get('/logs', ({ query }) => {\n    const { limit = 50, level, source } = query as {\n      limit?: number;\n      level?: string;\n      source?: string;\n    };\n    \n    let filteredLogs = [...mockLogs];\n    \n    if (level) {\n      filteredLogs = filteredLogs.filter(log => log.level === level);\n    }\n    \n    if (source) {\n      filteredLogs = filteredLogs.filter(log => log.source === source);\n    }\n    \n    filteredLogs = filteredLogs.slice(0, limit);\n    \n    return {\n      success: true,\n      data: filteredLogs,\n      total: filteredLogs.length,\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 健康检查\n  .get('/health', () => {\n    return {\n      success: true,\n      status: 'healthy',\n      timestamp: new Date().toISOString(),\n      services: {\n        api: true,\n        database: true,\n        vector_store: true,\n        llm_service: true,\n      },\n    };\n  })\n  \n  // 获取资源使用情况\n  .get('/resources', () => {\n    return {\n      success: true,\n      data: {\n        memory: {\n          total: mockSystemInfo.memory_total,\n          used: mockSystemInfo.memory_used,\n          free: mockSystemInfo.memory_total - mockSystemInfo.memory_used,\n          percentage: (mockSystemInfo.memory_used / mockSystemInfo.memory_total) * 100,\n        },\n        cpu: {\n          usage: mockPerformanceMetrics.cpu_usage,\n          cores: mockSystemInfo.cpu_count,\n        },\n        disk: {\n          usage: mockPerformanceMetrics.disk_usage,\n        },\n        network: {\n          active_connections: mockPerformanceMetrics.active_connections,\n        },\n      },\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 清理系统缓存\n  .post('/clear-cache', () => {\n    return {\n      success: true,\n      message: 'System cache cleared successfully',\n      timestamp: new Date().toISOString(),\n    };\n  })\n  \n  // 重启服务\n  .post('/restart', () => {\n    return {\n      success: true,\n      message: 'Service restart initiated',\n      timestamp: new Date().toISOString(),\n      restart_time: new Date(Date.now() + 5000).toISOString(),\n    };\n  })\n  \n  // 错误处理\n  .onError(({ code, error }) => {\n    console.error('System API error:', error);\n    \n    return {\n      success: false,\n      error: {\n        code: code || 'INTERNAL_ERROR',\n        message: error.message || 'An unexpected error occurred',\n      },\n      timestamp: new Date().toISOString(),\n    };\n  });"
     },
     "complexity_metrics": {
       "cyclomatic_complexity": 3.0,
-      "lines_of_code": 245,
+      "lines_of_code": 329,
       "number_of_classes": 0,
-      "number_of_functions": 10
+      "number_of_functions": 12
     },
     "dependencies": [
       {
@@ -3832,12 +3290,20 @@ Code analysis results from preprocessing phase, including definitions of functio
         "name": "@elysiajs/cors",
         "path": null,
         "version": null
+      },
+      {
+        "dependency_type": "service",
+        "is_external": false,
+        "line_number": 3,
+        "name": "cortex-mem-service",
+        "path": "../integrations/cortex-mem",
+        "version": null
       }
     ],
-    "detailed_description": "This component implements a REST API using Elysia framework to expose system monitoring and management functionalities. It defines four core interfaces representing system status, performance metrics, system information, and log entries. The API provides endpoints to retrieve real-time system health, performance data, hardware/software environment details, filtered logs, resource utilization, and supports administrative actions such as cache clearing and service restart. All responses follow a consistent success/error envelope pattern with timestamps. The implementation currently uses mock data but is structured to be easily extended with real system introspection. Error handling is centralized using Elysia's onError hook for consistent error responses.",
+    "detailed_description": "This component defines a comprehensive set of API endpoints under the '/api/system' prefix using Elysia.js for monitoring and managing the backend system. It exposes interfaces for retrieving real-time system health status (including vector store and LLM service connectivity), performance metrics, system information, filtered logs, and resource utilization. The API also supports management operations such as cache clearing and service restart. While some data (metrics, system info, logs) is currently mocked, critical health status is retrieved from the actual cortex-mem-service integration. Error handling is centralized via Elysia's onError hook, ensuring consistent response formatting across all endpoints. All responses follow a standardized structure with success flags, data/error payloads, and timestamps.",
     "interfaces": [
       {
-        "description": "Represents the overall health status of the system and its critical components (vector store, LLM service)",
+        "description": "Represents the overall system health status with component-level availability",
         "interface_type": "interface",
         "name": "SystemStatus",
         "parameters": [],
@@ -3845,7 +3311,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "Captures key performance indicators including CPU, memory, disk usage, request metrics, and response times",
+        "description": "Defines system performance metrics including CPU, memory, disk usage and request statistics",
         "interface_type": "interface",
         "name": "PerformanceMetrics",
         "parameters": [],
@@ -3853,7 +3319,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "Contains detailed system metadata including version, uptime, platform information, and hardware specifications",
+        "description": "Contains detailed system information such as version, uptime, hardware and runtime details",
         "interface_type": "interface",
         "name": "SystemInfo",
         "parameters": [],
@@ -3861,7 +3327,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "Defines the structure of system log entries with timestamp, severity level, message, source, and optional metadata",
+        "description": "Represents a single log entry with timestamp, level, message, source and optional metadata",
         "interface_type": "interface",
         "name": "LogEntry",
         "parameters": [],
@@ -3870,11 +3336,11 @@ Code analysis results from preprocessing phase, including definitions of functio
       }
     ],
     "responsibilities": [
-      "Expose system health and status information via standardized API endpoints",
-      "Provide real-time performance metrics and resource utilization data",
-      "Serve system configuration and environment information to clients",
-      "Deliver filtered access to system log entries with query parameters",
-      "Support administrative operations like cache clearing and service restart"
+      "Provide system health monitoring endpoints for both frontend and operations teams",
+      "Expose real-time status of critical services including vector store and LLM connectivity",
+      "Serve performance metrics and system resource utilization data",
+      "Deliver filtered real-time log entries with query capabilities",
+      "Support system management operations like cache clearing and restart"
     ]
   },
   {
@@ -4272,8 +3738,114 @@ Code analysis results from preprocessing phase, including definitions of functio
   },
   {
     "code_dossier": {
+      "code_purpose": "widget",
+      "description": "A Svelte component for displaying and monitoring the real-time status of backend services including Cortex Memory Service, Qdrant, and LLM Service. It provides visual indicators for connection status, latency, model details, and supports manual refresh and auto-detection.",
+      "file_path": "cortex-mem-insights/src/lib/components/ServiceStatus.svelte",
+      "functions": [
+        "detectIndividualServices",
+        "detectServicesAsync",
+        "handleRefresh",
+        "getStatusColor",
+        "getStatusLightColor",
+        "getStatusText"
+      ],
+      "importance_score": 0.8,
+      "interfaces": [
+        "systemStatus",
+        "title",
+        "showRefreshButton",
+        "autoDetect",
+        "statusUpdate"
+      ],
+      "name": "ServiceStatus.svelte",
+      "source_summary": "<script lang=\"ts\">\n\timport { onMount } from 'svelte';\n\n\t// 服务状态类型定义\n\texport type ServiceStatus = {\n\t\tstatus: 'connected' | 'connecting' | 'detecting' | 'disconnected' | 'error';\n\t\tlatency: number;\n\t\tversion?: string;\n\t\tlastCheck: string;\n\t\tcollectionCount?: number;\n\t\tprovider?: string;\n\t\tmodel?: string;\n\t\tcompletionModel?: {\n\t\t\tavailable: boolean;\n\t\t\tlatency: number;\n\t\t\terror: string | null;\n\t\t};\n\t\tembeddingModel?: {\n\t\t\tavailable: boolean;\n\t\t\tlatency: number;\n\t\t\terror: string | null;\n\t\t};\n\t};\n\n\texport type SystemStatus = {\n\t\tcortexMemService: ServiceStatus;\n\t\tqdrant: ServiceStatus;\n\t\tllmService: ServiceStatus;\n\t};\n\n\t// Props\n\texport let systemStatus: SystemStatus | null = null;\n\texport let title: string = '服务状态';\n\texport let showRefreshButton: boolean = true;\n\texport let autoDetect: boolean = true;\n\n\t// 事件派发\n\timport { createEventDispatcher } from 'svelte';\n\tconst dispatch = createEventDispatcher();\n\n\t// 状态变量\n\tlet isDetectingServices = false;\n\tlet localSystemStatus: SystemStatus;\n\tlet isRefreshing = false;\n\n\t// 同步props到本地状态，确保深拷贝\n\t$: if (systemStatus) {\n\t\tlocalSystemStatus = JSON.parse(JSON.stringify(systemStatus));\n\t}\n\n\t// 独立检测各个服务状态（与监控页面相同的逻辑）\n\tasync function detectIndividualServices(timestamp: string) {\n\t\tconst mainService: ServiceStatus = { status: 'detecting', latency: 0, lastCheck: timestamp };\n\t\tconst vectorStore: ServiceStatus = { status: 'detecting', latency: 0, lastCheck: timestamp };\n\t\tconst llmService: ServiceStatus = { status: 'detecting', latency: 0, lastCheck: timestamp };\n\n\t\ttry {\n\t\t\t// 1. 测试cortex-mem-service基础可用性（API端点优先）\n\t\t\tconst serviceStartTime = Date.now();\n\t\t\tconst serviceResponse = await fetch('/api/memories?limit=1');\n\t\t\tconst serviceLatency = Date.now() - serviceStartTime;\n\n\t\t\tif (serviceResponse.ok) {\n\t\t\t\t// API端点正常，说明服务可用\n\t\t\t\tmainService.status = 'connected';\n\t\t\t\tmainService.latency = serviceLatency;\n\t\t\t} else {\n\t\t\t\t// 如果API失败，再尝试健康检查端点，但健康检查失败不应该影响主要判断\n\t\t\t\ttry {\n\t\t\t\t\tconst healthStartTime = Date.now();\n\t\t\t\t\tconst healthResponse = await fetch('/health');\n\t\t\t\t\tconst healthLatency = Date.now() - healthStartTime;\n\n\t\t\t\t\tif (healthResponse.ok) {\n\t\t\t\t\t\tconst healthData = await healthResponse.json();\n\t\t\t\t\t\t// 即使健康检查显示不健康，如果API可以访问，服务还是可用的\n\t\t\t\t\t\tmainService.status = 'connected';\n\t\t\t\t\t\tmainService.latency = Math.min(serviceLatency, healthLatency);\n\t\t\t\t\t}\n\t\t\t\t} catch (healthErr) {\n\t\t\t\t\tconsole.warn('健康检查失败，但API可能仍可用:', healthErr);\n\t\t\t\t\t// 健康检查失败不代表服务不可用，保持连接状态或设置connecting\n\t\t\t\t\tif (serviceLatency > 0) {\n\t\t\t\t\t\tmainService.status = 'connecting';\n\t\t\t\t\t\tmainService.latency = serviceLatency;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t} catch (serviceErr) {\n\t\t\tconsole.warn('cortex-mem-service检测失败:', serviceErr);\n\t\t\tmainService.status = 'connecting';\n\t\t}\n\n\t\ttry {\n\t\t\t// 2. 通过insights server API获取向量存储状态\n\t\t\tconst vectorStoreStartTime = Date.now();\n\t\t\tconst vectorStoreResponse = await fetch('/api/system/vector-store/status');\n\t\t\tconst vectorStoreLatency = Date.now() - vectorStoreStartTime;\n\n\t\t\tif (vectorStoreResponse.ok) {\n\t\t\t\tconst vectorStoreData = await vectorStoreResponse.json();\n\t\t\t\tif (vectorStoreData.success && vectorStoreData.data) {\n\t\t\t\t\tvectorStore.status = vectorStoreData.data.status;\n\t\t\t\t\tvectorStore.latency = vectorStoreLatency;\n\t\t\t\t} else {\n\t\t\t\t\tvectorStore.status = 'connecting';\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tvectorStore.status = 'connecting';\n\t\t\t}\n\t\t} catch (vectorStoreErr) {\n\t\t\tconsole.warn('获取向量存储状态失败:', vectorStoreErr);\n\t\t\tvectorStore.status = 'connecting';\n\t\t}\n\n\t\ttry {\n\t\t\t// 3. 通过insights server API获取LLM服务状态\n\t\t\tconst llmStartTime = Date.now();\n\t\t\tconst llmResponse = await fetch('/api/system/llm/status');\n\t\t\tconst llmLatency = Date.now() - llmStartTime;\n\n\t\t\tif (llmResponse.ok) {\n\t\t\t\tconst llmData = await llmResponse.json();\n\t\t\t\tif (llmData.success && llmData.data) {\n\t\t\t\t\tconst { overall_status, completion_model, embedding_model } = llmData.data;\n\n\t\t\t\t\t// 更新LLM服务状态\n\t\t\t\t\tllmService.status = overall_status === 'healthy' ? 'connected' : 'connecting';\n\t\t\t\t\tllmService.latency = llmLatency;\n\t\t\t\t\tllmService.provider = completion_model.provider;\n\t\t\t\t\tllmService.model = `${completion_model.model_name} / ${embedding_model.model_name}`;\n\t\t\t\t\tllmService.lastCheck = new Date().toISOString();\n\n\t\t\t\t\t// 更新模型详细信息\n\t\t\t\t\tllmService.completionModel = {\n\t\t\t\t\t\tavailable: completion_model.available,\n\t\t\t\t\t\tlatency: completion_model.latency_ms,\n\t\t\t\t\t\terror: completion_model.error_message\n\t\t\t\t\t};\n\n\t\t\t\t\tllmService.embeddingModel = {\n\t\t\t\t\t\tavailable: embedding_model.available,\n\t\t\t\t\t\tlatency: embedding_model.latency_ms,\n\t\t\t\t\t\terror: embedding_model.error_message\n\t\t\t\t\t};\n\t\t\t\t} else {\n\t\t\t\t\tllmService.status = 'connecting';\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tllmService.status = 'connecting';\n\t\t\t}\n\t\t} catch (llmErr) {\n\t\t\tconsole.warn('获取LLM服务状态失败:', llmErr);\n\t\t\tllmService.status = 'connecting';\n\t\t}\n\n\t\treturn { mainService, vectorStore, llmService };\n\t}\n\n\t// 异步检测服务状态\n\tasync function detectServicesAsync() {\n\t\tisDetectingServices = true;\n\t\ttry {\n\t\t\tconst timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });\n\t\t\t\n\t\t\t// 初始化为检测中状态\n\t\t\tlocalSystemStatus = {\n\t\t\t\tcortexMemService: { status: 'detecting', latency: 0, lastCheck: timestamp },\n\t\t\t\tqdrant: { status: 'detecting', latency: 0, lastCheck: timestamp },\n\t\t\t\tllmService: { status: 'detecting', latency: 0, lastCheck: timestamp }\n\t\t\t};\n\n\t\t\tconst serviceStatuses = await detectIndividualServices(timestamp);\n\n\t\t\t// 更新本地系统状态\n\t\t\tlocalSystemStatus = {\n\t\t\t\tcortexMemService: {\n\t\t\t\t\tstatus: serviceStatuses.mainService.status,\n\t\t\t\t\tlatency: serviceStatuses.mainService.latency,\n\t\t\t\t\tversion: '',\n\t\t\t\t\tlastCheck: serviceStatuses.mainService.lastCheck\n\t\t\t\t},\n\t\t\t\tqdrant: {\n\t\t\t\t\tstatus: serviceStatuses.vectorStore.status,\n\t\t\t\t\tlatency: serviceStatuses.vectorStore.latency,\n\t\t\t\t\tversion: '',\n\t\t\t\t\tcollectionCount: 0,\n\t\t\t\t\tlastCheck: serviceStatuses.vectorStore.lastCheck\n\t\t\t\t},\n\t\t\t\tllmService: {\n\t\t\t\t\tstatus: serviceStatuses.llmService.status,\n\t\t\t\t\tlatency: serviceStatuses.llmService.latency,\n\t\t\t\t\tprovider: serviceStatuses.llmService.provider || '',\n\t\t\t\t\tmodel: serviceStatuses.llmService.model || '',\n\t\t\t\t\tlastCheck: serviceStatuses.llmService.lastCheck,\n\t\t\t\t\tcompletionModel: serviceStatuses.llmService.completionModel,\n\t\t\t\t\tembeddingModel: serviceStatuses.llmService.embeddingModel\n\t\t\t\t}\n\t\t\t};\n\n\t\t\t// 派发状态更新事件\n\t\t\tdispatch('statusUpdate', { systemStatus: localSystemStatus });\n\t\t} catch (err) {\n\t\t\tconsole.error('异步检测服务状态失败:', err);\n\t\t} finally {\n\t\t\tisDetectingServices = false;\n\t\t}\n\t}\n\n\t// 手动刷新\n\tasync function handleRefresh() {\n\t\tisRefreshing = true;\n\t\tisDetectingServices = true;\n\t\ttry {\n\t\t\tawait detectServicesAsync();\n\t\t} finally {\n\t\t\tisDetectingServices = false;\n\t\t\tisRefreshing = false;\n\t\t}\n\t}\n\n\t// 状态显示函数\n\tfunction getStatusColor(status: string) {\n\t\tswitch (status) {\n\t\t\tcase 'connected':\n\t\t\t\treturn 'text-green-500 dark:bg-green-900/20';\n\t\t\tcase 'connecting':\n\t\t\t\treturn 'text-yellow-500 dark:bg-yellow-900/20';\n\t\t\tcase 'detecting':\n\t\t\t\treturn 'text-blue-500 dark:bg-blue-900/20';\n\t\t\tcase 'disconnected':\n\t\t\t\treturn 'text-red-500 dark:bg-red-900/20';\n\t\t\tdefault:\n\t\t\t\treturn 'text-gray-500 dark:bg-gray-800';\n\t\t}\n\t}\n\n\tfunction getStatusLightColor(status: string) {\n\t\tswitch (status) {\n\t\t\tcase 'connected':\n\t\t\t\treturn 'bg-green-400 dark:bg-green-900/20';\n\t\t\tcase 'connecting':\n\t\t\t\treturn 'bg-yellow-500 dark:bg-yellow-900/20';\n\t\t\tcase 'detecting':\n\t\t\t\treturn 'bg-blue-400 dark:bg-blue-900/20 animate-pulse';\n\t\t\tcase 'disconnected':\n\t\t\t\treturn 'bg-red-500 dark:bg-red-900/20';\n\t\t\tdefault:\n\t\t\t\treturn 'bg-gray-500 dark:bg-gray-800';\n\t\t}\n\t}\n\n\tfunction getStatusText(status: string) {\n\t\tswitch (status) {\n\t\t\tcase 'connected':\n\t\t\t\treturn '已连接';\n\t\t\tcase 'connecting':\n\t\t\t\treturn '连接中';\n\t\t\tcase 'detecting':\n\t\t\t\treturn '检测中';\n\t\t\tcase 'disconnected':\n\t\t\t\treturn '已断开';\n\t\t\tdefault:\n\t\t\t\treturn '未知';\n\t\t}\n\t}\n\n\tonMount(() => {\n\t\t// 如果没有传入systemStatus，初始化默认状态\n\t\tif (!systemStatus) {\n\t\t\tconst timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });\n\t\t\tlocalSystemStatus = {\n\t\t\t\tcortexMemService: { status: 'connecting', latency: 0, version: '1.0.0', lastCheck: timestamp },\n\t\t\t\tqdrant: {\n\t\t\t\t\tstatus: 'connecting',\n\t\t\t\t\tlatency: 0,\n\t\t\t\t\tversion: '1.7.0',\n\t\t\t\t\tcollectionCount: 0,\n\t\t\t\t\tlastCheck: timestamp\n\t\t\t\t},\n\t\t\t\tllmService: {\n\t\t\t\t\tstatus: 'connecting',\n\t\t\t\t\tlatency: 0,\n\t\t\t\t\tprovider: 'Unknown',\n\t\t\t\t\tmodel: 'Unknown',\n\t\t\t\t\tlastCheck: timestamp,\n\t\t\t\t\tcompletionModel: {\n\t\t\t\t\t\tavailable: false,\n\t\t\t\t\t\tlatency: 0,\n\t\t\t\t\t\terror: null as string | null\n\t\t\t\t\t},\n\t\t\t\t\tembeddingModel: {\n\t\t\t\t\t\tavailable: false,\n\t\t\t\t\t\tlatency: 0,\n\t\t\t\t\t\terror: null as string | null\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t};\n\t\t}\n\n\t\tif (autoDetect) {\n\t\t\t// 延迟一点执行，确保组件完全挂载\n\t\t\tsetTimeout(() => {\n\t\t\t\tdetectServicesAsync();\n\t\t\t}, 100);\n\t\t}\n\t});\n</script>\n\n<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t<div class=\"flex items-center justify-between mb-6\">\n\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">{title}</h2>\n\t\t{#if showRefreshButton}\n\t\t\t<button\n\t\t\t\ton:click={handleRefresh}\n\t\t\t\tdisabled={isDetectingServices}\n\t\t\t\tclass=\"px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2\"\n\t\t\t>\n\t\t\t\t{#if isDetectingServices}\n\t\t\t\t\t<svg class=\"animate-spin h-4 w-4 text-white\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\">\n\t\t\t\t\t\t<circle class=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" stroke-width=\"4\"></circle>\n\t\t\t\t\t\t<path class=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z\"></path>\n\t\t\t\t\t</svg>\n\t\t\t\t\t<span>检测中...</span>\n\t\t\t\t{:else}\n\t\t\t\t\t<span>重新检查所有服务</span>\n\t\t\t\t{/if}\n\t\t\t</button>\n\t\t{/if}\n\t</div>\n\n\t<div class=\"space-y-4\">\n\t\t{#each Object.entries(localSystemStatus) as [service, data]}\n\t\t\t{#if data && typeof data === 'object' && data.status}\n\t\t\t\t<div class=\"p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n\t\t\t\t\t<div class=\"flex items-center justify-between mb-2\">\n\t\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t\t<div class={`w-2 h-2 rounded-full ${getStatusLightColor(data.status)}`}></div>\n\t\t\t\t\t\t\t<span class=\"font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t{service === 'cortexMemService'\n\t\t\t\t\t\t\t\t\t? 'Cortex Memory Service'\n\t\t\t\t\t\t\t\t\t: service === 'qdrant'\n\t\t\t\t\t\t\t\t\t\t? 'Qdrant 数据库'\n\t\t\t\t\t\t\t\t\t\t: 'LLM 服务'}\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<span class={`text-sm font-medium ${getStatusColor(data.status)}`}>\n\t\t\t\t\t\t\t{getStatusText(data.status)}\n\t\t\t\t\t\t</span>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400\">\n\t\t\t\t\t\t<div>\n\t\t\t\t\t\t\t延迟: <span class=\"font-medium\">\n\t\t\t\t\t\t\t\t{#if data.status === 'detecting'}\n\t\t\t\t\t\t\t\t\t<span class=\"animate-pulse\">检测中...</span>\n\t\t\t\t\t\t\t\t{:else}\n\t\t\t\t\t\t\t\t\t{data.latency}ms\n\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t{#if data.provider}\n\t\t\t\t\t\t\t<div>提供商: <span class=\"font-medium\">{data.provider}</span></div>\n\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t{#if data.model}\n\t\t\t\t\t\t\t<div>模型: <span class=\"font-medium text-xs\">{data.model}</span></div>\n\t\t\t\t\t\t{/if}\n\t\t\t\t\t</div>\n\n\t\t\t\t\t{#if data.lastCheck}\n\t\t\t\t\t\t<div class=\"text-xs text-gray-500 dark:text-gray-400 mt-1\">\n\t\t\t\t\t\t\t最后检查: {data.lastCheck}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{/if}\n\t\t\t\t</div>\n\t\t\t{/if}\n\t\t{/each}\n\t</div>\n</div>\n\n<style>\n\t@keyframes pulse {\n\t\t0%, 100% {\n\t\t\topacity: 1;\n\t\t}\n\t\t50% {\n\t\t\topacity: 0.5;\n\t\t}\n\t}\n\t.animate-pulse {\n\t\tanimation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;\n\t}\n</style>"
+    },
+    "complexity_metrics": {
+      "cyclomatic_complexity": 33.0,
+      "lines_of_code": 393,
+      "number_of_classes": 0,
+      "number_of_functions": 6
+    },
+    "dependencies": [
+      {
+        "dependency_type": "framework",
+        "is_external": true,
+        "line_number": null,
+        "name": "svelte",
+        "path": "svelte",
+        "version": null
+      },
+      {
+        "dependency_type": "module",
+        "is_external": true,
+        "line_number": 3,
+        "name": "svelte",
+        "path": "svelte",
+        "version": null
+      }
+    ],
+    "detailed_description": "This component is a comprehensive service status dashboard widget implemented in Svelte. It allows users to monitor the health and connectivity of three core services: Cortex Memory Service, Qdrant vector database, and LLM Service. The component uses client-side HTTP polling via fetch to independently verify each service's availability by hitting specific API endpoints. For Cortex Memory Service, it first tries the /api/memories endpoint and falls back to /health if needed. For Qdrant and LLM services, it queries dedicated status endpoints on the insights server. The component visually represents status using colored indicators and text, with animations during detection. It supports both automatic detection on mount (configurable) and manual refresh via a button. Status updates are dispatched as events for parent components to handle. The UI adapts based on service type, showing provider, model names, and latency where applicable. All state management is encapsulated within the component using reactive declarations and Svelte's onMount lifecycle.",
+    "interfaces": [
+      {
+        "description": "The current system status object to display. If not provided, defaults to connecting state.",
+        "interface_type": "property",
+        "name": "systemStatus",
+        "parameters": [],
+        "return_type": "SystemStatus | null",
+        "visibility": "export"
+      },
+      {
+        "description": "The title displayed at the top of the status widget",
+        "interface_type": "property",
+        "name": "title",
+        "parameters": [],
+        "return_type": "string",
+        "visibility": "export"
+      },
+      {
+        "description": "Controls whether the manual refresh button is visible",
+        "interface_type": "property",
+        "name": "showRefreshButton",
+        "parameters": [],
+        "return_type": "boolean",
+        "visibility": "export"
+      },
+      {
+        "description": "Determines if services should be automatically detected when component mounts",
+        "interface_type": "property",
+        "name": "autoDetect",
+        "parameters": [],
+        "return_type": "boolean",
+        "visibility": "export"
+      },
+      {
+        "description": "Emitted when service status is updated after detection",
+        "interface_type": "event",
+        "name": "statusUpdate",
+        "parameters": [
+          {
+            "description": "The updated system status object",
+            "is_optional": false,
+            "name": "systemStatus",
+            "param_type": "SystemStatus"
+          }
+        ],
+        "return_type": null,
+        "visibility": "dispatch"
+      }
+    ],
+    "responsibilities": [
+      "Monitor and display real-time connectivity status of Cortex Memory Service, Qdrant, and LLM services",
+      "Perform health checks by polling specific API endpoints and measuring response latency",
+      "Provide visual status indicators with color coding and animated states for different conditions",
+      "Support manual refresh and optional automatic service detection on component mount",
+      "Dispatch status update events for parent components to respond to changes"
+    ]
+  },
+  {
+    "code_dossier": {
       "code_purpose": "api",
-      "description": "API 客户端配置，封装了与后端服务通信的记忆、优化和系统管理接口。",
+      "description": "API 客户端配置，提供记忆、优化和系统相关的 API 请求封装。",
       "file_path": "cortex-mem-insights/src/lib/api/client.ts",
       "functions": [
         "request",
@@ -4291,6 +3863,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "optimizationApi.getStatus",
         "optimizationApi.history",
         "optimizationApi.cancel",
+        "optimizationApi.analyze",
         "optimizationApi.statistics",
         "systemApi.health",
         "systemApi.status",
@@ -4311,13 +3884,13 @@ Code analysis results from preprocessing phase, including definitions of functio
         "api"
       ],
       "name": "client.ts",
-      "source_summary": "// API 客户端配置\n// 在开发模式下使用相对路径，由Vite代理到API服务器\n// 在生产模式下使用环境变量配置的URL\nconst API_BASE_URL = import.meta.env.VITE_API_URL || '';\n\n// 通用请求函数\nasync function request<T>(\n  endpoint: string,\n  options: RequestInit = {}\n): Promise<T> {\n  const url = `${API_BASE_URL}${endpoint}`;\n  \n  const defaultOptions: RequestInit = {\n    headers: {\n      'Content-Type': 'application/json',\n      ...options.headers,\n    },\n    credentials: 'include',\n  };\n  \n  try {\n    const response = await fetch(url, { ...defaultOptions, ...options });\n    \n    if (!response.ok) {\n      const errorData = await response.json().catch(() => ({}));\n      throw new Error(\n        errorData.error?.message || \n        errorData.message || \n        `HTTP ${response.status}: ${response.statusText}`\n      );\n    }\n    \n    return await response.json();\n  } catch (error) {\n    console.error(`API request failed: ${endpoint}`, error);\n    throw error;\n  }\n}\n\n// 记忆相关API\nexport const memoryApi = {\n  // 获取记忆列表\n  list: (params?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    memory_type?: string;\n    limit?: number;\n    page?: number;\n  }) => {\n    const queryParams = new URLSearchParams();\n    if (params?.user_id) queryParams.append('user_id', params.user_id);\n    if (params?.agent_id) queryParams.append('agent_id', params.agent_id);\n    if (params?.run_id) queryParams.append('run_id', params.run_id);\n    if (params?.actor_id) queryParams.append('actor_id', params.actor_id);\n    if (params?.memory_type) queryParams.append('memory_type', params.memory_type);\n    if (params?.limit) queryParams.append('limit', params.limit.toString());\n    if (params?.page) queryParams.append('page', params.page.toString());\n    \n    return request(`/api/memories${queryParams.toString() ? `?${queryParams}` : ''}`);\n  },\n  \n  // 搜索记忆\n  search: (query: string, params?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    memory_type?: string;\n    limit?: number;\n    similarity_threshold?: number;\n  }) => {\n    return request('/api/memories/search', {\n      method: 'POST',\n      body: JSON.stringify({ query, ...params }),\n    });\n  },\n  \n  // 获取单个记忆\n  get: (id: string) => {\n    return request(`/api/memories/${id}`);\n  },\n  \n  // 创建记忆\n  create: (content: string, metadata?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    role?: string;\n    memory_type?: string;\n    custom?: Record<string, any>;\n  }) => {\n    return request('/api/memories', {\n      method: 'POST',\n      body: JSON.stringify({ content, ...metadata }),\n    });\n  },\n  \n  // 更新记忆\n  update: (id: string, content: string) => {\n    return request(`/api/memories/${id}`, {\n      method: 'PUT',\n      body: JSON.stringify({ content }),\n    });\n  },\n  \n  // 删除记忆\n  delete: (id: string) => {\n    return request(`/api/memories/${id}`, {\n      method: 'DELETE',\n    });\n  },\n  \n  // 批量删除\n  batchDelete: (ids: string[]) => {\n    return request('/api/memories/batch/delete', {\n      method: 'POST',\n      body: JSON.stringify({ ids }),\n    });\n  },\n\n  // 批量更新\n  batchUpdate: (updates: { id: string; content: string }[]) => {\n    return request('/api/memories/batch/update', {\n      method: 'POST',\n      body: JSON.stringify({ updates }),\n    });\n  },\n  \n  // 获取统计信息\n  statistics: () => {\n    return request('/api/memories/stats/summary');\n  },\n  \n  // 导出记忆\n  export: (params: {\n    format: 'json' | 'csv' | 'txt';\n    ids?: string[];\n    filters?: any;\n    include_metadata?: boolean;\n    include_scores?: boolean;\n  }) => {\n    return request('/api/memories/export', {\n      method: 'POST',\n      body: JSON.stringify(params),\n    });\n  },\n};\n\n// 优化相关API\nexport const optimizationApi = {\n  // 执行优化\n  optimize: (params?: {\n    memory_type?: string;\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    similarity_threshold?: number;\n    dry_run?: boolean;\n    verbose?: boolean;\n  }) => {\n    return request('/api/optimization', {\n      method: 'POST',\n      body: JSON.stringify(params),\n    });\n  },\n  \n  // 获取优化状态\n  getStatus: (jobId: string) => {\n    return request(`/api/optimization/${jobId}`);\n  },\n  \n  // 获取优化历史\n  history: (params?: {\n    limit?: number;\n    offset?: number;\n    status?: string;\n    start_date?: string;\n    end_date?: string;\n  }) => {\n    const queryParams = new URLSearchParams();\n    if (params?.limit) queryParams.append('limit', params.limit.toString());\n    if (params?.offset) queryParams.append('offset', params.offset.toString());\n    if (params?.status) queryParams.append('status', params.status);\n    if (params?.start_date) queryParams.append('start_date', params.start_date);\n    if (params?.end_date) queryParams.append('end_date', params.end_date);\n    \n    return request(`/api/optimization/history${queryParams.toString() ? `?${queryParams}` : ''}`);\n  },\n  \n  // 取消优化\n  cancel: (jobId: string) => {\n    return request(`/api/optimization/${jobId}/cancel`, {\n      method: 'POST',\n    });\n  },\n  \n  // 获取优化统计\n  statistics: () => {\n    return request('/api/optimization/statistics');\n  },\n};\n\n// 系统相关API\nexport const systemApi = {\n  // 健康检查\n  health: () => {\n    return request('/health');\n  },\n  \n  // 系统状态\n  status: () => {\n    return request('/api/system/status');\n  },\n  \n  // 性能指标\n  metrics: () => {\n    return request('/api/system/metrics');\n  },\n  \n  // 系统信息\n  info: () => {\n    return request('/api/system/info');\n  },\n  \n  // 实时日志\n  logs: (params?: {\n    limit?: number;\n    level?: string;\n    source?: string;\n  }) => {\n    const queryParams = new URLSearchParams();\n    if (params?.limit) queryParams.append('limit', params.limit.toString());\n    if (params?.level) queryParams.append('level', params.level);\n    if (params?.source) queryParams.append('source', params.source);\n    \n    return request(`/api/system/logs${queryParams.toString() ? `?${queryParams}` : ''}`);\n  },\n  \n  // 资源使用情况\n  resources: () => {\n    return request('/api/system/resources');\n  },\n  \n  // 清理缓存\n  clearCache: () => {\n    return request('/api/system/clear-cache', {\n      method: 'POST',\n    });\n  },\n  \n  // 重启服务\n  restart: () => {\n    return request('/api/system/restart', {\n      method: 'POST',\n    });\n  },\n};\n\n// 通用API\nexport const api = {\n  // 测试连接\n  testConnection: async () => {\n    try {\n      const response = await request('/health');\n      return {\n        connected: true,\n        response,\n      };\n    } catch (error) {\n      return {\n        connected: false,\n        error: error instanceof Error ? error.message : 'Connection failed',\n      };\n    }\n  },\n  \n  // 获取所有服务状态\n  getAllStatus: async () => {\n    try {\n      const [health, systemStatus, metrics] = await Promise.all([\n        systemApi.health(),\n        systemApi.status(),\n        systemApi.metrics(),\n      ]);\n      \n      return {\n        success: true,\n        health,\n        systemStatus,\n        metrics,\n      };\n    } catch (error) {\n      return {\n        success: false,\n        error: error instanceof Error ? error.message : 'Failed to get system status',\n      };\n    }\n  },\n};\n\n// 导出所有API\nexport default {\n  memory: memoryApi,\n  optimization: optimizationApi,\n  system: systemApi,\n  api,\n};"
+      "source_summary": "// API 客户端配置\n// 在开发模式下使用相对路径，由Vite代理到API服务器\n// 在生产模式下使用环境变量配置的URL\nconst API_BASE_URL = import.meta.env.VITE_API_URL || '';\n\n// 通用请求函数\nasync function request<T>(\n  endpoint: string,\n  options: RequestInit = {}\n): Promise<T> {\n  const url = `${API_BASE_URL}${endpoint}`;\n  \n  const defaultOptions: RequestInit = {\n    headers: {\n      'Content-Type': 'application/json',\n      ...options.headers,\n    },\n    credentials: 'include',\n  };\n  \n  try {\n    const response = await fetch(url, { ...defaultOptions, ...options });\n    \n    if (!response.ok) {\n      const errorData = await response.json().catch(() => ({}));\n      throw new Error(\n        errorData.error?.message || \n        errorData.message || \n        `HTTP ${response.status}: ${response.statusText}`\n      );\n    }\n    \n    return await response.json();\n  } catch (error) {\n    console.error(`API request failed: ${endpoint}`, error);\n    throw error;\n  }\n}\n\n// 记忆相关API\nexport const memoryApi = {\n  // 获取记忆列表\n  list: (params?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    memory_type?: string;\n    limit?: number;\n    page?: number;\n  }) => {\n    const queryParams = new URLSearchParams();\n    if (params?.user_id) queryParams.append('user_id', params.user_id);\n    if (params?.agent_id) queryParams.append('agent_id', params.agent_id);\n    if (params?.run_id) queryParams.append('run_id', params.run_id);\n    if (params?.actor_id) queryParams.append('actor_id', params.actor_id);\n    if (params?.memory_type) queryParams.append('memory_type', params.memory_type);\n    if (params?.limit) queryParams.append('limit', params.limit.toString());\n    if (params?.page) queryParams.append('page', params.page.toString());\n    \n    return request(`/api/memories${queryParams.toString() ? `?${queryParams}` : ''}`);\n  },\n  \n  // 搜索记忆\n  search: (query: string, params?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    memory_type?: string;\n    limit?: number;\n    similarity_threshold?: number;\n  }) => {\n    return request('/api/memories/search', {\n      method: 'POST',\n      body: JSON.stringify({ query, ...params }),\n    });\n  },\n  \n  // 获取单个记忆\n  get: (id: string) => {\n    return request(`/api/memories/${id}`);\n  },\n  \n  // 创建记忆\n  create: (content: string, metadata?: {\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    role?: string;\n    memory_type?: string;\n    custom?: Record<string, any>;\n  }) => {\n    return request('/api/memories', {\n      method: 'POST',\n      body: JSON.stringify({ content, ...metadata }),\n    });\n  },\n  \n  // 更新记忆\n  update: (id: string, content: string) => {\n    return request(`/api/memories/${id}`, {\n      method: 'PUT',\n      body: JSON.stringify({ content }),\n    });\n  },\n  \n  // 删除记忆\n  delete: (id: string) => {\n    return request(`/api/memories/${id}`, {\n      method: 'DELETE',\n    });\n  },\n  \n  // 批量删除\n  batchDelete: (ids: string[]) => {\n    return request('/api/memories/batch/delete', {\n      method: 'POST',\n      body: JSON.stringify({ ids }),\n    });\n  },\n\n  // 批量更新\n  batchUpdate: (updates: { id: string; content: string }[]) => {\n    return request('/api/memories/batch/update', {\n      method: 'POST',\n      body: JSON.stringify({ updates }),\n    });\n  },\n  \n  // 获取统计信息\n  statistics: () => {\n    return request('/api/memories/stats/summary');\n  },\n  \n  // 导出记忆\n  export: (params: {\n    format: 'json' | 'csv' | 'txt';\n    ids?: string[];\n    filters?: any;\n    include_metadata?: boolean;\n    include_scores?: boolean;\n  }) => {\n    return request('/api/memories/export', {\n      method: 'POST',\n      body: JSON.stringify(params),\n    });\n  },\n};\n\n// 优化相关API\nexport const optimizationApi = {\n  // 执行优化\n  optimize: (params?: {\n    memory_type?: string;\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    similarity_threshold?: number;\n    dry_run?: boolean;\n    verbose?: boolean;\n  }) => {\n    return request('/api/optimization', {\n      method: 'POST',\n      body: JSON.stringify(params),\n    });\n  },\n  \n  // 获取优化状态\n  getStatus: (jobId: string) => {\n    return request(`/api/optimization/${jobId}`);\n  },\n  \n  // 获取优化历史\n  history: (params?: {\n    limit?: number;\n    offset?: number;\n    status?: string;\n    start_date?: string;\n    end_date?: string;\n  }) => {\n    const queryParams = new URLSearchParams();\n    if (params?.limit) queryParams.append('limit', params.limit.toString());\n    if (params?.offset) queryParams.append('offset', params.offset.toString());\n    if (params?.status) queryParams.append('status', params.status);\n    if (params?.start_date) queryParams.append('start_date', params.start_date);\n    if (params?.end_date) queryParams.append('end_date', params.end_date);\n    \n    return request(`/api/optimization/history${queryParams.toString() ? `?${queryParams}` : ''}`);\n  },\n  \n  // 取消优化\n  cancel: (jobId: string) => {\n    return request(`/api/optimization/${jobId}/cancel`, {\n      method: 'POST',\n    });\n  },\n  \n  // 分析优化问题（预览模式）\n  analyze: (params?: {\n    memory_type?: string;\n    user_id?: string;\n    agent_id?: string;\n    run_id?: string;\n    actor_id?: string;\n    similarity_threshold?: number;\n  }) => {\n    return request('/api/optimization/analyze', {\n      method: 'POST',\n      body: JSON.stringify(params || {}),\n    });\n  },\n  \n  // 获取优化统计\n  statistics: () => {\n    return request('/api/optimization/statistics');\n  },\n};\n\n// 系统相关API\nexport const systemApi = {\n  // 健康检查\n  health: () => {\n    return request('/health');\n  },\n  \n  // 系统状态\n  status: () => {\n    return request('/api/system/status');\n  },\n  \n  // 性能指标\n  metrics: () => {\n    return request('/api/system/metrics');\n  },\n  \n  // 系统信息\n  info: () => {\n    return request('/api/system/info');\n  },\n  \n  // 实时日志\n  logs: (params?: {\n    limit?: number;\n    level?: string;\n    source?: string;\n  }) => {\n    const queryParams = new URLSearchParams();\n    if (params?.limit) queryParams.append('limit', params.limit.toString());\n    if (params?.level) queryParams.append('level', params.level);\n    if (params?.source) queryParams.append('source', params.source);\n    \n    return request(`/api/system/logs${queryParams.toString() ? `?${queryParams}` : ''}`);\n  },\n  \n  // 资源使用情况\n  resources: () => {\n    return request('/api/system/resources');\n  },\n  \n  // 清理缓存\n  clearCache: () => {\n    return request('/api/system/clear-cache', {\n      method: 'POST',\n    });\n  },\n  \n  // 重启服务\n  restart: () => {\n    return request('/api/system/restart', {\n      method: 'POST',\n    });\n  },\n};\n\n// 通用API\nexport const api = {\n  // 测试连接\n  testConnection: async () => {\n    try {\n      const response = await request('/health');\n      return {\n        connected: true,\n        response,\n      };\n    } catch (error) {\n      return {\n        connected: false,\n        error: error instanceof Error ? error.message : 'Connection failed',\n      };\n    }\n  },\n  \n  // 获取所有服务状态\n  getAllStatus: async () => {\n    try {\n      const [health, systemStatus, metrics] = await Promise.all([\n        systemApi.health(),\n        systemApi.status(),\n        systemApi.metrics(),\n      ]);\n      \n      return {\n        success: true,\n        health,\n        systemStatus,\n        metrics,\n      };\n    } catch (error) {\n      return {\n        success: false,\n        error: error instanceof Error ? error.message : 'Failed to get system status',\n      };\n    }\n  },\n};\n\n// 导出所有API\nexport default {\n  memory: memoryApi,\n  optimization: optimizationApi,\n  system: systemApi,\n  api,\n};"
     },
     "complexity_metrics": {
       "cyclomatic_complexity": 17.0,
-      "lines_of_code": 311,
+      "lines_of_code": 326,
       "number_of_classes": 0,
-      "number_of_functions": 29
+      "number_of_functions": 25
     },
     "dependencies": [
       {
@@ -4329,7 +3902,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "browser api",
+        "dependency_type": "browser API",
         "is_external": true,
         "line_number": 14,
         "name": "fetch",
@@ -4337,10 +3910,10 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       }
     ],
-    "detailed_description": "该组件是前端与后端API通信的核心客户端模块，封装了对记忆数据的增删改查、搜索、批量操作、导出，以及系统优化任务调度、状态查询和系统级监控（健康检查、指标、日志、资源）等功能。通过统一的`request`函数处理HTTP请求，支持自动错误处理、JSON序列化、认证凭据携带，并根据环境变量配置API基础URL。`memoryApi`提供细粒度的记忆操作；`optimizationApi`用于执行和管理记忆优化任务；`systemApi`暴露系统运维接口；`api`提供高层聚合操作如连接测试和状态汇总。",
+    "detailed_description": "该组件是前端与后端服务通信的核心 API 客户端，封装了对记忆管理、系统优化及系统监控等功能的 HTTP 请求。通过统一的 `request` 函数处理请求发送、错误解析和异常日志记录，支持开发环境下的代理配置和生产环境的动态 URL 注入。各 API 模块（memory、optimization、system）按功能划分，提供细粒度的操作接口，如记忆的增删改查、搜索、批量操作、导出，优化任务的执行与状态查询，以及系统健康检查、指标获取、日志访问等。同时提供了便捷的工具方法如连接测试和状态聚合，增强了前端调用的健壮性和可维护性。",
     "interfaces": [
       {
-        "description": "提供对记忆数据的操作接口集合。",
+        "description": "记忆管理API集合，用于操作用户记忆数据。",
         "interface_type": "object",
         "name": "memoryApi",
         "parameters": [],
@@ -4348,7 +3921,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "export"
       },
       {
-        "description": "提供对记忆优化任务的操作接口集合。",
+        "description": "系统优化API集合，用于执行和监控记忆优化任务。",
         "interface_type": "object",
         "name": "optimizationApi",
         "parameters": [],
@@ -4356,7 +3929,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "export"
       },
       {
-        "description": "提供对系统状态、监控和管理的操作接口集合。",
+        "description": "系统信息与运维API集合，用于获取系统状态和执行管理命令。",
         "interface_type": "object",
         "name": "systemApi",
         "parameters": [],
@@ -4364,63 +3937,39 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "export"
       },
       {
-        "description": "提供高层工具函数，如连接测试和状态聚合。",
+        "description": "通用工具API集合，提供连接测试和状态聚合功能。",
         "interface_type": "object",
         "name": "api",
         "parameters": [],
         "return_type": "object",
         "visibility": "export"
-      },
-      {
-        "description": "通用的HTTP请求函数，支持泛型返回类型。",
-        "interface_type": "function",
-        "name": "request",
-        "parameters": [
-          {
-            "description": "API端点路径",
-            "is_optional": false,
-            "name": "endpoint",
-            "param_type": "string"
-          },
-          {
-            "description": "fetch API的配置选项",
-            "is_optional": true,
-            "name": "options",
-            "param_type": "RequestInit"
-          }
-        ],
-        "return_type": "Promise<T>",
-        "visibility": "private"
       }
     ],
     "responsibilities": [
-      "提供统一的HTTP请求封装，处理错误、认证和内容类型",
-      "实现记忆数据的全生命周期管理接口（CRUD、搜索、批量、统计、导出）",
-      "封装系统优化任务的创建、查询、取消和统计接口",
-      "暴露系统健康、状态、性能、日志等监控和管理API",
-      "提供高层工具函数用于连接测试和系统状态聚合"
+      "封装统一的HTTP请求逻辑，处理认证、头部设置和错误解析",
+      "提供记忆管理相关的增删改查、搜索、统计和导出功能",
+      "支持系统级优化操作的发起、状态查询、历史获取与取消",
+      "暴露系统健康检查、性能指标、资源使用、日志等运维接口",
+      "提供连接测试与聚合状态查询等辅助诊断功能"
     ]
   },
   {
     "code_dossier": {
       "code_purpose": "page",
-      "description": "System monitoring dashboard page for real-time status, performance metrics, logs, and alerts visualization.",
+      "description": "Svelte page component for system monitoring dashboard with real-time metrics, logs, and alerts",
       "file_path": "cortex-mem-insights/src/routes/monitor/+page.svelte",
       "functions": [
-        "loadSystemData",
-        "updateMetrics",
-        "toggleAutoRefresh",
-        "detectIndividualServices",
+        "loadPerformanceMetrics",
+        "measureHealthLatency",
+        "getQdrantVersion",
         "calculateMemoryUsage",
         "calculateCpuUsage",
-        "getQdrantCollectionCount",
         "calculateNetworkStats",
         "calculatePerformanceMetrics",
         "generateRealtimeLogs",
         "generateAlerts",
-        "measureHealthLatency",
-        "getQdrantVersion",
-        "getStatusColor",
+        "updateMetrics",
+        "toggleAutoRefresh",
         "getLevelColor",
         "getTrendIcon",
         "getTrendColor",
@@ -4428,323 +3977,133 @@ Code analysis results from preprocessing phase, including definitions of functio
       ],
       "importance_score": 0.8,
       "interfaces": [
-        "onMount",
-        "onDestroy"
+        "ServiceStatus",
+        "realtimeLogs",
+        "alerts",
+        "systemMetrics",
+        "performanceMetrics",
+        "autoRefresh"
       ],
       "name": "+page.svelte",
-      "source_summary": "<script lang=\"ts\">\n\timport { onMount, onDestroy } from 'svelte';\n\timport api from '$lib/api/client';\n\n\tlet isLoading = true;\n\tlet error: string | null = null;\n\tlet autoRefresh = true;\n\tlet refreshInterval: number;\n\tlet lastUpdate: string = '';\n\n\t// 真实系统状态\n\tlet systemStatus = {\n\t\tcortexMemService: { status: 'connecting', latency: 0, version: '1.0.0', lastCheck: '' },\n\t\tqdrant: {\n\t\t\tstatus: 'connecting',\n\t\t\tlatency: 0,\n\t\t\tversion: '1.7.0',\n\t\t\tcollectionCount: 0,\n\t\t\tlastCheck: ''\n\t\t},\n\t\tllmService: {\n\t\t\tstatus: 'connecting',\n\t\t\tlatency: 0,\n\t\t\tprovider: 'Unknown',\n\t\t\tmodel: 'Unknown',\n\t\t\tlastCheck: ''\n\t\t},\n\t\tmemoryUsage: { used: 0, total: 1024, percentage: 0 },\n\t\tcpuUsage: { percentage: 0 },\n\t\tnetwork: { activeConnections: 0, throughput: '0 MB/s' }\n\t};\n\n\t// 真实性能指标\n\tlet performanceMetrics: Array<{\n\t\tname: string;\n\t\tvalue: number;\n\t\tunit: string;\n\t\ttrend: string;\n\t\tthreshold: number;\n\t}> = [];\n\n\t// 真实日志\n\tlet realtimeLogs: Array<{ time: string; level: string; message: string }> = [];\n\n\t// 告警\n\tlet alerts: Array<{\n\t\tid: string;\n\t\tlevel: string;\n\t\tmessage: string;\n\t\ttime: string;\n\t\tacknowledged: boolean;\n\t}> = [];\n\n\tonMount(async () => {\n\t\ttry {\n\t\t\tawait loadSystemData();\n\t\t} catch (err) {\n\t\t\tconsole.error('加载系统数据失败:', err);\n\t\t\terror = err instanceof Error ? err.message : '加载数据失败';\n\t\t} finally {\n\t\t\tisLoading = false;\n\t\t}\n\n\t\t// 设置自动刷新\n\t\tif (autoRefresh) {\n\t\t\trefreshInterval = setInterval(() => {\n\t\t\t\tupdateMetrics();\n\t\t\t}, 10000); // 10秒刷新一次\n\t\t}\n\t});\n\n\tonDestroy(() => {\n\t\tif (refreshInterval) {\n\t\t\tclearInterval(refreshInterval);\n\t\t}\n\t});\n\n\tasync function loadSystemData() {\n\t\ttry {\n\t\t\tconst timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });\n\t\t\tlet memories: any[] = [];\n\n\t\t\t// 独立检测各个服务的状态\n\t\t\tconst serviceStatuses = await detectIndividualServices(timestamp);\n\n\t\t\t// 获取记忆统计（这也可以验证服务的实际可用性）\n\t\t\ttry {\n\t\t\t\tconst memoriesResponse = await api.memory.list({ limit: 1000 });\n\t\t\t\tmemories = memoriesResponse.memories || [];\n\t\t\t\tconsole.log(`获取到 ${memories.length} 条记忆记录`);\n\t\t\t} catch (memoryErr) {\n\t\t\t\tconsole.warn('获取记忆列表失败:', memoryErr);\n\t\t\t\tmemories = [];\n\t\t\t}\n\n\t\t\t// 更新系统状态\n\t\t\tsystemStatus = {\n\t\t\t\tcortexMemService: {\n\t\t\t\t\tstatus: serviceStatuses.mainService.status,\n\t\t\t\t\tlatency: serviceStatuses.mainService.latency,\n\t\t\t\t\tversion: '',\n\t\t\t\t\tlastCheck: serviceStatuses.mainService.lastCheck\n\t\t\t\t},\n\t\t\t\tqdrant: {\n\t\t\t\t\tstatus: serviceStatuses.vectorStore.status,\n\t\t\t\t\tlatency: serviceStatuses.vectorStore.latency,\n\t\t\t\t\tversion: '',\n\t\t\t\t\tcollectionCount: await getQdrantCollectionCount(),\n\t\t\t\t\tlastCheck: serviceStatuses.vectorStore.lastCheck\n\t\t\t\t},\n\t\t\t\tllmService: {\n\t\t\t\t\tstatus: serviceStatuses.llmService.status,\n\t\t\t\t\tlatency: serviceStatuses.llmService.latency,\n\t\t\t\t\tprovider: '',\n\t\t\t\t\tmodel: '',\n\t\t\t\t\tlastCheck: serviceStatuses.llmService.lastCheck\n\t\t\t\t},\n\t\t\t\tmemoryUsage: await calculateMemoryUsage(memories),\n\t\t\t\tcpuUsage: await calculateCpuUsage(),\n\t\t\t\tnetwork: await calculateNetworkStats()\n\t\t\t};\n\n\t\t\t// 计算真实性能指标\n\t\t\tperformanceMetrics = await calculatePerformanceMetrics();\n\n\t\t\t// 生成基于真实数据的日志和告警\n\t\t\trealtimeLogs = await generateRealtimeLogs(memories, timestamp);\n\t\t\talerts = await generateAlerts(systemStatus);\n\n\t\t\tlastUpdate = timestamp;\n\t\t} catch (err) {\n\t\t\tconsole.error('系统数据加载错误:', err);\n\t\t\tthrow err;\n\t\t}\n\t}\n\n\t// 测量健康检查延迟\n\tasync function measureHealthLatency(endpoint: string, addVariance = false): Promise<number> {\n\t\ttry {\n\t\t\tconst startTime = Date.now();\n\t\t\tconst response = await fetch(endpoint);\n\t\t\tconst latency = Date.now() - startTime;\n\n\t\t\tif (addVariance) {\n\t\t\t\t// 为不同服务添加合理的延迟差异\n\t\t\t\tconst variance = Math.random() * 100 - 50; // ±50ms variance\n\t\t\t\treturn Math.max(0, latency + variance);\n\t\t\t}\n\n\t\t\treturn latency;\n\t\t} catch (err) {\n\t\t\treturn 0;\n\t\t}\n\t}\n\n\t// 获取Qdrant版本\n\tasync function getQdrantVersion(): Promise<string> {\n\t\ttry {\n\t\t\t// 尝试从健康检查响应获取\n\t\t\tconst response = await fetch('/health');\n\t\t\tif (response.ok) {\n\t\t\t\tconst data = await response.json();\n\t\t\t\tif (data.version) {\n\t\t\t\t\treturn data.version;\n\t\t\t\t}\n\t\t\t}\n\t\t} catch (err) {\n\t\t\tconsole.warn('获取版本信息失败:', err);\n\t\t}\n\t\treturn '-.-.-'; // 默认版本\n\t}\n\n\t// 计算内存使用情况\n\tasync function calculateMemoryUsage(memories: any[]) {\n\t\ttry {\n\t\t\t// 估算内存使用：基于记忆数量和平均大小\n\t\t\tconst avgMemorySize = 2.5; // KB per memory\n\t\t\tconst totalMemoryUsed = memories.length * avgMemorySize;\n\t\t\tconst totalMemory = 1024; // 1GB total\n\t\t\tconst percentage = Math.min(90, (totalMemoryUsed / totalMemory) * 100);\n\n\t\t\treturn {\n\t\t\t\tused: totalMemoryUsed,\n\t\t\t\ttotal: totalMemory,\n\t\t\t\tpercentage: percentage\n\t\t\t};\n\t\t} catch (err) {\n\t\t\treturn { used: 0, total: 1024, percentage: 0 };\n\t\t}\n\t}\n\n\t// 计算CPU使用率\n\tasync function calculateCpuUsage() {\n\t\ttry {\n\t\t\t// 基于系统负载估算\n\t\t\tconst memoriesCount = (await api.memory.list({ limit: 1 })).total || 0;\n\t\t\tconst baseLoad = 5; // 基础负载5%\n\t\t\tconst memoryLoad = Math.min(30, memoriesCount * 0.02); // 每条记忆0.02%负载\n\t\t\tconst randomLoad = Math.random() * 10 - 5; // ±5%随机负载\n\n\t\t\tconst totalLoad = baseLoad + memoryLoad + randomLoad;\n\t\t\treturn { percentage: Math.max(0, Math.min(80, totalLoad)) };\n\t\t} catch (err) {\n\t\t\treturn { percentage: 10 + Math.random() * 20 };\n\t\t}\n\t}\n\n\t// 获取Qdrant集合数量\n\tasync function getQdrantCollectionCount(): Promise<number> {\n\t\ttry {\n\t\t\t// 尝试直接调用Qdrant API\n\t\t\tconst response = await fetch('http://localhost:6334/collections');\n\t\t\tif (response.ok) {\n\t\t\t\tconst data = await response.json();\n\t\t\t\treturn data.result?.collections?.length || 0;\n\t\t\t}\n\t\t} catch (qdrantErr) {\n\t\t\tconsole.warn('Qdrant集合检测失败:', qdrantErr);\n\t\t}\n\n\t\t// 备用方案：通过记忆数量估算\n\t\ttry {\n\t\t\tconst memoriesResponse = await api.memory.list({ limit: 1 });\n\t\t\tif (memoriesResponse && memoriesResponse.total > 0) {\n\t\t\t\treturn Math.min(5, Math.floor(memoriesResponse.total / 100) + 1);\n\t\t\t}\n\t\t} catch (memoryErr) {\n\t\t\tconsole.warn('记忆数量获取失败:', memoryErr);\n\t\t}\n\n\t\treturn 0; // 默认值\n\t}\n\n\t// 计算网络统计\n\tasync function calculateNetworkStats() {\n\t\ttry {\n\t\t\tconst memoriesCount = (await api.memory.list({ limit: 1 })).total || 0;\n\t\t\tconst activeConnections = Math.min(\n\t\t\t\t50,\n\t\t\t\tMath.floor(memoriesCount / 50) + Math.floor(Math.random() * 10)\n\t\t\t);\n\t\t\tconst throughput = `${(memoriesCount * 0.05 + Math.random() * 2).toFixed(1)} MB/s`;\n\n\t\t\treturn { activeConnections, throughput };\n\t\t} catch (err) {\n\t\t\treturn { activeConnections: 5, throughput: '1.2 MB/s' };\n\t\t}\n\t}\n\n\t// 计算性能指标\n\tasync function calculatePerformanceMetrics() {\n\t\ttry {\n\t\t\tconst healthLatency = await measureHealthLatency('/health');\n\t\t\tconst searchStartTime = Date.now();\n\t\t\tawait api.memory.search('test');\n\t\t\tconst searchLatency = Date.now() - searchStartTime;\n\n\t\t\tconst apiLatency = await measureHealthLatency('/api/memories?limit=1');\n\n\t\t\treturn [\n\t\t\t\t{\n\t\t\t\t\tname: 'API响应时间',\n\t\t\t\t\tvalue: apiLatency,\n\t\t\t\t\tunit: 'ms',\n\t\t\t\t\ttrend: apiLatency < 200 ? 'down' : apiLatency > 500 ? 'up' : 'stable',\n\t\t\t\t\tthreshold: 500\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\tname: '搜索延迟',\n\t\t\t\t\tvalue: searchLatency,\n\t\t\t\t\tunit: 'ms',\n\t\t\t\t\ttrend: searchLatency < 300 ? 'down' : searchLatency > 1000 ? 'up' : 'stable',\n\t\t\t\t\tthreshold: 1000\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\tname: '健康检查',\n\t\t\t\t\tvalue: healthLatency,\n\t\t\t\t\tunit: 'ms',\n\t\t\t\t\ttrend: healthLatency < 100 ? 'down' : healthLatency > 300 ? 'up' : 'stable',\n\t\t\t\t\tthreshold: 300\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\tname: '向量查询',\n\t\t\t\t\tvalue: Math.max(50, apiLatency + 100),\n\t\t\t\t\tunit: 'ms',\n\t\t\t\t\ttrend: 'stable',\n\t\t\t\t\tthreshold: 2000\n\t\t\t\t}\n\t\t\t];\n\t\t} catch (err) {\n\t\t\tconsole.warn('性能指标计算失败，使用默认值:', err);\n\t\t\treturn [\n\t\t\t\t{ name: 'API响应时间', value: 0, unit: 'ms', trend: 'stable', threshold: 500 },\n\t\t\t\t{ name: '搜索延迟', value: 0, unit: 'ms', trend: 'stable', threshold: 1000 },\n\t\t\t\t{ name: '健康检查', value: 0, unit: 'ms', trend: 'stable', threshold: 300 },\n\t\t\t\t{ name: '向量查询', value: 0, unit: 'ms', trend: 'stable', threshold: 2000 }\n\t\t\t];\n\t\t}\n\t}\n\n\tasync function generateRealtimeLogs(\n\t\tmemories: any[],\n\t\tcurrentTime: string\n\t): Promise<Array<{ time: string; level: string; message: string }>> {\n\t\tconst logs = [];\n\t\tconst now = new Date();\n\n\t\t// 添加系统状态日志\n\t\tlogs.push({\n\t\t\ttime: currentTime,\n\t\t\tlevel: 'info',\n\t\t\tmessage: `系统监控数据更新，共 ${memories.length} 条记忆记录`\n\t\t});\n\n\t\t// 添加服务状态日志\n\t\tif (systemStatus.cortexMemService.status === 'connected') {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'info',\n\t\t\t\tmessage: `cortex-mem-service 正常响应，延迟 ${systemStatus.cortexMemService.latency}ms`\n\t\t\t});\n\t\t} else {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'error',\n\t\t\t\tmessage: `cortex-mem-service 连接失败，延迟 ${systemStatus.cortexMemService.latency}ms`\n\t\t\t});\n\t\t}\n\n\t\tif (systemStatus.qdrant.status === 'connected') {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'info',\n\t\t\t\tmessage: `Qdrant 向量数据库连接正常，延迟 ${systemStatus.qdrant.latency}ms`\n\t\t\t});\n\t\t} else {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'error',\n\t\t\t\tmessage: `Qdrant 向量数据库连接失败`\n\t\t\t});\n\t\t}\n\n\t\tif (systemStatus.llmService.status === 'connected') {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'info',\n\t\t\t\tmessage: `LLM 服务连接正常，延迟 ${systemStatus.llmService.latency}ms`\n\t\t\t});\n\t\t} else {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'error',\n\t\t\t\tmessage: `LLM 服务连接失败`\n\t\t\t});\n\t\t}\n\n\t\t// 添加性能指标日志\n\t\tperformanceMetrics.forEach((metric) => {\n\t\t\tif (metric.value > metric.threshold * 0.8) {\n\t\t\t\tlogs.push({\n\t\t\t\t\ttime: currentTime,\n\t\t\t\t\tlevel: 'warning',\n\t\t\t\t\tmessage: `${metric.name} 指标接近阈值: ${metric.value}${metric.unit} (阈值: ${metric.threshold}${metric.unit})`\n\t\t\t\t});\n\t\t\t}\n\t\t});\n\n\t\t// 添加资源使用日志\n\t\tif (systemStatus.memoryUsage.percentage > 70) {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'warning',\n\t\t\t\tmessage: `内存使用率较高: ${systemStatus.memoryUsage.percentage.toFixed(1)}% (${systemStatus.memoryUsage.used.toFixed(1)}MB/${systemStatus.memoryUsage.total}MB)`\n\t\t\t});\n\t\t}\n\n\t\tif (systemStatus.cpuUsage.percentage > 60) {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'info',\n\t\t\t\tmessage: `CPU 使用率: ${systemStatus.cpuUsage.percentage.toFixed(1)}%`\n\t\t\t});\n\t\t}\n\n\t\t// 添加最近记忆活动日志\n\t\tif (memories.length > 0) {\n\t\t\tconst recentMemories = memories.slice(0, 3);\n\t\t\trecentMemories.forEach((memory, index) => {\n\t\t\t\tconst time = new Date(now.getTime() - (index + 1) * 30000); // 30秒间隔\n\t\t\t\tconst memoryType = memory.metadata?.memory_type || 'Unknown';\n\t\t\t\tlogs.push({\n\t\t\t\t\ttime: time.toLocaleTimeString('zh-CN', { hour12: false }),\n\t\t\t\t\tlevel: 'info',\n\t\t\t\t\tmessage: `记忆活动: ${memoryType} 类型记忆 ${memory.id.substring(0, 8)}...`\n\t\t\t\t});\n\t\t\t});\n\t\t}\n\n\t\t// 添加数据库集合信息\n\t\tif (systemStatus.qdrant.collectionCount > 0) {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'info',\n\t\t\t\tmessage: `Qdrant 数据库包含 ${systemStatus.qdrant.collectionCount} 个集合`\n\t\t\t});\n\t\t}\n\n\t\t// 添加网络状态日志\n\t\tlogs.push({\n\t\t\ttime: currentTime,\n\t\t\tlevel: 'info',\n\t\t\tmessage: `网络状态: ${systemStatus.network.activeConnections} 个活跃连接，吞吐量 ${systemStatus.network.throughput}`\n\t\t});\n\n\t\treturn logs.slice(0, 12); // 保留最近12条日志\n\t}\n\n\tasync function generateAlerts(\n\t\tstatus: typeof systemStatus\n\t): Promise<\n\t\tArray<{ id: string; level: string; message: string; time: string; acknowledged: boolean }>\n\t> {\n\t\tconst alerts = [];\n\t\tconst now = new Date();\n\t\tconst timestamp = now.toLocaleTimeString('zh-CN', { hour12: false });\n\n\t\t// 1. 检查核心服务状态\n\t\tif (status.cortexMemService.status === 'error') {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_main_service`,\n\t\t\t\tlevel: 'error',\n\t\t\t\tmessage: `cortex-mem-service 服务异常 (延迟: ${status.cortexMemService.latency}ms)`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\t// 2. 检查向量数据库状态\n\t\tif (status.qdrant.status === 'error') {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_qdrant`,\n\t\t\t\tlevel: 'error',\n\t\t\t\tmessage: 'Qdrant 向量数据库连接失败',\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t} else if (status.qdrant.latency > 500) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_qdrant_latency`,\n\t\t\t\tlevel: 'warning',\n\t\t\t\tmessage: `Qdrant 数据库响应延迟过高: ${status.qdrant.latency}ms`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\t// 3. 检查LLM服务状态\n\t\tif (status.llmService.status === 'error') {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_llm`,\n\t\t\t\tlevel: 'error',\n\t\t\t\tmessage: 'LLM 服务连接失败',\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\t// 4. 检查内存使用率\n\t\tif (status.memoryUsage.percentage > 85) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_memory_critical`,\n\t\t\t\tlevel: 'error',\n\t\t\t\tmessage: `内存使用率严重过高: ${status.memoryUsage.percentage.toFixed(1)}% (${status.memoryUsage.used.toFixed(1)}MB/${status.memoryUsage.total}MB)`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t} else if (status.memoryUsage.percentage > 70) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_memory_warning`,\n\t\t\t\tlevel: 'warning',\n\t\t\t\tmessage: `内存使用率较高: ${status.memoryUsage.percentage.toFixed(1)}%`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\t// 5. 检查CPU使用率\n\t\tif (status.cpuUsage.percentage > 80) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_cpu_high`,\n\t\t\t\tlevel: 'warning',\n\t\t\t\tmessage: `CPU 使用率过高: ${status.cpuUsage.percentage.toFixed(1)}%`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\t// 6. 检查性能指标\n\t\tperformanceMetrics.forEach((metric) => {\n\t\t\tif (metric.value > metric.threshold) {\n\t\t\t\tconst level = metric.value > metric.threshold * 1.5 ? 'error' : 'warning';\n\t\t\t\talerts.push({\n\t\t\t\t\tid: `alert_${Date.now()}_${metric.name.replace(/\\s+/g, '_').toLowerCase()}`,\n\t\t\t\t\tlevel: level,\n\t\t\t\t\tmessage: `${metric.name} 超出阈值: ${metric.value}${metric.unit} (阈值: ${metric.threshold}${metric.unit})`,\n\t\t\t\t\ttime: timestamp,\n\t\t\t\t\tacknowledged: false\n\t\t\t\t});\n\t\t\t}\n\t\t});\n\n\t\t// 7. 检查API延迟\n\t\tif (status.cortexMemService.latency > 1000) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_api_latency`,\n\t\t\t\tlevel: 'warning',\n\t\t\t\tmessage: `API响应延迟过高: ${status.cortexMemService.latency}ms`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\t// 8. 检查数据库集合数量\n\t\tif (status.qdrant.collectionCount === 0) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_collections`,\n\t\t\t\tlevel: 'warning',\n\t\t\t\tmessage: 'Qdrant 数据库中没有集合',\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\t// 9. 检查网络连接数\n\t\tif (status.network.activeConnections > 40) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_connections`,\n\t\t\t\tlevel: 'info',\n\t\t\t\tmessage: `网络连接数较高: ${status.network.activeConnections}`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\treturn alerts.slice(0, 10); // 最多显示10个告警\n\t}\n\n\tasync function updateMetrics() {\n\t\ttry {\n\t\t\tawait loadSystemData();\n\t\t} catch (err) {\n\t\t\tconsole.error('更新指标失败:', err);\n\t\t}\n\t}\n\n\t// 独立检测各个服务状态\n\tasync function detectIndividualServices(timestamp: string) {\n\t\tconst mainService = { status: 'error', latency: 0, lastCheck: timestamp };\n\t\tconst vectorStore = { status: 'error', latency: 0, lastCheck: timestamp };\n\t\tconst llmService = { status: 'error', latency: 0, lastCheck: timestamp };\n\n\t\ttry {\n\t\t\t// 1. 测试cortex-mem-service基础可用性（API端点优先）\n\t\t\tconst serviceStartTime = Date.now();\n\t\t\tconst serviceResponse = await fetch('/api/memories?limit=1');\n\t\t\tconst serviceLatency = Date.now() - serviceStartTime;\n\n\t\t\tif (serviceResponse.ok) {\n\t\t\t\t// API端点正常，说明服务可用\n\t\t\t\tmainService.status = 'connected';\n\t\t\t\tmainService.latency = serviceLatency;\n\t\t\t} else {\n\t\t\t\t// 如果API失败，再尝试健康检查端点，但健康检查失败不应该影响主要判断\n\t\t\t\ttry {\n\t\t\t\t\tconst healthStartTime = Date.now();\n\t\t\t\t\tconst healthResponse = await fetch('/health');\n\t\t\t\t\tconst healthLatency = Date.now() - healthStartTime;\n\n\t\t\t\t\tif (healthResponse.ok) {\n\t\t\t\t\t\tconst healthData = await healthResponse.json();\n\t\t\t\t\t\t// 即使健康检查显示不健康，如果API可以访问，服务还是可用的\n\t\t\t\t\t\tmainService.status = 'connected';\n\t\t\t\t\t\tmainService.latency = Math.min(serviceLatency, healthLatency);\n\t\t\t\t\t}\n\t\t\t\t} catch (healthErr) {\n\t\t\t\t\tconsole.warn('健康检查失败，但API可能仍可用:', healthErr);\n\t\t\t\t\t// 健康检查失败不代表服务不可用，保持连接状态或设置connecting\n\t\t\t\t\tif (serviceLatency > 0) {\n\t\t\t\t\t\tmainService.status = 'connecting';\n\t\t\t\t\t\tmainService.latency = serviceLatency;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t} catch (serviceErr) {\n\t\t\tconsole.warn('cortex-mem-service检测失败:', serviceErr);\n\t\t}\n\n\t\ttry {\n\t\t\t// 2. 测试Qdrant独立可用性\n\t\t\tconst qdrantStartTime = Date.now();\n\t\t\tconst qdrantResponse = await fetch('http://localhost:6334/health');\n\t\t\tconst qdrantLatency = Date.now() - qdrantStartTime;\n\n\t\t\tif (qdrantResponse.ok) {\n\t\t\t\tconst qdrantData = await qdrantResponse.json();\n\t\t\t\tvectorStore.status = qdrantData.status === 'ok' ? 'connected' : 'error';\n\t\t\t\tvectorStore.latency = qdrantLatency;\n\t\t\t}\n\t\t} catch (qdrantErr) {\n\t\t\tconsole.warn('Qdrant直接检测失败:', qdrantErr);\n\t\t\t// 备用方案：通过cortex-mem-service的向量操作来测试\n\t\t\ttry {\n\t\t\t\tconst searchStartTime = Date.now();\n\t\t\t\tconst searchResponse = await api.memory.search('test');\n\t\t\t\tconst searchLatency = Date.now() - searchStartTime;\n\n\t\t\t\tif (searchResponse && typeof searchResponse === 'object') {\n\t\t\t\t\tvectorStore.status = 'connected';\n\t\t\t\t\tvectorStore.latency = searchLatency;\n\t\t\t\t}\n\t\t\t} catch (searchErr) {\n\t\t\t\tconsole.warn('向量搜索测试也失败:', searchErr);\n\t\t\t\tvectorStore.status = 'error';\n\t\t\t}\n\t\t}\n\n\t\ttry {\n\t\t\t// 3. 测试LLM服务独立可用性（通过创建记忆来测试）\n\t\t\tconst llmStartTime = Date.now();\n\t\t\tconst testMemory = await api.memory.create('LLM health check test', {\n\t\t\t\tuser_id: 'health-check',\n\t\t\t\tmemory_type: 'conversational'\n\t\t\t});\n\t\t\tconst llmLatency = Date.now() - llmStartTime;\n\n\t\t\tif (testMemory && testMemory.id) {\n\t\t\t\tllmService.status = 'connected';\n\t\t\t\tllmService.latency = llmLatency;\n\n\t\t\t\t// 清理测试记忆\n\t\t\t\ttry {\n\t\t\t\t\tawait api.memory.delete(testMemory.id);\n\t\t\t\t} catch (cleanupErr) {\n\t\t\t\t\tconsole.warn('清理测试记忆失败:', cleanupErr);\n\t\t\t\t}\n\t\t\t}\n\t\t} catch (llmErr) {\n\t\t\tconsole.warn('LLM服务测试失败:', llmErr);\n\t\t\t// 备用方案：通过健康检查数据推断\n\t\t\ttry {\n\t\t\t\tconst healthResponse = await fetch('/health');\n\t\t\t\tif (healthResponse.ok) {\n\t\t\t\t\tconst healthData = await healthResponse.json();\n\t\t\t\t\tllmService.status = healthData.llm_service ? 'connected' : 'error';\n\t\t\t\t\tllmService.latency = 200; // 估算值\n\t\t\t\t}\n\t\t\t} catch (healthErr) {\n\t\t\t\tconsole.warn('健康检查LLM检测也失败:', healthErr);\n\t\t\t}\n\t\t}\n\n\t\treturn { mainService, vectorStore, llmService };\n\t}\n\n\tfunction toggleAutoRefresh() {\n\t\tautoRefresh = !autoRefresh;\n\n\t\tif (autoRefresh) {\n\t\t\trefreshInterval = setInterval(() => {\n\t\t\t\tupdateMetrics();\n\t\t\t}, 5000);\n\t\t} else if (refreshInterval) {\n\t\t\tclearInterval(refreshInterval);\n\t\t}\n\t}\n\n\tfunction getStatusColor(status: string) {\n\t\tswitch (status) {\n\t\t\tcase 'connected':\n\t\t\t\treturn 'text-green-500';\n\t\t\tcase 'connecting':\n\t\t\t\treturn 'text-yellow-500';\n\t\t\tcase 'disconnected':\n\t\t\t\treturn 'text-red-500';\n\t\t\tdefault:\n\t\t\t\treturn 'text-gray-500';\n\t\t}\n\t}\n\n\tfunction getLevelColor(level: string) {\n\t\tswitch (level) {\n\t\t\tcase 'error':\n\t\t\t\treturn 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';\n\t\t\tcase 'warning':\n\t\t\t\treturn 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';\n\t\t\tcase 'info':\n\t\t\t\treturn 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';\n\t\t\tdefault:\n\t\t\t\treturn 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';\n\t\t}\n\t}\n\n\tfunction getTrendIcon(trend: string) {\n\t\tswitch (trend) {\n\t\t\tcase 'up':\n\t\t\t\treturn '↗️';\n\t\t\tcase 'down':\n\t\t\t\treturn '↘️';\n\t\t\tdefault:\n\t\t\t\treturn '➡️';\n\t\t}\n\t}\n\n\tfunction getTrendColor(trend: string) {\n\t\tswitch (trend) {\n\t\t\tcase 'up':\n\t\t\t\treturn 'text-red-500';\n\t\t\tcase 'down':\n\t\t\t\treturn 'text-green-500';\n\t\t\tdefault:\n\t\t\t\treturn 'text-gray-500';\n\t\t}\n\t}\n\n\tfunction acknowledgeAlert(alertId: string) {\n\t\tconst alert = alerts.find((a) => a.id === alertId);\n\t\tif (alert) {\n\t\t\talert.acknowledged = true;\n\t\t}\n\t}\n</script>\n\n<div class=\"space-y-8\">\n\t<!-- 页面标题 -->\n\t<div class=\"flex items-center justify-between\">\n\t\t<div>\n\t\t\t<h1 class=\"text-3xl font-bold text-gray-900 dark:text-white\">系统监控</h1>\n\t\t\t<p class=\"mt-2 text-gray-600 dark:text-gray-400\">实时监控系统状态、性能指标和运行日志</p>\n\t\t</div>\n\t\t<div class=\"flex items-center space-x-4\">\n\t\t\t<label class=\"flex items-center space-x-2\">\n\t\t\t\t<input\n\t\t\t\t\ttype=\"checkbox\"\n\t\t\t\t\tbind:checked={autoRefresh}\n\t\t\t\t\ton:change={toggleAutoRefresh}\n\t\t\t\t\tclass=\"w-4 h-4 rounded\"\n\t\t\t\t/>\n\t\t\t\t<span class=\"text-sm text-gray-700 dark:text-gray-300\">自动刷新</span>\n\t\t\t</label>\n\t\t\t<button\n\t\t\t\ton:click={updateMetrics}\n\t\t\t\tclass=\"px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium\"\n\t\t\t>\n\t\t\t\t立即刷新\n\t\t\t</button>\n\t\t</div>\n\t</div>\n\n\t{#if isLoading}\n\t\t<!-- 加载状态 -->\n\t\t<div class=\"grid grid-cols-1 lg:grid-cols-3 gap-6\">\n\t\t\t{#each Array(3) as _, i}\n\t\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-pulse\">\n\t\t\t\t\t<div class=\"h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6\"></div>\n\t\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t\t{#each Array(3) as _, j}\n\t\t\t\t\t\t\t<div class=\"h-12 bg-gray-200 dark:bg-gray-700 rounded\"></div>\n\t\t\t\t\t\t{/each}\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t{/each}\n\t\t</div>\n\t{:else if error}\n\t\t<!-- 错误状态 -->\n\t\t<div\n\t\t\tclass=\"bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6\"\n\t\t>\n\t\t\t<div class=\"flex items-center\">\n\t\t\t\t<div\n\t\t\t\t\tclass=\"w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mr-3\"\n\t\t\t\t>\n\t\t\t\t\t<span class=\"text-red-600 dark:text-red-400\">⚠️</span>\n\t\t\t\t</div>\n\t\t\t\t<div>\n\t\t\t\t\t<h3 class=\"text-lg font-medium text-red-800 dark:text-red-200\">加载失败</h3>\n\t\t\t\t\t<p class=\"text-red-600 dark:text-red-400\">{error}</p>\n\t\t\t\t\t<button\n\t\t\t\t\t\ton:click={() => location.reload()}\n\t\t\t\t\t\tclass=\"mt-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium\"\n\t\t\t\t\t>\n\t\t\t\t\t\t重新加载\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t{:else}\n\t\t<!-- 系统状态概览 -->\n\t\t<div class=\"grid grid-cols-1 lg:grid-cols-3 gap-6\">\n\t\t\t<!-- 服务状态 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">服务状态</h2>\n\n\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t{#each Object.entries(systemStatus).slice(0, 3) as [service, data]}\n\t\t\t\t\t\t{#if data && typeof data === 'object' && data.status}\n\t\t\t\t\t\t\t<div class=\"p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n\t\t\t\t\t\t\t\t<div class=\"flex items-center justify-between mb-2\">\n\t\t\t\t\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t\t\t\t\t<div class={`w-2 h-2 rounded-full ${getStatusColor(data.status)}`}></div>\n\t\t\t\t\t\t\t\t\t\t<span class=\"font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t\t{service === 'cortexMemService'\n\t\t\t\t\t\t\t\t\t\t\t\t? 'cortex-mem-service'\n\t\t\t\t\t\t\t\t\t\t\t\t: service === 'qdrant'\n\t\t\t\t\t\t\t\t\t\t\t\t\t? 'Qdrant 数据库'\n\t\t\t\t\t\t\t\t\t\t\t\t\t: 'LLM 服务'}\n\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t<span class={`text-sm font-medium ${getStatusColor(data.status)}`}>\n\t\t\t\t\t\t\t\t\t\t{data.status === 'connected'\n\t\t\t\t\t\t\t\t\t\t\t? '已连接'\n\t\t\t\t\t\t\t\t\t\t\t: data.status === 'connecting'\n\t\t\t\t\t\t\t\t\t\t\t\t? '连接中'\n\t\t\t\t\t\t\t\t\t\t\t\t: '已断开'}\n\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t\t<div class=\"grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t<div>延迟: <span class=\"font-medium\">{data.latency}ms</span></div>\n\t\t\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t\t{#if data.lastCheck}\n\t\t\t\t\t\t\t\t\t<div class=\"text-xs text-gray-500 dark:text-gray-400 mt-1\">\n\t\t\t\t\t\t\t\t\t\t最后检查: {data.lastCheck}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t{/if}\n\t\t\t\t\t{/each}\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n\t\t\t\t\t<button\n\t\t\t\t\t\ton:click={updateMetrics}\n\t\t\t\t\t\tclass=\"w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200\"\n\t\t\t\t\t>\n\t\t\t\t\t\t重新检查所有服务\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 资源使用 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">资源使用</h2>\n\n\t\t\t\t<div class=\"space-y-6\">\n\t\t\t\t\t<!-- 内存使用 -->\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<div class=\"flex justify-between mb-2\">\n\t\t\t\t\t\t\t<span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">内存使用</span>\n\t\t\t\t\t\t\t<span class=\"text-sm font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t{systemStatus.memoryUsage.percentage.toFixed(1)}%\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3\">\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tclass={`h-3 rounded-full ${\n\t\t\t\t\t\t\t\t\tsystemStatus.memoryUsage.percentage > 80\n\t\t\t\t\t\t\t\t\t\t? 'bg-red-500'\n\t\t\t\t\t\t\t\t\t\t: systemStatus.memoryUsage.percentage > 60\n\t\t\t\t\t\t\t\t\t\t\t? 'bg-yellow-500'\n\t\t\t\t\t\t\t\t\t\t\t: 'bg-green-500'\n\t\t\t\t\t\t\t\t}`}\n\t\t\t\t\t\t\t\tstyle={`width: ${systemStatus.memoryUsage.percentage}%`}\n\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"flex justify-between mt-1 text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t<span>{systemStatus.memoryUsage.used.toFixed(1)} MB</span>\n\t\t\t\t\t\t\t<span>{systemStatus.memoryUsage.total} MB</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<!-- CPU使用 -->\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<div class=\"flex justify-between mb-2\">\n\t\t\t\t\t\t\t<span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">CPU使用</span>\n\t\t\t\t\t\t\t<span class=\"text-sm font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t{systemStatus.cpuUsage.percentage.toFixed(1)}%\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3\">\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tclass={`h-3 rounded-full ${\n\t\t\t\t\t\t\t\t\tsystemStatus.cpuUsage.percentage > 70\n\t\t\t\t\t\t\t\t\t\t? 'bg-red-500'\n\t\t\t\t\t\t\t\t\t\t: systemStatus.cpuUsage.percentage > 40\n\t\t\t\t\t\t\t\t\t\t\t? 'bg-yellow-500'\n\t\t\t\t\t\t\t\t\t\t\t: 'bg-green-500'\n\t\t\t\t\t\t\t\t}`}\n\t\t\t\t\t\t\t\tstyle={`width: ${systemStatus.cpuUsage.percentage}%`}\n\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<!-- 网络 -->\n\t\t\t\t\t<div class=\"p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n\t\t\t\t\t\t<div class=\"text-sm font-medium text-gray-900 dark:text-white mb-2\">网络状态</div>\n\t\t\t\t\t\t<div class=\"grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400\">\n\t\t\t\t\t\t\t<div>\n\t\t\t\t\t\t\t\t活跃连接: <span class=\"font-medium\">{systemStatus.network.activeConnections}</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div>吞吐量: <span class=\"font-medium\">{systemStatus.network.throughput}</span></div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n\t\t\t\t\t<button\n\t\t\t\t\t\ton:click={() => console.log('资源优化')}\n\t\t\t\t\t\tclass=\"w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium\"\n\t\t\t\t\t>\n\t\t\t\t\t\t资源优化建议\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 性能指标 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">性能指标</h2>\n\n\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t{#each performanceMetrics as metric}\n\t\t\t\t\t\t<div class=\"p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n\t\t\t\t\t\t\t<div class=\"flex items-center justify-between mb-2\">\n\t\t\t\t\t\t\t\t<span class=\"font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t{metric.name}\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t\t\t\t<span class={`text-sm ${getTrendColor(metric.trend)}`}>\n\t\t\t\t\t\t\t\t\t\t{getTrendIcon(metric.trend)}\n\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t<span class=\"text-lg font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t{metric.value.toFixed(0)}{metric.unit}\n\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t<div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2\">\n\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\tclass={`h-2 rounded-full ${\n\t\t\t\t\t\t\t\t\t\tmetric.value > metric.threshold * 0.8\n\t\t\t\t\t\t\t\t\t\t\t? 'bg-red-500'\n\t\t\t\t\t\t\t\t\t\t\t: metric.value > metric.threshold * 0.6\n\t\t\t\t\t\t\t\t\t\t\t\t? 'bg-yellow-500'\n\t\t\t\t\t\t\t\t\t\t\t\t: 'bg-green-500'\n\t\t\t\t\t\t\t\t\t}`}\n\t\t\t\t\t\t\t\t\tstyle={`width: ${(metric.value / metric.threshold) * 100}%`}\n\t\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t<div class=\"flex justify-between mt-1 text-xs text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t<span>阈值: {metric.threshold}{metric.unit}</span>\n\t\t\t\t\t\t\t\t<span>使用率: {((metric.value / metric.threshold) * 100).toFixed(1)}%</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{/each}\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n\t\t\t\t\t<button\n\t\t\t\t\t\ton:click={() => console.log('性能报告')}\n\t\t\t\t\t\tclass=\"w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium\"\n\t\t\t\t\t>\n\t\t\t\t\t\t生成性能报告\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 告警和日志 -->\n\t\t<div class=\"grid grid-cols-1 lg:grid-cols-2 gap-8\">\n\t\t\t<!-- 告警 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<div class=\"flex items-center justify-between mb-6\">\n\t\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">系统告警</h2>\n\t\t\t\t\t<span\n\t\t\t\t\t\tclass=\"px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded text-sm font-medium\"\n\t\t\t\t\t>\n\t\t\t\t\t\t{alerts.filter((a) => !a.acknowledged).length} 个未处理\n\t\t\t\t\t</span>\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"space-y-3\">\n\t\t\t\t\t{#each alerts as alert}\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass={`p-3 border rounded-lg ${\n\t\t\t\t\t\t\t\talert.acknowledged\n\t\t\t\t\t\t\t\t\t? 'border-gray-200 dark:border-gray-700'\n\t\t\t\t\t\t\t\t\t: 'border-red-200 dark:border-red-700'\n\t\t\t\t\t\t\t}`}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<div class=\"flex items-start justify-between\">\n\t\t\t\t\t\t\t\t<div class=\"flex-1\">\n\t\t\t\t\t\t\t\t\t<div class=\"flex items-center space-x-2 mb-1\">\n\t\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\t\tclass={`px-2 py-1 rounded text-xs font-medium ${getLevelColor(alert.level)}`}\n\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t{alert.level === 'error'\n\t\t\t\t\t\t\t\t\t\t\t\t? '错误'\n\t\t\t\t\t\t\t\t\t\t\t\t: alert.level === 'warning'\n\t\t\t\t\t\t\t\t\t\t\t\t\t? '警告'\n\t\t\t\t\t\t\t\t\t\t\t\t\t: '信息'}\n\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t{#if !alert.acknowledged}\n\t\t\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\t\t\tclass=\"px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded text-xs\"\n\t\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t\t未处理\n\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t<p class=\"text-sm text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t{alert.message}\n\t\t\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t\t\t\t<p class=\"text-xs text-gray-500 dark:text-gray-400 mt-1\">\n\t\t\t\t\t\t\t\t\t\t{alert.time}\n\t\t\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t{#if !alert.acknowledged}\n\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\ton:click={() => acknowledgeAlert(alert.id)}\n\t\t\t\t\t\t\t\t\t\tclass=\"ml-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded\"\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t确认\n\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{/each}\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n\t\t\t\t\t<div class=\"flex space-x-3\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\ton:click={() => console.log('查看所有告警')}\n\t\t\t\t\t\t\tclass=\"flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t查看所有告警\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\ton:click={() => console.log('清空已处理')}\n\t\t\t\t\t\t\tclass=\"flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t清空已处理\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 实时日志 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<div class=\"flex items-center justify-between mb-6\">\n\t\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">实时日志</h2>\n\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t<span class=\"text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t最后更新: {lastUpdate || '未知'}\n\t\t\t\t\t\t</span>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\ton:click={() => (realtimeLogs = [])}\n\t\t\t\t\t\t\tclass=\"px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t清空\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<div\n\t\t\t\t\tclass=\"h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4\"\n\t\t\t\t>\n\t\t\t\t\t{#if realtimeLogs.length === 0}\n\t\t\t\t\t\t<div class=\"h-full flex items-center justify-center text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t暂无日志\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{:else}\n\t\t\t\t\t\t<div class=\"space-y-2\">\n\t\t\t\t\t\t\t{#each realtimeLogs as log}\n\t\t\t\t\t\t\t\t<div class=\"flex items-start space-x-3 text-sm\">\n\t\t\t\t\t\t\t\t\t<div class=\"flex-shrink-0 w-16 text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t\t{log.time}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t<div class=\"flex-shrink-0\">\n\t\t\t\t\t\t\t\t\t\t<span class={`px-2 py-0.5 rounded text-xs ${getLevelColor(log.level)}`}>\n\t\t\t\t\t\t\t\t\t\t\t{log.level === 'error' ? 'ERR' : log.level === 'warning' ? 'WARN' : 'INFO'}\n\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t<div class=\"flex-1 text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t{log.message}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t{/each}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{/if}\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n\t\t\t\t\t<div class=\"flex space-x-3\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\ton:click={() => console.log('导出日志')}\n\t\t\t\t\t\t\tclass=\"flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t导出日志\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\ton:click={() => console.log('日志设置')}\n\t\t\t\t\t\t\tclass=\"flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t日志设置\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 监控工具 -->\n\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">监控工具</h2>\n\n\t\t\t<div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200\"\n\t\t\t\t\ton:click={() => console.log('健康检查')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">❤️</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">健康检查</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">全面检查系统健康状态</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200\"\n\t\t\t\t\ton:click={() => console.log('性能测试')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">⚡</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">性能测试</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">运行性能基准测试</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200\"\n\t\t\t\t\ton:click={() => console.log('诊断工具')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">🔧</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">诊断工具</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">系统问题诊断和修复</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t</div>\n\t{/if}\n</div>\n"
+      "source_summary": "<script lang=\"ts\">\n\timport { onMount, onDestroy } from 'svelte';\n\timport api from '$lib/api/client';\n\timport ServiceStatus from '$lib/components/ServiceStatus.svelte';\n\n\tlet isLoading = true;\n\tlet error: string | null = null;\n\tlet autoRefresh = true;\n\tlet refreshInterval: number;\n\tlet lastUpdate: string = '';\n\n\t// 系统指标（服务状态由ServiceStatus组件处理）\n\tlet systemMetrics = {\n\t\tmemoryUsage: { used: 0, total: 1024, percentage: 0 },\n\t\tcpuUsage: { percentage: 0 },\n\t\tnetwork: { activeConnections: 0, throughput: '0 MB/s' }\n\t};\n\n\t// 真实性能指标\n\tlet performanceMetrics: Array<{\n\t\tname: string;\n\t\tvalue: number;\n\t\tunit: string;\n\t\ttrend: string;\n\t\tthreshold: number;\n\t}> = [];\n\n\t// 真实日志\n\tlet realtimeLogs: Array<{ time: string; level: string; message: string }> = [];\n\n\t// 告警\n\tlet alerts: Array<{\n\t\tid: string;\n\t\tlevel: string;\n\t\tmessage: string;\n\t\ttime: string;\n\t\tacknowledged: boolean;\n\t}> = [];\n\n\tonMount(async () => {\n\t\ttry {\n\t\t\tawait loadSystemData();\n\t\t} catch (err) {\n\t\t\tconsole.error('加载系统数据失败:', err);\n\t\t\terror = err instanceof Error ? err.message : '加载数据失败';\n\t\t} finally {\n\t\t\tisLoading = false;\n\t\t}\n\n\t\t// 设置自动刷新\n\t\tif (autoRefresh) {\n\t\t\trefreshInterval = setInterval(() => {\n\t\t\t\tupdateMetrics();\n\t\t\t}, 10000); // 10秒刷新一次\n\t\t}\n\t});\n\n\tonDestroy(() => {\n\t\tif (refreshInterval) {\n\t\t\tclearInterval(refreshInterval);\n\t\t}\n\t});\n\n\tasync function loadPerformanceMetrics() {\n\t\ttry {\n\t\t\tconst timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });\n\t\t\tlet memories: any[] = [];\n\n\t\t\t// 获取记忆统计\n\t\t\ttry {\n\t\t\t\tconst memoriesResponse = await api.memory.list({ limit: 1000 });\n\t\t\t\tmemories = memoriesResponse.memories || [];\n\t\t\t\tconsole.log(`获取到 ${memories.length} 条记忆记录`);\n\t\t\t} catch (memoryErr) {\n\t\t\t\tconsole.warn('获取记忆列表失败:', memoryErr);\n\t\t\t\tmemories = [];\n\t\t\t}\n\n\t\t\t// 计算系统指标\n\t\t\tsystemMetrics = {\n\t\t\t\tmemoryUsage: await calculateMemoryUsage(memories),\n\t\t\t\tcpuUsage: await calculateCpuUsage(),\n\t\t\t\tnetwork: await calculateNetworkStats()\n\t\t\t};\n\n\t\t\t// 计算性能指标\n\t\t\tperformanceMetrics = await calculatePerformanceMetrics();\n\n\t\t\t// 生成日志和告警\n\t\t\trealtimeLogs = await generateRealtimeLogs(memories, timestamp);\n\n\t\t\tlastUpdate = timestamp;\n\t\t} catch (err) {\n\t\t\tconsole.error('性能指标加载错误:', err);\n\t\t\tthrow err;\n\t\t}\n\t}\n\n\t// 测量健康检查延迟\n\tasync function measureHealthLatency(endpoint: string, addVariance = false): Promise<number> {\n\t\ttry {\n\t\t\tconst startTime = Date.now();\n\t\t\tconst response = await fetch(endpoint);\n\t\t\tconst latency = Date.now() - startTime;\n\n\t\t\tif (addVariance) {\n\t\t\t\t// 为不同服务添加合理的延迟差异\n\t\t\t\tconst variance = Math.random() * 100 - 50; // ±50ms variance\n\t\t\t\treturn Math.max(0, latency + variance);\n\t\t\t}\n\n\t\t\treturn latency;\n\t\t} catch (err) {\n\t\t\treturn 0;\n\t\t}\n\t}\n\n\t// 获取Qdrant版本\n\tasync function getQdrantVersion(): Promise<string> {\n\t\ttry {\n\t\t\t// 尝试从健康检查响应获取\n\t\t\tconst response = await fetch('/health');\n\t\t\tif (response.ok) {\n\t\t\t\tconst data = await response.json();\n\t\t\t\tif (data.version) {\n\t\t\t\t\treturn data.version;\n\t\t\t\t}\n\t\t\t}\n\t\t} catch (err) {\n\t\t\tconsole.warn('获取版本信息失败:', err);\n\t\t}\n\t\treturn '-.-.-'; // 默认版本\n\t}\n\n\t// 计算内存使用情况\n\tasync function calculateMemoryUsage(memories: any[]) {\n\t\ttry {\n\t\t\t// 估算内存使用：基于记忆数量和平均大小\n\t\t\tconst avgMemorySize = 2.5; // KB per memory\n\t\t\tconst totalMemoryUsed = memories.length * avgMemorySize;\n\t\t\tconst totalMemory = 1024; // 1GB total\n\t\t\tconst percentage = Math.min(90, (totalMemoryUsed / totalMemory) * 100);\n\n\t\t\treturn {\n\t\t\t\tused: totalMemoryUsed,\n\t\t\t\ttotal: totalMemory,\n\t\t\t\tpercentage: percentage\n\t\t\t};\n\t\t} catch (err) {\n\t\t\treturn { used: 0, total: 1024, percentage: 0 };\n\t\t}\n\t}\n\n\t// 计算CPU使用率\n\tasync function calculateCpuUsage() {\n\t\ttry {\n\t\t\t// 基于系统负载估算\n\t\t\tconst memoriesCount = (await api.memory.list({ limit: 1 })).total || 0;\n\t\t\tconst baseLoad = 5; // 基础负载5%\n\t\t\tconst memoryLoad = Math.min(30, memoriesCount * 0.02); // 每条记忆0.02%负载\n\t\t\tconst randomLoad = Math.random() * 10 - 5; // ±5%随机负载\n\n\t\t\tconst totalLoad = baseLoad + memoryLoad + randomLoad;\n\t\t\treturn { percentage: Math.max(0, Math.min(80, totalLoad)) };\n\t\t} catch (err) {\n\t\t\treturn { percentage: 10 + Math.random() * 20 };\n\t\t}\n\t}\n\n\t// 计算网络统计\n\tasync function calculateNetworkStats() {\n\t\ttry {\n\t\t\tconst memoriesCount = (await api.memory.list({ limit: 1 })).total || 0;\n\t\t\tconst activeConnections = Math.min(\n\t\t\t\t50,\n\t\t\t\tMath.floor(memoriesCount / 50) + Math.floor(Math.random() * 10)\n\t\t\t);\n\t\t\tconst throughput = `${(memoriesCount * 0.05 + Math.random() * 2).toFixed(1)} MB/s`;\n\n\t\t\treturn { activeConnections, throughput };\n\t\t} catch (err) {\n\t\t\treturn { activeConnections: 5, throughput: '1.2 MB/s' };\n\t\t}\n\t}\n\n\t// 计算性能指标\n\tasync function calculatePerformanceMetrics() {\n\t\ttry {\n\t\t\tconst healthLatency = await measureHealthLatency('/health');\n\t\t\tconst searchStartTime = Date.now();\n\t\t\tawait api.memory.search('test');\n\t\t\tconst searchLatency = Date.now() - searchStartTime;\n\n\t\t\tconst apiLatency = await measureHealthLatency('/api/memories?limit=1');\n\n\t\t\treturn [\n\t\t\t\t{\n\t\t\t\t\tname: 'API响应时间',\n\t\t\t\t\tvalue: apiLatency,\n\t\t\t\t\tunit: 'ms',\n\t\t\t\t\ttrend: apiLatency < 200 ? 'down' : apiLatency > 500 ? 'up' : 'stable',\n\t\t\t\t\tthreshold: 500\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\tname: '搜索延迟',\n\t\t\t\t\tvalue: searchLatency,\n\t\t\t\t\tunit: 'ms',\n\t\t\t\t\ttrend: searchLatency < 300 ? 'down' : searchLatency > 1000 ? 'up' : 'stable',\n\t\t\t\t\tthreshold: 1000\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\tname: '健康检查',\n\t\t\t\t\tvalue: healthLatency,\n\t\t\t\t\tunit: 'ms',\n\t\t\t\t\ttrend: healthLatency < 100 ? 'down' : healthLatency > 300 ? 'up' : 'stable',\n\t\t\t\t\tthreshold: 300\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\tname: '向量查询',\n\t\t\t\t\tvalue: Math.max(50, apiLatency + 100),\n\t\t\t\t\tunit: 'ms',\n\t\t\t\t\ttrend: 'stable',\n\t\t\t\t\tthreshold: 2000\n\t\t\t\t}\n\t\t\t];\n\t\t} catch (err) {\n\t\t\tconsole.warn('性能指标计算失败，使用默认值:', err);\n\t\t\treturn [\n\t\t\t\t{ name: 'API响应时间', value: 0, unit: 'ms', trend: 'stable', threshold: 500 },\n\t\t\t\t{ name: '搜索延迟', value: 0, unit: 'ms', trend: 'stable', threshold: 1000 },\n\t\t\t\t{ name: '健康检查', value: 0, unit: 'ms', trend: 'stable', threshold: 300 },\n\t\t\t\t{ name: '向量查询', value: 0, unit: 'ms', trend: 'stable', threshold: 2000 }\n\t\t\t];\n\t\t}\n\t}\n\n\tasync function generateRealtimeLogs(\n\t\tmemories: any[],\n\t\tcurrentTime: string\n\t): Promise<Array<{ time: string; level: string; message: string }>> {\n\t\tconst logs = [];\n\t\tconst now = new Date();\n\n\t\t// 添加系统状态日志\n\t\tlogs.push({\n\t\t\ttime: currentTime,\n\t\t\tlevel: 'info',\n\t\t\tmessage: `系统监控数据更新，共 ${memories.length} 条记忆记录`\n\t\t});\n\n\t\t// 服务状态日志已移至ServiceStatus组件处理\n\n\t\t// 添加性能指标日志\n\t\tperformanceMetrics.forEach((metric) => {\n\t\t\tif (metric.value > metric.threshold * 0.8) {\n\t\t\t\tlogs.push({\n\t\t\t\t\ttime: currentTime,\n\t\t\t\t\tlevel: 'warning',\n\t\t\t\t\tmessage: `${metric.name} 指标接近阈值: ${metric.value}${metric.unit} (阈值: ${metric.threshold}${metric.unit})`\n\t\t\t\t});\n\t\t\t}\n\t\t});\n\n\t\t// 添加资源使用日志\n\t\tif (systemStatus.memoryUsage.percentage > 70) {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'warning',\n\t\t\t\tmessage: `内存使用率较高: ${systemStatus.memoryUsage.percentage.toFixed(1)}% (${systemStatus.memoryUsage.used.toFixed(1)}MB/${systemStatus.memoryUsage.total}MB)`\n\t\t\t});\n\t\t}\n\n\t\tif (systemStatus.cpuUsage.percentage > 60) {\n\t\t\tlogs.push({\n\t\t\t\ttime: currentTime,\n\t\t\t\tlevel: 'info',\n\t\t\t\tmessage: `CPU 使用率: ${systemStatus.cpuUsage.percentage.toFixed(1)}%`\n\t\t\t});\n\t\t}\n\n\t\t// 添加最近记忆活动日志\n\t\tif (memories.length > 0) {\n\t\t\tconst recentMemories = memories.slice(0, 3);\n\t\t\trecentMemories.forEach((memory, index) => {\n\t\t\t\tconst time = new Date(now.getTime() - (index + 1) * 30000); // 30秒间隔\n\t\t\t\tconst memoryType = memory.metadata?.memory_type || 'Unknown';\n\t\t\t\tlogs.push({\n\t\t\t\t\ttime: time.toLocaleTimeString('zh-CN', { hour12: false }),\n\t\t\t\t\tlevel: 'info',\n\t\t\t\t\tmessage: `记忆活动: ${memoryType} 类型记忆 ${memory.id.substring(0, 22)}...`\n\t\t\t\t});\n\t\t\t});\n\t\t}\n\n\t\t// 添加网络状态日志\n\t\tlogs.push({\n\t\t\ttime: currentTime,\n\t\t\tlevel: 'info',\n\t\t\tmessage: `网络状态: ${systemMetrics.network.activeConnections} 个活跃连接，吞吐量 ${systemMetrics.network.throughput}`\n\t\t});\n\n\t\treturn logs.slice(0, 12); // 保留最近12条日志\n\t}\n\n\tasync function generateAlerts(): Promise<\n\t\tArray<{ id: string; level: string; message: string; time: string; acknowledged: boolean }>\n\t> {\n\t\tconst alerts = [];\n\t\tconst now = new Date();\n\t\tconst timestamp = now.toLocaleTimeString('zh-CN', { hour12: false });\n\n\t\t// 服务状态告警已移至ServiceStatus组件处理\n\n\t\t// 1. 检查内存使用率\n\t\tif (systemMetrics.memoryUsage.percentage > 85) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_memory_critical`,\n\t\t\t\tlevel: 'error',\n\t\t\t\tmessage: `内存使用率严重过高: ${systemMetrics.memoryUsage.percentage.toFixed(1)}% (${systemMetrics.memoryUsage.used.toFixed(1)}MB/${systemMetrics.memoryUsage.total}MB)`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t} else if (systemMetrics.memoryUsage.percentage > 70) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_memory_warning`,\n\t\t\t\tlevel: 'warning',\n\t\t\t\tmessage: `内存使用率较高: ${systemMetrics.memoryUsage.percentage.toFixed(1)}%`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\t// 2. 检查CPU使用率\n\t\tif (systemMetrics.cpuUsage.percentage > 80) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_cpu_high`,\n\t\t\t\tlevel: 'warning',\n\t\t\t\tmessage: `CPU 使用率过高: ${systemMetrics.cpuUsage.percentage.toFixed(1)}%`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\t// 3. 检查性能指标\n\t\tperformanceMetrics.forEach((metric) => {\n\t\t\tif (metric.value > metric.threshold) {\n\t\t\t\tconst level = metric.value > metric.threshold * 1.5 ? 'error' : 'warning';\n\t\t\t\talerts.push({\n\t\t\t\t\tid: `alert_${Date.now()}_${metric.name.replace(/\\s+/g, '_').toLowerCase()}`,\n\t\t\t\t\tlevel: level,\n\t\t\t\t\tmessage: `${metric.name} 超出阈值: ${metric.value}${metric.unit} (阈值: ${metric.threshold}${metric.unit})`,\n\t\t\t\t\ttime: timestamp,\n\t\t\t\t\tacknowledged: false\n\t\t\t\t});\n\t\t\t}\n\t\t});\n\n\t\t// 4. 检查网络连接数\n\t\tif (systemMetrics.network.activeConnections > 40) {\n\t\t\talerts.push({\n\t\t\t\tid: `alert_${Date.now()}_connections`,\n\t\t\t\tlevel: 'info',\n\t\t\t\tmessage: `网络连接数较高: ${systemMetrics.network.activeConnections}`,\n\t\t\t\ttime: timestamp,\n\t\t\t\tacknowledged: false\n\t\t\t});\n\t\t}\n\n\t\treturn alerts.slice(0, 10); // 最多显示10个告警\n\t}\n\n\tasync function updateMetrics() {\n\t\ttry {\n\t\t\tawait loadPerformanceMetrics();\n\t\t} catch (err) {\n\t\t\tconsole.error('更新指标失败:', err);\n\t\t}\n\t}\n\n\t// 服务状态检测逻辑已移至ServiceStatus组件\n\n\tfunction toggleAutoRefresh() {\n\t\tautoRefresh = !autoRefresh;\n\n\t\tif (autoRefresh) {\n\t\t\trefreshInterval = setInterval(() => {\n\t\t\t\tupdateMetrics();\n\t\t\t}, 5000);\n\t\t} else if (refreshInterval) {\n\t\t\tclearInterval(refreshInterval);\n\t\t}\n\t}\n\n\t// 服务状态相关函数已移至ServiceStatus组件\n\n\tfunction getLevelColor(level: string) {\n\t\tswitch (level) {\n\t\t\tcase 'error':\n\t\t\t\treturn 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';\n\t\t\tcase 'warning':\n\t\t\t\treturn 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';\n\t\t\tcase 'info':\n\t\t\t\treturn 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';\n\t\t\tdefault:\n\t\t\t\treturn 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';\n\t\t}\n\t}\n\n\tfunction getTrendIcon(trend: string) {\n\t\tswitch (trend) {\n\t\t\tcase 'up':\n\t\t\t\treturn '↗️';\n\t\t\tcase 'down':\n\t\t\t\treturn '↘️';\n\t\t\tdefault:\n\t\t\t\treturn '➡️';\n\t\t}\n\t}\n\n\tfunction getTrendColor(trend: string) {\n\t\tswitch (trend) {\n\t\t\tcase 'up':\n\t\t\t\treturn 'text-red-500';\n\t\t\tcase 'down':\n\t\t\t\treturn 'text-green-500';\n\t\t\tdefault:\n\t\t\t\treturn 'text-gray-500';\n\t\t}\n\t}\n\n\tfunction acknowledgeAlert(alertId: string) {\n\t\tconst alert = alerts.find((a) => a.id === alertId);\n\t\tif (alert) {\n\t\t\talert.acknowledged = true;\n\t\t}\n\t}\n</script>\n\n<div class=\"space-y-8\">\n\t<!-- 页面标题 -->\n\t<div class=\"flex items-center justify-between\">\n\t\t<div>\n\t\t\t<h1 class=\"text-3xl font-bold text-gray-900 dark:text-white\">系统监控</h1>\n\t\t\t<p class=\"mt-2 text-gray-600 dark:text-gray-400\">实时监控系统状态、性能指标和运行日志</p>\n\t\t</div>\n\t\t<div class=\"flex items-center space-x-4\">\n\t\t\t<label class=\"flex items-center space-x-2\">\n\t\t\t\t<input\n\t\t\t\t\ttype=\"checkbox\"\n\t\t\t\t\tbind:checked={autoRefresh}\n\t\t\t\t\ton:change={toggleAutoRefresh}\n\t\t\t\t\tclass=\"w-4 h-4 rounded\"\n\t\t\t\t/>\n\t\t\t\t<span class=\"text-sm text-gray-700 dark:text-gray-300\">自动刷新</span>\n\t\t\t</label>\n\t\t\t<button\n\t\t\t\ton:click={updateMetrics}\n\t\t\t\tclass=\"px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium\"\n\t\t\t>\n\t\t\t\t立即刷新\n\t\t\t</button>\n\t\t</div>\n\t</div>\n\n\t{#if isLoading}\n\t\t<!-- 加载状态 -->\n\t\t<div class=\"grid grid-cols-1 lg:grid-cols-3 gap-6\">\n\t\t\t{#each Array(3) as _, i}\n\t\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-pulse\">\n\t\t\t\t\t<div class=\"h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6\"></div>\n\t\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t\t{#each Array(3) as _, j}\n\t\t\t\t\t\t\t<div class=\"h-12 bg-gray-200 dark:bg-gray-700 rounded\"></div>\n\t\t\t\t\t\t{/each}\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t{/each}\n\t\t</div>\n\t{:else if error}\n\t\t<!-- 错误状态 -->\n\t\t<div\n\t\t\tclass=\"bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6\"\n\t\t>\n\t\t\t<div class=\"flex items-center\">\n\t\t\t\t<div\n\t\t\t\t\tclass=\"w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mr-3\"\n\t\t\t\t>\n\t\t\t\t\t<span class=\"text-red-600 dark:text-red-400\">⚠️</span>\n\t\t\t\t</div>\n\t\t\t\t<div>\n\t\t\t\t\t<h3 class=\"text-lg font-medium text-red-800 dark:text-red-200\">加载失败</h3>\n\t\t\t\t\t<p class=\"text-red-600 dark:text-red-400\">{error}</p>\n\t\t\t\t\t<button\n\t\t\t\t\t\ton:click={() => location.reload()}\n\t\t\t\t\t\tclass=\"mt-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium\"\n\t\t\t\t\t>\n\t\t\t\t\t\t重新加载\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t{:else}\n\t\t<!-- 系统状态概览 -->\n\t\t<div class=\"grid grid-cols-1 lg:grid-cols-3 gap-6\">\n\t\t\t<!-- 服务状态 -->\n\t\t\t<ServiceStatus \n\t\t\t\ttitle=\"服务状态\" \n\t\t\t\tshowRefreshButton={true} \n\t\t\t\tautoDetect={true}\n\t\t\t\ton:statusUpdate={(event) => {\n\t\t\t\t\t// 服务状态由组件内部处理，这里不需要更新外部状态\n\t\t\t\t}}\n\t\t\t/>\n\n\t\t\t<!-- 资源使用 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">资源使用</h2>\n\n\t\t\t\t<div class=\"space-y-6\">\n\t\t\t\t\t<!-- 内存使用 -->\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<div class=\"flex justify-between mb-2\">\n\t\t\t\t\t\t\t<span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">内存使用</span>\n\t\t\t\t\t\t\t<span class=\"text-sm font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t{systemMetrics.memoryUsage.percentage.toFixed(1)}%\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t<div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3\">\n\t\t\t\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\t\t\t\tclass={`h-3 rounded-full ${\n\t\t\t\t\t\t\t\t\t\t\t\t\tsystemMetrics.memoryUsage.percentage > 80\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t? 'bg-red-500'\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t: systemMetrics.memoryUsage.percentage > 60\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t? 'bg-yellow-500'\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: 'bg-green-500'\n\t\t\t\t\t\t\t\t\t\t\t\t\t}`}\n\t\t\t\t\t\t\t\t\t\t\t\tstyle={`width: ${systemMetrics.memoryUsage.percentage}%`}\n\t\t\t\t\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t<div class=\"flex justify-between mt-1 text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t\t\t<span>{systemMetrics.memoryUsage.used.toFixed(1)} MB</span>\n\t\t\t\t\t\t\t\t\t\t\t<span>{systemMetrics.memoryUsage.total} MB</span>\n\t\t\t\t\t\t\t\t\t\t</div>\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t\t\t\t<!-- CPU使用 -->\n\t\t\t\t\t\t\t\t\t\t<div>\n\t\t\t\t\t\t\t\t\t\t\t<div class=\"flex justify-between mb-2\">\n\t\t\t\t\t\t\t\t\t\t\t\t<span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">CPU使用</span>\n\t\t\t\t\t\t\t\t\t\t\t\t<span class=\"text-sm font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t\t\t\t{systemMetrics.cpuUsage.percentage.toFixed(1)}%\n\t\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t\t<div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3\">\n\t\t\t\t\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\t\t\t\t\tclass={`h-3 rounded-full ${\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tsystemMetrics.cpuUsage.percentage > 70\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t? 'bg-red-500'\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: systemMetrics.cpuUsage.percentage > 40\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t? 'bg-yellow-500'\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: 'bg-green-500'\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t}`}\n\t\t\t\t\t\t\t\t\t\t\t\t\tstyle={`width: ${systemMetrics.cpuUsage.percentage}%`}\n\t\t\t\t\t\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t<!-- 网络 -->\n\t\t\t\t\t<div class=\"p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n\t\t\t\t\t\t<div class=\"text-sm font-medium text-gray-900 dark:text-white mb-2\">网络状态</div>\n\t\t\t\t\t\t<div class=\"grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400\">\n\t\t\t\t\t\t\t<div>\n\t\t\t\t\t\t\t\t活跃连接: <span class=\"font-medium\">{systemMetrics.network.activeConnections}</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div>吞吐量: <span class=\"font-medium\">{systemMetrics.network.throughput}</span></div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 性能指标 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">性能指标</h2>\n\n\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t{#each performanceMetrics as metric}\n\t\t\t\t\t\t<div class=\"p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n\t\t\t\t\t\t\t<div class=\"flex items-center justify-between mb-2\">\n\t\t\t\t\t\t\t\t<span class=\"font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t{metric.name}\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t\t\t\t<span class={`text-sm ${getTrendColor(metric.trend)}`}>\n\t\t\t\t\t\t\t\t\t\t{getTrendIcon(metric.trend)}\n\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t<span class=\"text-lg font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t{metric.value.toFixed(0)}{metric.unit}\n\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t<div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2\">\n\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\tclass={`h-2 rounded-full ${\n\t\t\t\t\t\t\t\t\t\tmetric.value > metric.threshold * 0.8\n\t\t\t\t\t\t\t\t\t\t\t? 'bg-red-500'\n\t\t\t\t\t\t\t\t\t\t\t: metric.value > metric.threshold * 0.6\n\t\t\t\t\t\t\t\t\t\t\t\t? 'bg-yellow-500'\n\t\t\t\t\t\t\t\t\t\t\t\t: 'bg-green-500'\n\t\t\t\t\t\t\t\t\t}`}\n\t\t\t\t\t\t\t\t\tstyle={`width: ${Math.min(metric.value / metric.threshold, 1) * 100}%`}\n\t\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t<div class=\"flex justify-between mt-1 text-xs text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t<span>阈值: {metric.threshold}{metric.unit}</span>\n\t\t\t\t\t\t\t\t<span>使用率: {((metric.value / metric.threshold) * 100).toFixed(1)}%</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{/each}\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 告警和日志 -->\n\t\t<div class=\"grid grid-cols-1 lg:grid-cols-2 gap-8\">\n\t\t\t<!-- 告警 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<div class=\"flex items-center justify-between mb-6\">\n\t\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">系统告警</h2>\n\t\t\t\t\t<span\n\t\t\t\t\t\tclass=\"px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded text-sm font-medium\"\n\t\t\t\t\t>\n\t\t\t\t\t\t{alerts.filter((a) => !a.acknowledged).length} 个未处理\n\t\t\t\t\t</span>\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"space-y-3\">\n\t\t\t\t\t{#each alerts as alert}\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass={`p-3 border rounded-lg ${\n\t\t\t\t\t\t\t\talert.acknowledged\n\t\t\t\t\t\t\t\t\t? 'border-gray-200 dark:border-gray-700'\n\t\t\t\t\t\t\t\t\t: 'border-red-200 dark:border-red-700'\n\t\t\t\t\t\t\t}`}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<div class=\"flex items-start justify-between\">\n\t\t\t\t\t\t\t\t<div class=\"flex-1\">\n\t\t\t\t\t\t\t\t\t<div class=\"flex items-center space-x-2 mb-1\">\n\t\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\t\tclass={`px-2 py-1 rounded text-xs font-medium ${getLevelColor(alert.level)}`}\n\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t{alert.level === 'error'\n\t\t\t\t\t\t\t\t\t\t\t\t? '错误'\n\t\t\t\t\t\t\t\t\t\t\t\t: alert.level === 'warning'\n\t\t\t\t\t\t\t\t\t\t\t\t\t? '警告'\n\t\t\t\t\t\t\t\t\t\t\t\t\t: '信息'}\n\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t{#if !alert.acknowledged}\n\t\t\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\t\t\tclass=\"px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded text-xs\"\n\t\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t\t未处理\n\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t<p class=\"text-sm text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t{alert.message}\n\t\t\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t\t\t\t<p class=\"text-xs text-gray-500 dark:text-gray-400 mt-1\">\n\t\t\t\t\t\t\t\t\t\t{alert.time}\n\t\t\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t{#if !alert.acknowledged}\n\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\ton:click={() => acknowledgeAlert(alert.id)}\n\t\t\t\t\t\t\t\t\t\tclass=\"ml-2 px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded\"\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t确认\n\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{/each}\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 实时日志 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<div class=\"flex items-center justify-between mb-6\">\n\t\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">实时日志</h2>\n\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t<span class=\"text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t最后更新: {lastUpdate || '未知'}\n\t\t\t\t\t\t</span>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\ton:click={() => (realtimeLogs = [])}\n\t\t\t\t\t\t\tclass=\"px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t清空\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<div\n\t\t\t\t\tclass=\"h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg p-4\"\n\t\t\t\t>\n\t\t\t\t\t{#if realtimeLogs.length === 0}\n\t\t\t\t\t\t<div class=\"h-full flex items-center justify-center text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t暂无日志\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{:else}\n\t\t\t\t\t\t<div class=\"space-y-2\">\n\t\t\t\t\t\t\t{#each realtimeLogs as log}\n\t\t\t\t\t\t\t\t<div class=\"flex items-start space-x-3 text-sm\">\n\t\t\t\t\t\t\t\t\t<div class=\"flex-shrink-0 w-16 text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t\t{log.time}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t<div class=\"flex-shrink-0\">\n\t\t\t\t\t\t\t\t\t\t<span class={`px-2 py-0.5 rounded text-xs ${getLevelColor(log.level)}`}>\n\t\t\t\t\t\t\t\t\t\t\t{log.level === 'error' ? 'ERR' : log.level === 'warning' ? 'WARN' : 'INFO'}\n\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t<div class=\"flex-1 text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t{log.message}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t{/each}\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{/if}\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 监控工具 -->\n\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">监控工具</h2>\n\n\t\t\t<div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200\"\n\t\t\t\t\ton:click={() => console.log('健康检查')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">❤️</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">健康检查</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">全面检查系统健康状态</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200\"\n\t\t\t\t\ton:click={() => console.log('性能测试')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">⚡</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">性能测试</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">运行性能基准测试</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200\"\n\t\t\t\t\ton:click={() => console.log('诊断工具')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">🔧</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">诊断工具</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">系统问题诊断和修复</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t</div>\n\t{/if}\n</div>\n"
     },
     "complexity_metrics": {
-      "cyclomatic_complexity": 58.0,
-      "lines_of_code": 1181,
+      "cyclomatic_complexity": 33.0,
+      "lines_of_code": 790,
       "number_of_classes": 0,
-      "number_of_functions": 19
+      "number_of_functions": 15
     },
     "dependencies": [
       {
-        "dependency_type": "import",
+        "dependency_type": "framework",
         "is_external": true,
-        "line_number": 1,
+        "line_number": null,
         "name": "svelte",
         "path": "svelte",
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "service",
         "is_external": false,
-        "line_number": 2,
-        "name": "$lib/api/client",
-        "path": "cortex-mem-insights/src/lib/api/client",
+        "line_number": null,
+        "name": "api",
+        "path": "$lib/api/client",
+        "version": null
+      },
+      {
+        "dependency_type": "component",
+        "is_external": false,
+        "line_number": null,
+        "name": "ServiceStatus",
+        "path": "$lib/components/ServiceStatus.svelte",
         "version": null
       }
     ],
-    "detailed_description": "This Svelte component implements a comprehensive system monitoring dashboard that visualizes the real-time health and performance of the Cortex-Mem system. It fetches data from multiple backend services (cortex-mem-service, Qdrant, LLM) and calculates derived metrics for memory, CPU, and network usage. The component features an auto-refresh mechanism (10-second interval) and provides interactive controls. It displays service status, resource utilization, performance KPIs, system alerts, and real-time logs. The UI includes visual indicators for status (colors), trends (icons), and thresholds (progress bars). The component also implements fallback strategies and redundant checks to ensure monitoring reliability even when some services are partially degraded.",
+    "detailed_description": "This Svelte page component implements a comprehensive system monitoring dashboard that displays real-time system metrics, performance indicators, logs, and alerts. The component fetches data from the API to monitor memory usage, CPU utilization, network statistics, and various performance metrics. It features automatic refresh functionality, visual indicators for system health, and interactive elements for acknowledging alerts and clearing logs. The component integrates with the ServiceStatus subcomponent to display service health information and provides a user interface for monitoring the overall system status.",
     "interfaces": [
       {
-        "description": "Lifecycle hook that initializes data loading and sets up auto-refresh interval",
-        "interface_type": "lifecycle",
-        "name": "onMount",
+        "description": null,
+        "interface_type": "component",
+        "name": "ServiceStatus",
         "parameters": [],
         "return_type": "void",
         "visibility": "public"
       },
       {
-        "description": "Lifecycle hook that cleans up the refresh interval to prevent memory leaks",
-        "interface_type": "lifecycle",
-        "name": "onDestroy",
+        "description": null,
+        "interface_type": "variable",
+        "name": "realtimeLogs",
         "parameters": [],
-        "return_type": "void",
+        "return_type": "Array<{ time: string; level: string; message: string }>",
         "visibility": "public"
       },
       {
-        "description": "Main data loading function that coordinates service status checks, memory retrieval, and metric calculations",
-        "interface_type": "function",
-        "name": "loadSystemData",
+        "description": null,
+        "interface_type": "variable",
+        "name": "alerts",
         "parameters": [],
-        "return_type": "Promise<void>",
-        "visibility": "private"
+        "return_type": "Array<{ id: string; level: string; message: string; time: string; acknowledged: boolean }>",
+        "visibility": "public"
       },
       {
-        "description": "Function to refresh all metrics, typically called on user interaction or auto-refresh",
-        "interface_type": "function",
-        "name": "updateMetrics",
+        "description": null,
+        "interface_type": "variable",
+        "name": "systemMetrics",
         "parameters": [],
-        "return_type": "Promise<void>",
-        "visibility": "private"
+        "return_type": "{ memoryUsage: { used: number, total: number, percentage: number }, cpuUsage: { percentage: number }, network: { activeConnections: number, throughput: string } }",
+        "visibility": "public"
       },
       {
-        "description": "Toggles the auto-refresh feature on and off, managing the interval timer",
-        "interface_type": "function",
-        "name": "toggleAutoRefresh",
+        "description": null,
+        "interface_type": "variable",
+        "name": "performanceMetrics",
         "parameters": [],
-        "return_type": "void",
-        "visibility": "private"
+        "return_type": "Array<{ name: string; value: number; unit: string; trend: string; threshold: number }>",
+        "visibility": "public"
       },
       {
-        "description": "Comprehensive service health detection with fallback strategies for each critical service",
-        "interface_type": "function",
-        "name": "detectIndividualServices",
-        "parameters": [
-          {
-            "description": "Timestamp for the current check",
-            "is_optional": false,
-            "name": "timestamp",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "Promise<{ mainService: { status: string, latency: number, lastCheck: string }, vectorStore: { status: string, latency: number, lastCheck: string }, llmService: { status: string, latency: number, lastCheck: string } }>",
-        "visibility": "private"
-      },
-      {
-        "description": "Calculates memory usage based on the number and estimated size of memory records",
-        "interface_type": "function",
-        "name": "calculateMemoryUsage",
-        "parameters": [
-          {
-            "description": "Array of memory records to calculate usage from",
-            "is_optional": false,
-            "name": "memories",
-            "param_type": "any[]"
-          }
-        ],
-        "return_type": "Promise<{ used: number, total: number, percentage: number }>",
-        "visibility": "private"
-      },
-      {
-        "description": "Estimates CPU usage based on system load factors including memory count and random variation",
-        "interface_type": "function",
-        "name": "calculateCpuUsage",
+        "description": null,
+        "interface_type": "variable",
+        "name": "autoRefresh",
         "parameters": [],
-        "return_type": "Promise<{ percentage: number }>",
-        "visibility": "private"
-      },
-      {
-        "description": "Retrieves Qdrant collection count via direct API call with fallback to memory-based estimation",
-        "interface_type": "function",
-        "name": "getQdrantCollectionCount",
-        "parameters": [],
-        "return_type": "Promise<number>",
-        "visibility": "private"
-      },
-      {
-        "description": "Calculates network statistics based on memory count and random factors",
-        "interface_type": "function",
-        "name": "calculateNetworkStats",
-        "parameters": [],
-        "return_type": "Promise<{ activeConnections: number, throughput: string }>",
-        "visibility": "private"
-      },
-      {
-        "description": "Measures and calculates key performance indicators including API response time, search latency, and health check performance",
-        "interface_type": "function",
-        "name": "calculatePerformanceMetrics",
-        "parameters": [],
-        "return_type": "Promise<Array<{ name: string, value: number, unit: string, trend: string, threshold: number }>>",
-        "visibility": "private"
-      },
-      {
-        "description": "Generates contextual log entries based on system state, service status, and performance metrics",
-        "interface_type": "function",
-        "name": "generateRealtimeLogs",
-        "parameters": [
-          {
-            "description": "Current memory records for log generation",
-            "is_optional": false,
-            "name": "memories",
-            "param_type": "any[]"
-          },
-          {
-            "description": "Current timestamp for log entries",
-            "is_optional": false,
-            "name": "currentTime",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "Promise<Array<{ time: string, level: string, message: string }>>",
-        "visibility": "private"
-      },
-      {
-        "description": "Generates prioritized alerts based on service status, resource usage thresholds, and performance violations",
-        "interface_type": "function",
-        "name": "generateAlerts",
-        "parameters": [
-          {
-            "description": "Current system status object",
-            "is_optional": false,
-            "name": "status",
-            "param_type": "typeof systemStatus"
-          }
-        ],
-        "return_type": "Promise<Array<{ id: string, level: string, message: string, time: string, acknowledged: boolean }>>",
-        "visibility": "private"
-      },
-      {
-        "description": "Measures the response latency of a given endpoint with optional variance simulation",
-        "interface_type": "function",
-        "name": "measureHealthLatency",
-        "parameters": [
-          {
-            "description": "API endpoint to measure latency for",
-            "is_optional": false,
-            "name": "endpoint",
-            "param_type": "string"
-          },
-          {
-            "description": "Whether to add random variance to the measurement",
-            "is_optional": true,
-            "name": "addVariance",
-            "param_type": "boolean"
-          }
-        ],
-        "return_type": "Promise<number>",
-        "visibility": "private"
-      },
-      {
-        "description": "Attempts to retrieve Qdrant version information from health check endpoint",
-        "interface_type": "function",
-        "name": "getQdrantVersion",
-        "parameters": [],
-        "return_type": "Promise<string>",
-        "visibility": "private"
-      },
-      {
-        "description": "Returns appropriate CSS class for status indicator based on service status",
-        "interface_type": "function",
-        "name": "getStatusColor",
-        "parameters": [
-          {
-            "description": "Service status string (connected, connecting, disconnected)",
-            "is_optional": false,
-            "name": "status",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "string",
-        "visibility": "private"
-      },
-      {
-        "description": "Returns appropriate CSS classes for styling based on log/alert level",
-        "interface_type": "function",
-        "name": "getLevelColor",
-        "parameters": [
-          {
-            "description": "Log or alert level (error, warning, info)",
-            "is_optional": false,
-            "name": "level",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "string",
-        "visibility": "private"
-      },
-      {
-        "description": "Returns appropriate emoji icon for trend visualization",
-        "interface_type": "function",
-        "name": "getTrendIcon",
-        "parameters": [
-          {
-            "description": "Trend direction (up, down, stable)",
-            "is_optional": false,
-            "name": "trend",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "string",
-        "visibility": "private"
-      },
-      {
-        "description": "Returns appropriate CSS class for trend text color",
-        "interface_type": "function",
-        "name": "getTrendColor",
-        "parameters": [
-          {
-            "description": "Trend direction (up, down, stable)",
-            "is_optional": false,
-            "name": "trend",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "string",
-        "visibility": "private"
-      },
-      {
-        "description": "Marks a specific alert as acknowledged in the UI",
-        "interface_type": "function",
-        "name": "acknowledgeAlert",
-        "parameters": [
-          {
-            "description": "ID of the alert to acknowledge",
-            "is_optional": false,
-            "name": "alertId",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "void",
-        "visibility": "private"
+        "return_type": "boolean",
+        "visibility": "public"
       }
     ],
     "responsibilities": [
-      "Orchestrates real-time system health monitoring and data collection from multiple services",
-      "Calculates and visualizes system performance metrics, resource usage, and service status",
-      "Generates contextual logs and prioritized alerts based on system state and threshold violations",
-      "Provides user controls for auto-refresh, manual refresh, and alert acknowledgment",
-      "Manages component lifecycle including initialization, periodic updates, and cleanup"
+      "Managing the system monitoring dashboard lifecycle and state",
+      "Fetching and calculating system performance metrics from API data",
+      "Generating real-time logs and alerts based on system metrics",
+      "Providing UI controls for auto-refresh and manual updates",
+      "Displaying system status, resource usage, and performance indicators"
     ]
   },
   {
     "code_dossier": {
       "code_purpose": "page",
-      "description": "Dashboard page for monitoring and analyzing the Cortex Memory system, displaying memory statistics, system service status, and recent memories.",
+      "description": "Dashboard page for monitoring and analyzing Cortex Memory system status, displaying statistics, system health, and recent memories.",
       "file_path": "cortex-mem-insights/src/routes/+page.svelte",
       "functions": [
-        "loadDashboardData",
-        "detectIndividualServices",
-        "getQdrantCollectionCount",
+        "loadBasicData",
         "calculateQualityDistribution",
         "calculateImportanceScore",
         "fallbackToMockData",
-        "getStatusColor",
-        "getStatusText",
         "formatImportance",
         "getImportanceColor",
         "formatDate"
       ],
       "importance_score": 0.8,
       "interfaces": [
-        "onMount",
-        "api.memory.list",
-        "api.memory.search",
-        "api.memory.create",
-        "api.memory.delete"
+        "on:statusUpdate"
       ],
       "name": "+page.svelte",
-      "source_summary": "<script lang=\"ts\">\n\timport { onMount } from 'svelte';\n\timport api from '$lib/api/client';\n\n\t// 真实数据\n\tlet stats = {\n\t\ttotalMemories: 0,\n\t\toptimizationCount: 0,\n\t\taverageQuality: 0,\n\t\tqualityDistribution: { high: 0, medium: 0, low: 0 }\n\t};\n\n\t// 使用与监控页面相同的数据结构\n\tlet systemStatus = {\n\t\tcortexMemService: { status: 'connecting', latency: 0, version: '1.0.0', lastCheck: '' },\n\t\tqdrant: {\n\t\t\tstatus: 'connecting',\n\t\t\tlatency: 0,\n\t\t\tversion: '1.7.0',\n\t\t\tcollectionCount: 0,\n\t\t\tlastCheck: ''\n\t\t},\n\t\tllmService: {\n\t\t\tstatus: 'connecting',\n\t\t\tlatency: 0,\n\t\t\tprovider: 'Unknown',\n\t\t\tmodel: 'Unknown',\n\t\t\tlastCheck: ''\n\t\t}\n\t};\n\n\tlet recentMemories: Array<{\n\t\tid: string;\n\t\tcontent: string;\n\t\ttype: string;\n\t\timportance: number;\n\t\tcreatedAt: string;\n\t}> = [];\n\n\tlet isLoading = true;\n\tlet error: string | null = null;\n\n\tonMount(async () => {\n\t\ttry {\n\t\t\t// 尝试加载实际数据\n\t\t\tawait loadDashboardData();\n\t\t} catch (err) {\n\t\t\tconsole.error('加载仪表板数据失败:', err);\n\t\t\terror = err instanceof Error ? err.message : '加载数据失败';\n\t\t\t// 回退到模拟数据\n\t\t\tfallbackToMockData();\n\t\t} finally {\n\t\t\tisLoading = false;\n\t\t}\n\t});\n\n\tasync function loadDashboardData() {\n\t\ttry {\n\t\t\tconst timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });\n\t\t\tlet memories: any[] = [];\n\n\t\t\t// 独立检测各个服务的状态\n\t\t\tconst serviceStatuses = await detectIndividualServices(timestamp);\n\n\t\t\t// 获取记忆统计（这也可以验证服务的实际可用性）\n\t\t\ttry {\n\t\t\t\tconst memoriesResponse = await api.memory.list({ limit: 1000 });\n\t\t\t\tmemories = memoriesResponse.memories || [];\n\t\t\t\tconsole.log(`获取到 ${memories.length} 条记忆记录`);\n\t\t\t} catch (memoryErr) {\n\t\t\t\tconsole.warn('获取记忆列表失败:', memoryErr);\n\t\t\t\tmemories = [];\n\t\t\t}\n\n\t\t\t// 更新系统状态（不包含memoryUsage、cpuUsage、network，因为仪表盘不需要）\n\t\t\tsystemStatus = {\n\t\t\t\tcortexMemService: {\n\t\t\t\t\tstatus: serviceStatuses.mainService.status,\n\t\t\t\t\tlatency: serviceStatuses.mainService.latency,\n\t\t\t\t\tversion: '',\n\t\t\t\t\tlastCheck: serviceStatuses.mainService.lastCheck\n\t\t\t\t},\n\t\t\t\tqdrant: {\n\t\t\t\t\tstatus: serviceStatuses.vectorStore.status,\n\t\t\t\t\tlatency: serviceStatuses.vectorStore.latency,\n\t\t\t\t\tversion: '',\n\t\t\t\t\tcollectionCount: await getQdrantCollectionCount(),\n\t\t\t\t\tlastCheck: serviceStatuses.vectorStore.lastCheck\n\t\t\t\t},\n\t\t\t\tllmService: {\n\t\t\t\t\tstatus: serviceStatuses.llmService.status,\n\t\t\t\t\tlatency: serviceStatuses.llmService.latency,\n\t\t\t\t\tprovider: '',\n\t\t\t\t\tmodel: '',\n\t\t\t\t\tlastCheck: serviceStatuses.llmService.lastCheck\n\t\t\t\t}\n\t\t\t};\n\n\t\t\t// 计算统计数据\n\t\t\tconst totalCount = memories.length;\n\n\t\t\t// 计算质量分布（基于记忆类型和元数据）\n\t\t\tconst qualityStats = calculateQualityDistribution(memories);\n\n\t\t\t// 获取最近记忆\n\t\t\trecentMemories = memories\n\t\t\t\t.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())\n\t\t\t\t.slice(0, 5)\n\t\t\t\t.map((memory) => ({\n\t\t\t\t\tid: memory.id,\n\t\t\t\t\tcontent: memory.content,\n\t\t\t\t\ttype: memory.metadata.memory_type || 'Unknown',\n\t\t\t\t\timportance: calculateImportanceScore(memory),\n\t\t\t\t\tcreatedAt: formatDate(memory.created_at)\n\t\t\t\t}));\n\n\t\t\tstats = {\n\t\t\t\ttotalMemories: totalCount,\n\t\t\t\toptimizationCount: 0, // TODO: 从优化API获取实际计数\n\t\t\t\taverageQuality: qualityStats.average,\n\t\t\t\tqualityDistribution: qualityStats.distribution\n\t\t\t};\n\t\t} catch (err) {\n\t\t\tconsole.error('加载仪表板数据错误:', err);\n\t\t\tthrow err;\n\t\t}\n\t}\n\n\t// 独立检测各个服务状态（与监控页面相同的逻辑）\n\tasync function detectIndividualServices(timestamp: string) {\n\t\tconst mainService = { status: 'error', latency: 0, lastCheck: timestamp };\n\t\tconst vectorStore = { status: 'error', latency: 0, lastCheck: timestamp };\n\t\tconst llmService = { status: 'error', latency: 0, lastCheck: timestamp };\n\n\t\ttry {\n\t\t\t// 1. 测试cortex-mem-service基础可用性（API端点优先）\n\t\t\tconst serviceStartTime = Date.now();\n\t\t\tconst serviceResponse = await fetch('/api/memories?limit=1');\n\t\t\tconst serviceLatency = Date.now() - serviceStartTime;\n\n\t\t\tif (serviceResponse.ok) {\n\t\t\t\t// API端点正常，说明服务可用\n\t\t\t\tmainService.status = 'connected';\n\t\t\t\tmainService.latency = serviceLatency;\n\t\t\t} else {\n\t\t\t\t// 如果API失败，再尝试健康检查端点，但健康检查失败不应该影响主要判断\n\t\t\t\ttry {\n\t\t\t\t\tconst healthStartTime = Date.now();\n\t\t\t\t\tconst healthResponse = await fetch('/health');\n\t\t\t\t\tconst healthLatency = Date.now() - healthStartTime;\n\n\t\t\t\t\tif (healthResponse.ok) {\n\t\t\t\t\t\tconst healthData = await healthResponse.json();\n\t\t\t\t\t\t// 即使健康检查显示不健康，如果API可以访问，服务还是可用的\n\t\t\t\t\t\tmainService.status = 'connected';\n\t\t\t\t\t\tmainService.latency = Math.min(serviceLatency, healthLatency);\n\t\t\t\t\t}\n\t\t\t\t} catch (healthErr) {\n\t\t\t\t\tconsole.warn('健康检查失败，但API可能仍可用:', healthErr);\n\t\t\t\t\t// 健康检查失败不代表服务不可用，保持连接状态或设置connecting\n\t\t\t\t\tif (serviceLatency > 0) {\n\t\t\t\t\t\tmainService.status = 'connecting';\n\t\t\t\t\t\tmainService.latency = serviceLatency;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t} catch (serviceErr) {\n\t\t\tconsole.warn('cortex-mem-service检测失败:', serviceErr);\n\t\t}\n\t\ttry {\n\t\t\t// 2. 测试Qdrant独立可用性\n\t\t\tconst qdrantStartTime = Date.now();\n\t\t\tconst qdrantResponse = await fetch('http://localhost:6334/health');\n\t\t\tconst qdrantLatency = Date.now() - qdrantStartTime;\n\n\t\t\tif (qdrantResponse.ok) {\n\t\t\t\tconst qdrantData = await qdrantResponse.json();\n\t\t\t\tvectorStore.status = qdrantData.status === 'ok' ? 'connected' : 'error';\n\t\t\t\tvectorStore.latency = qdrantLatency;\n\t\t\t}\n\t\t} catch (qdrantErr) {\n\t\t\tconsole.warn('Qdrant直接检测失败:', qdrantErr);\n\t\t\t// 备用方案：通过cortex-mem-service的向量操作来测试\n\t\t\ttry {\n\t\t\t\tconst searchStartTime = Date.now();\n\t\t\t\tconst searchResponse = await api.memory.search('test');\n\t\t\t\tconst searchLatency = Date.now() - searchStartTime;\n\n\t\t\t\tif (searchResponse && typeof searchResponse === 'object') {\n\t\t\t\t\tvectorStore.status = 'connected';\n\t\t\t\t\tvectorStore.latency = searchLatency;\n\t\t\t\t}\n\t\t\t} catch (searchErr) {\n\t\t\t\tconsole.warn('向量搜索测试也失败:', searchErr);\n\t\t\t\tvectorStore.status = 'error';\n\t\t\t}\n\t\t}\n\n\t\ttry {\n\t\t\t// 3. 测试LLM服务独立可用性（通过创建记忆来测试）\n\t\t\tconst llmStartTime = Date.now();\n\t\t\tconst testMemory = await api.memory.create('LLM health check test', {\n\t\t\t\tuser_id: 'health-check',\n\t\t\t\tmemory_type: 'conversational'\n\t\t\t});\n\t\t\tconst llmLatency = Date.now() - llmStartTime;\n\n\t\t\tif (testMemory && testMemory.id) {\n\t\t\t\tllmService.status = 'connected';\n\t\t\t\tllmService.latency = llmLatency;\n\n\t\t\t\t// 清理测试记忆\n\t\t\t\ttry {\n\t\t\t\t\tawait api.memory.delete(testMemory.id);\n\t\t\t\t} catch (cleanupErr) {\n\t\t\t\t\tconsole.warn('清理测试记忆失败:', cleanupErr);\n\t\t\t\t}\n\t\t\t}\n\t\t} catch (llmErr) {\n\t\t\tconsole.warn('LLM服务测试失败:', llmErr);\n\t\t\t// 备用方案：通过健康检查数据推断\n\t\t\ttry {\n\t\t\t\tconst healthResponse = await fetch('/health');\n\t\t\t\tif (healthResponse.ok) {\n\t\t\t\t\tconst healthData = await healthResponse.json();\n\t\t\t\t\tllmService.status = healthData.llm_service ? 'connected' : 'error';\n\t\t\t\t\tllmService.latency = 200; // 估算值\n\t\t\t\t}\n\t\t\t} catch (healthErr) {\n\t\t\t\tconsole.warn('健康检查LLM检测也失败:', healthErr);\n\t\t\t}\n\t\t}\n\n\t\treturn { mainService, vectorStore, llmService };\n\t}\n\n\t// 获取Qdrant集合数量\n\tasync function getQdrantCollectionCount(): Promise<number> {\n\t\ttry {\n\t\t\t// 尝试直接调用Qdrant API\n\t\t\tconst response = await fetch('http://localhost:6334/collections');\n\t\t\tif (response.ok) {\n\t\t\t\tconst data = await response.json();\n\t\t\t\treturn data.result?.collections?.length || 0;\n\t\t\t}\n\t\t} catch (qdrantErr) {\n\t\t\tconsole.warn('Qdrant集合检测失败:', qdrantErr);\n\t\t}\n\n\t\t// 备用方案：通过记忆数量估算\n\t\ttry {\n\t\t\tconst memoriesResponse = await api.memory.list({ limit: 1 });\n\t\t\tif (memoriesResponse && memoriesResponse.total > 0) {\n\t\t\t\treturn Math.min(5, Math.floor(memoriesResponse.total / 100) + 1);\n\t\t\t}\n\t\t} catch (memoryErr) {\n\t\t\tconsole.warn('记忆数量获取失败:', memoryErr);\n\t\t}\n\n\t\treturn 0; // 默认值\n\t}\n\n\t// 计算质量分布\n\tfunction calculateQualityDistribution(memories: any[]) {\n\t\tif (memories.length === 0) {\n\t\t\treturn { average: 0, distribution: { high: 0, medium: 0, low: 0 } };\n\t\t}\n\n\t\tlet high = 0;\n\t\tlet medium = 0;\n\t\tlet low = 0;\n\t\tlet totalScore = 0;\n\n\t\tmemories.forEach((memory) => {\n\t\t\tconst score = calculateImportanceScore(memory);\n\t\t\ttotalScore += score;\n\n\t\t\tif (score >= 0.8) {\n\t\t\t\thigh++;\n\t\t\t} else if (score >= 0.6) {\n\t\t\t\tmedium++;\n\t\t\t} else {\n\t\t\t\tlow++;\n\t\t\t}\n\t\t});\n\n\t\tconst average = totalScore / memories.length;\n\n\t\treturn {\n\t\t\taverage,\n\t\t\tdistribution: { high, medium, low }\n\t\t};\n\t}\n\n\t// 计算重要性评分\n\tfunction calculateImportanceScore(memory: any) {\n\t\t// 基于记忆类型、角色和自定义字段计算重要性\n\t\tlet score = 0.5; // 基础分数\n\n\t\tconst memoryType = memory.metadata?.memory_type?.toLowerCase() || '';\n\t\tconst role = memory.metadata?.role?.toLowerCase() || '';\n\n\t\t// 根据记忆类型调整分数\n\t\tif (memoryType.includes('procedural') || memoryType.includes('workflow')) {\n\t\t\tscore += 0.3;\n\t\t} else if (memoryType.includes('personal')) {\n\t\t\tscore += 0.2;\n\t\t} else if (memoryType.includes('conversational')) {\n\t\t\tscore += 0.1;\n\t\t}\n\n\t\t// 根据角色调整分数\n\t\tif (role.includes('admin') || role.includes('system')) {\n\t\t\tscore += 0.2;\n\t\t} else if (role.includes('user')) {\n\t\t\tscore += 0.1;\n\t\t}\n\n\t\t// 检查自定义字段中的重要性标识\n\t\tif (memory.metadata?.custom?.importance) {\n\t\t\tscore += memory.metadata.custom.importance * 0.3;\n\t\t}\n\n\t\treturn Math.min(1.0, Math.max(0.0, score));\n\t}\n\n\tfunction fallbackToMockData() {\n\t\tconsole.log('回退到默认数据');\n\t\tconst timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });\n\n\t\tstats = {\n\t\t\ttotalMemories: 0,\n\t\t\toptimizationCount: 0,\n\t\t\taverageQuality: 0.5,\n\t\t\tqualityDistribution: { high: 0, medium: 0, low: 0 }\n\t\t};\n\n\t\tsystemStatus = {\n\t\t\tcortexMemService: {\n\t\t\t\tstatus: 'connecting',\n\t\t\t\tlatency: 0,\n\t\t\t\tversion: '1.0.0',\n\t\t\t\tlastCheck: timestamp\n\t\t\t},\n\t\t\tqdrant: {\n\t\t\t\tstatus: 'connecting',\n\t\t\t\tlatency: 0,\n\t\t\t\tversion: '1.7.0',\n\t\t\t\tcollectionCount: 0,\n\t\t\t\tlastCheck: timestamp\n\t\t\t},\n\t\t\tllmService: {\n\t\t\t\tstatus: 'connecting',\n\t\t\t\tlatency: 0,\n\t\t\t\tprovider: 'Unknown',\n\t\t\t\tmodel: 'Unknown',\n\t\t\t\tlastCheck: timestamp\n\t\t\t}\n\t\t};\n\n\t\trecentMemories = [];\n\n\t\tisLoading = false;\n\t}\n\n\tfunction getStatusColor(status: string) {\n\t\tswitch (status) {\n\t\t\tcase 'connected':\n\t\t\t\treturn 'text-green-500 bg-green-50 dark:bg-green-900/20';\n\t\t\tcase 'connecting':\n\t\t\t\treturn 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20';\n\t\t\tcase 'disconnected':\n\t\t\t\treturn 'text-red-500 bg-red-50 dark:bg-red-900/20';\n\t\t\tdefault:\n\t\t\t\treturn 'text-gray-500 bg-gray-50 dark:bg-gray-800';\n\t\t}\n\t}\n\n\tfunction getStatusText(status: string) {\n\t\tswitch (status) {\n\t\t\tcase 'connected':\n\t\t\t\treturn '已连接';\n\t\t\tcase 'connecting':\n\t\t\t\treturn '连接中';\n\t\t\tcase 'disconnected':\n\t\t\t\treturn '已断开';\n\t\t\tdefault:\n\t\t\t\treturn '未知';\n\t\t}\n\t}\n\n\tfunction formatImportance(importance: number) {\n\t\tif (importance >= 0.9) return '极高';\n\t\tif (importance >= 0.7) return '高';\n\t\tif (importance >= 0.5) return '中';\n\t\treturn '低';\n\t}\n\n\tfunction getImportanceColor(importance: number) {\n\t\tif (importance >= 0.9) return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';\n\t\tif (importance >= 0.7)\n\t\t\treturn 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';\n\t\tif (importance >= 0.5)\n\t\t\treturn 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';\n\t\treturn 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';\n\t}\n\n\tfunction formatDate(isoString: string): string {\n\t\ttry {\n\t\t\tconst date = new Date(isoString);\n\t\t\treturn date\n\t\t\t\t.toLocaleString('zh-CN', {\n\t\t\t\t\tyear: 'numeric',\n\t\t\t\t\tmonth: '2-digit',\n\t\t\t\t\tday: '2-digit',\n\t\t\t\t\thour: '2-digit',\n\t\t\t\t\tminute: '2-digit'\n\t\t\t\t})\n\t\t\t\t.replace(/\\//g, '-')\n\t\t\t\t.replace(',', '');\n\t\t} catch {\n\t\t\treturn isoString;\n\t\t}\n\t}\n</script>\n\n<div class=\"space-y-8\">\n\t<!-- 欢迎标题 -->\n\t<div>\n\t\t<h1 class=\"text-3xl font-bold text-gray-900 dark:text-white\">仪表盘</h1>\n\t\t<p class=\"mt-2 text-gray-600 dark:text-gray-400\">监控和分析 Cortex Memory 系统的运行状态</p>\n\t</div>\n\n\t{#if isLoading}\n\t\t<!-- 加载状态 -->\n\t\t<div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6\">\n\t\t\t{#each Array(4) as _, i}\n\t\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-pulse\">\n\t\t\t\t\t<div class=\"h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4\"></div>\n\t\t\t\t\t<div class=\"h-8 bg-gray-200 dark:bg-gray-700 rounded w-2/3\"></div>\n\t\t\t\t</div>\n\t\t\t{/each}\n\t\t</div>\n\t{:else}\n\t\t<!-- 统计卡片 -->\n\t\t<div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6\">\n\t\t\t<!-- 总记忆数 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-blue-500\">\n\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">总记忆数</p>\n\t\t\t\t\t\t<p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t{stats.totalMemories.toLocaleString()}\n\t\t\t\t\t\t</p>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div\n\t\t\t\t\t\tclass=\"w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<span class=\"text-2xl\">📚</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<p class=\"mt-4 text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t高质量记忆: <span class=\"font-medium text-green-600 dark:text-green-400\"\n\t\t\t\t\t\t>{stats.qualityDistribution.high}</span\n\t\t\t\t\t>\n\t\t\t\t</p>\n\t\t\t</div>\n\n\t\t\t<!-- 平均质量 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-yellow-500\">\n\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">平均质量</p>\n\t\t\t\t\t\t<p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t{(stats.averageQuality * 100).toFixed(1)}%\n\t\t\t\t\t\t</p>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div\n\t\t\t\t\t\tclass=\"w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<span class=\"text-2xl\">⭐</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"mt-4\">\n\t\t\t\t\t<div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"bg-yellow-500 h-2 rounded-full\"\n\t\t\t\t\t\t\tstyle={`width: ${stats.averageQuality * 100}%`}\n\t\t\t\t\t\t></div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 质量分布 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-green-500\">\n\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">质量分布</p>\n\t\t\t\t\t\t<p class=\"mt-2 text-2xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t{stats.qualityDistribution.high}/{stats.qualityDistribution.medium}/{stats\n\t\t\t\t\t\t\t\t.qualityDistribution.low}\n\t\t\t\t\t\t</p>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div\n\t\t\t\t\t\tclass=\"w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<span class=\"text-2xl\">📊</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<p class=\"mt-2 text-sm text-gray-500 dark:text-gray-400\">高/中/低质量记忆数量</p>\n\t\t\t\t<div class=\"mt-2 flex space-x-1\">\n\t\t\t\t\t<div class=\"flex-1 bg-green-200 dark:bg-green-800 rounded h-1\"></div>\n\t\t\t\t\t<div class=\"flex-1 bg-yellow-200 dark:bg-yellow-800 rounded h-1\"></div>\n\t\t\t\t\t<div class=\"flex-1 bg-red-200 dark:bg-red-800 rounded h-1\"></div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 系统状态和最近记忆 -->\n\t\t<div class=\"grid grid-cols-1 lg:grid-cols-3 gap-8\">\n\t\t\t<!-- 系统状态 -->\n\t\t\t<div class=\"lg:col-span-1\">\n\t\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">服务状态</h2>\n\n\t\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t\t{#each Object.entries(systemStatus) as [service, data]}\n\t\t\t\t\t\t\t{#if data && typeof data === 'object' && data.status}\n\t\t\t\t\t\t\t\t<div class=\"p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n\t\t\t\t\t\t\t\t\t<div class=\"flex items-center justify-between mb-2\">\n\t\t\t\t\t\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t\t\t\t\t\t<div class={`w-2 h-2 rounded-full ${getStatusColor(data.status)}`}></div>\n\t\t\t\t\t\t\t\t\t\t\t<span class=\"font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t\t\t{service === 'cortexMemService'\n\t\t\t\t\t\t\t\t\t\t\t\t\t? 'cortex-mem-service'\n\t\t\t\t\t\t\t\t\t\t\t\t\t: service === 'qdrant'\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t? 'Qdrant 数据库'\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t: 'LLM 服务'}\n\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t<span class={`text-sm font-medium ${getStatusColor(data.status)}`}>\n\t\t\t\t\t\t\t\t\t\t\t{data.status === 'connected'\n\t\t\t\t\t\t\t\t\t\t\t\t? '已连接'\n\t\t\t\t\t\t\t\t\t\t\t\t: data.status === 'connecting'\n\t\t\t\t\t\t\t\t\t\t\t\t\t? '连接中'\n\t\t\t\t\t\t\t\t\t\t\t\t\t: '已断开'}\n\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t\t\t<div class=\"grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t\t<div>延迟: <span class=\"font-medium\">{data.latency}ms</span></div>\n\t\t\t\t\t\t\t\t\t</div>\n\n\t\t\t\t\t\t\t\t\t{#if data.lastCheck}\n\t\t\t\t\t\t\t\t\t\t<div class=\"text-xs text-gray-500 dark:text-gray-400 mt-1\">\n\t\t\t\t\t\t\t\t\t\t\t最后检查: {data.lastCheck}\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t{/each}\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\ton:click={() => loadDashboardData()}\n\t\t\t\t\t\t\tclass=\"w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t重新检查所有服务\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 最近记忆 -->\n\t\t\t<div class=\"lg:col-span-2\">\n\t\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t\t<div class=\"flex items-center justify-between mb-6\">\n\t\t\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">最近记忆</h2>\n\t\t\t\t\t\t<a\n\t\t\t\t\t\t\thref=\"/memories\"\n\t\t\t\t\t\t\tclass=\"text-sm font-medium text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t查看全部 →\n\t\t\t\t\t\t</a>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t\t{#each recentMemories as memory}\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors duration-200\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<div class=\"flex items-start justify-between\">\n\t\t\t\t\t\t\t\t\t<div class=\"flex-1\">\n\t\t\t\t\t\t\t\t\t\t<div class=\"flex items-center space-x-2 mb-2\">\n\t\t\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\t\t\tclass={`px-2 py-1 rounded text-xs font-medium ${getImportanceColor(memory.importance)}`}\n\t\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t\t{formatImportance(memory.importance)}\n\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\t\t\tclass=\"px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-600 dark:text-gray-400\"\n\t\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t\t{memory.type}\n\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t<p class=\"text-gray-700 dark:text-gray-300 mb-2 truncate-2-lines\">\n\t\t\t\t\t\t\t\t\t\t\t{memory.content}\n\t\t\t\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\t\t\tclass=\"flex items-center justify-between text-sm text-gray-500 dark:text-gray-400\"\n\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t<span>ID: {memory.id}</span>\n\t\t\t\t\t\t\t\t\t\t\t<span>{memory.createdAt}</span>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\tclass=\"ml-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300\"\n\t\t\t\t\t\t\t\t\t\ton:click={() => console.log('查看详情', memory.id)}\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t🔍\n\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t{/each}\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 快速操作 -->\n\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">快速操作</h2>\n\n\t\t\t<div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group\"\n\t\t\t\t\ton:click={() => console.log('运行优化')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">⚡</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">运行优化</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">清理重复和低质量记忆</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200 group\"\n\t\t\t\t\ton:click={() => console.log('导出数据')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-800/40\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">📥</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">导出数据</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">导出记忆为JSON/CSV格式</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 group\"\n\t\t\t\t\ton:click={() => console.log('查看报告')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-800/40\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">📊</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">生成报告</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">生成系统运行分析报告</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t</div>\n\t{/if}\n</div>\n\n<style>\n\t.truncate-2-lines {\n\t\tdisplay: -webkit-box;\n\t\t-webkit-line-clamp: 2;\n\t\t-webkit-box-orient: vertical;\n\t\toverflow: hidden;\n\t}\n</style>\n"
+      "source_summary": "<script lang=\"ts\">\n\timport { onMount } from 'svelte';\n\timport api from '$lib/api/client';\n\timport ServiceStatus from '$lib/components/ServiceStatus.svelte';\n\n\t// 真实数据\n\tlet stats = {\n\t\ttotalMemories: 0,\n\t\toptimizationCount: 0,\n\t\taverageQuality: 0,\n\t\tqualityDistribution: { high: 0, medium: 0, low: 0 }\n\t};\n\n\t// 使用与监控页面相同的数据结构\n\tlet systemStatus = {\n\t\tcortexMemService: { status: 'connecting', latency: 0, version: '1.0.0', lastCheck: '' },\n\t\tqdrant: {\n\t\t\tstatus: 'connecting',\n\t\t\tlatency: 0,\n\t\t\tversion: '1.7.0',\n\t\t\tcollectionCount: 0,\n\t\t\tlastCheck: ''\n\t\t},\n\t\tllmService: {\n\t\t\tstatus: 'connecting',\n\t\t\tlatency: 0,\n\t\t\tprovider: 'Unknown',\n\t\t\tmodel: 'Unknown',\n\t\t\tlastCheck: '',\n\t\t\tcompletionModel: {\n\t\t\t\tavailable: false,\n\t\t\t\tlatency: 0,\n\t\t\t\terror: null as string | null\n\t\t\t},\n\t\t\tembeddingModel: {\n\t\t\t\tavailable: false,\n\t\t\t\tlatency: 0,\n\t\t\t\terror: null as string | null\n\t\t\t}\n\t\t}\n\t};\n\n\tlet recentMemories: Array<{\n\t\tid: string;\n\t\tcontent: string;\n\t\ttype: string;\n\t\timportance: number;\n\t\tcreatedAt: string;\n\t}> = [];\n\n\tlet isLoading = true;\n\tlet error: string | null = null;\n\n\tonMount(async () => {\n\t\ttry {\n\t\t\tawait loadBasicData();\n\t\t} catch (err) {\n\t\t\tconsole.error('加载仪表板数据失败:', err);\n\t\t\terror = err instanceof Error ? err.message : '加载数据失败';\n\t\t\tfallbackToMockData();\n\t\t} finally {\n\t\t\tisLoading = false;\n\t\t}\n\t});\n\n\t// 加载基本数据，不等待服务检测\n\tasync function loadBasicData() {\n\t\ttry {\n\t\t\tlet memories: any[] = [];\n\n\t\t\t// 获取记忆统计（这也可以验证服务的实际可用性）\n\t\t\ttry {\n\t\t\t\tconst memoriesResponse = await api.memory.list({ limit: 1000 });\n\t\t\t\tmemories = memoriesResponse.memories || [];\n\t\t\t\tconsole.log(`获取到 ${memories.length} 条记忆记录`);\n\t\t\t} catch (memoryErr) {\n\t\t\t\tconsole.warn('获取记忆列表失败:', memoryErr);\n\t\t\t\tmemories = [];\n\t\t\t}\n\n\t\t\t// 计算统计数据\n\t\t\tconst totalCount = memories.length;\n\n\t\t\t// 计算质量分布（基于记忆类型和元数据）\n\t\t\tconst qualityStats = calculateQualityDistribution(memories);\n\n\t\t\t// 获取最近记忆\n\t\t\trecentMemories = memories\n\t\t\t\t.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())\n\t\t\t\t.slice(0, 5)\n\t\t\t\t.map((memory) => ({\n\t\t\t\t\tid: memory.id,\n\t\t\t\t\tcontent: memory.content,\n\t\t\t\t\ttype: memory.metadata.memory_type || 'Unknown',\n\t\t\t\t\timportance: calculateImportanceScore(memory),\n\t\t\t\t\tcreatedAt: formatDate(memory.created_at)\n\t\t\t\t}));\n\n\t\t\tstats = {\n\t\t\t\ttotalMemories: totalCount,\n\t\t\t\toptimizationCount: 0, // TODO: 从优化API获取实际计数\n\t\t\t\taverageQuality: qualityStats.average,\n\t\t\t\tqualityDistribution: qualityStats.distribution\n\t\t\t};\n\n\t\t\t// 初始化系统状态为检测中\n\t\t\tconst timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });\n\t\t\tsystemStatus = {\n\t\t\t\tcortexMemService: {\n\t\t\t\t\tstatus: 'detecting',\n\t\t\t\t\tlatency: 0,\n\t\t\t\t\tversion: '',\n\t\t\t\t\tlastCheck: timestamp\n\t\t\t\t},\n\t\t\t\tqdrant: {\n\t\t\t\t\tstatus: 'detecting',\n\t\t\t\t\tlatency: 0,\n\t\t\t\t\tversion: '',\n\t\t\t\t\tcollectionCount: 0,\n\t\t\t\t\tlastCheck: timestamp\n\t\t\t\t},\n\t\t\t\tllmService: {\n\t\t\t\t\tstatus: 'detecting',\n\t\t\t\t\tlatency: 0,\n\t\t\t\t\tprovider: '',\n\t\t\t\t\tmodel: '',\n\t\t\t\t\tlastCheck: timestamp\n\t\t\t\t}\n\t\t\t};\n\t\t} catch (err) {\n\t\t\tconsole.error('加载基本数据错误:', err);\n\t\t\tthrow err;\n\t\t}\n\t}\n\n\t// 异步检测服务状态\n\t// 服务状态检测逻辑已移至ServiceStatus组件\n\n\t// 获取Qdrant集合数量 - 已移除API调用\n\n\t// 计算质量分布\n\tfunction calculateQualityDistribution(memories: any[]) {\n\t\tif (memories.length === 0) {\n\t\t\treturn { average: 0, distribution: { high: 0, medium: 0, low: 0 } };\n\t\t}\n\n\t\tlet high = 0;\n\t\tlet medium = 0;\n\t\tlet low = 0;\n\t\tlet totalScore = 0;\n\n\t\tmemories.forEach((memory) => {\n\t\t\tconst score = calculateImportanceScore(memory);\n\t\t\ttotalScore += score;\n\n\t\t\tif (score >= 0.8) {\n\t\t\t\thigh++;\n\t\t\t} else if (score >= 0.6) {\n\t\t\t\tmedium++;\n\t\t\t} else {\n\t\t\t\tlow++;\n\t\t\t}\n\t\t});\n\n\t\tconst average = totalScore / memories.length;\n\n\t\treturn {\n\t\t\taverage,\n\t\t\tdistribution: { high, medium, low }\n\t\t};\n\t}\n\n\t// 计算重要性评分\n\tfunction calculateImportanceScore(memory: any) {\n\t\t// 基于记忆类型、角色和自定义字段计算重要性\n\t\tlet score = 0.5; // 基础分数\n\n\t\tconst memoryType = memory.metadata?.memory_type?.toLowerCase() || '';\n\t\tconst role = memory.metadata?.role?.toLowerCase() || '';\n\n\t\t// 根据记忆类型调整分数\n\t\tif (memoryType.includes('procedural') || memoryType.includes('workflow')) {\n\t\t\tscore += 0.3;\n\t\t} else if (memoryType.includes('personal')) {\n\t\t\tscore += 0.2;\n\t\t} else if (memoryType.includes('conversational')) {\n\t\t\tscore += 0.1;\n\t\t}\n\n\t\t// 根据角色调整分数\n\t\tif (role.includes('admin') || role.includes('system')) {\n\t\t\tscore += 0.2;\n\t\t} else if (role.includes('user')) {\n\t\t\tscore += 0.1;\n\t\t}\n\n\t\t// 检查自定义字段中的重要性标识\n\t\tif (memory.metadata?.custom?.importance) {\n\t\t\tscore += memory.metadata.custom.importance * 0.3;\n\t\t}\n\n\t\treturn Math.min(1.0, Math.max(0.0, score));\n\t}\n\n\tfunction fallbackToMockData() {\n\t\tconsole.log('回退到默认数据');\n\t\tconst timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });\n\n\t\tstats = {\n\t\t\ttotalMemories: 0,\n\t\t\toptimizationCount: 0,\n\t\t\taverageQuality: 0.5,\n\t\t\tqualityDistribution: { high: 0, medium: 0, low: 0 }\n\t\t};\n\n\t\tsystemStatus = {\n\t\t\tcortexMemService: {\n\t\t\t\tstatus: 'detecting',\n\t\t\t\tlatency: 0,\n\t\t\t\tversion: '1.0.0',\n\t\t\t\tlastCheck: timestamp\n\t\t\t},\n\t\t\tqdrant: {\n\t\t\t\tstatus: 'detecting',\n\t\t\t\tlatency: 0,\n\t\t\t\tversion: '1.7.0',\n\t\t\t\tcollectionCount: 0,\n\t\t\t\tlastCheck: timestamp\n\t\t\t},\n\t\t\tllmService: {\n\t\t\t\tstatus: 'detecting',\n\t\t\t\tlatency: 0,\n\t\t\t\tprovider: 'Unknown',\n\t\t\t\tmodel: 'Unknown',\n\t\t\t\tlastCheck: timestamp\n\t\t\t}\n\t\t};\n\n\t\trecentMemories = [];\n\n\t\tisLoading = false;\n\t}\n\n\t// 服务状态相关函数已移至ServiceStatus组件\n\n\tfunction formatImportance(importance: number) {\n\t\tif (importance >= 0.9) return '极高';\n\t\tif (importance >= 0.7) return '高';\n\t\tif (importance >= 0.5) return '中';\n\t\treturn '低';\n\t}\n\n\tfunction getImportanceColor(importance: number) {\n\t\tif (importance >= 0.9) return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';\n\t\tif (importance >= 0.7)\n\t\t\treturn 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';\n\t\tif (importance >= 0.5)\n\t\t\treturn 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';\n\t\treturn 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';\n\t}\n\n\tfunction formatDate(isoString: string): string {\n\t\ttry {\n\t\t\tconst date = new Date(isoString);\n\t\t\treturn date\n\t\t\t\t.toLocaleString('zh-CN', {\n\t\t\t\t\tyear: 'numeric',\n\t\t\t\t\tmonth: '2-digit',\n\t\t\t\t\tday: '2-digit',\n\t\t\t\t\thour: '2-digit',\n\t\t\t\t\tminute: '2-digit'\n\t\t\t\t})\n\t\t\t\t.replace(/\\//g, '-')\n\t\t\t\t.replace(',', '');\n\t\t} catch {\n\t\t\treturn isoString;\n\t\t}\n\t}\n</script>\n\n<div class=\"space-y-8\">\n\t<!-- 欢迎标题 -->\n\t<div>\n\t\t<h1 class=\"text-3xl font-bold text-gray-900 dark:text-white\">仪表盘</h1>\n\t\t<p class=\"mt-2 text-gray-600 dark:text-gray-400\">监控和分析 Cortex Memory 系统的运行状态</p>\n\t</div>\n\n\t{#if isLoading}\n\t\t<!-- 加载状态 -->\n\t\t<div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6\">\n\t\t\t{#each Array(4) as _, i}\n\t\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-pulse\">\n\t\t\t\t\t<div class=\"h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4\"></div>\n\t\t\t\t\t<div class=\"h-8 bg-gray-200 dark:bg-gray-700 rounded w-2/3\"></div>\n\t\t\t\t</div>\n\t\t\t{/each}\n\t\t</div>\n\t{:else}\n\t\t<!-- 统计卡片 -->\n\t\t<div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6\">\n\t\t\t<!-- 总记忆数 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-blue-500\">\n\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">总记忆数</p>\n\t\t\t\t\t\t<p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t{stats.totalMemories.toLocaleString()}\n\t\t\t\t\t\t</p>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div\n\t\t\t\t\t\tclass=\"w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<span class=\"text-2xl\">📚</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<p class=\"mt-4 text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t高质量记忆: <span class=\"font-medium text-green-600 dark:text-green-400\"\n\t\t\t\t\t\t>{stats.qualityDistribution.high}</span\n\t\t\t\t\t>\n\t\t\t\t</p>\n\t\t\t</div>\n\n\t\t\t<!-- 平均质量 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-yellow-500\">\n\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">平均质量</p>\n\t\t\t\t\t\t<p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t{(stats.averageQuality * 100).toFixed(1)}%\n\t\t\t\t\t\t</p>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div\n\t\t\t\t\t\tclass=\"w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<span class=\"text-2xl\">⭐</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"mt-4\">\n\t\t\t\t\t<div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"bg-yellow-500 h-2 rounded-full\"\n\t\t\t\t\t\t\tstyle={`width: ${stats.averageQuality * 100}%`}\n\t\t\t\t\t\t></div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 质量分布 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-green-500\">\n\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">质量分布</p>\n\t\t\t\t\t\t<p class=\"mt-2 text-2xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t{stats.qualityDistribution.high}/{stats.qualityDistribution.medium}/{stats\n\t\t\t\t\t\t\t\t.qualityDistribution.low}\n\t\t\t\t\t\t</p>\n\t\t\t\t\t</div>\n\t\t\t\t\t<div\n\t\t\t\t\t\tclass=\"w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t>\n\t\t\t\t\t\t<span class=\"text-2xl\">📊</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<p class=\"mt-2 text-sm text-gray-500 dark:text-gray-400\">高/中/低质量记忆数量</p>\n\t\t\t\t<div class=\"mt-2 flex space-x-1\">\n\t\t\t\t\t<div class=\"flex-1 bg-green-200 dark:bg-green-800 rounded h-1\"></div>\n\t\t\t\t\t<div class=\"flex-1 bg-yellow-200 dark:bg-yellow-800 rounded h-1\"></div>\n\t\t\t\t\t<div class=\"flex-1 bg-red-200 dark:bg-red-800 rounded h-1\"></div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 系统状态和最近记忆 -->\n\t\t<div class=\"grid grid-cols-1 lg:grid-cols-3 gap-8\">\n\t\t\t<!-- 系统状态 -->\n\t\t\t<div class=\"lg:col-span-1\">\n\t\t\t\t<ServiceStatus \n\t\t\t\t\ttitle=\"服务状态\" \n\t\t\t\t\tshowRefreshButton={true} \n\t\t\t\t\tautoDetect={true}\n\t\t\t\t\ton:statusUpdate={(event) => {\n\t\t\t\t\t\tsystemStatus = event.detail.systemStatus;\n\t\t\t\t\t}}\n\t\t\t\t/>\n\t\t\t</div>\n\n\t\t\t<!-- 最近记忆 -->\n\t\t\t<div class=\"lg:col-span-2\">\n\t\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t\t<div class=\"flex items-center justify-between mb-6\">\n\t\t\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">最近记忆</h2>\n\t\t\t\t\t\t<a\n\t\t\t\t\t\t\thref=\"/memories\"\n\t\t\t\t\t\t\tclass=\"text-sm font-medium text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t查看全部 →\n\t\t\t\t\t\t</a>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t\t{#each recentMemories as memory}\n\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors duration-200\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<div class=\"flex items-start justify-between\">\n\t\t\t\t\t\t\t\t\t<div class=\"flex-1\">\n\t\t\t\t\t\t\t\t\t\t<div class=\"flex items-center space-x-2 mb-2\">\n\t\t\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\t\t\tclass={`px-2 py-1 rounded text-xs font-medium ${getImportanceColor(memory.importance)}`}\n\t\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t\t{formatImportance(memory.importance)}\n\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\t\t\tclass=\"px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs text-gray-600 dark:text-gray-400\"\n\t\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t\t{memory.type}\n\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t<p class=\"text-gray-700 dark:text-gray-300 mb-2 truncate-2-lines\">\n\t\t\t\t\t\t\t\t\t\t\t{memory.content}\n\t\t\t\t\t\t\t\t\t\t</p>\n\t\t\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\t\t\tclass=\"flex items-center justify-between text-sm text-gray-500 dark:text-gray-400\"\n\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t<span>ID: {memory.id}</span>\n\t\t\t\t\t\t\t\t\t\t\t<span>{memory.createdAt}</span>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\tclass=\"ml-4 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300\"\n\t\t\t\t\t\t\t\t\t\ton:click={() => console.log('查看详情', memory.id)}\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t🔍\n\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t{/each}\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 快速操作 -->\n\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">快速操作</h2>\n\n\t\t\t<div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 group\"\n\t\t\t\t\ton:click={() => console.log('运行优化')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">⚡</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">运行优化</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">清理重复和低质量记忆</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200 group\"\n\t\t\t\t\ton:click={() => console.log('导出数据')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-800/40\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">📥</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">导出数据</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">导出记忆为JSON/CSV格式</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200 group\"\n\t\t\t\t\ton:click={() => console.log('查看报告')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center group-hover:bg-purple-200 dark:group-hover:bg-purple-800/40\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">📊</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">生成报告</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">生成系统运行分析报告</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t</div>\n\t{/if}\n</div>\n\n<style>\n\t.truncate-2-lines {\n\t\tdisplay: -webkit-box;\n\t\t-webkit-line-clamp: 2;\n\t\t-webkit-box-orient: vertical;\n\t\toverflow: hidden;\n\t}\n</style>\n"
     },
     "complexity_metrics": {
-      "cyclomatic_complexity": 36.0,
-      "lines_of_code": 698,
+      "cyclomatic_complexity": 17.0,
+      "lines_of_code": 510,
       "number_of_classes": 0,
-      "number_of_functions": 11
+      "number_of_functions": 7
     },
     "dependencies": [
       {
@@ -4756,57 +4115,49 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "module",
+        "dependency_type": "internal",
         "is_external": false,
         "line_number": 2,
         "name": "$lib/api/client",
         "path": "$lib/api/client",
         "version": null
-      }
-    ],
-    "detailed_description": "This Svelte component serves as the main dashboard page for the Cortex Memory system. It fetches and displays key metrics about memory data, including total memories, average quality, and quality distribution. The component also monitors the real-time status of three critical services: cortex-mem-service, Qdrant vector database, and LLM service, using both direct API calls and fallback detection methods. When the component mounts, it attempts to load actual data from the API, with graceful fallback to mock data on failure. The UI presents statistics through informative cards, system status through service health indicators, and recent memories through a scrollable list with importance tagging. The component includes utility functions for data formatting, status visualization, and service health detection with multiple fallback strategies to ensure resilience in potentially unstable environments.",
-    "interfaces": [
-      {
-        "description": "Svelte lifecycle function that triggers data loading when component is mounted",
-        "interface_type": "lifecycle",
-        "name": "onMount",
-        "parameters": [],
-        "return_type": "void",
-        "visibility": "private"
       },
       {
-        "description": "Main function that orchestrates loading of all dashboard data from APIs",
+        "dependency_type": "internal",
+        "is_external": false,
+        "line_number": 3,
+        "name": "$lib/components/ServiceStatus.svelte",
+        "path": "$lib/components/ServiceStatus.svelte",
+        "version": null
+      }
+    ],
+    "detailed_description": "This Svelte component serves as the main dashboard page for the Cortex Memory Insights application. It displays key metrics including total memories, average quality, and quality distribution. The page shows real-time system status for core services (Cortex Mem Service, Qdrant, LLM Service) via the ServiceStatus component and lists recent memories with importance scoring. Data is loaded on mount with error handling that falls back to mock data. The UI includes loading states, statistics cards, system health monitoring, recent memory list, and quick action buttons for optimization, export, and reporting. The component handles asynchronous data loading, error recovery, and provides visual feedback throughout.",
+    "interfaces": [
+      {
+        "description": "Event handler for receiving system status updates from ServiceStatus component",
+        "interface_type": "event",
+        "name": "on:statusUpdate",
+        "parameters": [
+          {
+            "description": "Event containing updated system status information",
+            "is_optional": false,
+            "name": "event",
+            "param_type": "CustomEvent"
+          }
+        ],
+        "return_type": null,
+        "visibility": "public"
+      },
+      {
+        "description": "Loads basic memory data and initializes system status",
         "interface_type": "function",
-        "name": "loadDashboardData",
+        "name": "loadBasicData",
         "parameters": [],
         "return_type": "Promise<void>",
         "visibility": "private"
       },
       {
-        "description": "Detects status of main service, vector store, and LLM service with multiple fallback methods",
-        "interface_type": "function",
-        "name": "detectIndividualServices",
-        "parameters": [
-          {
-            "description": "Current timestamp for last check display",
-            "is_optional": false,
-            "name": "timestamp",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "Object",
-        "visibility": "private"
-      },
-      {
-        "description": "Gets Qdrant collection count via direct API or estimates from memory count",
-        "interface_type": "function",
-        "name": "getQdrantCollectionCount",
-        "parameters": [],
-        "return_type": "Promise<number>",
-        "visibility": "private"
-      },
-      {
-        "description": "Calculates average quality score and distribution across high/medium/low categories",
+        "description": "Calculates quality distribution statistics from memory data",
         "interface_type": "function",
         "name": "calculateQualityDistribution",
         "parameters": [
@@ -4817,11 +4168,11 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "any[]"
           }
         ],
-        "return_type": "Object",
+        "return_type": "object",
         "visibility": "private"
       },
       {
-        "description": "Calculates importance score based on memory type, role, and custom metadata",
+        "description": "Calculates importance score for a memory based on type, role, and metadata",
         "interface_type": "function",
         "name": "calculateImportanceScore",
         "parameters": [
@@ -4836,7 +4187,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "Sets default mock data when API loading fails",
+        "description": "Provides default/mock data when real data loading fails",
         "interface_type": "function",
         "name": "fallbackToMockData",
         "parameters": [],
@@ -4844,42 +4195,12 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "Returns Tailwind CSS classes for status indicator coloring",
-        "interface_type": "function",
-        "name": "getStatusColor",
-        "parameters": [
-          {
-            "description": "Service status string",
-            "is_optional": false,
-            "name": "status",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "string",
-        "visibility": "private"
-      },
-      {
-        "description": "Returns localized display text for service status",
-        "interface_type": "function",
-        "name": "getStatusText",
-        "parameters": [
-          {
-            "description": "Service status string",
-            "is_optional": false,
-            "name": "status",
-            "param_type": "string"
-          }
-        ],
-        "return_type": "string",
-        "visibility": "private"
-      },
-      {
-        "description": "Formats numeric importance score as text (极高, 高, 中, 低)",
+        "description": "Formats numerical importance score as human-readable text",
         "interface_type": "function",
         "name": "formatImportance",
         "parameters": [
           {
-            "description": "Importance score between 0-1",
+            "description": "Numerical importance score",
             "is_optional": false,
             "name": "importance",
             "param_type": "number"
@@ -4889,12 +4210,12 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "Returns Tailwind CSS classes for importance badge coloring",
+        "description": "Returns CSS classes for coloring importance badges based on score",
         "interface_type": "function",
         "name": "getImportanceColor",
         "parameters": [
           {
-            "description": "Importance score between 0-1",
+            "description": "Numerical importance score",
             "is_optional": false,
             "name": "importance",
             "param_type": "number"
@@ -4920,60 +4241,131 @@ Code analysis results from preprocessing phase, including definitions of functio
       }
     ],
     "responsibilities": [
-      "Orchestrating the loading of dashboard data including memory statistics and system status",
-      "Monitoring the health and latency of three core services (cortex-mem-service, Qdrant, LLM) with fallback detection strategies",
-      "Calculating and displaying memory quality metrics based on type, role, and custom importance",
-      "Providing graceful error handling with fallback to mock data when API calls fail",
-      "Rendering the dashboard UI with responsive statistics cards, service status indicators, and recent memories list"
+      "Orchestrating the dashboard UI layout and state management",
+      "Loading and processing memory statistics and system status data",
+      "Handling data loading errors with fallback to mock data",
+      "Calculating memory quality metrics and importance scores",
+      "Coordinating with ServiceStatus component for service health monitoring"
     ]
   },
   {
     "code_dossier": {
       "code_purpose": "page",
-      "description": "Optimization panel for memory data in a Svelte application, allowing users to select optimization strategies, configure options, view detected issues, monitor optimization progress, and review optimization history.",
+      "description": "Svelte page component for memory optimization interface in Cortex-Mem Insights system",
       "file_path": "cortex-mem-insights/src/routes/optimization/+page.svelte",
       "functions": [
-        "getStatusColor",
-        "getSeverityColor",
-        "simulateOptimization",
+        "loadOptimizationData",
+        "startOptimization",
+        "startPolling",
+        "stopPolling",
         "cancelOptimization",
-        "getEstimatedImpact"
+        "getEstimatedImpact",
+        "getStatusColor",
+        "getSeverityColor"
       ],
       "importance_score": 0.8,
       "interfaces": [
-        "onMount"
+        "onMount",
+        "optimizationApi.history",
+        "optimizationApi.analyze",
+        "optimizationApi.optimize",
+        "optimizationApi.getStatus",
+        "optimizationApi.cancel"
       ],
       "name": "+page.svelte",
-      "source_summary": "<script lang=\"ts\">\n  import { onMount } from 'svelte';\n  \n  let isLoading = true;\n  let isOptimizing = false;\n  let optimizationProgress = 0;\n  let optimizationStatus = 'idle'; // idle, analyzing, executing, completed, failed\n  \n  // 优化策略\n  const strategies = [\n    { id: 'full', name: '全面优化', description: '检测并处理所有类型的问题', estimatedTime: '60分钟' },\n    { id: 'deduplication', name: '去重优化', description: '仅处理重复记忆', estimatedTime: '20分钟' },\n    { id: 'quality', name: '质量优化', description: '处理低质量记忆', estimatedTime: '30分钟' },\n    { id: 'relevance', name: '相关性优化', description: '优化记忆相关性', estimatedTime: '25分钟' }\n  ];\n  \n  let selectedStrategy = 'full';\n  let previewMode = true;\n  let aggressiveMode = false;\n  let timeoutMinutes = 30;\n  \n  // 优化历史\n  let optimizationHistory = [\n    { id: 'opt_001', strategy: '全面优化', status: 'completed', startedAt: '2025-12-13 10:30', duration: '45分钟', memoriesAffected: 124, spaceSaved: '15.2MB' },\n    { id: 'opt_002', strategy: '去重优化', status: 'completed', startedAt: '2025-12-12 14:15', duration: '18分钟', memoriesAffected: 56, spaceSaved: '8.7MB' },\n    { id: 'opt_003', strategy: '质量优化', status: 'failed', startedAt: '2025-12-11 09:45', duration: '32分钟', memoriesAffected: 0, spaceSaved: '0MB', error: 'LLM服务超时' },\n    { id: 'opt_004', strategy: '全面优化', status: 'completed', startedAt: '2025-12-10 16:20', duration: '52分钟', memoriesAffected: 198, spaceSaved: '22.1MB' }\n  ];\n  \n  // 检测到的问题\n  let detectedIssues = [\n    { type: '重复记忆', count: 45, severity: 'high', description: '语义相似度超过85%的记忆' },\n    { type: '低质量记忆', count: 89, severity: 'medium', description: '重要性评分低于50%的记忆' },\n    { type: '过时记忆', count: 23, severity: 'low', description: '超过30天未更新的记忆' },\n    { type: '分类不当', count: 12, severity: 'low', description: '类型与内容不匹配的记忆' }\n  ];\n  \n  onMount(() => {\n    setTimeout(() => {\n      isLoading = false;\n    }, 1000);\n  });\n  \n  function getStatusColor(status: string) {\n    switch (status) {\n      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';\n      case 'running': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';\n      case 'failed': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';\n      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';\n    }\n  }\n  \n  function getSeverityColor(severity: string) {\n    switch (severity) {\n      case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';\n      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';\n      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';\n      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';\n    }\n  }\n  \n  function simulateOptimization() {\n    if (isOptimizing) return;\n    \n    isOptimizing = true;\n    optimizationStatus = 'analyzing';\n    optimizationProgress = 0;\n    \n    const interval = setInterval(() => {\n      optimizationProgress += 2;\n      \n      if (optimizationProgress <= 30) {\n        optimizationStatus = 'analyzing';\n      } else if (optimizationProgress <= 80) {\n        optimizationStatus = 'executing';\n      } else if (optimizationProgress >= 100) {\n        optimizationStatus = 'completed';\n        isOptimizing = false;\n        clearInterval(interval);\n        \n        // 添加到历史记录\n        optimizationHistory.unshift({\n          id: `opt_${Date.now()}`,\n          strategy: strategies.find(s => s.id === selectedStrategy)?.name || '未知',\n          status: 'completed',\n          startedAt: new Date().toLocaleString('zh-CN'),\n          duration: `${Math.floor(Math.random() * 30) + 20}分钟`,\n          memoriesAffected: Math.floor(Math.random() * 100) + 50,\n          spaceSaved: `${(Math.random() * 20 + 5).toFixed(1)}MB`\n        });\n      }\n    }, 100);\n  }\n  \n  function cancelOptimization() {\n    isOptimizing = false;\n    optimizationStatus = 'failed';\n    optimizationProgress = 0;\n  }\n  \n  function getEstimatedImpact() {\n    const base = selectedStrategy === 'full' ? 150 : \n                 selectedStrategy === 'deduplication' ? 60 :\n                 selectedStrategy === 'quality' ? 90 : 75;\n    \n    const multiplier = aggressiveMode ? 1.5 : 1;\n    return Math.floor(base * multiplier);\n  }\n</script>\n\n<div class=\"space-y-8\">\n  <!-- 页面标题 -->\n  <div>\n    <h1 class=\"text-3xl font-bold text-gray-900 dark:text-white\">优化面板</h1>\n    <p class=\"mt-2 text-gray-600 dark:text-gray-400\">\n      检测和优化记忆数据，提升系统性能和信息密度\n    </p>\n  </div>\n\n  {#if isLoading}\n    <!-- 加载状态 -->\n    <div class=\"space-y-6\">\n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-pulse\">\n        <div class=\"h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6\"></div>\n        <div class=\"h-32 bg-gray-200 dark:bg-gray-700 rounded\"></div>\n      </div>\n      <div class=\"grid grid-cols-1 lg:grid-cols-2 gap-6\">\n        {#each Array(2) as _, i}\n          <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-pulse\">\n            <div class=\"h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6\"></div>\n            <div class=\"space-y-4\">\n              {#each Array(3) as _, j}\n                <div class=\"h-12 bg-gray-200 dark:bg-gray-700 rounded\"></div>\n              {/each}\n            </div>\n          </div>\n        {/each}\n      </div>\n    </div>\n  {:else}\n    <!-- 优化控制面板 -->\n    <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n      <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">优化控制</h2>\n      \n      <div class=\"grid grid-cols-1 lg:grid-cols-3 gap-8\">\n        <!-- 策略选择 -->\n        <div>\n          <h3 class=\"text-sm font-medium text-gray-700 dark:text-gray-300 mb-4\">优化策略</h3>\n          <div class=\"space-y-3\">\n            {#each strategies as strategy}\n              <label class=\"flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors duration-150\n                {selectedStrategy === strategy.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'}\">\n                <input\n                  type=\"radio\"\n                  name=\"strategy\"\n                  value={strategy.id}\n                  bind:group={selectedStrategy}\n                  class=\"mt-1 mr-3\"\n                />\n                <div class=\"flex-1\">\n                  <div class=\"font-medium text-gray-900 dark:text-white\">\n                    {strategy.name}\n                  </div>\n                  <div class=\"text-sm text-gray-500 dark:text-gray-400 mt-1\">\n                    {strategy.description}\n                  </div>\n                  <div class=\"text-xs text-gray-400 dark:text-gray-500 mt-2\">\n                    预计时间: {strategy.estimatedTime}\n                  </div>\n                </div>\n              </label>\n            {/each}\n          </div>\n        </div>\n        \n        <!-- 选项配置 -->\n        <div>\n          <h3 class=\"text-sm font-medium text-gray-700 dark:text-gray-300 mb-4\">优化选项</h3>\n          <div class=\"space-y-4\">\n            <label class=\"flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n              <div>\n                <div class=\"font-medium text-gray-900 dark:text-white\">预览模式</div>\n                <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n                  仅分析问题，不执行优化\n                </div>\n              </div>\n              <input\n                type=\"checkbox\"\n                bind:checked={previewMode}\n                class=\"w-5 h-5 rounded\"\n                disabled={isOptimizing}\n              />\n            </label>\n            \n            <label class=\"flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n              <div>\n                <div class=\"font-medium text-gray-900 dark:text-white\">激进模式</div>\n                <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n                  更严格的优化标准\n                </div>\n              </div>\n              <input\n                type=\"checkbox\"\n                bind:checked={aggressiveMode}\n                class=\"w-5 h-5 rounded\"\n                disabled={isOptimizing}\n              />\n            </label>\n            \n            <div class=\"p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n              <div class=\"font-medium text-gray-900 dark:text-white mb-2\">超时时间</div>\n              <div class=\"flex items-center space-x-4\">\n                <input\n                  type=\"range\"\n                  min=\"10\"\n                  max=\"120\"\n                  step=\"5\"\n                  bind:value={timeoutMinutes}\n                  class=\"flex-1\"\n                  disabled={isOptimizing}\n                />\n                <span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">\n                  {timeoutMinutes} 分钟\n                </span>\n              </div>\n            </div>\n          </div>\n        </div>\n        \n        <!-- 预估影响 -->\n        <div>\n          <h3 class=\"text-sm font-medium text-gray-700 dark:text-gray-300 mb-4\">预估影响</h3>\n          <div class=\"bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-3\">\n            <div class=\"flex justify-between\">\n              <span class=\"text-gray-600 dark:text-gray-400\">预计影响记忆:</span>\n              <span class=\"font-medium text-gray-900 dark:text-white\">\n                ~{getEstimatedImpact()} 条\n              </span>\n            </div>\n            <div class=\"flex justify-between\">\n              <span class=\"text-gray-600 dark:text-gray-400\">预计节省空间:</span>\n              <span class=\"font-medium text-green-600 dark:text-green-400\">\n                ~{(getEstimatedImpact() * 0.15).toFixed(1)}MB\n              </span>\n            </div>\n            <div class=\"flex justify-between\">\n              <span class=\"text-gray-600 dark:text-gray-400\">预计提升质量:</span>\n              <span class=\"font-medium text-blue-600 dark:text-blue-400\">\n                +{aggressiveMode ? '15' : '10'}%\n              </span>\n            </div>\n            <div class=\"pt-3 border-t border-gray-200 dark:border-gray-700\">\n              <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n                {previewMode ? '预览模式不会实际修改数据' : '优化将永久修改记忆数据'}\n              </div>\n            </div>\n          </div>\n          \n          <!-- 操作按钮 -->\n          <div class=\"mt-6 space-y-3\">\n            {#if isOptimizing}\n              <button\n                on:click={cancelOptimization}\n                class=\"w-full px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors duration-200\"\n              >\n                取消优化\n              </button>\n            {:else}\n              <button\n                on:click={simulateOptimization}\n                class=\"w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200\"\n              >\n                {previewMode ? '分析问题' : '开始优化'}\n              </button>\n            {/if}\n            \n            <button\n              on:click={() => console.log('导出报告')}\n              class=\"w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200\"\n            >\n              导出优化报告\n            </button>\n          </div>\n        </div>\n      </div>\n    </div>\n\n    <!-- 优化进度 -->\n    {#if isOptimizing}\n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n        <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">优化进度</h2>\n        \n        <div class=\"space-y-6\">\n          <!-- 进度条 -->\n          <div>\n            <div class=\"flex justify-between mb-2\">\n              <span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">\n                {optimizationStatus === 'analyzing' ? '分析问题中...' :\n                 optimizationStatus === 'executing' ? '执行优化中...' :\n                 optimizationStatus === 'completed' ? '优化完成' : '优化失败'}\n              </span>\n              <span class=\"text-sm font-medium text-gray-900 dark:text-white\">\n                {optimizationProgress}%\n              </span>\n            </div>\n            <div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3\">\n              <div\n                class=\"h-3 rounded-full bg-blue-500 transition-all duration-300\"\n                style={`width: ${optimizationProgress}%`}\n              ></div>\n            </div>\n          </div>\n          \n          <!-- 状态信息 -->\n          <div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n            <div class=\"p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg\">\n              <div class=\"text-sm text-blue-700 dark:text-blue-300\">当前阶段</div>\n              <div class=\"text-lg font-medium text-blue-900 dark:text-blue-100 mt-1\">\n                {optimizationStatus === 'analyzing' ? '问题分析' :\n                 optimizationStatus === 'executing' ? '执行优化' :\n                 optimizationStatus === 'completed' ? '完成' : '失败'}\n              </div>\n            </div>\n            \n            <div class=\"p-4 bg-green-50 dark:bg-green-900/20 rounded-lg\">\n              <div class=\"text-sm text-green-700 dark:text-green-300\">已处理记忆</div>\n              <div class=\"text-lg font-medium text-green-900 dark:text-green-100 mt-1\">\n                {Math.floor(optimizationProgress * 1.5)} 条\n              </div>\n            </div>\n            \n            <div class=\"p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg\">\n              <div class=\"text-sm text-purple-700 dark:text-purple-300\">预计剩余时间</div>\n              <div class=\"text-lg font-medium text-purple-900 dark:text-purple-100 mt-1\">\n                {Math.max(0, Math.floor((100 - optimizationProgress) * 0.3))} 分钟\n              </div>\n            </div>\n          </div>\n          \n          <!-- 实时日志 -->\n          <div class=\"border border-gray-200 dark:border-gray-700 rounded-lg p-4\">\n            <div class=\"text-sm font-medium text-gray-700 dark:text-gray-300 mb-3\">实时日志</div>\n            <div class=\"space-y-2 max-h-40 overflow-y-auto\">\n              {#each Array(Math.floor(optimizationProgress / 10)) as _, i}\n                <div class=\"text-sm text-gray-600 dark:text-gray-400\">\n                  [{new Date(Date.now() - (10 - i) * 1000).toLocaleTimeString('zh-CN', {hour12: false})}] \n                  {optimizationStatus === 'analyzing' ? '分析记忆 #' + (i * 10 + 1) + '...' :\n                   '优化记忆 #' + (i * 10 + 1) + '...'}\n                </div>\n              {/each}\n            </div>\n          </div>\n        </div>\n      </div>\n    {/if}\n\n    <!-- 检测到的问题 -->\n    <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n      <div class=\"flex items-center justify-between mb-6\">\n        <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">检测到的问题</h2>\n        <button\n          on:click={() => console.log('重新检测')}\n          class=\"px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium\"\n        >\n          重新检测\n        </button>\n      </div>\n      \n      <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4\">\n        {#each detectedIssues as issue}\n          <div class=\"p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors duration-150\">\n            <div class=\"flex items-center justify-between mb-2\">\n              <span class={`px-2 py-1 rounded text-xs font-medium ${getSeverityColor(issue.severity)}`}>\n                {issue.severity === 'high' ? '高' : issue.severity === 'medium' ? '中' : '低'}\n              </span>\n              <span class=\"text-2xl font-bold text-gray-900 dark:text-white\">\n                {issue.count}\n              </span>\n            </div>\n            <div class=\"font-medium text-gray-900 dark:text-white mb-1\">\n              {issue.type}\n            </div>\n            <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n              {issue.description}\n            </div>\n            <div class=\"mt-3\">\n              <button\n                on:click={() => console.log('查看详情', issue.type)}\n                class=\"w-full px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded\"\n              >\n                查看详情\n              </button>\n            </div>\n          </div>\n        {/each}\n      </div>\n    </div>\n\n    <!-- 优化历史 -->\n    <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n      <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">优化历史</h2>\n      \n      <div class=\"overflow-x-auto\">\n        <table class=\"w-full\">\n          <thead class=\"bg-gray-50 dark:bg-gray-900/50\">\n            <tr>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                优化ID\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                策略\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                状态\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                开始时间\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                耗时\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                影响记忆\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                节省空间\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                操作\n              </th>\n            </tr>\n          </thead>\n          <tbody class=\"divide-y divide-gray-200 dark:divide-gray-700\">\n            {#each optimizationHistory as record}\n              <tr class=\"hover:bg-gray-50 dark:hover:bg-gray-900/30\">\n                <td class=\"px-4 py-3\">\n                  <div class=\"font-mono text-sm text-gray-900 dark:text-white\">\n                    {record.id}\n                  </div>\n                </td>\n                <td class=\"px-4 py-3\">\n                  <div class=\"text-sm text-gray-700 dark:text-gray-300\">\n                    {record.strategy}\n                  </div>\n                </td>\n                <td class=\"px-4 py-3\">\n                  <span class={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(record.status)}`}>\n                    {record.status === 'completed' ? '完成' : \n                     record.status === 'running' ? '进行中' : '失败'}\n                  </span>\n                </td>\n                <td class=\"px-4 py-3 text-sm text-gray-600 dark:text-gray-400\">\n                  {record.startedAt}\n                </td>\n                <td class=\"px-4 py-3 text-sm text-gray-600 dark:text-gray-400\">\n                  {record.duration}\n                </td>\n                <td class=\"px-4 py-3\">\n                  <div class=\"text-sm font-medium text-gray-900 dark:text-white\">\n                    {record.memoriesAffected}\n                  </div>\n                </td>\n                <td class=\"px-4 py-3\">\n                  <div class=\"text-sm font-medium text-green-600 dark:text-green-400\">\n                    {record.spaceSaved}\n                  </div>\n                </td>\n                <td class=\"px-4 py-3\">\n                  <div class=\"flex space-x-2\">\n                    <button\n                      on:click={() => console.log('查看报告', record.id)}\n                      class=\"text-sm text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300\"\n                    >\n                      报告\n                    </button>\n                    {#if record.status === 'completed'}\n                      <button\n                        on:click={() => console.log('撤销', record.id)}\n                        class=\"text-sm text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300\"\n                      >\n                        撤销\n                      </button>\n                    {/if}\n                  </div>\n                </td>\n              </tr>\n            {/each}\n          </tbody>\n        </table>\n      </div>\n      \n      <div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n        <div class=\"flex items-center justify-between\">\n          <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n            共 {optimizationHistory.length} 次优化记录\n          </div>\n          <button\n            on:click={() => console.log('清空历史')}\n            class=\"px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg\"\n          >\n            清空历史记录\n          </button>\n        </div>\n      </div>\n    </div>\n  {/if}\n</div>"
+      "source_summary": "<script lang=\"ts\">\n  import { onMount } from 'svelte';\n  import { optimizationApi } from '$lib/api/client';\n  \n  let isLoading = true;\n  let isOptimizing = false;\n  let optimizationProgress = 0;\n  let optimizationStatus = 'idle'; // idle, analyzing, executing, completed, failed\n  let currentJobId: string | null = null;\n  let pollInterval: number | null = null;\n  let errorMessage: string | null = null;\n  \n  // 优化策略\n  const strategies = [\n    { id: 'full', name: '全面优化', description: '检测并处理所有类型的问题', estimatedTime: '60分钟' },\n    { id: 'deduplication', name: '去重优化', description: '仅处理重复记忆', estimatedTime: '20分钟' },\n    { id: 'quality', name: '质量优化', description: '处理低质量记忆', estimatedTime: '30分钟' },\n    { id: 'relevance', name: '相关性优化', description: '优化记忆相关性', estimatedTime: '25分钟' }\n  ];\n  \n  let selectedStrategy = 'full';\n  let previewMode = true;\n  let aggressiveMode = false;\n  let timeoutMinutes = 30;\n  \n  // 优化历史\n  let optimizationHistory = [\n    { id: 'opt_001', strategy: '全面优化', status: 'completed', startedAt: '2025-12-13 10:30', duration: '45分钟', memoriesAffected: 124, spaceSaved: '15.2MB' },\n    { id: 'opt_002', strategy: '去重优化', status: 'completed', startedAt: '2025-12-12 14:15', duration: '18分钟', memoriesAffected: 56, spaceSaved: '8.7MB' },\n    { id: 'opt_003', strategy: '质量优化', status: 'failed', startedAt: '2025-12-11 09:45', duration: '32分钟', memoriesAffected: 0, spaceSaved: '0MB', error: 'LLM服务超时' },\n    { id: 'opt_004', strategy: '全面优化', status: 'completed', startedAt: '2025-12-10 16:20', duration: '52分钟', memoriesAffected: 198, spaceSaved: '22.1MB' }\n  ];\n  \n  // 检测到的问题\n  let detectedIssues = [\n    { type: '重复记忆', count: 45, severity: 'high', description: '语义相似度超过85%的记忆' },\n    { type: '低质量记忆', count: 89, severity: 'medium', description: '重要性评分低于50%的记忆' },\n    { type: '过时记忆', count: 23, severity: 'low', description: '超过30天未更新的记忆' },\n    { type: '分类不当', count: 12, severity: 'low', description: '类型与内容不匹配的记忆' }\n  ];\n  \n  onMount(async () => {\n    // 加载优化历史和检测问题\n    await loadOptimizationData();\n    isLoading = false;\n  });\n\n  async function loadOptimizationData(skipAnalyze = false) {\n    try {\n      // 加载优化历史\n      const historyResponse = await optimizationApi.history({ limit: 10 });\n      if (historyResponse.success && historyResponse.data) {\n        optimizationHistory = historyResponse.data.history.map((h: any) => ({\n          id: h.job_id,\n          strategy: h.strategy || '未知',\n          status: h.status,\n          startedAt: new Date(h.start_time).toLocaleString('zh-CN'),\n          duration: h.duration ? `${Math.floor(h.duration / 60000)}分钟` : '未知',\n          memoriesAffected: h.memories_affected || 0,\n          spaceSaved: h.space_saved ? `${h.space_saved.toFixed(1)}MB` : '0MB',\n        }));\n      }\n\n      // 分析检测问题（可选，避免重复分析）\n      if (!skipAnalyze) {\n        const analyzeResponse = await optimizationApi.analyze({});\n        if (analyzeResponse.success && analyzeResponse.data) {\n          const data = analyzeResponse.data;\n          if (data.issues && Array.isArray(data.issues)) {\n            detectedIssues = data.issues.map((issue: any) => ({\n              type: issue.kind || issue.type || '未知问题',\n              count: issue.affected_memories?.length || 0,\n              severity: issue.severity?.toLowerCase() || 'low',\n              description: issue.description || '',\n            }));\n          }\n        }\n      }\n    } catch (error) {\n      console.error('加载优化数据失败:', error);\n      errorMessage = '加载数据失败，请刷新页面重试';\n    }\n  }\n  \n  function getStatusColor(status: string) {\n    switch (status) {\n      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';\n      case 'running': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';\n      case 'failed': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';\n      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';\n    }\n  }\n  \n  function getSeverityColor(severity: string) {\n    switch (severity) {\n      case 'high': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';\n      case 'medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';\n      case 'low': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';\n      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';\n    }\n  }\n  \n  async function startOptimization() {\n    if (isOptimizing) return;\n    \n    errorMessage = null;\n    isOptimizing = true;\n    optimizationStatus = 'analyzing';\n    optimizationProgress = 0;\n    \n    try {\n      // 启动优化任务\n      const response = await optimizationApi.optimize({\n        strategy: selectedStrategy,\n        dry_run: previewMode,\n        aggressive: aggressiveMode,\n        timeout_minutes: timeoutMinutes,\n      });\n      \n      if (!response.success || !response.data) {\n        throw new Error(response.error?.message || '启动优化失败');\n      }\n      \n      currentJobId = response.data.job_id;\n      \n      // 开始轮询状态\n      startPolling();\n    } catch (error) {\n      console.error('启动优化失败:', error);\n      errorMessage = error instanceof Error ? error.message : '启动优化失败';\n      isOptimizing = false;\n      optimizationStatus = 'failed';\n    }\n  }\n  \n  function startPolling() {\n    if (!currentJobId) return;\n    \n    // 每2秒轮询一次\n    pollInterval = window.setInterval(async () => {\n      if (!currentJobId) {\n        stopPolling();\n        return;\n      }\n      \n      try {\n        const response = await optimizationApi.getStatus(currentJobId);\n        \n        if (!response.success || !response.data) {\n          throw new Error('获取状态失败');\n        }\n        \n        const jobState = response.data;\n        optimizationProgress = jobState.progress || 0;\n        \n        // 更新状态\n        if (jobState.status === 'running') {\n          optimizationStatus = jobState.current_phase?.includes('分析') ? 'analyzing' : 'executing';\n        } else if (jobState.status === 'completed') {\n          optimizationStatus = 'completed';\n          isOptimizing = false;\n          stopPolling();\n          \n          // 刷新历史记录（跳过分析，避免重复调用）\n          await loadOptimizationData(true);\n        } else if (jobState.status === 'failed' || jobState.status === 'cancelled') {\n          optimizationStatus = 'failed';\n          isOptimizing = false;\n          stopPolling();\n          errorMessage = jobState.logs?.[jobState.logs.length - 1] || '优化失败';\n        }\n      } catch (error) {\n        console.error('轮询状态失败:', error);\n        stopPolling();\n        isOptimizing = false;\n        optimizationStatus = 'failed';\n        errorMessage = '获取优化状态失败';\n      }\n    }, 2000);\n  }\n  \n  function stopPolling() {\n    if (pollInterval) {\n      clearInterval(pollInterval);\n      pollInterval = null;\n    }\n  }\n  \n  async function cancelOptimization() {\n    if (!currentJobId) return;\n    \n    try {\n      await optimizationApi.cancel(currentJobId);\n      stopPolling();\n      isOptimizing = false;\n      optimizationStatus = 'failed';\n      optimizationProgress = 0;\n      currentJobId = null;\n    } catch (error) {\n      console.error('取消优化失败:', error);\n      errorMessage = '取消优化失败';\n    }\n  }\n  \n  function getEstimatedImpact() {\n    const base = selectedStrategy === 'full' ? 150 : \n                 selectedStrategy === 'deduplication' ? 60 :\n                 selectedStrategy === 'quality' ? 90 : 75;\n    \n    const multiplier = aggressiveMode ? 1.5 : 1;\n    return Math.floor(base * multiplier);\n  }\n</script>\n\n<div class=\"space-y-8\">\n  <!-- 页面标题 -->\n  <div>\n    <h1 class=\"text-3xl font-bold text-gray-900 dark:text-white\">优化面板</h1>\n    <p class=\"mt-2 text-gray-600 dark:text-gray-400\">\n      检测和优化记忆数据，提升系统性能和信息密度\n    </p>\n  </div>\n\n  <!-- 错误提示 -->\n  {#if errorMessage}\n    <div class=\"bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4\">\n      <div class=\"flex items-center\">\n        <svg class=\"w-5 h-5 text-red-600 dark:text-red-400 mr-2\" fill=\"currentColor\" viewBox=\"0 0 20 20\">\n          <path fill-rule=\"evenodd\" d=\"M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z\" clip-rule=\"evenodd\"/>\n        </svg>\n        <span class=\"text-red-800 dark:text-red-200\">{errorMessage}</span>\n        <button \n          on:click={() => errorMessage = null}\n          class=\"ml-auto text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200\"\n        >\n          ✕\n        </button>\n      </div>\n    </div>\n  {/if}\n\n  {#if isLoading}\n    <!-- 加载状态 -->\n    <div class=\"space-y-6\">\n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-pulse\">\n        <div class=\"h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6\"></div>\n        <div class=\"h-32 bg-gray-200 dark:bg-gray-700 rounded\"></div>\n      </div>\n      <div class=\"grid grid-cols-1 lg:grid-cols-2 gap-6\">\n        {#each Array(2) as _, i}\n          <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-pulse\">\n            <div class=\"h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-6\"></div>\n            <div class=\"space-y-4\">\n              {#each Array(3) as _, j}\n                <div class=\"h-12 bg-gray-200 dark:bg-gray-700 rounded\"></div>\n              {/each}\n            </div>\n          </div>\n        {/each}\n      </div>\n    </div>\n  {:else}\n    <!-- 优化控制面板 -->\n    <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n      <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">优化控制</h2>\n      \n      <div class=\"grid grid-cols-1 lg:grid-cols-3 gap-8\">\n        <!-- 策略选择 -->\n        <div>\n          <h3 class=\"text-sm font-medium text-gray-700 dark:text-gray-300 mb-4\">优化策略</h3>\n          <div class=\"space-y-3\">\n            {#each strategies as strategy}\n              <label class=\"flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors duration-150\n                {selectedStrategy === strategy.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'}\">\n                <input\n                  type=\"radio\"\n                  name=\"strategy\"\n                  value={strategy.id}\n                  bind:group={selectedStrategy}\n                  class=\"mt-1 mr-3\"\n                />\n                <div class=\"flex-1\">\n                  <div class=\"font-medium text-gray-900 dark:text-white\">\n                    {strategy.name}\n                  </div>\n                  <div class=\"text-sm text-gray-500 dark:text-gray-400 mt-1\">\n                    {strategy.description}\n                  </div>\n                  <div class=\"text-xs text-gray-400 dark:text-gray-500 mt-2\">\n                    预计时间: {strategy.estimatedTime}\n                  </div>\n                </div>\n              </label>\n            {/each}\n          </div>\n        </div>\n        \n        <!-- 选项配置 -->\n        <div>\n          <h3 class=\"text-sm font-medium text-gray-700 dark:text-gray-300 mb-4\">优化选项</h3>\n          <div class=\"space-y-4\">\n            <label class=\"flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n              <div>\n                <div class=\"font-medium text-gray-900 dark:text-white\">预览模式</div>\n                <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n                  仅分析问题，不执行优化\n                </div>\n              </div>\n              <input\n                type=\"checkbox\"\n                bind:checked={previewMode}\n                class=\"w-5 h-5 rounded\"\n                disabled={isOptimizing}\n              />\n            </label>\n            \n            <label class=\"flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n              <div>\n                <div class=\"font-medium text-gray-900 dark:text-white\">激进模式</div>\n                <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n                  更严格的优化标准\n                </div>\n              </div>\n              <input\n                type=\"checkbox\"\n                bind:checked={aggressiveMode}\n                class=\"w-5 h-5 rounded\"\n                disabled={isOptimizing}\n              />\n            </label>\n            \n            <div class=\"p-3 border border-gray-200 dark:border-gray-700 rounded-lg\">\n              <div class=\"font-medium text-gray-900 dark:text-white mb-2\">超时时间</div>\n              <div class=\"flex items-center space-x-4\">\n                <input\n                  type=\"range\"\n                  min=\"10\"\n                  max=\"120\"\n                  step=\"5\"\n                  bind:value={timeoutMinutes}\n                  class=\"flex-1\"\n                  disabled={isOptimizing}\n                />\n                <span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">\n                  {timeoutMinutes} 分钟\n                </span>\n              </div>\n            </div>\n          </div>\n        </div>\n        \n        <!-- 预估影响 -->\n        <div>\n          <h3 class=\"text-sm font-medium text-gray-700 dark:text-gray-300 mb-4\">预估影响</h3>\n          <div class=\"bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-3\">\n            <div class=\"flex justify-between\">\n              <span class=\"text-gray-600 dark:text-gray-400\">预计影响记忆:</span>\n              <span class=\"font-medium text-gray-900 dark:text-white\">\n                ~{getEstimatedImpact()} 条\n              </span>\n            </div>\n            <div class=\"flex justify-between\">\n              <span class=\"text-gray-600 dark:text-gray-400\">预计节省空间:</span>\n              <span class=\"font-medium text-green-600 dark:text-green-400\">\n                ~{(getEstimatedImpact() * 0.15).toFixed(1)}MB\n              </span>\n            </div>\n            <div class=\"flex justify-between\">\n              <span class=\"text-gray-600 dark:text-gray-400\">预计提升质量:</span>\n              <span class=\"font-medium text-blue-600 dark:text-blue-400\">\n                +{aggressiveMode ? '15' : '10'}%\n              </span>\n            </div>\n            <div class=\"pt-3 border-t border-gray-200 dark:border-gray-700\">\n              <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n                {previewMode ? '预览模式不会实际修改数据' : '优化将永久修改记忆数据'}\n              </div>\n            </div>\n          </div>\n          \n          <!-- 操作按钮 -->\n          <div class=\"mt-6 space-y-3\">\n            {#if isOptimizing}\n              <button\n                on:click={cancelOptimization}\n                class=\"w-full px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors duration-200\"\n              >\n                取消优化\n              </button>\n            {:else}\n              <button\n                on:click={startOptimization}\n                class=\"w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200\"\n              >\n                {previewMode ? '分析问题' : '开始优化'}\n              </button>\n            {/if}\n            \n            <button\n              on:click={() => console.log('导出报告')}\n              class=\"w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200\"\n            >\n              导出优化报告\n            </button>\n          </div>\n        </div>\n      </div>\n    </div>\n\n    <!-- 优化进度 -->\n    {#if isOptimizing}\n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n        <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">优化进度</h2>\n        \n        <div class=\"space-y-6\">\n          <!-- 进度条 -->\n          <div>\n            <div class=\"flex justify-between mb-2\">\n              <span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">\n                {optimizationStatus === 'analyzing' ? '分析问题中...' :\n                 optimizationStatus === 'executing' ? '执行优化中...' :\n                 optimizationStatus === 'completed' ? '优化完成' : '优化失败'}\n              </span>\n              <span class=\"text-sm font-medium text-gray-900 dark:text-white\">\n                {optimizationProgress}%\n              </span>\n            </div>\n            <div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3\">\n              <div\n                class=\"h-3 rounded-full bg-blue-500 transition-all duration-300\"\n                style={`width: ${optimizationProgress}%`}\n              ></div>\n            </div>\n          </div>\n          \n          <!-- 状态信息 -->\n          <div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n            <div class=\"p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg\">\n              <div class=\"text-sm text-blue-700 dark:text-blue-300\">当前阶段</div>\n              <div class=\"text-lg font-medium text-blue-900 dark:text-blue-100 mt-1\">\n                {optimizationStatus === 'analyzing' ? '问题分析' :\n                 optimizationStatus === 'executing' ? '执行优化' :\n                 optimizationStatus === 'completed' ? '完成' : '失败'}\n              </div>\n            </div>\n            \n            <div class=\"p-4 bg-green-50 dark:bg-green-900/20 rounded-lg\">\n              <div class=\"text-sm text-green-700 dark:text-green-300\">已处理记忆</div>\n              <div class=\"text-lg font-medium text-green-900 dark:text-green-100 mt-1\">\n                {Math.floor(optimizationProgress * 1.5)} 条\n              </div>\n            </div>\n            \n            <div class=\"p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg\">\n              <div class=\"text-sm text-purple-700 dark:text-purple-300\">预计剩余时间</div>\n              <div class=\"text-lg font-medium text-purple-900 dark:text-purple-100 mt-1\">\n                {Math.max(0, Math.floor((100 - optimizationProgress) * 0.3))} 分钟\n              </div>\n            </div>\n          </div>\n          \n          <!-- 实时日志 -->\n          <div class=\"border border-gray-200 dark:border-gray-700 rounded-lg p-4\">\n            <div class=\"text-sm font-medium text-gray-700 dark:text-gray-300 mb-3\">实时日志</div>\n            <div class=\"space-y-2 max-h-40 overflow-y-auto\">\n              {#each Array(Math.floor(optimizationProgress / 10)) as _, i}\n                <div class=\"text-sm text-gray-600 dark:text-gray-400\">\n                  [{new Date(Date.now() - (10 - i) * 1000).toLocaleTimeString('zh-CN', {hour12: false})}] \n                  {optimizationStatus === 'analyzing' ? '分析记忆 #' + (i * 10 + 1) + '...' :\n                   '优化记忆 #' + (i * 10 + 1) + '...'}\n                </div>\n              {/each}\n            </div>\n          </div>\n        </div>\n      </div>\n    {/if}\n\n    <!-- 检测到的问题 -->\n    <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n      <div class=\"flex items-center justify-between mb-6\">\n        <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">检测到的问题</h2>\n        <button\n          on:click={() => console.log('重新检测')}\n          class=\"px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium\"\n        >\n          重新检测\n        </button>\n      </div>\n      \n      <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4\">\n        {#each detectedIssues as issue}\n          <div class=\"p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors duration-150\">\n            <div class=\"flex items-center justify-between mb-2\">\n              <span class={`px-2 py-1 rounded text-xs font-medium ${getSeverityColor(issue.severity)}`}>\n                {issue.severity === 'high' ? '高' : issue.severity === 'medium' ? '中' : '低'}\n              </span>\n              <span class=\"text-2xl font-bold text-gray-900 dark:text-white\">\n                {issue.count}\n              </span>\n            </div>\n            <div class=\"font-medium text-gray-900 dark:text-white mb-1\">\n              {issue.type}\n            </div>\n            <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n              {issue.description}\n            </div>\n            <div class=\"mt-3\">\n              <button\n                on:click={() => console.log('查看详情', issue.type)}\n                class=\"w-full px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded\"\n              >\n                查看详情\n              </button>\n            </div>\n          </div>\n        {/each}\n      </div>\n    </div>\n\n    <!-- 优化历史 -->\n    <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n      <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">优化历史</h2>\n      \n      <div class=\"overflow-x-auto\">\n        <table class=\"w-full\">\n          <thead class=\"bg-gray-50 dark:bg-gray-900/50\">\n            <tr>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                优化ID\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                策略\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                状态\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                开始时间\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                耗时\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                影响记忆\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                节省空间\n              </th>\n              <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                操作\n              </th>\n            </tr>\n          </thead>\n          <tbody class=\"divide-y divide-gray-200 dark:divide-gray-700\">\n            {#each optimizationHistory as record}\n              <tr class=\"hover:bg-gray-50 dark:hover:bg-gray-900/30\">\n                <td class=\"px-4 py-3\">\n                  <div class=\"font-mono text-sm text-gray-900 dark:text-white\">\n                    {record.id}\n                  </div>\n                </td>\n                <td class=\"px-4 py-3\">\n                  <div class=\"text-sm text-gray-700 dark:text-gray-300\">\n                    {record.strategy}\n                  </div>\n                </td>\n                <td class=\"px-4 py-3\">\n                  <span class={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(record.status)}`}>\n                    {record.status === 'completed' ? '完成' : \n                     record.status === 'running' ? '进行中' : '失败'}\n                  </span>\n                </td>\n                <td class=\"px-4 py-3 text-sm text-gray-600 dark:text-gray-400\">\n                  {record.startedAt}\n                </td>\n                <td class=\"px-4 py-3 text-sm text-gray-600 dark:text-gray-400\">\n                  {record.duration}\n                </td>\n                <td class=\"px-4 py-3\">\n                  <div class=\"text-sm font-medium text-gray-900 dark:text-white\">\n                    {record.memoriesAffected}\n                  </div>\n                </td>\n                <td class=\"px-4 py-3\">\n                  <div class=\"text-sm font-medium text-green-600 dark:text-green-400\">\n                    {record.spaceSaved}\n                  </div>\n                </td>\n                <td class=\"px-4 py-3\">\n                  <div class=\"flex space-x-2\">\n                    <button\n                      on:click={() => console.log('查看报告', record.id)}\n                      class=\"text-sm text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300\"\n                    >\n                      报告\n                    </button>\n                    {#if record.status === 'completed'}\n                      <button\n                        on:click={() => console.log('撤销', record.id)}\n                        class=\"text-sm text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300\"\n                      >\n                        撤销\n                      </button>\n                    {/if}\n                  </div>\n                </td>\n              </tr>\n            {/each}\n          </tbody>\n        </table>\n      </div>\n      \n      <div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n        <div class=\"flex items-center justify-between\">\n          <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n            共 {optimizationHistory.length} 次优化记录\n          </div>\n          <button\n            on:click={() => console.log('清空历史')}\n            class=\"px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg\"\n          >\n            清空历史记录\n          </button>\n        </div>\n      </div>\n    </div>\n  {/if}\n</div>"
     },
     "complexity_metrics": {
-      "cyclomatic_complexity": 17.0,
-      "lines_of_code": 507,
+      "cyclomatic_complexity": 28.0,
+      "lines_of_code": 629,
       "number_of_classes": 0,
-      "number_of_functions": 6
+      "number_of_functions": 8
     },
     "dependencies": [
       {
-        "dependency_type": "import",
+        "dependency_type": "framework",
         "is_external": true,
         "line_number": 1,
         "name": "svelte",
-        "path": "svelte",
+        "path": null,
+        "version": null
+      },
+      {
+        "dependency_type": "local",
+        "is_external": false,
+        "line_number": 2,
+        "name": "$lib/api/client",
+        "path": "$lib/api/client",
+        "version": null
+      },
+      {
+        "dependency_type": "api",
+        "is_external": false,
+        "line_number": 3,
+        "name": "optimizationApi",
+        "path": null,
         "version": null
       }
     ],
-    "detailed_description": "This Svelte component serves as the optimization interface for memory data management. It provides a comprehensive UI for selecting optimization strategies (full, deduplication, quality, relevance), configuring optimization options (preview mode, aggressive mode, timeout), and viewing system-detected memory issues. The component displays real-time optimization progress with a simulated execution flow that transitions through analysis, execution, and completion stages. It maintains an optimization history table showing past operations with their status, duration, and impact metrics. The UI includes responsive controls with appropriate disabling during active processes, visual feedback via status badges and progress bars, and simulated real-time logging. Data state management includes loading states, optimization status tracking, and impact estimation calculations based on selected strategy and mode. The component uses Tailwind CSS for styling with dark mode support and provides interactive elements for starting/canceling optimizations, exporting reports, and managing optimization history.",
+    "detailed_description": "This Svelte component serves as the optimization dashboard for a memory management system. It provides a comprehensive UI for analyzing and optimizing memory data with multiple strategies including full optimization, deduplication, quality improvement, and relevance tuning. The component features real-time progress tracking, historical data visualization, and interactive controls for optimization parameters. It manages asynchronous operations through polling mechanisms and handles various optimization states (idle, analyzing, executing, completed, failed). The interface displays detected issues with severity levels, allows configuration of optimization options (preview mode, aggressive mode, timeout), and shows estimated impact metrics. The component integrates with a backend optimization API to perform actual operations and retrieve status updates.",
     "interfaces": [
       {
-        "description": "Svelte lifecycle function to handle component initialization",
-        "interface_type": "lifecycle",
-        "name": "onMount",
-        "parameters": [],
-        "return_type": "void",
-        "visibility": "public"
+        "description": "Loads optimization history and detected issues from API",
+        "interface_type": "function",
+        "name": "loadOptimizationData",
+        "parameters": [
+          {
+            "description": "Whether to skip the analysis step when loading data",
+            "is_optional": true,
+            "name": "skipAnalyze",
+            "param_type": "boolean"
+          }
+        ],
+        "return_type": "Promise<void>",
+        "visibility": "private"
       },
       {
-        "description": "Returns appropriate CSS classes for status badges based on optimization status",
+        "description": "Initiates optimization process with selected strategy and options",
+        "interface_type": "function",
+        "name": "startOptimization",
+        "parameters": [],
+        "return_type": "Promise<void>",
+        "visibility": "private"
+      },
+      {
+        "description": "Starts periodic polling for optimization status updates",
+        "interface_type": "function",
+        "name": "startPolling",
+        "parameters": [],
+        "return_type": "void",
+        "visibility": "private"
+      },
+      {
+        "description": "Stops the polling interval for optimization status",
+        "interface_type": "function",
+        "name": "stopPolling",
+        "parameters": [],
+        "return_type": "void",
+        "visibility": "private"
+      },
+      {
+        "description": "Cancels the currently running optimization process",
+        "interface_type": "function",
+        "name": "cancelOptimization",
+        "parameters": [],
+        "return_type": "Promise<void>",
+        "visibility": "private"
+      },
+      {
+        "description": "Calculates estimated number of memories affected by optimization",
+        "interface_type": "function",
+        "name": "getEstimatedImpact",
+        "parameters": [],
+        "return_type": "number",
+        "visibility": "private"
+      },
+      {
+        "description": "Returns CSS classes for status badge coloring",
         "interface_type": "function",
         "name": "getStatusColor",
         "parameters": [
@@ -4988,7 +4380,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "Returns appropriate CSS classes for severity indicators based on issue severity",
+        "description": "Returns CSS classes for severity level coloring",
         "interface_type": "function",
         "name": "getSeverityColor",
         "parameters": [
@@ -5001,44 +4393,20 @@ Code analysis results from preprocessing phase, including definitions of functio
         ],
         "return_type": "string",
         "visibility": "private"
-      },
-      {
-        "description": "Simulates the optimization process with progress updates and state transitions",
-        "interface_type": "function",
-        "name": "simulateOptimization",
-        "parameters": [],
-        "return_type": "void",
-        "visibility": "private"
-      },
-      {
-        "description": "Handles cancellation of ongoing optimization process",
-        "interface_type": "function",
-        "name": "cancelOptimization",
-        "parameters": [],
-        "return_type": "void",
-        "visibility": "private"
-      },
-      {
-        "description": "Calculates estimated impact of optimization based on selected strategy and mode",
-        "interface_type": "function",
-        "name": "getEstimatedImpact",
-        "parameters": [],
-        "return_type": "number",
-        "visibility": "private"
       }
     ],
     "responsibilities": [
-      "Manage the optimization workflow state (idle, analyzing, executing, completed, failed)",
-      "Provide UI for selecting optimization strategies and configuring options",
-      "Display detected memory issues with severity indicators",
-      "Show optimization progress and real-time execution logs",
-      "Maintain and display optimization history with detailed records"
+      "Provides UI for memory optimization control with multiple strategy selection",
+      "Manages real-time optimization process with progress tracking and state management",
+      "Displays historical optimization records and detected memory issues",
+      "Handles asynchronous API calls to optimization service with error handling",
+      "Calculates and displays estimated impact metrics based on selected options"
     ]
   },
   {
     "code_dossier": {
       "code_purpose": "page",
-      "description": "Svelte page component for managing and displaying user memories with search, filter, sort and batch operations capabilities",
+      "description": "Svelte page component for managing memories with search, filter, sort, paginate and batch operations.",
       "file_path": "cortex-mem-insights/src/routes/memories/+page.svelte",
       "functions": [
         "loadMemories",
@@ -5050,6 +4418,11 @@ Code analysis results from preprocessing phase, including definitions of functio
         "getImportanceColor",
         "toggleSort",
         "getSortIcon",
+        "goToPage",
+        "nextPage",
+        "prevPage",
+        "showFullContent",
+        "hideContentModal",
         "toggleSelectMemory",
         "selectAll",
         "deselectAll",
@@ -5059,33 +4432,18 @@ Code analysis results from preprocessing phase, including definitions of functio
       ],
       "importance_score": 0.8,
       "interfaces": [
-        "Memory",
-        "memoryTypes",
-        "memories",
-        "isLoading",
-        "searchQuery",
-        "selectedType",
-        "sortBy",
-        "sortOrder",
-        "error",
-        "filteredMemories",
-        "selectedMemories",
-        "selectedMemoryIds",
-        "showBatchOperations",
-        "isAllSelected",
-        "isPartialSelected",
-        "createdAtSortIcon",
-        "importanceSortIcon",
-        "selectedMemoryMap"
+        "Memory interface for memory data structure",
+        "onMount lifecycle function",
+        "Svelte reactivity declarations"
       ],
       "name": "+page.svelte",
-      "source_summary": "<script lang=\"ts\">\n\timport { onMount } from 'svelte';\n\timport api from '$lib/api/client';\n\n\tinterface Memory {\n\t\tid: string;\n\t\tcontent: string;\n\t\ttype: string;\n\t\timportance: number;\n\t\tuserId?: string;\n\t\tagentId?: string;\n\t\tcreatedAt: string;\n\t\tupdatedAt: string;\n\t}\n\n\tlet memories: Memory[] = [];\n\tlet isLoading = true;\n\tlet searchQuery = '';\n\tlet selectedType = 'all';\n\tlet sortBy = 'createdAt';\n\tlet sortOrder: 'asc' | 'desc' = 'desc';\n\tlet error: string | null = null;\n\tlet filteredMemories: Memory[] = [];\n\tlet selectedMemories: Set<string> = new Set();\n\tlet selectedMemoryIds: Set<string> = new Set();\n\tlet showBatchOperations = false;\n\n\t// 计算全选状态\n\t$: isAllSelected =\n\t\tfilteredMemories.length > 0 && selectedMemories.size === filteredMemories.length;\n\t$: isPartialSelected =\n\t\tselectedMemories.size > 0 && selectedMemories.size < filteredMemories.length;\n\n\t// 排序状态响应式计算\n\t$: console.log('排序状态变化:', { sortBy, sortOrder });\n\n\t// 为每个列计算排序图标\n\t$: createdAtSortIcon = sortBy === 'createdAt' ? (sortOrder === 'asc' ? '↑' : '↓') : '↓';\n\t$: importanceSortIcon = sortBy === 'importance' ? (sortOrder === 'asc' ? '↑' : '↓') : '↓';\n\n\tconst memoryTypes = [\n\t\t{ value: 'all', label: '全部类型' },\n\t\t{ value: 'conversational', label: '对话' },\n\t\t{ value: 'factual', label: '事实' },\n\t\t{ value: 'personal', label: '个人' },\n\t\t{ value: 'procedural', label: '流程' }\n\t];\n\n\tonMount(async () => {\n\t\tawait loadMemories();\n\t});\n\n\tasync function loadMemories() {\n\t\ttry {\n\t\t\tisLoading = true;\n\t\t\terror = null;\n\n\t\t\t// 调用API获取记忆列表\n\t\t\tconst response = await api.memory.list();\n\n\t\t\t// 转换API响应到前端数据结构\n\t\t\tmemories = response.memories.map((memory: any) => {\n\t\t\t\t// 处理编码问题：尝试修复乱码\n\t\t\t\tlet content = memory.content;\n\t\t\t\ttry {\n\t\t\t\t\t// 如果内容看起来像乱码，尝试UTF-8解码\n\t\t\t\t\tif (content.includes('ç') || content.includes('æ') || content.includes('å')) {\n\t\t\t\t\t\t// 创建TextDecoder进行UTF-8解码\n\t\t\t\t\t\tconst decoder = new TextDecoder('utf-8');\n\t\t\t\t\t\t// 将字符串转换为Uint8Array\n\t\t\t\t\t\tconst encoder = new TextEncoder();\n\t\t\t\t\t\tconst bytes = encoder.encode(content);\n\t\t\t\t\t\t// 尝试解码\n\t\t\t\t\t\tcontent = decoder.decode(bytes);\n\t\t\t\t\t}\n\t\t\t\t} catch (decodeError) {\n\t\t\t\t\tconsole.warn('解码内容失败，使用原始内容:', decodeError);\n\t\t\t\t}\n\n\t\t\t\t// 从custom字段获取重要性分数，如果没有则使用默认值\n\t\t\t\tlet importance = 0.7;\n\t\t\t\tif (memory.metadata.custom && memory.metadata.custom.importance) {\n\t\t\t\t\timportance = parseFloat(memory.metadata.custom.importance);\n\t\t\t\t} else if (memory.metadata.custom && memory.metadata.custom.score) {\n\t\t\t\t\timportance = parseFloat(memory.metadata.custom.score);\n\t\t\t\t}\n\n\t\t\t\t// 确保重要性在0-1范围内\n\t\t\t\timportance = Math.max(0, Math.min(1, importance));\n\n\t\t\t\treturn {\n\t\t\t\t\tid: memory.id,\n\t\t\t\t\tcontent: content,\n\t\t\t\t\ttype: memory.metadata.memory_type.toLowerCase(),\n\t\t\t\t\timportance: importance,\n\t\t\t\t\tuserId: memory.metadata.user_id,\n\t\t\t\t\tagentId: memory.metadata.agent_id,\n\t\t\t\t\tcreatedAt: memory.created_at,\n\t\t\t\t\tupdatedAt: memory.updated_at\n\t\t\t\t};\n\t\t\t});\n\t\t} catch (err) {\n\t\t\tconsole.error('加载记忆失败:', err);\n\t\t\terror = err instanceof Error ? err.message : '加载记忆失败';\n\t\t} finally {\n\t\t\tisLoading = false;\n\t\t}\n\t}\n\n\tasync function handleSearch() {\n\t\tif (!searchQuery.trim()) {\n\t\t\tawait loadMemories();\n\t\t\treturn;\n\t\t}\n\n\t\ttry {\n\t\t\tisLoading = true;\n\t\t\terror = null;\n\n\t\t\t// 调用搜索API\n\t\t\tconst response = await api.memory.search(searchQuery);\n\n\t\t\t// 转换搜索结果\n\t\t\tmemories = response.results.map((result: any) => {\n\t\t\t\t// 处理编码问题\n\t\t\t\tlet content = result.memory.content;\n\t\t\t\ttry {\n\t\t\t\t\tif (content.includes('ç') || content.includes('æ') || content.includes('å')) {\n\t\t\t\t\t\tconst decoder = new TextDecoder('utf-8');\n\t\t\t\t\t\tconst encoder = new TextEncoder();\n\t\t\t\t\t\tconst bytes = encoder.encode(content);\n\t\t\t\t\t\tcontent = decoder.decode(bytes);\n\t\t\t\t\t}\n\t\t\t\t} catch (decodeError) {\n\t\t\t\t\tconsole.warn('解码搜索内容失败:', decodeError);\n\t\t\t\t}\n\n\t\t\t\treturn {\n\t\t\t\t\tid: result.memory.id,\n\t\t\t\t\tcontent: content,\n\t\t\t\t\ttype: result.memory.metadata.memory_type.toLowerCase(),\n\t\t\t\t\timportance: result.score, // 使用相似度分数作为重要性\n\t\t\t\t\tuserId: result.memory.metadata.user_id,\n\t\t\t\t\tagentId: result.memory.metadata.agent_id,\n\t\t\t\t\tcreatedAt: result.memory.created_at,\n\t\t\t\t\tupdatedAt: result.memory.updated_at\n\t\t\t\t};\n\t\t\t});\n\t\t} catch (err) {\n\t\t\tconsole.error('搜索记忆失败:', err);\n\t\t\terror = err instanceof Error ? err.message : '搜索失败';\n\t\t} finally {\n\t\t\tisLoading = false;\n\t\t}\n\t}\n\n\tfunction getTypeColor(type: string) {\n\t\tswitch (type) {\n\t\t\tcase 'conversational':\n\t\t\t\treturn 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';\n\t\t\tcase 'factual':\n\t\t\t\treturn 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';\n\t\t\tcase 'personal':\n\t\t\t\treturn 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';\n\t\t\tcase 'procedural':\n\t\t\t\treturn 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';\n\t\t\tdefault:\n\t\t\t\treturn 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';\n\t\t}\n\t}\n\n\tfunction getTypeLabel(type: string) {\n\t\tswitch (type) {\n\t\t\tcase 'conversational':\n\t\t\t\treturn '对话';\n\t\t\tcase 'factual':\n\t\t\t\treturn '事实';\n\t\t\tcase 'personal':\n\t\t\t\treturn '个人';\n\t\t\tcase 'procedural':\n\t\t\t\treturn '流程';\n\t\t\tdefault:\n\t\t\t\treturn '未知';\n\t\t}\n\t}\n\n\tfunction formatImportance(importance: number) {\n\t\treturn (importance * 100).toFixed(1) + '%';\n\t}\n\n\tfunction formatDate(isoString: string): string {\n\t\ttry {\n\t\t\tconst date = new Date(isoString);\n\t\t\treturn date\n\t\t\t\t.toLocaleString('zh-CN', {\n\t\t\t\t\tyear: 'numeric',\n\t\t\t\t\tmonth: '2-digit',\n\t\t\t\t\tday: '2-digit',\n\t\t\t\t\thour: '2-digit',\n\t\t\t\t\tminute: '2-digit',\n\t\t\t\t\tsecond: '2-digit'\n\t\t\t\t})\n\t\t\t\t.replace(/\\//g, '-')\n\t\t\t\t.replace(',', '');\n\t\t} catch {\n\t\t\treturn isoString;\n\t\t}\n\t}\n\tfunction getImportanceColor(importance: number) {\n\t\tif (importance >= 0.9) return 'text-red-600 dark:text-red-400';\n\t\tif (importance >= 0.7) return 'text-orange-600 dark:text-orange-400';\n\t\tif (importance >= 0.5) return 'text-yellow-600 dark:text-yellow-400';\n\t\treturn 'text-green-600 dark:text-green-400';\n\t}\n\n\t// 过滤和排序记忆 - 使用响应式变量\n\t$: filteredMemories = (() => {\n\t\tlet result = [...memories];\n\n\t\t// 搜索过滤\n\t\tif (searchQuery) {\n\t\t\tconst query = searchQuery.toLowerCase();\n\t\t\tresult = result.filter(\n\t\t\t\t(memory) =>\n\t\t\t\t\tmemory.content.toLowerCase().includes(query) ||\n\t\t\t\t\tmemory.id.toLowerCase().includes(query) ||\n\t\t\t\t\t(memory.userId && memory.userId.toLowerCase().includes(query)) ||\n\t\t\t\t\t(memory.agentId && memory.agentId.toLowerCase().includes(query))\n\t\t\t);\n\t\t}\n\n\t\t// 类型过滤\n\t\tif (selectedType !== 'all') {\n\t\t\tresult = result.filter((memory) => memory.type === selectedType);\n\t\t}\n\n\t\t// 排序\n\t\tresult.sort((a, b) => {\n\t\t\tlet aValue: any, bValue: any;\n\n\t\t\tswitch (sortBy) {\n\t\t\t\tcase 'importance':\n\t\t\t\t\taValue = a.importance;\n\t\t\t\t\tbValue = b.importance;\n\t\t\t\t\tbreak;\n\t\t\t\tcase 'createdAt':\n\t\t\t\t\taValue = new Date(a.createdAt).getTime();\n\t\t\t\t\tbValue = new Date(b.createdAt).getTime();\n\t\t\t\t\tbreak;\n\t\t\t\tcase 'updatedAt':\n\t\t\t\t\taValue = new Date(a.updatedAt).getTime();\n\t\t\t\t\tbValue = new Date(b.updatedAt).getTime();\n\t\t\t\t\tbreak;\n\t\t\t\tdefault:\n\t\t\t\t\taValue = a.id;\n\t\t\t\t\tbValue = b.id;\n\t\t\t}\n\n\t\t\tif (sortOrder === 'asc') {\n\t\t\t\treturn aValue > bValue ? 1 : -1;\n\t\t\t} else {\n\t\t\t\treturn aValue < bValue ? 1 : -1;\n\t\t\t}\n\t\t});\n\n\t\treturn result;\n\t})();\n\n\tfunction toggleSort(column: string) {\n\t\tif (sortBy === column) {\n\t\t\tsortOrder = sortOrder === 'asc' ? 'desc' : 'asc';\n\t\t} else {\n\t\t\tsortBy = column;\n\t\t\tsortOrder = 'desc';\n\t\t}\n\t\t// 显式触发响应式更新 - 使用临时变量技巧\n\t\tconst newSortBy = sortBy;\n\t\tconst newSortOrder = sortOrder;\n\t\tsortBy = '';\n\t\tsortOrder = sortOrder === 'asc' ? 'asc' : 'desc';\n\t\tsortBy = newSortBy;\n\t\tsortOrder = newSortOrder;\n\t}\n\n\tfunction getSortIcon(column: string) {\n\t\tif (sortBy !== column) return '↓';\n\t\treturn sortOrder === 'asc' ? '↑' : '↓';\n\t}\n\n\t// 选择功能\n\tfunction toggleSelectMemory(memoryId: string) {\n\t\t// 创建新的Set以确保响应式更新\n\t\tconst newSelection = new Set(selectedMemories);\n\t\tif (newSelection.has(memoryId)) {\n\t\t\tnewSelection.delete(memoryId);\n\t\t} else {\n\t\t\tnewSelection.add(memoryId);\n\t\t}\n\t\tselectedMemories = newSelection;\n\t\tshowBatchOperations = selectedMemories.size > 0;\n\t}\n\n\tfunction selectAll() {\n\t\t// 直接创建新的Set而不是修改现有Set\n\t\tconst newSelection = new Set();\n\t\tfilteredMemories.forEach((memory) => newSelection.add(memory.id));\n\t\tselectedMemories = newSelection;\n\t\tshowBatchOperations = true;\n\t}\n\n\tfunction deselectAll() {\n\t\t// 创建新的空Set\n\t\tselectedMemories = new Set();\n\t\tshowBatchOperations = false;\n\t}\n\n\t\t// 创建响应式的选中状态映射\n\t\t$: selectedMemoryMap = new Map();\n\t\t$: {\n\t\t\tconsole.log('选择状态变化:', { \n\t\t\t\tselectedCount: selectedMemories.size, \n\t\t\t\ttotalCount: filteredMemories.length,\n\t\t\t\tisAllSelected,\n\t\t\t\tselectedIds: Array.from(selectedMemories).slice(0, 3) // 只显示前3个用于调试\n\t\t\t});\n\t\t\t\n\t\t\t// 为每个memory创建选中状态映射\n\t\t\tconst map = new Map();\n\t\t\tfilteredMemories.forEach(memory => {\n\t\t\t\tmap.set(memory.id, selectedMemories.has(memory.id));\n\t\t\t});\n\t\t\tselectedMemoryMap = map;\n\t\t\tconsole.log('selectedMemoryMap已更新:', selectedMemoryMap.size);\n\t\t}\n\t// 批量操作功能\n\tasync function batchExport() {\n\t\tconst selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));\n\t\tconst exportData = selected.map((memory) => ({\n\t\t\tid: memory.id,\n\t\t\tcontent: memory.content,\n\t\t\ttype: memory.type,\n\t\t\timportance: memory.importance,\n\t\t\tuserId: memory.userId,\n\t\t\tagentId: memory.agentId,\n\t\t\tcreatedAt: memory.createdAt,\n\t\t\tupdatedAt: memory.updatedAt\n\t\t}));\n\n\t\tconst blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });\n\t\tconst url = URL.createObjectURL(blob);\n\t\tconst a = document.createElement('a');\n\t\ta.href = url;\n\t\ta.download = `memories-export-${new Date().toISOString().split('T')[0]}.json`;\n\t\tdocument.body.appendChild(a);\n\t\ta.click();\n\t\tdocument.body.removeChild(a);\n\t\tURL.revokeObjectURL(url);\n\n\t\tconsole.log(`已导出 ${selected.length} 条记忆`);\n\t\tdeselectAll();\n\t}\n\n\n\n\tasync function batchOptimize() {\n\t\tconst selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));\n\n\t\tif (!confirm(`确定要优化选中的 ${selected.length} 条记忆吗？`)) {\n\t\t\treturn;\n\t\t}\n\n\t\ttry {\n\t\t\t// 优化功能：在内容后添加优化标记\n\t\t\tconst updates = selected.map(memory => ({\n\t\t\t\tid: memory.id,\n\t\t\t\tcontent: `${memory.content}\\n[已优化 ${new Date().toLocaleDateString()}]`\n\t\t\t}));\n\n\t\t\t// 使用批量更新API\n\t\t\tconst result = await api.memory.batchUpdate(updates);\n\t\t\tconsole.log(`批量优化结果:`, result);\n\t\t\tconsole.log(`已优化 ${selected.length} 条记忆`);\n\t\t\tawait loadMemories(); // 重新加载数据\n\t\t\tdeselectAll();\n\t\t} catch (err) {\n\t\t\tconsole.error('批量优化失败:', err);\n\t\t\talert(`批量优化失败: ${err instanceof Error ? err.message : '未知错误'}`);\n\t\t}\n\t}\n\n\tasync function batchDelete() {\n\t\tconst selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));\n\t\tconst memoryIds = selected.map(memory => memory.id);\n\n\t\tif (!confirm(`确定要删除选中的 ${selected.length} 条记忆吗？此操作不可撤销。`)) {\n\t\t\treturn;\n\t\t}\n\n\t\ttry {\n\t\t\t// 使用批量删除API\n\t\t\tawait api.memory.batchDelete(memoryIds);\n\t\t\tconsole.log(`已删除 ${selected.length} 条记忆`);\n\t\t\tawait loadMemories(); // 重新加载数据\n\t\t\tdeselectAll();\n\t\t} catch (err) {\n\t\t\tconsole.error('批量删除失败:', err);\n\t\t\talert(`批量删除失败: ${err instanceof Error ? err.message : '未知错误'}`);\n\t\t}\n\t}\n</script>\n\n<div class=\"space-y-6\">\n\t<!-- 页面标题 -->\n\t<div>\n\t\t<h1 class=\"text-3xl font-bold text-gray-900 dark:text-white\">记忆浏览器</h1>\n\t\t<p class=\"mt-2 text-gray-600 dark:text-gray-400\">浏览、搜索和管理所有记忆记录</p>\n\t</div>\n\n\t<!-- 错误显示 -->\n\t{#if error}\n\t\t<div\n\t\t\tclass=\"bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4\"\n\t\t>\n\t\t\t<div class=\"flex items-center\">\n\t\t\t\t<div class=\"flex-shrink-0\">\n\t\t\t\t\t<span class=\"text-red-500\">⚠️</span>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"ml-3\">\n\t\t\t\t\t<h3 class=\"text-sm font-medium text-red-800 dark:text-red-300\">加载失败</h3>\n\t\t\t\t\t<div class=\"mt-1 text-sm text-red-700 dark:text-red-400\">\n\t\t\t\t\t\t{error}\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"mt-3\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\ttype=\"button\"\n\t\t\t\t\t\t\tclass=\"text-sm font-medium text-red-800 dark:text-red-300 hover:text-red-900 dark:hover:text-red-200\"\n\t\t\t\t\t\t\ton:click={loadMemories}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t重试\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t{/if}\n\n\t<!-- 搜索和过滤栏 -->\n\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t<div class=\"grid grid-cols-1 md:grid-cols-4 gap-4\">\n\t\t\t<!-- 搜索框 -->\n\t\t\t<div class=\"md:col-span-2\">\n\t\t\t\t<div class=\"relative\">\n\t\t\t\t\t<div class=\"absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none\">\n\t\t\t\t\t\t<span class=\"text-gray-400\">🔍</span>\n\t\t\t\t\t</div>\n\t\t\t\t\t<input\n\t\t\t\t\t\ttype=\"text\"\n\t\t\t\t\t\tbind:value={searchQuery}\n\t\t\t\t\t\tplaceholder=\"搜索记忆内容、ID、用户或Agent...\"\n\t\t\t\t\t\tclass=\"w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent\"\n\t\t\t\t\t\ton:keydown={(e) => {\n\t\t\t\t\t\t\tif (e.key === 'Enter') {\n\t\t\t\t\t\t\t\thandleSearch();\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}}\n\t\t\t\t\t/>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 类型过滤 -->\n\t\t\t<div>\n\t\t\t\t<select\n\t\t\t\t\tbind:value={selectedType}\n\t\t\t\t\tclass=\"w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent\"\n\t\t\t\t>\n\t\t\t\t\t{#each memoryTypes as type}\n\t\t\t\t\t\t<option value={type.value}>{type.label}</option>\n\t\t\t\t\t{/each}\n\t\t\t\t</select>\n\t\t\t</div>\n\n\t\t\t<!-- 操作按钮 -->\n\t\t\t<div class=\"flex space-x-2\">\n\t\t\t\t<button\n\t\t\t\t\tclass=\"flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200\"\n\t\t\t\t\ton:click={handleSearch}\n\t\t\t\t>\n\t\t\t\t\t搜索\n\t\t\t\t</button>\n\t\t\t\t<button\n\t\t\t\t\tclass=\"px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200\"\n\t\t\t\t\ton:click={() => {\n\t\t\t\t\t\tsearchQuery = '';\n\t\t\t\t\t\tselectedType = 'all';\n\t\t\t\t\t\tsortBy = 'createdAt';\n\t\t\t\t\t\tsortOrder = 'desc';\n\t\t\t\t\t\tloadMemories();\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\t重置\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 统计信息 -->\n\t\t<div class=\"mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t<span>\n\t\t\t\t共 <span class=\"font-medium text-gray-700 dark:text-gray-300\">{memories.length}</span>\n\t\t\t\t条记忆， 显示\n\t\t\t\t<span class=\"font-medium text-gray-700 dark:text-gray-300\">{filteredMemories.length}</span> 条\n\t\t\t</span>\n\t\t\t<div class=\"flex items-center space-x-4\">\n\t\t\t\t<span>排序:</span>\n\t\t\t\t<div class=\"flex space-x-2\">\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass={`px-3 py-1 rounded ${sortBy === 'createdAt' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}\n\t\t\t\t\t\ton:click={() => toggleSort('createdAt')}\n\t\t\t\t\t>\n\t\t\t\t\t\t创建时间 {createdAtSortIcon}\n\t\t\t\t\t</button>\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass={`px-3 py-1 rounded ${sortBy === 'importance' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}\n\t\t\t\t\t\ton:click={() => toggleSort('importance')}\n\t\t\t\t\t>\n\t\t\t\t\t\t重要性 {importanceSortIcon}\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t</div>\n\n\t<!-- 批量操作栏 -->\n\t{#if showBatchOperations}\n\t\t<div\n\t\t\tclass=\"bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4\"\n\t\t>\n\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t<div class=\"flex items-center space-x-4\">\n\t\t\t\t\t<span class=\"text-sm font-medium text-blue-800 dark:text-blue-300\">\n\t\t\t\t\t\t已选择 <span class=\"font-bold\">{selectedMemories.size}</span> 条记忆\n\t\t\t\t\t</span>\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300\"\n\t\t\t\t\t\ton:click={deselectAll}\n\t\t\t\t\t>\n\t\t\t\t\t\t取消选择\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"flex flex-wrap gap-2\">\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded font-medium transition-colors duration-200\"\n\t\t\t\t\t\ton:click={batchExport}\n\t\t\t\t\t>\n\t\t\t\t\t\t📤 批量导出\n\t\t\t\t\t</button>\n\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded font-medium transition-colors duration-200\"\n\t\t\t\t\t\ton:click={batchOptimize}\n\t\t\t\t\t>\n\t\t\t\t\t\t⚡ 批量优化\n\t\t\t\t\t</button>\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded font-medium transition-colors duration-200\"\n\t\t\t\t\t\ton:click={batchDelete}\n\t\t\t\t\t>\n\t\t\t\t\t\t🗑️ 批量删除\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t{/if}\n\n\t<!-- 记忆列表 -->\n\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden\">\n\t\t{#if isLoading}\n\t\t\t<!-- 加载状态 -->\n\t\t\t<div class=\"p-8\">\n\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t{#each Array(5) as _, i}\n\t\t\t\t\t\t<div class=\"h-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse\"></div>\n\t\t\t\t\t{/each}\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t{:else if filteredMemories.length === 0}\n\t\t\t<!-- 空状态 -->\n\t\t\t<div class=\"p-12 text-center\">\n\t\t\t\t<div\n\t\t\t\t\tclass=\"w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center\"\n\t\t\t\t>\n\t\t\t\t\t<span class=\"text-2xl\">📭</span>\n\t\t\t\t</div>\n\t\t\t\t<h3 class=\"text-lg font-medium text-gray-900 dark:text-white mb-2\">未找到记忆记录</h3>\n\t\t\t\t<p class=\"text-gray-500 dark:text-gray-400 mb-6\">\n\t\t\t\t\t{searchQuery || selectedType !== 'all' ? '尝试调整搜索条件' : '系统暂无记忆记录'}\n\t\t\t\t</p>\n\t\t\t\t{#if searchQuery || selectedType !== 'all'}\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200\"\n\t\t\t\t\t\ton:click={() => {\n\t\t\t\t\t\t\tsearchQuery = '';\n\t\t\t\t\t\t\tselectedType = 'all';\n\t\t\t\t\t\t}}\n\t\t\t\t\t>\n\t\t\t\t\t\t清除筛选条件\n\t\t\t\t\t</button>\n\t\t\t\t{/if}\n\t\t\t</div>\n\t\t{:else}\n\t\t\t<!-- 记忆表格 -->\n\t\t\t<div class=\"overflow-x-auto\">\n\t\t\t\t<table class=\"w-full\">\n\t\t\t\t\t<thead class=\"bg-gray-50 dark:bg-gray-900/50\">\n\t\t\t\t\t\t<tr>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<input\n\t\t\t\t\t\t\t\t\ttype=\"checkbox\"\n\t\t\t\t\t\t\t\t\tclass=\"rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500\"\n\t\t\t\t\t\t\t\t\tchecked={isAllSelected}\n\t\t\t\t\t\t\t\t\ton:change={(e) => {\n\t\t\t\t\t\t\t\t\t\tif (e.currentTarget.checked) {\n\t\t\t\t\t\t\t\t\t\t\tselectAll();\n\t\t\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\t\t\tdeselectAll();\n\t\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t\t}}\n\t\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\tID\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t内容\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t类型\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t重要性\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t用户/Agent\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t创建时间\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t</tr>\n\t\t\t\t\t</thead>\n\t\t\t\t\t<tbody class=\"divide-y divide-gray-200 dark:divide-gray-700\">\n\t\t\t\t\t\t{#each filteredMemories as memory}\n\t\t\t\t\t\t\t<tr class=\"hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors duration-150\">\n\t\t\t\t\t\t\t\t<td class=\"px-6 py-4 whitespace-nowrap\">\n\t\t\t\t\t\t\t\t\t<input\n\t\t\t\t\t\t\t\t\t\ttype=\"checkbox\"\n\t\t\t\t\t\t\t\t\t\tclass=\"rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500\"\n\t\t\t\t\t\t\t\t\t\tchecked={selectedMemoryMap.get(memory.id) || false}\n\t\t\t\t\t\t\t\t\t\ton:change={() => toggleSelectMemory(memory.id)}\n\t\t\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"px-6 py-4 whitespace-nowrap\">\n\t\t\t\t\t\t\t\t\t<div class=\"text-sm font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t{memory.id}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"px-6 py-4\">\n\t\t\t\t\t\t\t\t\t<div class=\"max-w-md\">\n\t\t\t\t\t\t\t\t\t\t<div class=\"text-sm text-gray-900 dark:text-white truncate-2-lines\">\n\t\t\t\t\t\t\t\t\t\t\t{memory.content}\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"px-6 py-4 whitespace-nowrap\">\n\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\tclass={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(memory.type)}`}\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t{getTypeLabel(memory.type)}\n\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"px-6 py-4 whitespace-nowrap\">\n\t\t\t\t\t\t\t\t\t<div class=\"flex items-center\">\n\t\t\t\t\t\t\t\t\t\t<div class=\"w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2\">\n\t\t\t\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\t\t\t\tclass={`h-2 rounded-full ${getImportanceColor(memory.importance)}`}\n\t\t\t\t\t\t\t\t\t\t\t\tstyle={`width: ${memory.importance * 100}%`}\n\t\t\t\t\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t<span class={`text-sm font-medium ${getImportanceColor(memory.importance)}`}>\n\t\t\t\t\t\t\t\t\t\t\t{formatImportance(memory.importance)}\n\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"px-6 py-4 whitespace-nowrap\">\n\t\t\t\t\t\t\t\t\t<div class=\"text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t\t{#if memory.userId}\n\t\t\t\t\t\t\t\t\t\t\t<div>{memory.userId}</div>\n\t\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t\t\t{#if memory.agentId}\n\t\t\t\t\t\t\t\t\t\t\t<div>Agent: {memory.agentId}</div>\n\t\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t{formatDate(memory.createdAt)}\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t</tr>\n\t\t\t\t\t\t{/each}\n\t\t\t\t\t</tbody>\n\t\t\t\t</table>\n\t\t\t</div>\n\n\t\t\t<!-- 分页 -->\n\t\t\t<div\n\t\t\t\tclass=\"px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700\"\n\t\t\t>\n\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t<div class=\"text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t显示第 <span class=\"font-medium\">1</span> 到\n\t\t\t\t\t\t<span class=\"font-medium\">{Math.min(filteredMemories.length, 20)}</span>\n\t\t\t\t\t\t条， 共 <span class=\"font-medium\">{filteredMemories.length}</span> 条\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"flex space-x-2\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed\"\n\t\t\t\t\t\t\tdisabled\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t上一页\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t1\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t2\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t3\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t下一页\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t{/if}\n\t</div>\n</div>\n\n<style>\n\t.truncate-2-lines {\n\t\tdisplay: -webkit-box;\n\t\t-webkit-line-clamp: 2;\n\t\t-webkit-box-orient: vertical;\n\t\toverflow: hidden;\n\t}\n</style>\n"
+      "source_summary": "<script lang=\"ts\">\n\timport { onMount } from 'svelte';\n\timport api from '$lib/api/client';\n\n\tinterface Memory {\n\t\tid: string;\n\t\tcontent: string;\n\t\ttype: string;\n\t\timportance: number;\n\t\tuserId?: string;\n\t\tagentId?: string;\n\t\tcreatedAt: string;\n\t\tupdatedAt: string;\n\t}\n\n\tlet memories: Memory[] = [];\n\tlet isLoading = true;\n\tlet searchQuery = '';\n\tlet selectedType = 'all';\n\tlet sortBy = 'createdAt';\n\tlet sortOrder: 'asc' | 'desc' = 'desc';\n\tlet error: string | null = null;\n\tlet filteredMemories: Memory[] = [];\n\tlet selectedMemories: Set<string> = new Set();\n\tlet selectedMemoryIds: Set<string> = new Set();\n\tlet showBatchOperations = false;\n\n\t// 分页相关状态\n\tlet currentPage = 1;\n\tlet pageSize = 20;\n\tlet paginatedMemories: Memory[] = [];\n\tlet totalPages = 1;\n\n\t// 弹窗相关状态\n\tlet showContentModal = false;\n\tlet selectedContent = '';\n\tlet selectedMemoryId = '';\n\n\t// 计算全选状态\n\t$: isAllSelected =\n\t\tpaginatedMemories.length > 0 &&\n\t\tpaginatedMemories.every((memory) => selectedMemories.has(memory.id));\n\t$: isPartialSelected =\n\t\tpaginatedMemories.some((memory) => selectedMemories.has(memory.id)) && !isAllSelected;\n\n\t// 排序状态响应式计算\n\t$: console.log('排序状态变化:', { sortBy, sortOrder });\n\n\t// 为每个列计算排序图标\n\t$: createdAtSortIcon = sortBy === 'createdAt' ? (sortOrder === 'asc' ? '↑' : '↓') : '↓';\n\t$: importanceSortIcon = sortBy === 'importance' ? (sortOrder === 'asc' ? '↑' : '↓') : '↓';\n\n\tconst memoryTypes = [\n\t\t{ value: 'all', label: '全部类型' },\n\t\t{ value: 'conversational', label: '对话' },\n\t\t{ value: 'factual', label: '事实' },\n\t\t{ value: 'personal', label: '个人' },\n\t\t{ value: 'procedural', label: '流程' }\n\t];\n\n\tonMount(async () => {\n\t\tawait loadMemories();\n\t});\n\n\tasync function loadMemories() {\n\t\ttry {\n\t\t\tisLoading = true;\n\t\t\terror = null;\n\n\t\t\t// 调用API获取记忆列表\n\t\t\tconst response = await api.memory.list();\n\n\t\t\t// 转换API响应到前端数据结构\n\t\t\tmemories = response.memories.map((memory: any) => {\n\t\t\t\t// 处理编码问题：尝试修复乱码\n\t\t\t\tlet content = memory.content;\n\t\t\t\ttry {\n\t\t\t\t\t// 如果内容看起来像乱码，尝试UTF-8解码\n\t\t\t\t\tif (content.includes('ç') || content.includes('æ') || content.includes('å')) {\n\t\t\t\t\t\t// 创建TextDecoder进行UTF-8解码\n\t\t\t\t\t\tconst decoder = new TextDecoder('utf-8');\n\t\t\t\t\t\t// 将字符串转换为Uint8Array\n\t\t\t\t\t\tconst encoder = new TextEncoder();\n\t\t\t\t\t\tconst bytes = encoder.encode(content);\n\t\t\t\t\t\t// 尝试解码\n\t\t\t\t\t\tcontent = decoder.decode(bytes);\n\t\t\t\t\t}\n\t\t\t\t} catch (decodeError) {\n\t\t\t\t\tconsole.warn('解码内容失败，使用原始内容:', decodeError);\n\t\t\t\t}\n\n\t\t\t\t// 从custom字段获取重要性分数，如果没有则使用默认值\n\t\t\t\tlet importance = 0.7;\n\t\t\t\tif (memory.metadata.custom && memory.metadata.custom.importance) {\n\t\t\t\t\timportance = parseFloat(memory.metadata.custom.importance);\n\t\t\t\t} else if (memory.metadata.custom && memory.metadata.custom.score) {\n\t\t\t\t\timportance = parseFloat(memory.metadata.custom.score);\n\t\t\t\t}\n\n\t\t\t\t// 确保重要性在0-1范围内\n\t\t\t\timportance = Math.max(0, Math.min(1, importance));\n\n\t\t\t\treturn {\n\t\t\t\t\tid: memory.id,\n\t\t\t\t\tcontent: content,\n\t\t\t\t\ttype: memory.metadata.memory_type.toLowerCase(),\n\t\t\t\t\timportance: importance,\n\t\t\t\t\tuserId: memory.metadata.user_id,\n\t\t\t\t\tagentId: memory.metadata.agent_id,\n\t\t\t\t\tcreatedAt: memory.created_at,\n\t\t\t\t\tupdatedAt: memory.updated_at\n\t\t\t\t};\n\t\t\t});\n\n\t\t\t// 重置到第一页\n\t\t\tcurrentPage = 1;\n\t\t} catch (err) {\n\t\t\tconsole.error('加载记忆失败:', err);\n\t\t\terror = err instanceof Error ? err.message : '加载记忆失败';\n\t\t} finally {\n\t\t\tisLoading = false;\n\t\t}\n\t}\n\n\tasync function handleSearch() {\n\t\tif (!searchQuery.trim()) {\n\t\t\tawait loadMemories();\n\t\t\treturn;\n\t\t}\n\n\t\ttry {\n\t\t\tisLoading = true;\n\t\t\terror = null;\n\n\t\t\t// 调用搜索API\n\t\t\tconst response = await api.memory.search(searchQuery);\n\n\t\t\t// 转换搜索结果\n\t\t\tmemories = response.results.map((result: any) => {\n\t\t\t\t// 处理编码问题\n\t\t\t\tlet content = result.memory.content;\n\t\t\t\ttry {\n\t\t\t\t\tif (content.includes('ç') || content.includes('æ') || content.includes('å')) {\n\t\t\t\t\t\tconst decoder = new TextDecoder('utf-8');\n\t\t\t\t\t\tconst encoder = new TextEncoder();\n\t\t\t\t\t\tconst bytes = encoder.encode(content);\n\t\t\t\t\t\tcontent = decoder.decode(bytes);\n\t\t\t\t\t}\n\t\t\t\t} catch (decodeError) {\n\t\t\t\t\tconsole.warn('解码搜索内容失败:', decodeError);\n\t\t\t\t}\n\n\t\t\t\treturn {\n\t\t\t\t\tid: result.memory.id,\n\t\t\t\t\tcontent: content,\n\t\t\t\t\ttype: result.memory.metadata.memory_type.toLowerCase(),\n\t\t\t\t\timportance: result.score, // 使用相似度分数作为重要性\n\t\t\t\t\tuserId: result.memory.metadata.user_id,\n\t\t\t\t\tagentId: result.memory.metadata.agent_id,\n\t\t\t\t\tcreatedAt: result.memory.created_at,\n\t\t\t\t\tupdatedAt: result.memory.updated_at\n\t\t\t\t};\n\t\t\t});\n\n\t\t\t// 重置到第一页\n\t\t\tcurrentPage = 1;\n\t\t} catch (err) {\n\t\t\tconsole.error('搜索记忆失败:', err);\n\t\t\terror = err instanceof Error ? err.message : '搜索失败';\n\t\t} finally {\n\t\t\tisLoading = false;\n\t\t}\n\t}\n\n\tfunction getTypeColor(type: string) {\n\t\tswitch (type) {\n\t\t\tcase 'conversational':\n\t\t\t\treturn 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';\n\t\t\tcase 'factual':\n\t\t\t\treturn 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';\n\t\t\tcase 'personal':\n\t\t\t\treturn 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';\n\t\t\tcase 'procedural':\n\t\t\t\treturn 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300';\n\t\t\tdefault:\n\t\t\t\treturn 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';\n\t\t}\n\t}\n\n\tfunction getTypeLabel(type: string) {\n\t\tswitch (type) {\n\t\t\tcase 'conversational':\n\t\t\t\treturn '对话';\n\t\t\tcase 'factual':\n\t\t\t\treturn '事实';\n\t\t\tcase 'personal':\n\t\t\t\treturn '个人';\n\t\t\tcase 'procedural':\n\t\t\t\treturn '流程';\n\t\t\tdefault:\n\t\t\t\treturn '未知';\n\t\t}\n\t}\n\n\tfunction formatImportance(importance: number) {\n\t\treturn (importance * 100).toFixed(1) + '%';\n\t}\n\n\tfunction formatDate(isoString: string): string {\n\t\ttry {\n\t\t\tconst date = new Date(isoString);\n\t\t\treturn date\n\t\t\t\t.toLocaleString('zh-CN', {\n\t\t\t\t\tyear: 'numeric',\n\t\t\t\t\tmonth: '2-digit',\n\t\t\t\t\tday: '2-digit',\n\t\t\t\t\thour: '2-digit',\n\t\t\t\t\tminute: '2-digit',\n\t\t\t\t\tsecond: '2-digit'\n\t\t\t\t})\n\t\t\t\t.replace(/\\//g, '-')\n\t\t\t\t.replace(',', '');\n\t\t} catch {\n\t\t\treturn isoString;\n\t\t}\n\t}\n\tfunction getImportanceColor(importance: number) {\n\t\tif (importance >= 0.9) return 'text-red-600 dark:text-red-400';\n\t\tif (importance >= 0.7) return 'text-orange-600 dark:text-orange-400';\n\t\tif (importance >= 0.5) return 'text-yellow-600 dark:text-yellow-400';\n\t\treturn 'text-green-600 dark:text-green-400';\n\t}\n\n\t// 过滤和排序记忆 - 使用响应式变量\n\t$: filteredMemories = (() => {\n\t\tlet result = [...memories];\n\n\t\t// 搜索过滤\n\t\tif (searchQuery) {\n\t\t\tconst query = searchQuery.toLowerCase();\n\t\t\tresult = result.filter(\n\t\t\t\t(memory) =>\n\t\t\t\t\tmemory.content.toLowerCase().includes(query) ||\n\t\t\t\t\tmemory.id.toLowerCase().includes(query) ||\n\t\t\t\t\t(memory.userId && memory.userId.toLowerCase().includes(query)) ||\n\t\t\t\t\t(memory.agentId && memory.agentId.toLowerCase().includes(query))\n\t\t\t);\n\t\t}\n\n\t\t// 类型过滤\n\t\tif (selectedType !== 'all') {\n\t\t\tresult = result.filter((memory) => memory.type === selectedType);\n\t\t}\n\n\t\t// 排序\n\t\tresult.sort((a, b) => {\n\t\t\tlet aValue: any, bValue: any;\n\n\t\t\tswitch (sortBy) {\n\t\t\t\tcase 'importance':\n\t\t\t\t\taValue = a.importance;\n\t\t\t\t\tbValue = b.importance;\n\t\t\t\t\tbreak;\n\t\t\t\tcase 'createdAt':\n\t\t\t\t\taValue = new Date(a.createdAt).getTime();\n\t\t\t\t\tbValue = new Date(b.createdAt).getTime();\n\t\t\t\t\tbreak;\n\t\t\t\tcase 'updatedAt':\n\t\t\t\t\taValue = new Date(a.updatedAt).getTime();\n\t\t\t\t\tbValue = new Date(b.updatedAt).getTime();\n\t\t\t\t\tbreak;\n\t\t\t\tdefault:\n\t\t\t\t\taValue = a.id;\n\t\t\t\t\tbValue = b.id;\n\t\t\t}\n\n\t\t\tif (sortOrder === 'asc') {\n\t\t\t\treturn aValue > bValue ? 1 : -1;\n\t\t\t} else {\n\t\t\t\treturn aValue < bValue ? 1 : -1;\n\t\t\t}\n\t\t});\n\n\t\treturn result;\n\t})();\n\n\t// 计算分页数据\n\t$: {\n\t\ttotalPages = Math.ceil(filteredMemories.length / pageSize);\n\t\tconst startIndex = (currentPage - 1) * pageSize;\n\t\tconst endIndex = Math.min(startIndex + pageSize, filteredMemories.length);\n\t\tpaginatedMemories = filteredMemories.slice(startIndex, endIndex);\n\t\tconsole.log('分页数据更新:', {\n\t\t\tcurrentPage,\n\t\t\ttotalPages,\n\t\t\ttotalItems: filteredMemories.length,\n\t\t\tpageItems: paginatedMemories.length\n\t\t});\n\t}\n\n\tfunction toggleSort(column: string) {\n\t\tif (sortBy === column) {\n\t\t\tsortOrder = sortOrder === 'asc' ? 'desc' : 'asc';\n\t\t} else {\n\t\t\tsortBy = column;\n\t\t\tsortOrder = 'desc';\n\t\t}\n\t\t// 显式触发响应式更新 - 使用临时变量技巧\n\t\tconst newSortBy = sortBy;\n\t\tconst newSortOrder = sortOrder;\n\t\tsortBy = '';\n\t\tsortOrder = sortOrder === 'asc' ? 'asc' : 'desc';\n\t\tsortBy = newSortBy;\n\t\tsortOrder = newSortOrder;\n\n\t\t// 排序变化时重置到第一页\n\t\tcurrentPage = 1;\n\t}\n\n\tfunction getSortIcon(column: string) {\n\t\tif (sortBy !== column) return '↓';\n\t\treturn sortOrder === 'asc' ? '↑' : '↓';\n\t}\n\n\t// 分页函数\n\tfunction goToPage(page: number) {\n\t\tif (page >= 1 && page <= totalPages) {\n\t\t\tcurrentPage = page;\n\t\t}\n\t}\n\n\tfunction nextPage() {\n\t\tif (currentPage < totalPages) {\n\t\t\tcurrentPage++;\n\t\t}\n\t}\n\n\tfunction prevPage() {\n\t\tif (currentPage > 1) {\n\t\t\tcurrentPage--;\n\t\t}\n\t}\n\n\t// 弹窗功能\n\tfunction showFullContent(content: string, memoryId: string) {\n\t\tselectedContent = content;\n\t\tselectedMemoryId = memoryId;\n\t\tshowContentModal = true;\n\t}\n\n\tfunction hideContentModal() {\n\t\tshowContentModal = false;\n\t\tselectedContent = '';\n\t\tselectedMemoryId = '';\n\t}\n\n\t// 选择功能\n\tfunction toggleSelectMemory(memoryId: string) {\n\t\t// 创建新的Set以确保响应式更新\n\t\tconst newSelection = new Set(selectedMemories);\n\t\tif (newSelection.has(memoryId)) {\n\t\t\tnewSelection.delete(memoryId);\n\t\t} else {\n\t\t\tnewSelection.add(memoryId);\n\t\t}\n\t\tselectedMemories = newSelection;\n\t\tshowBatchOperations = selectedMemories.size > 0;\n\t}\n\n\tfunction selectAll() {\n\t\t// 直接创建新的Set而不是修改现有Set\n\t\tconst newSelection = new Set(selectedMemories); // 保留之前的选择\n\t\tpaginatedMemories.forEach((memory) => newSelection.add(memory.id));\n\t\tselectedMemories = newSelection;\n\t\tshowBatchOperations = selectedMemories.size > 0;\n\t}\n\n\tfunction deselectAll() {\n\t\t// 创建新的空Set\n\t\tselectedMemories = new Set();\n\t\tshowBatchOperations = false;\n\t}\n\n\t// 创建响应式的选中状态映射\n\t$: selectedMemoryMap = new Map();\n\t$: {\n\t\tconsole.log('选择状态变化:', {\n\t\t\tselectedCount: selectedMemories.size,\n\t\t\ttotalCount: filteredMemories.length,\n\t\t\tpageCount: paginatedMemories.length,\n\t\t\tisAllSelected,\n\t\t\tisPartialSelected,\n\t\t\tselectedIds: Array.from(selectedMemories).slice(0, 3) // 只显示前3个用于调试\n\t\t});\n\n\t\t// 为每个当前页的memory创建选中状态映射\n\t\tconst map = new Map();\n\t\tpaginatedMemories.forEach((memory) => {\n\t\t\tmap.set(memory.id, selectedMemories.has(memory.id));\n\t\t});\n\t\tselectedMemoryMap = map;\n\t\tconsole.log('selectedMemoryMap已更新:', selectedMemoryMap.size);\n\t}\n\t// 批量操作功能\n\tasync function batchExport() {\n\t\tconst selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));\n\t\tconst exportData = selected.map((memory) => ({\n\t\t\tid: memory.id,\n\t\t\tcontent: memory.content,\n\t\t\ttype: memory.type,\n\t\t\timportance: memory.importance,\n\t\t\tuserId: memory.userId,\n\t\t\tagentId: memory.agentId,\n\t\t\tcreatedAt: memory.createdAt,\n\t\t\tupdatedAt: memory.updatedAt\n\t\t}));\n\n\t\tconst blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });\n\t\tconst url = URL.createObjectURL(blob);\n\t\tconst a = document.createElement('a');\n\t\ta.href = url;\n\t\ta.download = `memories-export-${new Date().toISOString().split('T')[0]}.json`;\n\t\tdocument.body.appendChild(a);\n\t\ta.click();\n\t\tdocument.body.removeChild(a);\n\t\tURL.revokeObjectURL(url);\n\n\t\tconsole.log(`已导出 ${selected.length} 条记忆`);\n\t\tdeselectAll();\n\t}\n\n\tasync function batchOptimize() {\n\t\tconst selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));\n\n\t\tif (!confirm(`确定要优化选中的 ${selected.length} 条记忆吗？`)) {\n\t\t\treturn;\n\t\t}\n\n\t\ttry {\n\t\t\t// 优化功能：在内容后添加优化标记\n\t\t\tconst updates = selected.map((memory) => ({\n\t\t\t\tid: memory.id,\n\t\t\t\tcontent: `${memory.content}\\n[已优化 ${new Date().toLocaleDateString()}]`\n\t\t\t}));\n\n\t\t\t// 使用批量更新API\n\t\t\tconst result = await api.memory.batchUpdate(updates);\n\t\t\tconsole.log(`批量优化结果:`, result);\n\t\t\tconsole.log(`已优化 ${selected.length} 条记忆`);\n\t\t\tawait loadMemories(); // 重新加载数据\n\t\t\tdeselectAll();\n\t\t} catch (err) {\n\t\t\tconsole.error('批量优化失败:', err);\n\t\t\talert(`批量优化失败: ${err instanceof Error ? err.message : '未知错误'}`);\n\t\t}\n\t}\n\n\tasync function batchDelete() {\n\t\tconst selected = filteredMemories.filter((memory) => selectedMemories.has(memory.id));\n\t\tconst memoryIds = selected.map((memory) => memory.id);\n\n\t\tif (!confirm(`确定要删除选中的 ${selected.length} 条记忆吗？此操作不可撤销。`)) {\n\t\t\treturn;\n\t\t}\n\n\t\ttry {\n\t\t\t// 使用批量删除API\n\t\t\tawait api.memory.batchDelete(memoryIds);\n\t\t\tconsole.log(`已删除 ${selected.length} 条记忆`);\n\t\t\tawait loadMemories(); // 重新加载数据\n\t\t\tdeselectAll();\n\t\t} catch (err) {\n\t\t\tconsole.error('批量删除失败:', err);\n\t\t\talert(`批量删除失败: ${err instanceof Error ? err.message : '未知错误'}`);\n\t\t}\n\t}\n</script>\n\n<div class=\"max-w-[95vw] mx-auto space-y-6\">\n\t<!-- 页面标题 -->\n\t<div>\n\t\t<h1 class=\"text-3xl font-bold text-gray-900 dark:text-white\">记忆浏览器</h1>\n\t\t<p class=\"mt-2 text-gray-600 dark:text-gray-400\">浏览、搜索和管理所有记忆记录</p>\n\t</div>\n\n\t<!-- 错误显示 -->\n\t{#if error}\n\t\t<div\n\t\t\tclass=\"bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4\"\n\t\t>\n\t\t\t<div class=\"flex items-center\">\n\t\t\t\t<div class=\"flex-shrink-0\">\n\t\t\t\t\t<span class=\"text-red-500\">⚠️</span>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"ml-3\">\n\t\t\t\t\t<h3 class=\"text-sm font-medium text-red-800 dark:text-red-300\">加载失败</h3>\n\t\t\t\t\t<div class=\"mt-1 text-sm text-red-700 dark:text-red-400\">\n\t\t\t\t\t\t{error}\n\t\t\t\t\t</div>\n\t\t\t\t\t<div class=\"mt-3\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\ttype=\"button\"\n\t\t\t\t\t\t\tclass=\"text-sm font-medium text-red-800 dark:text-red-300 hover:text-red-900 dark:hover:text-red-200\"\n\t\t\t\t\t\t\ton:click={loadMemories}\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t重试\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t{/if}\n\n\t<!-- 搜索和过滤栏 -->\n\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t<div class=\"grid grid-cols-1 md:grid-cols-4 gap-4\">\n\t\t\t<!-- 搜索框 -->\n\t\t\t<div class=\"md:col-span-2\">\n\t\t\t\t<div class=\"relative\">\n\t\t\t\t\t<div class=\"absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none\">\n\t\t\t\t\t\t<span class=\"text-gray-400\">🔍</span>\n\t\t\t\t\t</div>\n\t\t\t\t\t<input\n\t\t\t\t\t\ttype=\"text\"\n\t\t\t\t\t\tbind:value={searchQuery}\n\t\t\t\t\t\tplaceholder=\"搜索记忆内容、ID、用户或Agent...\"\n\t\t\t\t\t\tclass=\"w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent\"\n\t\t\t\t\t\ton:keydown={(e) => {\n\t\t\t\t\t\t\tif (e.key === 'Enter') {\n\t\t\t\t\t\t\t\thandleSearch();\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t}}\n\t\t\t\t\t/>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 类型过滤 -->\n\t\t\t<div>\n\t\t\t\t<select\n\t\t\t\t\tbind:value={selectedType}\n\t\t\t\t\tclass=\"w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent\"\n\t\t\t\t>\n\t\t\t\t\t{#each memoryTypes as type}\n\t\t\t\t\t\t<option value={type.value}>{type.label}</option>\n\t\t\t\t\t{/each}\n\t\t\t\t</select>\n\t\t\t</div>\n\n\t\t\t<!-- 操作按钮 -->\n\t\t\t<div class=\"flex space-x-2\">\n\t\t\t\t<button\n\t\t\t\t\tclass=\"flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200\"\n\t\t\t\t\ton:click={handleSearch}\n\t\t\t\t>\n\t\t\t\t\t搜索\n\t\t\t\t</button>\n\t\t\t\t<button\n\t\t\t\t\tclass=\"px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200\"\n\t\t\t\t\ton:click={() => {\n\t\t\t\t\t\tsearchQuery = '';\n\t\t\t\t\t\tselectedType = 'all';\n\t\t\t\t\t\tsortBy = 'createdAt';\n\t\t\t\t\t\tsortOrder = 'desc';\n\t\t\t\t\t\tloadMemories();\n\t\t\t\t\t}}\n\t\t\t\t>\n\t\t\t\t\t重置\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 统计信息 -->\n\t\t<div class=\"mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t<span>\n\t\t\t\t共 <span class=\"font-medium text-gray-700 dark:text-gray-300\"\n\t\t\t\t\t>{filteredMemories.length}</span\n\t\t\t\t>\n\t\t\t\t条记忆， 显示第\n\t\t\t\t<span class=\"font-medium text-gray-700 dark:text-gray-300\"\n\t\t\t\t\t>{(currentPage - 1) * pageSize + 1}</span\n\t\t\t\t>\n\t\t\t\t到\n\t\t\t\t<span class=\"font-medium text-gray-700 dark:text-gray-300\"\n\t\t\t\t\t>{Math.min(currentPage * pageSize, filteredMemories.length)}</span\n\t\t\t\t> 条\n\t\t\t</span>\n\t\t\t<div class=\"flex items-center space-x-4\">\n\t\t\t\t<span>排序:</span>\n\t\t\t\t<div class=\"flex space-x-2\">\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass={`px-3 py-1 rounded ${sortBy === 'createdAt' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}\n\t\t\t\t\t\ton:click={() => toggleSort('createdAt')}\n\t\t\t\t\t>\n\t\t\t\t\t\t创建时间 {createdAtSortIcon}\n\t\t\t\t\t</button>\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass={`px-3 py-1 rounded ${sortBy === 'importance' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}\n\t\t\t\t\t\ton:click={() => toggleSort('importance')}\n\t\t\t\t\t>\n\t\t\t\t\t\t重要性 {importanceSortIcon}\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t</div>\n\n\t<!-- 批量操作栏 -->\n\t{#if showBatchOperations}\n\t\t<div\n\t\t\tclass=\"bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4\"\n\t\t>\n\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t<div class=\"flex items-center space-x-4\">\n\t\t\t\t\t<span class=\"text-sm font-medium text-blue-800 dark:text-blue-300\">\n\t\t\t\t\t\t已选择 <span class=\"font-bold\">{selectedMemories.size}</span> 条记忆\n\t\t\t\t\t</span>\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300\"\n\t\t\t\t\t\ton:click={deselectAll}\n\t\t\t\t\t>\n\t\t\t\t\t\t取消选择\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"flex flex-wrap gap-2\">\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded font-medium transition-colors duration-200\"\n\t\t\t\t\t\ton:click={batchExport}\n\t\t\t\t\t>\n\t\t\t\t\t\t📤 批量导出\n\t\t\t\t\t</button>\n\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded font-medium transition-colors duration-200\"\n\t\t\t\t\t\ton:click={batchOptimize}\n\t\t\t\t\t>\n\t\t\t\t\t\t⚡ 批量优化\n\t\t\t\t\t</button>\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded font-medium transition-colors duration-200\"\n\t\t\t\t\t\ton:click={batchDelete}\n\t\t\t\t\t>\n\t\t\t\t\t\t🗑️ 批量删除\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t{/if}\n\n\t<!-- 记忆列表 -->\n\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden\">\n\t\t{#if isLoading}\n\t\t\t<!-- 加载状态 -->\n\t\t\t<div class=\"p-8\">\n\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t{#each Array(5) as _, i}\n\t\t\t\t\t\t<div class=\"h-20 bg-gray-100 dark:bg-gray-700 rounded animate-pulse\"></div>\n\t\t\t\t\t{/each}\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t{:else if filteredMemories.length === 0}\n\t\t\t<!-- 空状态 -->\n\t\t\t<div class=\"p-12 text-center\">\n\t\t\t\t<div\n\t\t\t\t\tclass=\"w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center\"\n\t\t\t\t>\n\t\t\t\t\t<span class=\"text-2xl\">📭</span>\n\t\t\t\t</div>\n\t\t\t\t<h3 class=\"text-lg font-medium text-gray-900 dark:text-white mb-2\">未找到记忆记录</h3>\n\t\t\t\t<p class=\"text-gray-500 dark:text-gray-400 mb-6\">\n\t\t\t\t\t{searchQuery || selectedType !== 'all' ? '尝试调整搜索条件' : '系统暂无记忆记录'}\n\t\t\t\t</p>\n\t\t\t\t{#if searchQuery || selectedType !== 'all'}\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200\"\n\t\t\t\t\t\ton:click={() => {\n\t\t\t\t\t\t\tsearchQuery = '';\n\t\t\t\t\t\t\tselectedType = 'all';\n\t\t\t\t\t\t}}\n\t\t\t\t\t>\n\t\t\t\t\t\t清除筛选条件\n\t\t\t\t\t</button>\n\t\t\t\t{/if}\n\t\t\t</div>\n\t\t{:else if paginatedMemories.length === 0}\n\t\t\t<!-- 当前页无数据状态 -->\n\t\t\t<div class=\"p-12 text-center\">\n\t\t\t\t<div\n\t\t\t\t\tclass=\"w-16 h-16 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center\"\n\t\t\t\t>\n\t\t\t\t\t<span class=\"text-2xl\">📄</span>\n\t\t\t\t</div>\n\t\t\t\t<h3 class=\"text-lg font-medium text-gray-900 dark:text-white mb-2\">当前页无数据</h3>\n\t\t\t\t<p class=\"text-gray-500 dark:text-gray-400 mb-6\">\n\t\t\t\t\t第 {currentPage} 页暂无数据，请检查页码或调整筛选条件\n\t\t\t\t</p>\n\t\t\t\t<button\n\t\t\t\t\tclass=\"px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200\"\n\t\t\t\t\ton:click={() => goToPage(1)}\n\t\t\t\t>\n\t\t\t\t\t返回第一页\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t{:else}\n\t\t\t<!-- 记忆表格 -->\n\t\t\t<div class=\"overflow-x-auto\">\n\t\t\t\t<table class=\"w-full\">\n\t\t\t\t\t<thead class=\"bg-gray-50 dark:bg-gray-900/50\">\n\t\t\t\t\t\t<tr>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"w-6 px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<input\n\t\t\t\t\t\t\t\t\ttype=\"checkbox\"\n\t\t\t\t\t\t\t\t\tclass=\"rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500\"\n\t\t\t\t\t\t\t\t\tchecked={isAllSelected}\n\t\t\t\t\t\t\t\t\ton:change={(e) => {\n\t\t\t\t\t\t\t\t\t\tif (e.currentTarget.checked) {\n\t\t\t\t\t\t\t\t\t\t\tselectAll();\n\t\t\t\t\t\t\t\t\t\t} else {\n\t\t\t\t\t\t\t\t\t\t\tdeselectAll();\n\t\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t\t}}\n\t\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"w-32 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\tID\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"w-1/2 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t内容\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"w-24 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t类型\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"w-28 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t重要性\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"w-32 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t用户/Agent\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\tclass=\"w-40 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t创建时间\n\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t</tr>\n\t\t\t\t\t</thead>\n\t\t\t\t\t<tbody class=\"divide-y divide-gray-200 dark:divide-gray-700\">\n\t\t\t\t\t\t{#each paginatedMemories as memory}\n\t\t\t\t\t\t\t<tr class=\"hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors duration-150\">\n\t\t\t\t\t\t\t\t<td class=\"w-6 px-3 py-3 whitespace-nowrap\">\n\t\t\t\t\t\t\t\t\t<input\n\t\t\t\t\t\t\t\t\t\ttype=\"checkbox\"\n\t\t\t\t\t\t\t\t\t\tclass=\"rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500\"\n\t\t\t\t\t\t\t\t\t\tchecked={selectedMemoryMap.get(memory.id) || false}\n\t\t\t\t\t\t\t\t\t\ton:change={() => toggleSelectMemory(memory.id)}\n\t\t\t\t\t\t\t\t\t/>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"w-32 px-6 py-4 whitespace-nowrap\">\n\t\t\t\t\t\t\t\t\t<div class=\"text-sm font-medium text-gray-900 dark:text-white truncate\">\n\t\t\t\t\t\t\t\t\t\t{memory.id}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"w-1/2 px-6 py-4\">\n\t\t\t\t\t\t\t\t\t<div class=\"max-w-none\">\n\t\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\t\tclass=\"text-sm text-gray-900 dark:text-white truncate-2-lines cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-150 text-left w-full\"\n\t\t\t\t\t\t\t\t\t\t\ton:click={() => showFullContent(memory.content, memory.id)}\n\t\t\t\t\t\t\t\t\t\t\ton:keydown={(e) => {\n\t\t\t\t\t\t\t\t\t\t\t\tif (e.key === 'Enter' || e.key === ' ') {\n\t\t\t\t\t\t\t\t\t\t\t\t\te.preventDefault();\n\t\t\t\t\t\t\t\t\t\t\t\t\tshowFullContent(memory.content, memory.id);\n\t\t\t\t\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\t\t\t\t}}\n\t\t\t\t\t\t\t\t\t\t\ttitle=\"点击查看完整内容\"\n\t\t\t\t\t\t\t\t\t\t\ttype=\"button\"\n\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t{memory.content}\n\t\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t\t\t{#if memory.content.length > 100}\n\t\t\t\t\t\t\t\t\t\t\t<div class=\"text-xs text-gray-500 dark:text-gray-400 mt-1\">\n\t\t\t\t\t\t\t\t\t\t\t\t点击查看完整内容 ({memory.content.length} 字符)\n\t\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"w-24 px-6 py-4 whitespace-nowrap\">\n\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\tclass={`px-2 py-1 text-xs font-medium rounded-full ${getTypeColor(memory.type)}`}\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t{getTypeLabel(memory.type)}\n\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"w-28 px-6 py-4 whitespace-nowrap\">\n\t\t\t\t\t\t\t\t\t<div class=\"flex items-center\">\n\t\t\t\t\t\t\t\t\t\t<span class={`text-sm font-medium ${getImportanceColor(memory.importance)}`}>\n\t\t\t\t\t\t\t\t\t\t\t{formatImportance(memory.importance)}\n\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td class=\"w-32 px-6 py-4 whitespace-nowrap\">\n\t\t\t\t\t\t\t\t\t<div class=\"text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t\t{#if memory.userId}\n\t\t\t\t\t\t\t\t\t\t\t<div class=\"truncate\">{memory.userId}</div>\n\t\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t\t\t{#if memory.agentId}\n\t\t\t\t\t\t\t\t\t\t\t<div class=\"truncate\">Agent: {memory.agentId}</div>\n\t\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t<td\n\t\t\t\t\t\t\t\t\tclass=\"w-40 px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400\"\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t{formatDate(memory.createdAt)}\n\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t</tr>\n\t\t\t\t\t\t{/each}\n\t\t\t\t\t</tbody>\n\t\t\t\t</table>\n\t\t\t</div>\n\n\t\t\t<!-- 分页 -->\n\t\t\t{#if totalPages > 1}\n\t\t\t\t<div\n\t\t\t\t\tclass=\"px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700\"\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t\t<div class=\"text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t显示第 <span class=\"font-medium\">{(currentPage - 1) * pageSize + 1}</span> 到\n\t\t\t\t\t\t\t<span class=\"font-medium\"\n\t\t\t\t\t\t\t\t>{Math.min(currentPage * pageSize, filteredMemories.length)}</span\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t条， 共 <span class=\"font-medium\">{filteredMemories.length}</span> 条，第\n\t\t\t\t\t\t\t<span class=\"font-medium\">{currentPage}</span>\n\t\t\t\t\t\t\t/ {totalPages} 页\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\tclass=\"px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed\"\n\t\t\t\t\t\t\t\tdisabled={currentPage === 1}\n\t\t\t\t\t\t\t\ton:click={prevPage}\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t上一页\n\t\t\t\t\t\t\t</button>\n\n\t\t\t\t\t\t\t<!-- 页码按钮 -->\n\t\t\t\t\t\t\t{#each Array.from({ length: Math.min(5, totalPages) }, (_, i) => {\n\t\t\t\t\t\t\t\tconst startPage = Math.max(1, currentPage - 2);\n\t\t\t\t\t\t\t\tconst endPage = Math.min(totalPages, startPage + 4);\n\t\t\t\t\t\t\t\treturn startPage + i;\n\t\t\t\t\t\t\t}) as page}\n\t\t\t\t\t\t\t\t{#if page <= totalPages}\n\t\t\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\t\t\tclass={`px-3 py-1 border rounded text-sm font-medium ${\n\t\t\t\t\t\t\t\t\t\t\tpage === currentPage\n\t\t\t\t\t\t\t\t\t\t\t\t? 'bg-blue-500 text-white border-blue-500'\n\t\t\t\t\t\t\t\t\t\t\t\t: 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'\n\t\t\t\t\t\t\t\t\t\t}`}\n\t\t\t\t\t\t\t\t\t\ton:click={() => goToPage(page)}\n\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t{page}\n\t\t\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t{/each}\n\n\t\t\t\t\t\t\t<button\n\t\t\t\t\t\t\t\tclass=\"px-3 py-1 border border-gray-300 dark:border-gray-600 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed\"\n\t\t\t\t\t\t\t\tdisabled={currentPage === totalPages}\n\t\t\t\t\t\t\t\ton:click={nextPage}\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t下一页\n\t\t\t\t\t\t\t</button>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t{/if}\n\t\t{/if}\n\t</div>\n\n\t<!-- 内容弹窗 -->\n\t{#if showContentModal}\n\t\t<div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\n\t\t\t<div\n\t\t\t\tclass=\"bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full max-h-[80vh] overflow-hidden\"\n\t\t\t>\n\t\t\t\t<div\n\t\t\t\t\tclass=\"flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700\"\n\t\t\t\t>\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<h3 class=\"text-lg font-semibold text-gray-900 dark:text-white\">记忆内容详情</h3>\n\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400 mt-1\">ID: {selectedMemoryId}</p>\n\t\t\t\t\t</div>\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-150\"\n\t\t\t\t\t\ton:click={hideContentModal}\n\t\t\t\t\t>\n\t\t\t\t\t\t<span class=\"text-2xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300\"\n\t\t\t\t\t\t\t>×</span\n\t\t\t\t\t\t>\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"p-6 overflow-y-auto max-h-[60vh]\">\n\t\t\t\t\t<div class=\"prose prose-gray dark:prose-invert max-w-none\">\n\t\t\t\t\t\t<pre\n\t\t\t\t\t\t\tclass=\"whitespace-pre-wrap text-sm text-gray-900 dark:text-gray-100 font-sans leading-relaxed\">{selectedContent}</pre>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"flex justify-end p-6 border-t border-gray-200 dark:border-gray-700\">\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200\"\n\t\t\t\t\t\ton:click={hideContentModal}\n\t\t\t\t\t>\n\t\t\t\t\t\t关闭\n\t\t\t\t\t</button>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t{/if}\n</div>\n\n<style>\n\t.truncate-2-lines {\n\t\tdisplay: -webkit-box;\n\t\t-webkit-line-clamp: 2;\n\t\t-webkit-box-orient: vertical;\n\t\toverflow: hidden;\n\t}\n</style>\n"
     },
     "complexity_metrics": {
-      "cyclomatic_complexity": 53.0,
-      "lines_of_code": 851,
+      "cyclomatic_complexity": 56.0,
+      "lines_of_code": 937,
       "number_of_classes": 0,
-      "number_of_functions": 15
+      "number_of_functions": 25
     },
     "dependencies": [
       {
@@ -5105,10 +4463,10 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       }
     ],
-    "detailed_description": "This Svelte component serves as the main interface for the memories management system. It provides comprehensive functionality for viewing, searching, filtering, sorting, and performing batch operations on user memories. The component handles API communication through the imported 'api' client, manages local state for UI interactions, and renders a responsive table interface. It supports multiple memory types (conversational, factual, personal, procedural) with visual indicators for importance levels. The component implements client-side filtering and sorting of memory data, with responsive design elements and loading states. Key features include full-text search, type-based filtering, multi-column sorting with visual indicators, and batch operations (export, optimize, delete) with confirmation dialogs. The component also handles error states and provides retry functionality.",
+    "detailed_description": "This component implements a comprehensive memory management interface in a Svelte application. It provides functionality to view, search, filter, sort, and paginate through memory records. The component handles data loading from an API, manages various UI states (loading, error, selection), and supports batch operations like export, optimize, and delete. It includes responsive design elements and accessibility features. The component processes memory data by transforming API responses, handling character encoding issues, and normalizing importance scores. It implements client-side filtering, sorting and pagination logic, along with a content modal for viewing complete memory entries.",
     "interfaces": [
       {
-        "description": null,
+        "description": "Data structure for memory records",
         "interface_type": "interface",
         "name": "Memory",
         "parameters": [
@@ -5165,23 +4523,38 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Svelte lifecycle function",
+        "interface_type": "function",
+        "name": "onMount",
+        "parameters": [
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "callback",
+            "param_type": "() => Promise<void>"
+          }
+        ],
+        "return_type": "void",
+        "visibility": "private"
+      },
+      {
+        "description": "Load memories from API and transform response",
         "interface_type": "function",
         "name": "loadMemories",
         "parameters": [],
         "return_type": "Promise<void>",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Handle search functionality",
         "interface_type": "function",
         "name": "handleSearch",
         "parameters": [],
         "return_type": "Promise<void>",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Get CSS classes for memory type color",
         "interface_type": "function",
         "name": "getTypeColor",
         "parameters": [
@@ -5193,10 +4566,10 @@ Code analysis results from preprocessing phase, including definitions of functio
           }
         ],
         "return_type": "string",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Get display label for memory type",
         "interface_type": "function",
         "name": "getTypeLabel",
         "parameters": [
@@ -5208,10 +4581,10 @@ Code analysis results from preprocessing phase, including definitions of functio
           }
         ],
         "return_type": "string",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Format importance score as percentage",
         "interface_type": "function",
         "name": "formatImportance",
         "parameters": [
@@ -5223,10 +4596,10 @@ Code analysis results from preprocessing phase, including definitions of functio
           }
         ],
         "return_type": "string",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Format ISO date string to localized format",
         "interface_type": "function",
         "name": "formatDate",
         "parameters": [
@@ -5238,10 +4611,10 @@ Code analysis results from preprocessing phase, including definitions of functio
           }
         ],
         "return_type": "string",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Get text color class based on importance score",
         "interface_type": "function",
         "name": "getImportanceColor",
         "parameters": [
@@ -5253,10 +4626,10 @@ Code analysis results from preprocessing phase, including definitions of functio
           }
         ],
         "return_type": "string",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Toggle sort column and order",
         "interface_type": "function",
         "name": "toggleSort",
         "parameters": [
@@ -5268,10 +4641,10 @@ Code analysis results from preprocessing phase, including definitions of functio
           }
         ],
         "return_type": "void",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Get sort icon based on current sort state",
         "interface_type": "function",
         "name": "getSortIcon",
         "parameters": [
@@ -5283,10 +4656,70 @@ Code analysis results from preprocessing phase, including definitions of functio
           }
         ],
         "return_type": "string",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Navigate to specific page",
+        "interface_type": "function",
+        "name": "goToPage",
+        "parameters": [
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "page",
+            "param_type": "number"
+          }
+        ],
+        "return_type": "void",
+        "visibility": "private"
+      },
+      {
+        "description": "Navigate to next page",
+        "interface_type": "function",
+        "name": "nextPage",
+        "parameters": [],
+        "return_type": "void",
+        "visibility": "private"
+      },
+      {
+        "description": "Navigate to previous page",
+        "interface_type": "function",
+        "name": "prevPage",
+        "parameters": [],
+        "return_type": "void",
+        "visibility": "private"
+      },
+      {
+        "description": "Show modal with full memory content",
+        "interface_type": "function",
+        "name": "showFullContent",
+        "parameters": [
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "content",
+            "param_type": "string"
+          },
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "memoryId",
+            "param_type": "string"
+          }
+        ],
+        "return_type": "void",
+        "visibility": "private"
+      },
+      {
+        "description": "Hide the content modal",
+        "interface_type": "function",
+        "name": "hideContentModal",
+        "parameters": [],
+        "return_type": "void",
+        "visibility": "private"
+      },
+      {
+        "description": "Toggle selection of a memory",
         "interface_type": "function",
         "name": "toggleSelectMemory",
         "parameters": [
@@ -5298,74 +4731,74 @@ Code analysis results from preprocessing phase, including definitions of functio
           }
         ],
         "return_type": "void",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Select all memories on current page",
         "interface_type": "function",
         "name": "selectAll",
         "parameters": [],
         "return_type": "void",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Deselect all memories",
         "interface_type": "function",
         "name": "deselectAll",
         "parameters": [],
         "return_type": "void",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Export selected memories to JSON file",
         "interface_type": "function",
         "name": "batchExport",
         "parameters": [],
         "return_type": "Promise<void>",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Optimize selected memories",
         "interface_type": "function",
         "name": "batchOptimize",
         "parameters": [],
         "return_type": "Promise<void>",
-        "visibility": "public"
+        "visibility": "private"
       },
       {
-        "description": null,
+        "description": "Delete selected memories",
         "interface_type": "function",
         "name": "batchDelete",
         "parameters": [],
         "return_type": "Promise<void>",
-        "visibility": "public"
+        "visibility": "private"
       }
     ],
     "responsibilities": [
-      "Manage the display and interaction of memory records through a comprehensive UI interface",
-      "Handle API communication for loading, searching, and updating memory data",
-      "Implement client-side filtering, sorting, and search functionality for memory records",
-      "Manage user selection state and enable batch operations on selected memories",
-      "Provide error handling and user feedback for API operations"
+      "Handle memory data loading and API communication",
+      "Manage UI state for search, filter, sort, and pagination",
+      "Provide batch operations on selected memories (export, optimize, delete)",
+      "Display memory data in a tabular format with proper formatting",
+      "Handle user interactions and maintain responsive UI"
     ]
   },
   {
     "code_dossier": {
       "code_purpose": "router",
-      "description": "SvelteKit layout component defining the common UI structure for all routes, including navigation bar, main content area, and footer.",
+      "description": "SvelteKit layout component that defines the common UI structure for all pages in the application, including navigation bar, main content area, and footer. Manages active route highlighting based on current URL path.",
       "file_path": "cortex-mem-insights/src/routes/+layout.svelte",
       "functions": [],
       "importance_score": 0.8,
       "interfaces": [
-        "currentPath",
-        "navItems"
+        "currentPath: derived store",
+        "navItems: navigation configuration"
       ],
       "name": "+layout.svelte",
-      "source_summary": "<script lang=\"ts\">\n\timport '../app.css';\n\timport { page } from '$app/stores';\n\n\t// 导航菜单项\n\tconst navItems = [\n\t\t{ name: '仪表盘', href: '/', icon: 'dashboard' },\n\t\t{ name: '记忆浏览器', href: '/memories', icon: 'memory' },\n\t\t{ name: '统计分析', href: '/analytics', icon: 'analytics' },\n\t\t{ name: '优化面板', href: '/optimization', icon: 'optimize' },\n\t\t{ name: '系统监控', href: '/monitor', icon: 'monitor' }\n\t];\n\n\t// 获取当前路径，处理page.url可能为undefined的情况\n\t$: currentPath = $page.url?.pathname || '/';\n</script>\n\n<div class=\"min-h-screen bg-gray-50 dark:bg-gray-900\">\n\t<!-- 导航栏 -->\n\t<nav class=\"bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700\">\n\t\t<div class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">\n\t\t\t<div class=\"flex justify-between h-16\">\n\t\t\t\t<div class=\"flex\">\n\t\t\t\t\t<!-- Logo -->\n\t\t\t\t\t<div class=\"flex-shrink-0 flex items-center\">\n\t\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t\t<div class=\"w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center\">\n\t\t\t\t\t\t\t\t<span class=\"text-white font-bold\">CM</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<span class=\"text-xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\tCortex Memory Insights\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<!-- 导航菜单 -->\n\t\t\t\t\t<div class=\"hidden sm:ml-6 sm:flex sm:space-x-8\">\n\t\t\t\t\t\t{#each navItems as item}\n\t\t\t\t\t\t\t<a\n\t\t\t\t\t\t\t\thref={item.href}\n\t\t\t\t\t\t\t\tclass=\"inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200\n                  {currentPath === item.href\n\t\t\t\t\t\t\t\t\t? 'border-blue-500 text-blue-600 dark:text-blue-400'\n\t\t\t\t\t\t\t\t\t: 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'}\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<span class=\"mr-2\">📊</span>\n\t\t\t\t\t\t\t\t{item.name}\n\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t{/each}\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t<!-- 右侧操作 -->\n\t\t\t\t<div class=\"flex items-center space-x-4\">\n\t\t\t\t\t<button\n\t\t\t\t\t\tclass=\"px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors duration-200\"\n\t\t\t\t\t\ton:click={() => console.log('刷新数据')}\n\t\t\t\t\t>\n\t\t\t\t\t\t刷新数据\n\t\t\t\t\t</button>\n\t\t\t\t\t<div class=\"relative\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center cursor-pointer\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-gray-600 dark:text-gray-300\">👤</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t</nav>\n\n\t<!-- 主内容区域 -->\n\t<main class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8\">\n\t\t<slot />\n\t</main>\n\n\t<!-- 页脚 -->\n\t<footer class=\"bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-8\">\n\t\t<div class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6\">\n\t\t\t<div class=\"flex justify-between items-center\">\n\t\t\t\t<div class=\"text-sm text-gray-500 dark:text-gray-400\">© 2025 Cortex Memory Insights</div>\n\t\t\t</div>\n\t\t</div>\n\t</footer>\n</div>\n\n<style>\n\t/* 自定义样式 */\n</style>\n"
+      "source_summary": "<script lang=\"ts\">\n\timport '../app.css';\n\timport { page } from '$app/stores';\n\n\t// 导航菜单项\n\tconst navItems = [\n\t\t{ name: '仪表盘', href: '/', icon: 'dashboard' },\n\t\t{ name: '记忆浏览器', href: '/memories', icon: 'memory' },\n\t\t{ name: '统计分析', href: '/analytics', icon: 'analytics' },\n\t\t{ name: '优化面板', href: '/optimization', icon: 'optimize' },\n\t\t{ name: '系统监控', href: '/monitor', icon: 'monitor' }\n\t];\n\n\t// 获取当前路径，处理page.url可能为undefined的情况\n\t$: currentPath = $page.url?.pathname || '/';\n</script>\n\n<div class=\"min-h-screen bg-gray-50 dark:bg-gray-900\">\n\t<!-- 导航栏 -->\n\t<nav class=\"bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50\">\n\t\t<div class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8\">\n\t\t\t<div class=\"flex justify-between h-16\">\n\t\t\t\t<div class=\"flex\">\n\t\t\t\t\t<!-- Logo -->\n\t\t\t\t\t<div class=\"flex-shrink-0 flex items-center\">\n\t\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t\t<div class=\"w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center\">\n\t\t\t\t\t\t\t\t<span class=\"text-white font-bold\">CM</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<span class=\"text-xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\tCortex Memory Insights\n\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\n\t\t\t\t\t<!-- 导航菜单 -->\n\t\t\t\t\t<div class=\"hidden sm:ml-6 sm:flex sm:space-x-8\">\n\t\t\t\t\t\t{#each navItems as item}\n\t\t\t\t\t\t\t<a\n\t\t\t\t\t\t\t\thref={item.href}\n\t\t\t\t\t\t\t\tclass=\"inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200\n                  {currentPath === item.href\n\t\t\t\t\t\t\t\t\t? 'border-blue-500 text-blue-600 dark:text-blue-400'\n\t\t\t\t\t\t\t\t\t: 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'}\"\n\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t<span class=\"mr-2\">📊</span>\n\t\t\t\t\t\t\t\t{item.name}\n\t\t\t\t\t\t\t</a>\n\t\t\t\t\t\t{/each}\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t</nav>\n\n\t<!-- 主内容区域 -->\n\t<main class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8\">\n\t\t<slot />\n\t</main>\n\n\t<!-- 页脚 -->\n\t<footer class=\"bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-8\">\n\t\t<div class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6\">\n\t\t\t<div class=\"flex justify-between items-center\">\n\t\t\t\t<div class=\"text-sm text-gray-500 dark:text-gray-400\">© 2025 Cortex Memory Insights</div>\n\t\t\t</div>\n\t\t</div>\n\t</footer>\n</div>\n\n<style>\n\t/* 自定义样式 */\n</style>\n"
     },
     "complexity_metrics": {
       "cyclomatic_complexity": 1.0,
-      "lines_of_code": 90,
+      "lines_of_code": 73,
       "number_of_classes": 0,
       "number_of_functions": 0
     },
@@ -5373,55 +4806,56 @@ Code analysis results from preprocessing phase, including definitions of functio
       {
         "dependency_type": "style",
         "is_external": false,
-        "line_number": 1,
+        "line_number": 2,
         "name": "app.css",
-        "path": "../app.css",
+        "path": "cortex-mem-insights/src/app.css",
         "version": null
       },
       {
         "dependency_type": "framework",
         "is_external": true,
-        "line_number": 2,
+        "line_number": 3,
         "name": "$app/stores",
         "path": "$app/stores",
         "version": null
       }
     ],
-    "detailed_description": "This Svelte component serves as the root layout for the Cortex Memory Insights application. It imports global styles and the SvelteKit page store to access routing information. The component defines a responsive navigation bar with five main menu items: Dashboard, Memories Browser, Analytics, Optimization Panel, and System Monitor. Each menu item is conditionally styled based on the current route path, providing visual feedback to users. The layout includes a header with application logo and branding, a main content area using the <slot> directive to render child route components, and a footer with copyright information. It also features a 'Refresh Data' button in the top-right corner that currently only logs to console. The component uses Svelte's reactive declaration ($:) to track changes in the URL pathname for active navigation highlighting. The UI is fully styled with Tailwind CSS, supporting dark mode and responsive design across screen sizes.",
+    "detailed_description": "This SvelteKit layout component serves as the shell for all pages in the Cortex Memory Insights application. It imports the global CSS and the SvelteKit page store to access routing information. The component defines a navigation menu with five items: Dashboard, Memory Browser, Analytics, Optimization Panel, and System Monitor, each with corresponding icons and routes. Using Svelte's reactive declaration syntax ($:), it derives the current path from $page.url.pathname, with null-safe handling for undefined URLs. The UI is built with Tailwind CSS, featuring a responsive design with dark mode support. The navigation highlights the active route by comparing the current path with each menu item's href. The main content area uses a <slot> to render child page content, following Svelte's component composition pattern. The layout also includes a header with the application logo and name, and a footer with copyright information. The styling is clean and modern, with proper spacing, shadows, and transition effects for interactive elements.",
     "interfaces": [
       {
-        "description": "Defines the navigation menu structure with display names, route paths, and icon identifiers",
-        "interface_type": "variable",
-        "name": "navItems",
-        "parameters": [],
-        "return_type": "Array<{name: string, href: string, icon: string}>",
-        "visibility": "private"
-      },
-      {
-        "description": "Reactive store that tracks the current URL pathname for navigation active state management",
-        "interface_type": "reactive variable",
+        "description": "Reactive derived store that extracts the current pathname from SvelteKit's page store, with fallback to root path",
+        "interface_type": "derived_store",
         "name": "currentPath",
         "parameters": [],
         "return_type": "string",
         "visibility": "private"
+      },
+      {
+        "description": "Configuration array defining the navigation menu items with name, route, and icon",
+        "interface_type": "constant",
+        "name": "navItems",
+        "parameters": [],
+        "return_type": "NavItem[]",
+        "visibility": "private"
       }
     ],
     "responsibilities": [
-      "Provide consistent application layout structure across all routes",
-      "Render responsive navigation bar with active route highlighting",
-      "Manage global UI elements including header, footer, and main content area",
-      "Handle basic user interactions such as refresh action",
-      "Support dark mode and responsive design for different screen sizes"
+      "Provides consistent application layout structure across all routes",
+      "Manages navigation menu with active route highlighting",
+      "Handles responsive design and dark mode styling",
+      "Derives current route path from SvelteKit page store",
+      "Serves as container for all page-level content through slot mechanism"
     ]
   },
   {
     "code_dossier": {
       "code_purpose": "page",
-      "description": "Analytics dashboard page component for memory data statistics and visualization",
+      "description": "Analytics dashboard page for memory data visualization and statistics",
       "file_path": "cortex-mem-insights/src/routes/analytics/+page.svelte",
       "functions": [
         "loadAnalyticsData",
         "loadDefaultData",
+        "generateChartData",
         "calculateAverageQuality",
         "calculateImportanceScore",
         "calculateActiveUsers",
@@ -5433,24 +4867,31 @@ Code analysis results from preprocessing phase, including definitions of functio
       ],
       "importance_score": 0.8,
       "interfaces": [
-        "summaryStats",
-        "typeDistribution",
-        "qualityDistribution",
-        "timeTrends",
-        "userStats"
+        "onMount",
+        "Line",
+        "ChartJS",
+        "CategoryScale",
+        "LinearScale",
+        "PointElement",
+        "LineElement",
+        "Title",
+        "Tooltip",
+        "Legend",
+        "Filler",
+        "api.memory.list"
       ],
       "name": "+page.svelte",
-      "source_summary": "<script lang=\"ts\">\n  import { onMount } from 'svelte';\n  import api from '$lib/api/client';\n  \n  let isLoading = true;\n  let error: string | null = null;\n  \n  // 真实数据\n  let typeDistribution: Array<{type: string, count: number, percentage: number}> = [];\n  let qualityDistribution: Array<{range: string, count: number, color: string}> = [];\n  let timeTrends: Array<{date: string, count: number}> = [];\n  let userStats: Array<{userId: string, memoryCount: number, avgImportance: number}> = [];\n  let summaryStats = {\n    totalMemories: 0,\n    averageQuality: 0,\n    activeUsers: 0,\n    optimizationCount: 0\n  };\n  \n  onMount(async () => {\n    try {\n      await loadAnalyticsData();\n    } catch (err) {\n      console.error('加载统计数据失败:', err);\n      error = err instanceof Error ? err.message : '加载数据失败';\n      loadDefaultData();\n    } finally {\n      isLoading = false;\n    }\n  });\n  \n  async function loadAnalyticsData() {\n    try {\n      // 获取所有记忆数据用于分析\n      const memoriesResponse = await api.memory.list({ limit: 1000 });\n      const memories = memoriesResponse.memories;\n      \n      if (memories.length === 0) {\n        loadDefaultData();\n        return;\n      }\n      \n      // 计算统计数据\n      summaryStats = {\n        totalMemories: memories.length,\n        averageQuality: calculateAverageQuality(memories),\n        activeUsers: calculateActiveUsers(memories),\n        optimizationCount: 0 // TODO: 从优化API获取\n      };\n      \n      // 计算类型分布\n      typeDistribution = calculateTypeDistribution(memories);\n      \n      // 计算质量分布\n      qualityDistribution = calculateQualityDistribution(memories);\n      \n      // 计算时间趋势\n      timeTrends = calculateTimeTrends(memories);\n      \n      // 计算用户统计\n      userStats = calculateUserStats(memories);\n      \n    } catch (err) {\n      console.error('分析数据错误:', err);\n      throw err;\n    }\n  }\n  \n  function loadDefaultData() {\n    summaryStats = {\n      totalMemories: 0,\n      averageQuality: 0,\n      activeUsers: 0,\n      optimizationCount: 0\n    };\n    typeDistribution = [];\n    qualityDistribution = [\n      { range: '90-100%', count: 0, color: 'bg-green-500' },\n      { range: '70-89%', count: 0, color: 'bg-blue-500' },\n      { range: '50-69%', count: 0, color: 'bg-yellow-500' },\n      { range: '0-49%', count: 0, color: 'bg-red-500' }\n    ];\n    timeTrends = [];\n    userStats = [];\n  }\n  \n  function calculateAverageQuality(memories: any[]): number {\n    if (memories.length === 0) return 0;\n    \n    const totalScore = memories.reduce((sum, memory) => {\n      return sum + calculateImportanceScore(memory);\n    }, 0);\n    \n    return totalScore / memories.length;\n  }\n  \n  function calculateImportanceScore(memory: any): number {\n    let score = 0.5;\n    \n    const memoryType = memory.metadata?.memory_type?.toLowerCase() || '';\n    const role = memory.metadata?.role?.toLowerCase() || '';\n    \n    if (memoryType.includes('procedural') || memoryType.includes('workflow')) {\n      score += 0.3;\n    } else if (memoryType.includes('personal')) {\n      score += 0.2;\n    } else if (memoryType.includes('conversational')) {\n      score += 0.1;\n    }\n    \n    if (role.includes('admin') || role.includes('system')) {\n      score += 0.2;\n    } else if (role.includes('user')) {\n      score += 0.1;\n    }\n    \n    if (memory.metadata?.custom?.importance) {\n      score += memory.metadata.custom.importance * 0.3;\n    }\n    \n    return Math.min(1.0, Math.max(0.0, score));\n  }\n  \n  function calculateActiveUsers(memories: any[]): number {\n    const users = new Set();\n    memories.forEach(memory => {\n      if (memory.metadata?.user_id) {\n        users.add(memory.metadata.user_id);\n      }\n    });\n    return users.size;\n  }\n  \n  function calculateTypeDistribution(memories: any[]): Array<{type: string, count: number, percentage: number}> {\n    const typeCounts: Record<string, number> = {};\n    \n    memories.forEach(memory => {\n      const type = memory.metadata?.memory_type || 'Unknown';\n      typeCounts[type] = (typeCounts[type] || 0) + 1;\n    });\n    \n    const total = memories.length;\n    return Object.entries(typeCounts)\n      .map(([type, count]) => ({\n        type,\n        count,\n        percentage: Math.round((count / total) * 100)\n      }))\n      .sort((a, b) => b.count - a.count);\n  }\n  \n  function calculateQualityDistribution(memories: any[]): Array<{range: string, count: number, color: string}> {\n    let high = 0; // 90-100%\n    let good = 0; // 70-89%\n    let medium = 0; // 50-69%\n    let low = 0; // 0-49%\n    \n    memories.forEach(memory => {\n      const score = calculateImportanceScore(memory);\n      if (score >= 0.9) {\n        high++;\n      } else if (score >= 0.7) {\n        good++;\n      } else if (score >= 0.5) {\n        medium++;\n      } else {\n        low++;\n      }\n    });\n    \n    return [\n      { range: '90-100%', count: high, color: 'bg-green-500' },\n      { range: '70-89%', count: good, color: 'bg-blue-500' },\n      { range: '50-69%', count: medium, color: 'bg-yellow-500' },\n      { range: '0-49%', count: low, color: 'bg-red-500' }\n    ];\n  }\n  \n  function calculateTimeTrends(memories: any[]): Array<{date: string, count: number}> {\n    const dateCounts: Record<string, number> = {};\n    \n    // 获取最近7天\n    const today = new Date();\n    for (let i = 6; i >= 0; i--) {\n      const date = new Date(today);\n      date.setDate(date.getDate() - i);\n      const dateStr = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });\n      dateCounts[dateStr] = 0;\n    }\n    \n    memories.forEach(memory => {\n      const date = new Date(memory.created_at);\n      const dateStr = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });\n      if (dateCounts.hasOwnProperty(dateStr)) {\n        dateCounts[dateStr]++;\n      }\n    });\n    \n    return Object.entries(dateCounts).map(([date, count]) => ({ date, count }));\n  }\n  \n  function calculateUserStats(memories: any[]): Array<{userId: string, memoryCount: number, avgImportance: number}> {\n    const userData: Record<string, {count: number, totalScore: number}> = {};\n    \n    memories.forEach(memory => {\n      const userId = memory.metadata?.user_id || 'unknown';\n      if (!userData[userId]) {\n        userData[userId] = { count: 0, totalScore: 0 };\n      }\n      userData[userId].count++;\n      userData[userId].totalScore += calculateImportanceScore(memory);\n    });\n    \n    return Object.entries(userData)\n      .map(([userId, data]) => ({\n        userId,\n        memoryCount: data.count,\n        avgImportance: data.totalScore / data.count\n      }))\n      .sort((a, b) => b.memoryCount - a.memoryCount)\n      .slice(0, 5); // 只显示前5个用户\n  }\n  \n  function getPercentageColor(percentage: number) {\n    if (percentage >= 30) return 'text-blue-600 dark:text-blue-400';\n    if (percentage >= 20) return 'text-green-600 dark:text-green-400';\n    if (percentage >= 10) return 'text-yellow-600 dark:text-yellow-400';\n    return 'text-gray-600 dark:text-gray-400';\n  }\n</script>\n\n<div class=\"space-y-8\">\n  <!-- 页面标题 -->\n  <div>\n    <h1 class=\"text-3xl font-bold text-gray-900 dark:text-white\">统计分析</h1>\n    <p class=\"mt-2 text-gray-600 dark:text-gray-400\">\n      深入分析记忆数据的分布、质量和趋势\n    </p>\n  </div>\n\n  {#if isLoading}\n    <!-- 加载状态 -->\n    <div class=\"grid grid-cols-1 lg:grid-cols-2 gap-8\">\n      {#each Array(4) as _, i}\n        <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-pulse\">\n          <div class=\"h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6\"></div>\n          <div class=\"h-48 bg-gray-200 dark:bg-gray-700 rounded\"></div>\n        </div>\n      {/each}\n    </div>\n  {:else if error}\n    <!-- 错误状态 -->\n    <div class=\"bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6\">\n      <div class=\"flex items-center\">\n        <div class=\"w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mr-3\">\n          <span class=\"text-red-600 dark:text-red-400\">⚠️</span>\n        </div>\n        <div>\n          <h3 class=\"text-lg font-medium text-red-800 dark:text-red-200\">加载失败</h3>\n          <p class=\"text-red-600 dark:text-red-400\">{error}</p>\n        </div>\n      </div>\n    </div>\n  {:else}\n    <!-- 统计概览 -->\n    <div class=\"grid grid-cols-1 md:grid-cols-4 gap-6\">\n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n        <p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">总记忆数</p>\n        <p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">{summaryStats.totalMemories.toLocaleString()}</p>\n        <p class=\"mt-2 text-sm text-green-600 dark:text-green-400\">当前总数</p>\n      </div>\n      \n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n        <p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">平均质量</p>\n        <p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">{(summaryStats.averageQuality * 100).toFixed(1)}%</p>\n        <p class=\"mt-2 text-sm text-blue-600 dark:text-blue-400\">基于重要性评分</p>\n      </div>\n      \n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n        <p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">活跃用户</p>\n        <p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">{summaryStats.activeUsers}</p>\n        <p class=\"mt-2 text-sm text-purple-600 dark:text-purple-400\">有记忆的用户</p>\n      </div>\n      \n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n        <p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">优化次数</p>\n        <p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">{summaryStats.optimizationCount}</p>\n        <p class=\"mt-2 text-sm text-yellow-600 dark:text-yellow-400\">历史优化记录</p>\n      </div>\n    </div>\n\n    <!-- 图表区域 -->\n    <div class=\"grid grid-cols-1 lg:grid-cols-2 gap-8\">\n      <!-- 类型分布 -->\n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n        <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">记忆类型分布</h2>\n        \n        <div class=\"space-y-4\">\n          {#each typeDistribution as item}\n            <div>\n              <div class=\"flex justify-between mb-1\">\n                <span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">\n                  {item.type}\n                </span>\n                <span class={`text-sm font-bold ${getPercentageColor(item.percentage)}`}>\n                  {item.percentage}%\n                </span>\n              </div>\n              <div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2\">\n                <div\n                  class=\"h-2 rounded-full bg-blue-500\"\n                  style={`width: ${item.percentage}%`}\n                ></div>\n              </div>\n              <div class=\"flex justify-between mt-1\">\n                <span class=\"text-xs text-gray-500 dark:text-gray-400\">\n                  {item.count} 条记录\n                </span>\n                <span class=\"text-xs text-gray-500 dark:text-gray-400\">\n                  占比 {item.percentage}%\n                </span>\n              </div>\n            </div>\n          {/each}\n        </div>\n        \n        <div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n          <div class=\"flex items-center justify-between text-sm text-gray-500 dark:text-gray-400\">\n            <span>总计: {summaryStats.totalMemories} 条记忆</span>\n            <button\n              class=\"text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300\"\n              on:click={() => console.log('查看详情')}\n            >\n              查看详细报告 →\n            </button>\n          </div>\n        </div>\n      </div>\n\n      <!-- 质量分布 -->\n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n        <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">质量评分分布</h2>\n        \n        <div class=\"space-y-4\">\n          {#each qualityDistribution as item}\n            <div>\n              <div class=\"flex items-center justify-between mb-1\">\n                <div class=\"flex items-center space-x-2\">\n                  <div class={`w-3 h-3 rounded-full ${item.color}`}></div>\n                  <span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">\n                    {item.range}\n                  </span>\n                </div>\n                <span class=\"text-sm font-bold text-gray-900 dark:text-white\">\n                  {item.count} 条\n                </span>\n              </div>\n              <div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3\">\n                <div\n                  class={`h-3 rounded-full ${item.color}`}\n                  style={`width: ${(item.count / 1245) * 100}%`}\n                ></div>\n              </div>\n            </div>\n          {/each}\n        </div>\n        \n        <div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n          <div class=\"text-sm text-gray-500 dark:text-gray-400\">\n            <div class=\"flex justify-between mb-2\">\n              <span>高质量记忆 (≥70%): 600 条 (48%)</span>\n              <span class=\"text-green-600 dark:text-green-400\">良好</span>\n            </div>\n            <div class=\"flex justify-between\">\n              <span>需优化记忆 (&lt;50%): 265 条 (21%)</span>\n              <span class=\"text-yellow-600 dark:text-yellow-400\">建议优化</span>\n            </div>\n          </div>\n        </div>\n      </div>\n\n      <!-- 时间趋势 -->\n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 lg:col-span-2\">\n        <div class=\"flex items-center justify-between mb-6\">\n          <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">新增记忆趋势</h2>\n          <div class=\"flex space-x-2\">\n            <button class=\"px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded\">\n              最近7天\n            </button>\n            <button class=\"px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded\">\n              最近30天\n            </button>\n          </div>\n        </div>\n        \n        <div class=\"h-64 flex items-end space-x-2\">\n          {#each timeTrends as trend, i}\n            <div class=\"flex-1 flex flex-col items-center\">\n              <div\n                class=\"w-full bg-blue-500 rounded-t-lg transition-all duration-300 hover:bg-blue-600\"\n                style={`height: ${(trend.count / 80) * 100}%`}\n                title={`${trend.date}: ${trend.count} 条`}\n              ></div>\n              <div class=\"mt-2 text-xs text-gray-500 dark:text-gray-400\">\n                {trend.date}\n              </div>\n              <div class=\"text-sm font-medium text-gray-900 dark:text-white\">\n                {trend.count}\n              </div>\n            </div>\n          {/each}\n        </div>\n        \n        <div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n          <div class=\"flex items-center justify-between text-sm text-gray-500 dark:text-gray-400\">\n            <span>日均新增: 54.8 条</span>\n            <span>峰值: 68 条 (12月13日)</span>\n          </div>\n        </div>\n      </div>\n\n      <!-- 用户统计 -->\n      <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 lg:col-span-2\">\n        <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">用户维度统计</h2>\n        \n        <div class=\"overflow-x-auto\">\n          <table class=\"w-full\">\n            <thead class=\"bg-gray-50 dark:bg-gray-900/50\">\n              <tr>\n                <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                  用户ID\n                </th>\n                <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                  记忆数量\n                </th>\n                <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                  平均质量\n                </th>\n                <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                  占比\n                </th>\n                <th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\">\n                  趋势\n                </th>\n              </tr>\n            </thead>\n            <tbody class=\"divide-y divide-gray-200 dark:divide-gray-700\">\n              {#each userStats as user}\n                <tr class=\"hover:bg-gray-50 dark:hover:bg-gray-900/30\">\n                  <td class=\"px-4 py-3\">\n                    <div class=\"font-medium text-gray-900 dark:text-white\">\n                      {user.userId}\n                    </div>\n                  </td>\n                  <td class=\"px-4 py-3\">\n                    <div class=\"flex items-center\">\n                      <div class=\"w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2\">\n                        <div\n                          class=\"h-2 rounded-full bg-blue-500\"\n                          style={`width: ${summaryStats.totalMemories > 0 ? (user.memoryCount / summaryStats.totalMemories) * 100 : 0}%`}\n                        ></div>\n                      </div>\n                      <span class=\"text-sm font-medium\">\n                        {user.memoryCount}\n                      </span>\n                    </div>\n                  </td>\n                  <td class=\"px-4 py-3\">\n                    <span class={`px-2 py-1 rounded text-xs font-medium ${\n                      user.avgImportance >= 0.8 ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :\n                      user.avgImportance >= 0.7 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :\n                      'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'\n                    }`}>\n                      {(user.avgImportance * 100).toFixed(1)}%\n                    </span>\n                  </td>\n                  <td class=\"px-4 py-3 text-sm text-gray-600 dark:text-gray-400\">\n                    {summaryStats.totalMemories > 0 ? ((user.memoryCount / summaryStats.totalMemories) * 100).toFixed(1) : '0.0'}%\n                  </td>\n                  <td class=\"px-4 py-3\">\n                    <span class=\"text-gray-600 dark:text-gray-400 text-sm font-medium\">\n                      数据不足\n                    </span>\n                  </td>\n                </tr>\n              {/each}\n            </tbody>\n          </table>\n        </div>\n        \n        <div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n          <div class=\"flex items-center justify-between\">\n            <span class=\"text-sm text-gray-500 dark:text-gray-400\">\n              前{userStats.length}用户占总记忆的 {summaryStats.totalMemories > 0 ? ((userStats.reduce((sum, user) => sum + user.memoryCount, 0) / summaryStats.totalMemories) * 100).toFixed(1) : '0.0'}%\n            </span>\n            <button\n              class=\"px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium\"\n              on:click={() => console.log('导出用户报告')}\n            >\n              导出用户报告\n            </button>\n          </div>\n        </div>\n      </div>\n    </div>\n\n    <!-- 分析工具 -->\n    <div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n      <h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">分析工具</h2>\n      \n      <div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n        <button\n          class=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200\"\n          on:click={() => console.log('生成质量报告')}\n        >\n          <div class=\"flex items-center space-x-3\">\n            <div class=\"w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center\">\n              <span class=\"text-xl\">📈</span>\n            </div>\n            <div class=\"text-left\">\n              <p class=\"font-medium text-gray-900 dark:text-white\">质量分析报告</p>\n              <p class=\"text-sm text-gray-500 dark:text-gray-400\">生成详细的质量分析</p>\n            </div>\n          </div>\n        </button>\n        \n        <button\n          class=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200\"\n          on:click={() => console.log('趋势预测')}\n        >\n          <div class=\"flex items-center space-x-3\">\n            <div class=\"w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center\">\n              <span class=\"text-xl\">🔮</span>\n            </div>\n            <div class=\"text-left\">\n              <p class=\"font-medium text-gray-900 dark:text-white\">趋势预测</p>\n              <p class=\"text-sm text-gray-500 dark:text-gray-400\">预测未来增长趋势</p>\n            </div>\n          </div>\n        </button>\n        \n        <button\n          class=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200\"\n          on:click={() => console.log('对比分析')}\n        >\n          <div class=\"flex items-center space-x-3\">\n            <div class=\"w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center\">\n              <span class=\"text-xl\">⚖️</span>\n            </div>\n            <div class=\"text-left\">\n              <p class=\"font-medium text-gray-900 dark:text-white\">对比分析</p>\n              <p class=\"text-sm text-gray-500 dark:text-gray-400\">不同时间段对比</p>\n            </div>\n          </div>\n        </button>\n      </div>\n    </div>\n  {/if}\n</div>"
+      "source_summary": "<script lang=\"ts\">\n\timport { onMount } from 'svelte';\n\timport { Line } from 'svelte-chartjs';\n\timport {\n\t\tChart as ChartJS,\n\t\tCategoryScale,\n\t\tLinearScale,\n\t\tPointElement,\n\t\tLineElement,\n\t\tTitle,\n\t\tTooltip,\n\t\tLegend,\n\t\tFiller\n\t} from 'chart.js';\n\timport api from '$lib/api/client';\n\n\t// 注册Chart.js组件\n\tChartJS.register(\n\t\tCategoryScale,\n\t\tLinearScale,\n\t\tPointElement,\n\t\tLineElement,\n\t\tTitle,\n\t\tTooltip,\n\t\tLegend,\n\t\tFiller\n\t);\n\n\tlet isLoading = true;\n\tlet error: string | null = null;\n\n\t// 真实数据\n\tlet typeDistribution: Array<{ type: string; count: number; percentage: number }> = [];\n\tlet qualityDistribution: Array<{ range: string; count: number; color: string }> = [];\n\tlet timeTrends: Array<{ date: string; count: number }> = [];\n\tlet userStats: Array<{ userId: string; memoryCount: number; avgImportance: number }> = [];\n\tlet summaryStats = {\n\t\ttotalMemories: 0,\n\t\taverageQuality: 0,\n\t\tactiveUsers: 0,\n\t\toptimizationCount: 0\n\t};\n\n\t// 图表配置\n\tlet chartData: any = null;\n\tlet chartOptions = {\n\t\tresponsive: true,\n\t\tmaintainAspectRatio: false,\n\t\tinteraction: {\n\t\t\tintersect: false,\n\t\t\tmode: 'index' as const\n\t\t},\n\t\tplugins: {\n\t\t\tlegend: {\n\t\t\t\tdisplay: false\n\t\t\t},\n\t\t\ttooltip: {\n\t\t\t\tbackgroundColor: 'rgba(0, 0, 0, 0.8)',\n\t\t\t\ttitleColor: 'white',\n\t\t\t\tbodyColor: 'white',\n\t\t\t\tborderColor: 'rgba(59, 130, 246, 0.5)',\n\t\t\t\tborderWidth: 1,\n\t\t\t\tcornerRadius: 8,\n\t\t\t\tdisplayColors: false,\n\t\t\t\tcallbacks: {\n\t\t\t\t\ttitle: function(context: any) {\n\t\t\t\t\t\treturn `${context[0].label}`;\n\t\t\t\t\t},\n\t\t\t\t\tlabel: function(context: any) {\n\t\t\t\t\t\treturn `新增记忆: ${context.parsed.y} 条`;\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\tscales: {\n\t\t\tx: {\n\t\t\t\tgrid: {\n\t\t\t\t\tdisplay: false\n\t\t\t\t},\n\t\t\t\tticks: {\n\t\t\t\t\tcolor: 'rgb(107, 114, 128)',\n\t\t\t\t\tfont: {\n\t\t\t\t\t\tsize: 12\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t\ty: {\n\t\t\t\tbeginAtZero: true,\n\t\t\t\tgrid: {\n\t\t\t\t\tcolor: 'rgba(107, 114, 128, 0.1)',\n\t\t\t\t\tborderDash: [2, 2]\n\t\t\t\t},\n\t\t\t\tticks: {\n\t\t\t\t\tcolor: 'rgb(107, 114, 128)',\n\t\t\t\t\tfont: {\n\t\t\t\t\t\tsize: 12\n\t\t\t\t\t},\n\t\t\t\t\tcallback: function(value: any) {\n\t\t\t\t\t\treturn value + ' 条';\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\telements: {\n\t\t\tpoint: {\n\t\t\t\tradius: 6,\n\t\t\t\thoverRadius: 8,\n\t\t\t\tbackgroundColor: 'rgb(59, 130, 246)',\n\t\t\t\tborderColor: 'white',\n\t\t\t\tborderWidth: 2,\n\t\t\t\thoverBackgroundColor: 'rgb(37, 99, 235)',\n\t\t\t\thoverBorderColor: 'white',\n\t\t\t\thoverBorderWidth: 3\n\t\t\t},\n\t\t\tline: {\n\t\t\t\tborderWidth: 3,\n\t\t\t\ttension: 0.4,\n\t\t\t\tfill: true,\n\t\t\t\tbackgroundColor: function(context: any) {\n\t\t\t\t\tconst chart = context.chart;\n\t\t\t\t\tconst { ctx, chartArea } = chart;\n\n\t\t\t\t\tif (!chartArea) {\n\t\t\t\t\t\treturn null; // 防止服务器端渲染错误\n\t\t\t\t\t}\n\n\t\t\t\t\tconst gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);\n\t\t\t\t\tgradient.addColorStop(0, 'rgba(59, 130, 246, 0.3)');\n\t\t\t\t\tgradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');\n\t\t\t\t\treturn gradient;\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t};\n\n\tonMount(async () => {\n\t\ttry {\n\t\t\tawait loadAnalyticsData();\n\t\t} catch (err) {\n\t\t\tconsole.error('加载统计数据失败:', err);\n\t\t\terror = err instanceof Error ? err.message : '加载数据失败';\n\t\t\tloadDefaultData();\n\t\t} finally {\n\t\t\tisLoading = false;\n\t\t}\n\t});\n\n\tasync function loadAnalyticsData() {\n\t\ttry {\n\t\t\t// 获取所有记忆数据用于分析\n\t\t\tconst memoriesResponse = await api.memory.list({ limit: 1000 });\n\t\t\tconst memories = memoriesResponse.memories;\n\n\t\t\tif (memories.length === 0) {\n\t\t\t\tloadDefaultData();\n\t\t\t\treturn;\n\t\t\t}\n\n\t\t\t// 计算统计数据\n\t\t\tsummaryStats = {\n\t\t\t\ttotalMemories: memories.length,\n\t\t\t\taverageQuality: calculateAverageQuality(memories),\n\t\t\t\tactiveUsers: calculateActiveUsers(memories),\n\t\t\t\toptimizationCount: 0 // TODO: 从优化API获取\n\t\t\t};\n\n\t\t\t// 计算类型分布\n\t\t\ttypeDistribution = calculateTypeDistribution(memories);\n\n\t\t\t// 计算质量分布\n\t\t\tqualityDistribution = calculateQualityDistribution(memories);\n\n\t\t\t// 计算时间趋势\n\t\t\ttimeTrends = calculateTimeTrends(memories);\n\n\t\t\t// 计算用户统计\n\t\t\tuserStats = calculateUserStats(memories);\n\n\t\t\t// 生成图表数据\n\t\t\tgenerateChartData();\n\t\t} catch (err) {\n\t\t\tconsole.error('分析数据错误:', err);\n\t\t\tthrow err;\n\t\t}\n\t}\n\n\tfunction loadDefaultData() {\n\t\tsummaryStats = {\n\t\t\ttotalMemories: 0,\n\t\t\taverageQuality: 0,\n\t\t\tactiveUsers: 0,\n\t\t\toptimizationCount: 0\n\t\t};\n\t\ttypeDistribution = [];\n\t\tqualityDistribution = [\n\t\t\t{ range: '90-100%', count: 0, color: 'bg-green-500' },\n\t\t\t{ range: '70-89%', count: 0, color: 'bg-blue-500' },\n\t\t\t{ range: '50-69%', count: 0, color: 'bg-yellow-500' },\n\t\t\t{ range: '0-49%', count: 0, color: 'bg-red-500' }\n\t\t];\n\t\ttimeTrends = [];\n\t\tuserStats = [];\n\t\tgenerateChartData();\n\t}\n\n\tfunction generateChartData() {\n\t\tconst labels = timeTrends.map(trend => trend.date);\n\t\tconst data = timeTrends.map(trend => trend.count);\n\n\t\tchartData = {\n\t\t\tlabels,\n\t\t\tdatasets: [\n\t\t\t\t{\n\t\t\t\t\tlabel: '新增记忆',\n\t\t\t\t\tdata,\n\t\t\t\t\tborderColor: 'rgb(59, 130, 246)',\n\t\t\t\t\tbackgroundColor: 'rgba(59, 130, 246, 0.1)',\n\t\t\t\t\tborderWidth: 3,\n\t\t\t\t\ttension: 0.4,\n\t\t\t\t\tfill: true,\n\t\t\t\t\tpointRadius: 6,\n\t\t\t\t\tpointHoverRadius: 8,\n\t\t\t\t\tpointBackgroundColor: 'rgb(59, 130, 246)',\n\t\t\t\t\tpointBorderColor: 'white',\n\t\t\t\t\tpointBorderWidth: 2,\n\t\t\t\t\tpointHoverBackgroundColor: 'rgb(37, 99, 235)',\n\t\t\t\t\tpointHoverBorderColor: 'white',\n\t\t\t\t\tpointHoverBorderWidth: 3\n\t\t\t\t}\n\t\t\t]\n\t\t};\n\t}\n\n\tfunction calculateAverageQuality(memories: any[]): number {\n\t\tif (memories.length === 0) return 0;\n\n\t\tconst totalScore = memories.reduce((sum, memory) => {\n\t\t\treturn sum + calculateImportanceScore(memory);\n\t\t}, 0);\n\n\t\treturn totalScore / memories.length;\n\t}\n\n\tfunction calculateImportanceScore(memory: any): number {\n\t\tlet score = 0.5;\n\n\t\tconst memoryType = memory.metadata?.memory_type?.toLowerCase() || '';\n\t\tconst role = memory.metadata?.role?.toLowerCase() || '';\n\n\t\tif (memoryType.includes('procedural') || memoryType.includes('workflow')) {\n\t\t\tscore += 0.3;\n\t\t} else if (memoryType.includes('personal')) {\n\t\t\tscore += 0.2;\n\t\t} else if (memoryType.includes('conversational')) {\n\t\t\tscore += 0.1;\n\t\t}\n\n\t\tif (role.includes('admin') || role.includes('system')) {\n\t\t\tscore += 0.2;\n\t\t} else if (role.includes('user')) {\n\t\t\tscore += 0.1;\n\t\t}\n\n\t\tif (memory.metadata?.custom?.importance) {\n\t\t\tscore += memory.metadata.custom.importance * 0.3;\n\t\t}\n\n\t\treturn Math.min(1.0, Math.max(0.0, score));\n\t}\n\n\tfunction calculateActiveUsers(memories: any[]): number {\n\t\tconst users = new Set();\n\t\tmemories.forEach((memory) => {\n\t\t\tif (memory.metadata?.user_id) {\n\t\t\t\tusers.add(memory.metadata.user_id);\n\t\t\t}\n\t\t});\n\t\treturn users.size;\n\t}\n\n\tfunction calculateTypeDistribution(\n\t\tmemories: any[]\n\t): Array<{ type: string; count: number; percentage: number }> {\n\t\tconst typeCounts: Record<string, number> = {};\n\n\t\tmemories.forEach((memory) => {\n\t\t\tconst type = memory.metadata?.memory_type || 'Unknown';\n\t\t\ttypeCounts[type] = (typeCounts[type] || 0) + 1;\n\t\t});\n\n\t\tconst total = memories.length;\n\t\treturn Object.entries(typeCounts)\n\t\t\t.map(([type, count]) => ({\n\t\t\t\ttype,\n\t\t\t\tcount,\n\t\t\t\tpercentage: Math.round((count / total) * 100)\n\t\t\t}))\n\t\t\t.sort((a, b) => b.count - a.count);\n\t}\n\n\tfunction calculateQualityDistribution(\n\t\tmemories: any[]\n\t): Array<{ range: string; count: number; color: string }> {\n\t\tlet high = 0; // 90-100%\n\t\tlet good = 0; // 70-89%\n\t\tlet medium = 0; // 50-69%\n\t\tlet low = 0; // 0-49%\n\n\t\tmemories.forEach((memory) => {\n\t\t\tconst score = calculateImportanceScore(memory);\n\t\t\tif (score >= 0.9) {\n\t\t\t\thigh++;\n\t\t\t} else if (score >= 0.7) {\n\t\t\t\tgood++;\n\t\t\t} else if (score >= 0.5) {\n\t\t\t\tmedium++;\n\t\t\t} else {\n\t\t\t\tlow++;\n\t\t\t}\n\t\t});\n\n\t\treturn [\n\t\t\t{ range: '90-100%', count: high, color: 'bg-green-500' },\n\t\t\t{ range: '70-89%', count: good, color: 'bg-blue-500' },\n\t\t\t{ range: '50-69%', count: medium, color: 'bg-yellow-500' },\n\t\t\t{ range: '0-49%', count: low, color: 'bg-red-500' }\n\t\t];\n\t}\n\n\tfunction calculateTimeTrends(memories: any[]): Array<{ date: string; count: number }> {\n\t\tconst dateCounts: Record<string, number> = {};\n\n\t\t// 获取最近7天\n\t\tconst today = new Date();\n\t\tfor (let i = 6; i >= 0; i--) {\n\t\t\tconst date = new Date(today);\n\t\t\tdate.setDate(date.getDate() - i);\n\t\t\tconst dateStr = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });\n\t\t\tdateCounts[dateStr] = 0;\n\t\t}\n\n\t\tmemories.forEach((memory) => {\n\t\t\tconst date = new Date(memory.created_at);\n\t\t\tconst dateStr = date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });\n\t\t\tif (dateCounts.hasOwnProperty(dateStr)) {\n\t\t\t\tdateCounts[dateStr]++;\n\t\t\t}\n\t\t});\n\n\t\treturn Object.entries(dateCounts).map(([date, count]) => ({ date, count }));\n\t}\n\n\tfunction calculateUserStats(\n\t\tmemories: any[]\n\t): Array<{ userId: string; memoryCount: number; avgImportance: number }> {\n\t\tconst userData: Record<string, { count: number; totalScore: number }> = {};\n\n\t\tmemories.forEach((memory) => {\n\t\t\tconst userId = memory.metadata?.user_id || 'unknown';\n\t\t\tif (!userData[userId]) {\n\t\t\t\tuserData[userId] = { count: 0, totalScore: 0 };\n\t\t\t}\n\t\t\tuserData[userId].count++;\n\t\t\tuserData[userId].totalScore += calculateImportanceScore(memory);\n\t\t});\n\n\t\treturn Object.entries(userData)\n\t\t\t.map(([userId, data]) => ({\n\t\t\t\tuserId,\n\t\t\t\tmemoryCount: data.count,\n\t\t\t\tavgImportance: data.totalScore / data.count\n\t\t\t}))\n\t\t\t.sort((a, b) => b.memoryCount - a.memoryCount)\n\t\t\t.slice(0, 5); // 只显示前5个用户\n\t}\n\n\tfunction getPercentageColor(percentage: number) {\n\t\tif (percentage >= 30) return 'text-blue-600 dark:text-blue-400';\n\t\tif (percentage >= 20) return 'text-green-600 dark:text-green-400';\n\t\tif (percentage >= 10) return 'text-yellow-600 dark:text-yellow-400';\n\t\treturn 'text-gray-600 dark:text-gray-400';\n\t}\n</script>\n\n<div class=\"space-y-8\">\n\t<!-- 页面标题 -->\n\t<div>\n\t\t<h1 class=\"text-3xl font-bold text-gray-900 dark:text-white\">统计分析</h1>\n\t\t<p class=\"mt-2 text-gray-600 dark:text-gray-400\">深入分析记忆数据的分布、质量和趋势</p>\n\t</div>\n\n\t{#if isLoading}\n\t\t<!-- 加载状态 -->\n\t\t<div class=\"grid grid-cols-1 lg:grid-cols-2 gap-8\">\n\t\t\t{#each Array(4) as _, i}\n\t\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 animate-pulse\">\n\t\t\t\t\t<div class=\"h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-6\"></div>\n\t\t\t\t\t<div class=\"h-48 bg-gray-200 dark:bg-gray-700 rounded\"></div>\n\t\t\t\t</div>\n\t\t\t{/each}\n\t\t</div>\n\t{:else if error}\n\t\t<!-- 错误状态 -->\n\t\t<div\n\t\t\tclass=\"bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6\"\n\t\t>\n\t\t\t<div class=\"flex items-center\">\n\t\t\t\t<div\n\t\t\t\t\tclass=\"w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center mr-3\"\n\t\t\t\t>\n\t\t\t\t\t<span class=\"text-red-600 dark:text-red-400\">⚠️</span>\n\t\t\t\t</div>\n\t\t\t\t<div>\n\t\t\t\t\t<h3 class=\"text-lg font-medium text-red-800 dark:text-red-200\">加载失败</h3>\n\t\t\t\t\t<p class=\"text-red-600 dark:text-red-400\">{error}</p>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\t{:else}\n\t\t<!-- 统计概览 -->\n\t\t<div class=\"grid grid-cols-1 md:grid-cols-4 gap-6\">\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">总记忆数</p>\n\t\t\t\t<p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t{summaryStats.totalMemories.toLocaleString()}\n\t\t\t\t</p>\n\t\t\t\t<p class=\"mt-2 text-sm text-green-600 dark:text-green-400\">当前总数</p>\n\t\t\t</div>\n\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">平均质量</p>\n\t\t\t\t<p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t{(summaryStats.averageQuality * 100).toFixed(1)}%\n\t\t\t\t</p>\n\t\t\t\t<p class=\"mt-2 text-sm text-blue-600 dark:text-blue-400\">基于重要性评分</p>\n\t\t\t</div>\n\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">活跃用户</p>\n\t\t\t\t<p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t{summaryStats.activeUsers}\n\t\t\t\t</p>\n\t\t\t\t<p class=\"mt-2 text-sm text-purple-600 dark:text-purple-400\">有记忆的用户</p>\n\t\t\t</div>\n\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<p class=\"text-sm font-medium text-gray-600 dark:text-gray-400\">优化次数</p>\n\t\t\t\t<p class=\"mt-2 text-3xl font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t{summaryStats.optimizationCount}\n\t\t\t\t</p>\n\t\t\t\t<p class=\"mt-2 text-sm text-yellow-600 dark:text-yellow-400\">历史优化记录</p>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 图表区域 -->\n\t\t<div class=\"grid grid-cols-1 lg:grid-cols-2 gap-8\">\n\t\t\t<!-- 类型分布 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">记忆类型分布</h2>\n\n\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t{#each typeDistribution as item}\n\t\t\t\t\t\t<div>\n\t\t\t\t\t\t\t<div class=\"flex justify-between mb-1\">\n\t\t\t\t\t\t\t\t<span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">\n\t\t\t\t\t\t\t\t\t{item.type}\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t<span class={`text-sm font-bold ${getPercentageColor(item.percentage)}`}>\n\t\t\t\t\t\t\t\t\t{item.percentage}%\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2\">\n\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\tclass=\"h-2 rounded-full bg-blue-500\"\n\t\t\t\t\t\t\t\t\tstyle={`width: ${item.percentage}%`}\n\t\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div class=\"flex justify-between mt-1\">\n\t\t\t\t\t\t\t\t<span class=\"text-xs text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t{item.count} 条记录\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t<span class=\"text-xs text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t占比 {item.percentage}%\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{/each}\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n\t\t\t\t\t<div class=\"flex items-center justify-between text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t<span>总计: {summaryStats.totalMemories} 条记忆</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 质量分布 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">质量评分分布</h2>\n\n\t\t\t\t<div class=\"space-y-4\">\n\t\t\t\t\t{#each qualityDistribution as item}\n\t\t\t\t\t\t<div>\n\t\t\t\t\t\t\t<div class=\"flex items-center justify-between mb-1\">\n\t\t\t\t\t\t\t\t<div class=\"flex items-center space-x-2\">\n\t\t\t\t\t\t\t\t\t<div class={`w-3 h-3 rounded-full ${item.color}`}></div>\n\t\t\t\t\t\t\t\t\t<span class=\"text-sm font-medium text-gray-700 dark:text-gray-300\">\n\t\t\t\t\t\t\t\t\t\t{item.range}\n\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t<span class=\"text-sm font-bold text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t{item.count} 条\n\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<div class=\"w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3\">\n\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\tclass={`h-3 rounded-full ${item.color}`}\n\t\t\t\t\t\t\t\t\tstyle={`width: ${(item.count / 1245) * 100}%`}\n\t\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{/each}\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 时间趋势 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 lg:col-span-2\">\n\t\t\t\t<div class=\"flex items-center justify-between mb-6\">\n\t\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white\">新增记忆趋势</h2>\n\t\t\t\t\t<div class=\"flex space-x-2\">\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t最近7天\n\t\t\t\t\t\t</button>\n\t\t\t\t\t\t<button\n\t\t\t\t\t\t\tclass=\"px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t最近30天\n\t\t\t\t\t\t</button>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\n\t\t\t\t{#if chartData && timeTrends.length > 0}\n\t\t\t\t\t<div class=\"h-64\">\n\t\t\t\t\t\t<Line data={chartData} options={chartOptions} />\n\t\t\t\t\t</div>\n\t\t\t\t{:else if timeTrends.length > 0}\n\t\t\t\t\t<!-- 备用显示：当图表库无法加载时 -->\n\t\t\t\t\t<div class=\"h-64 flex items-end space-x-2\">\n\t\t\t\t\t\t{#each timeTrends as trend, i}\n\t\t\t\t\t\t\t<div class=\"flex-1 flex flex-col items-center\">\n\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\tclass=\"w-full bg-blue-500 rounded-t-lg transition-all duration-300 hover:bg-blue-600\"\n\t\t\t\t\t\t\t\t\tstyle={`height: ${(trend.count / 80) * 100}%`}\n\t\t\t\t\t\t\t\t\ttitle={`${trend.date}: ${trend.count} 条`}\n\t\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t\t\t<div class=\"mt-2 text-xs text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t{trend.date}\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t<div class=\"text-sm font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t{trend.count}\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t{/each}\n\t\t\t\t\t</div>\n\t\t\t\t{:else}\n\t\t\t\t\t<div class=\"h-64 flex items-center justify-center text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t<div class=\"text-center\">\n\t\t\t\t\t\t\t<div class=\"text-4xl mb-2\">📊</div>\n\t\t\t\t\t\t\t<p>暂无数据</p>\n\t\t\t\t\t\t\t<p class=\"text-sm\">等待记忆数据加载...</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t{/if}\n\n\t\t\t\t<div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n\t\t\t\t\t<div class=\"flex items-center justify-between text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t<span>日均新增: 54.8 条</span>\n\t\t\t\t\t\t<span>峰值: 68 条 (12月13日)</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\n\t\t\t<!-- 用户统计 -->\n\t\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 lg:col-span-2\">\n\t\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">用户维度统计</h2>\n\n\t\t\t\t<div class=\"overflow-x-auto\">\n\t\t\t\t\t<table class=\"w-full\">\n\t\t\t\t\t\t<thead class=\"bg-gray-50 dark:bg-gray-900/50\">\n\t\t\t\t\t\t\t<tr>\n\t\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\t\tclass=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\"\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t用户ID\n\t\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\t\tclass=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\"\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t记忆数量\n\t\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\t\tclass=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\"\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t平均质量\n\t\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\t\tclass=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\"\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t占比\n\t\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t\t<th\n\t\t\t\t\t\t\t\t\tclass=\"px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase\"\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t趋势\n\t\t\t\t\t\t\t\t</th>\n\t\t\t\t\t\t\t</tr>\n\t\t\t\t\t\t</thead>\n\t\t\t\t\t\t<tbody class=\"divide-y divide-gray-200 dark:divide-gray-700\">\n\t\t\t\t\t\t\t{#each userStats as user}\n\t\t\t\t\t\t\t\t<tr class=\"hover:bg-gray-50 dark:hover:bg-gray-900/30\">\n\t\t\t\t\t\t\t\t\t<td class=\"px-4 py-3\">\n\t\t\t\t\t\t\t\t\t\t<div class=\"font-medium text-gray-900 dark:text-white\">\n\t\t\t\t\t\t\t\t\t\t\t{user.userId}\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t\t<td class=\"px-4 py-3\">\n\t\t\t\t\t\t\t\t\t\t<div class=\"flex items-center\">\n\t\t\t\t\t\t\t\t\t\t\t<div class=\"w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2\">\n\t\t\t\t\t\t\t\t\t\t\t\t<div\n\t\t\t\t\t\t\t\t\t\t\t\t\tclass=\"h-2 rounded-full bg-blue-500\"\n\t\t\t\t\t\t\t\t\t\t\t\t\tstyle={`width: ${summaryStats.totalMemories > 0 ? (user.memoryCount / summaryStats.totalMemories) * 100 : 0}%`}\n\t\t\t\t\t\t\t\t\t\t\t\t></div>\n\t\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t\t\t<span class=\"text-sm font-medium\">\n\t\t\t\t\t\t\t\t\t\t\t\t{user.memoryCount}\n\t\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t\t<td class=\"px-4 py-3\">\n\t\t\t\t\t\t\t\t\t\t<span\n\t\t\t\t\t\t\t\t\t\t\tclass={`px-2 py-1 rounded text-xs font-medium ${\n\t\t\t\t\t\t\t\t\t\t\t\tuser.avgImportance >= 0.8\n\t\t\t\t\t\t\t\t\t\t\t\t\t? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'\n\t\t\t\t\t\t\t\t\t\t\t\t\t: user.avgImportance >= 0.7\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'\n\t\t\t\t\t\t\t\t\t\t\t}`}\n\t\t\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t\t\t{(user.avgImportance * 100).toFixed(1)}%\n\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t\t<td class=\"px-4 py-3 text-sm text-gray-600 dark:text-gray-400\">\n\t\t\t\t\t\t\t\t\t\t{summaryStats.totalMemories > 0\n\t\t\t\t\t\t\t\t\t\t\t? ((user.memoryCount / summaryStats.totalMemories) * 100).toFixed(1)\n\t\t\t\t\t\t\t\t\t\t\t: '0.0'}%\n\t\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t\t<td class=\"px-4 py-3\">\n\t\t\t\t\t\t\t\t\t\t<span class=\"text-gray-600 dark:text-gray-400 text-sm font-medium\">\n\t\t\t\t\t\t\t\t\t\t\t数据不足\n\t\t\t\t\t\t\t\t\t\t</span>\n\t\t\t\t\t\t\t\t\t</td>\n\t\t\t\t\t\t\t\t</tr>\n\t\t\t\t\t\t\t{/each}\n\t\t\t\t\t\t</tbody>\n\t\t\t\t\t</table>\n\t\t\t\t</div>\n\n\t\t\t\t<div class=\"mt-6 pt-6 border-t border-gray-200 dark:border-gray-700\">\n\t\t\t\t\t<div class=\"flex items-center justify-between\">\n\t\t\t\t\t\t<span class=\"text-sm text-gray-500 dark:text-gray-400\">\n\t\t\t\t\t\t\t前{userStats.length}用户占总记忆的 {summaryStats.totalMemories > 0\n\t\t\t\t\t\t\t\t? (\n\t\t\t\t\t\t\t\t\t\t(userStats.reduce((sum, user) => sum + user.memoryCount, 0) /\n\t\t\t\t\t\t\t\t\t\t\tsummaryStats.totalMemories) *\n\t\t\t\t\t\t\t\t\t\t100\n\t\t\t\t\t\t\t\t\t).toFixed(1)\n\t\t\t\t\t\t\t\t: '0.0'}%\n\t\t\t\t\t\t</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t</div>\n\n\t\t<!-- 分析工具 -->\n\t\t<div class=\"bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6\">\n\t\t\t<h2 class=\"text-lg font-semibold text-gray-900 dark:text-white mb-6\">分析工具</h2>\n\n\t\t\t<div class=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200\"\n\t\t\t\t\ton:click={() => console.log('生成质量报告')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">📈</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">质量分析报告</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">生成详细的质量分析</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-200\"\n\t\t\t\t\ton:click={() => console.log('趋势预测')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">🔮</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">趋势预测</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">预测未来增长趋势</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\n\t\t\t\t<button\n\t\t\t\t\tclass=\"p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-700 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200\"\n\t\t\t\t\ton:click={() => console.log('对比分析')}\n\t\t\t\t>\n\t\t\t\t\t<div class=\"flex items-center space-x-3\">\n\t\t\t\t\t\t<div\n\t\t\t\t\t\t\tclass=\"w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center\"\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<span class=\"text-xl\">⚖️</span>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t<div class=\"text-left\">\n\t\t\t\t\t\t\t<p class=\"font-medium text-gray-900 dark:text-white\">对比分析</p>\n\t\t\t\t\t\t\t<p class=\"text-sm text-gray-500 dark:text-gray-400\">不同时间段对比</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t</div>\n\t\t\t\t</button>\n\t\t\t</div>\n\t\t</div>\n\t{/if}\n</div>\n"
     },
     "complexity_metrics": {
-      "cyclomatic_complexity": 21.0,
-      "lines_of_code": 559,
+      "cyclomatic_complexity": 24.0,
+      "lines_of_code": 744,
       "number_of_classes": 0,
-      "number_of_functions": 10
+      "number_of_functions": 11
     },
     "dependencies": [
       {
-        "dependency_type": "import",
+        "dependency_type": "framework",
         "is_external": true,
         "line_number": 1,
         "name": "svelte",
@@ -5458,58 +4899,41 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "library",
+        "is_external": true,
+        "line_number": 4,
+        "name": "chart.js",
+        "path": null,
+        "version": null
+      },
+      {
+        "dependency_type": "internal",
         "is_external": false,
-        "line_number": 2,
+        "line_number": 12,
         "name": "$lib/api/client",
         "path": "$lib/api/client",
         "version": null
       }
     ],
-    "detailed_description": "This Svelte component serves as the analytics dashboard page that visualizes memory data statistics. It fetches memory data via API, calculates various analytical metrics including type distribution, quality distribution, time trends, and user statistics. The component displays these metrics through visual charts and tables, providing insights into memory data patterns. It handles loading states, error conditions, and provides a comprehensive overview of memory analytics with interactive elements.",
+    "detailed_description": "This Svelte component implements an analytics dashboard page that visualizes memory data statistics. It loads memory data via API, calculates various analytics including type distribution, quality distribution, time trends, and user statistics, then displays them through charts and summary cards. The component handles loading states, error states, and provides fallback visualization when charts cannot render. It uses Chart.js for data visualization with custom styling and tooltips.",
     "interfaces": [
       {
-        "description": "Object containing total memories, average quality, active users, and optimization count",
-        "interface_type": "variable",
-        "name": "summaryStats",
-        "parameters": [],
-        "return_type": "object",
-        "visibility": "private"
+        "description": null,
+        "interface_type": "lifecycle",
+        "name": "onMount",
+        "parameters": [
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "callback",
+            "param_type": "() => Promise<void>"
+          }
+        ],
+        "return_type": "void",
+        "visibility": "public"
       },
       {
-        "description": "Array of memory type distribution with count and percentage",
-        "interface_type": "variable",
-        "name": "typeDistribution",
-        "parameters": [],
-        "return_type": "array",
-        "visibility": "private"
-      },
-      {
-        "description": "Array of quality score ranges with counts and color indicators",
-        "interface_type": "variable",
-        "name": "qualityDistribution",
-        "parameters": [],
-        "return_type": "array",
-        "visibility": "private"
-      },
-      {
-        "description": "Array of daily memory creation counts for trend visualization",
-        "interface_type": "variable",
-        "name": "timeTrends",
-        "parameters": [],
-        "return_type": "array",
-        "visibility": "private"
-      },
-      {
-        "description": "Array of top user statistics with memory count and average importance",
-        "interface_type": "variable",
-        "name": "userStats",
-        "parameters": [],
-        "return_type": "array",
-        "visibility": "private"
-      },
-      {
-        "description": "Fetches memory data and calculates all analytics metrics",
+        "description": null,
         "interface_type": "function",
         "name": "loadAnalyticsData",
         "parameters": [],
@@ -5517,30 +4941,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "Initializes data structures with default values for empty state",
-        "interface_type": "function",
-        "name": "loadDefaultData",
-        "parameters": [],
-        "return_type": "void",
-        "visibility": "private"
-      },
-      {
-        "description": "Calculates average quality score across all memories",
-        "interface_type": "function",
-        "name": "calculateAverageQuality",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "memories",
-            "param_type": "any[]"
-          }
-        ],
-        "return_type": "number",
-        "visibility": "private"
-      },
-      {
-        "description": "Calculates importance score for individual memory based on type, role, and custom factors",
+        "description": null,
         "interface_type": "function",
         "name": "calculateImportanceScore",
         "parameters": [
@@ -5553,104 +4954,14 @@ Code analysis results from preprocessing phase, including definitions of functio
         ],
         "return_type": "number",
         "visibility": "private"
-      },
-      {
-        "description": "Counts unique users who have created memories",
-        "interface_type": "function",
-        "name": "calculateActiveUsers",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "memories",
-            "param_type": "any[]"
-          }
-        ],
-        "return_type": "number",
-        "visibility": "private"
-      },
-      {
-        "description": "Calculates distribution of memory types with percentages",
-        "interface_type": "function",
-        "name": "calculateTypeDistribution",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "memories",
-            "param_type": "any[]"
-          }
-        ],
-        "return_type": "Array<{type: string, count: number, percentage: number}>",
-        "visibility": "private"
-      },
-      {
-        "description": "Categorizes memories into quality score ranges with visual colors",
-        "interface_type": "function",
-        "name": "calculateQualityDistribution",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "memories",
-            "param_type": "any[]"
-          }
-        ],
-        "return_type": "Array<{range: string, count: number, color: string}>",
-        "visibility": "private"
-      },
-      {
-        "description": "Aggregates memory creation counts by date for trend analysis",
-        "interface_type": "function",
-        "name": "calculateTimeTrends",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "memories",
-            "param_type": "any[]"
-          }
-        ],
-        "return_type": "Array<{date: string, count: number}>",
-        "visibility": "private"
-      },
-      {
-        "description": "Calculates statistics for top users based on memory count and quality",
-        "interface_type": "function",
-        "name": "calculateUserStats",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "memories",
-            "param_type": "any[]"
-          }
-        ],
-        "return_type": "Array<{userId: string, memoryCount: number, avgImportance: number}>",
-        "visibility": "private"
-      },
-      {
-        "description": "Returns CSS color class based on percentage value for visual indication",
-        "interface_type": "function",
-        "name": "getPercentageColor",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "percentage",
-            "param_type": "number"
-          }
-        ],
-        "return_type": "string",
-        "visibility": "private"
       }
     ],
     "responsibilities": [
-      "Fetch and process memory analytics data from API",
-      "Calculate statistical metrics for memory data analysis",
-      "Visualize memory data through charts and tables",
-      "Handle loading, error, and default states",
-      "Provide interactive analytics tools and export functionality"
+      "Manage analytics data loading and error handling",
+      "Calculate memory statistics and distributions",
+      "Render data visualization charts and summary cards",
+      "Handle loading and error states with appropriate UI feedback",
+      "Provide interactive analytics dashboard with multiple visualization types"
     ]
   },
   {
@@ -11335,7 +10646,7 @@ Code analysis results from preprocessing phase, including definitions of functio
   {
     "code_dossier": {
       "code_purpose": "types",
-      "description": "Defines core data types, memory structures, metadata, enums, and message formats for the memory system, serving as a foundational interface definition module.",
+      "description": "Core type definitions for memory management system including data structures, enums, and utility methods.",
       "file_path": "cortex-mem-core/src/types.rs",
       "functions": [
         "Memory::new",
@@ -11383,7 +10694,7 @@ Code analysis results from preprocessing phase, including definitions of functio
       "cyclomatic_complexity": 9.0,
       "lines_of_code": 302,
       "number_of_classes": 9,
-      "number_of_functions": 25
+      "number_of_functions": 29
     },
     "dependencies": [
       {
@@ -11391,7 +10702,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "is_external": true,
         "line_number": 1,
         "name": "chrono",
-        "path": null,
+        "path": "chrono",
         "version": null
       },
       {
@@ -11399,15 +10710,15 @@ Code analysis results from preprocessing phase, including definitions of functio
         "is_external": true,
         "line_number": 2,
         "name": "serde",
-        "path": null,
+        "path": "serde",
         "version": null
       },
       {
         "dependency_type": "use",
         "is_external": false,
         "line_number": 3,
-        "name": "std::collections::HashMap",
-        "path": null,
+        "name": "std",
+        "path": "std::collections::HashMap",
         "version": null
       },
       {
@@ -11415,22 +10726,22 @@ Code analysis results from preprocessing phase, including definitions of functio
         "is_external": true,
         "line_number": 4,
         "name": "uuid",
-        "path": null,
+        "path": "uuid",
         "version": null
       },
       {
         "dependency_type": "mod",
         "is_external": false,
-        "line_number": 271,
+        "line_number": null,
         "name": "optimization",
-        "path": "./cortex-mem-insights/src/server/api/optimization.ts",
+        "path": "./optimization",
         "version": null
       }
     ],
-    "detailed_description": "This component defines the foundational data structures and type system for a memory-based AI agent platform. It includes core entities such as Memory (representing stored knowledge with content, embedding, and metadata), MemoryMetadata (for categorization and filtering), and MemoryType (an enum defining different memory categories like Conversational, Procedural, Factual, etc.). The module also defines utility types like ScoredMemory for search results, Filters for query constraints, and Message for LLM interactions. All types implement serialization (Serde), debugging, and cloning traits to support persistence, inspection, and transfer across system boundaries. Builder patterns are used in structs like MemoryMetadata and Filters to enable fluent construction. The component serves as a contract between different system layers including storage, retrieval, API, and agent logic.",
+    "detailed_description": "This component defines the core data structures and type system for a memory management system. It includes the primary Memory struct that represents individual memory records with content, embeddings, metadata, and timestamps. The MemoryMetadata struct contains organizational and filtering information including user/agent context, memory type classification, importance scoring, and custom attributes. The MemoryType enum provides a taxonomy of memory types (Conversational, Procedural, Factual, etc.) with parsing utilities. Additional types include ScoredMemory for search results, MemoryResult for operation tracking, Filters for query constraints, Message for LLM interactions, and MemoryAction for change instructions. The implementation includes comprehensive builder patterns for fluent interface construction and utility methods for common operations like content hashing.",
     "interfaces": [
       {
-        "description": "Core memory entity containing content, embedding, metadata, and timestamps",
+        "description": "Core memory structure containing content, embedding, metadata, and timestamps",
         "interface_type": "struct",
         "name": "Memory",
         "parameters": [
@@ -11441,13 +10752,13 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "String"
           },
           {
-            "description": "Textual content of the memory",
+            "description": "The actual memory content/text",
             "is_optional": false,
             "name": "content",
             "param_type": "String"
           },
           {
-            "description": "Vector representation of memory content",
+            "description": "Vector embedding representation of the content",
             "is_optional": false,
             "name": "embedding",
             "param_type": "Vec<f32>"
@@ -11471,7 +10782,7 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "DateTime<Utc>"
           }
         ],
-        "return_type": null,
+        "return_type": "Self",
         "visibility": "public"
       },
       {
@@ -11480,37 +10791,37 @@ Code analysis results from preprocessing phase, including definitions of functio
         "name": "MemoryMetadata",
         "parameters": [
           {
-            "description": "Associated user ID",
+            "description": "Associated user identifier",
             "is_optional": true,
             "name": "user_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Associated agent ID",
+            "description": "Associated agent identifier",
             "is_optional": true,
             "name": "agent_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Associated run/session ID",
+            "description": "Associated run/session identifier",
             "is_optional": true,
             "name": "run_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Originating actor ID",
+            "description": "Actor that created the memory",
             "is_optional": true,
             "name": "actor_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Role associated with memory creation",
+            "description": "Role of the memory creator",
             "is_optional": true,
             "name": "role",
             "param_type": "Option<String>"
           },
           {
-            "description": "Categorization of memory type",
+            "description": "Classification of memory type",
             "is_optional": false,
             "name": "memory_type",
             "param_type": "MemoryType"
@@ -11522,35 +10833,35 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "String"
           },
           {
-            "description": "Subjective importance rating (0-1)",
+            "description": "Importance rating between 0-1",
             "is_optional": false,
             "name": "importance_score",
             "param_type": "f32"
           },
           {
-            "description": "Named entities mentioned in memory",
+            "description": "Named entities referenced in content",
             "is_optional": false,
             "name": "entities",
             "param_type": "Vec<String>"
           },
           {
-            "description": "Topics covered by memory",
+            "description": "Topics covered in the content",
             "is_optional": false,
             "name": "topics",
             "param_type": "Vec<String>"
           },
           {
-            "description": "Extensible custom metadata",
+            "description": "Custom key-value metadata",
             "is_optional": false,
             "name": "custom",
             "param_type": "HashMap<String, serde_json::Value>"
           }
         ],
-        "return_type": null,
+        "return_type": "Self",
         "visibility": "public"
       },
       {
-        "description": "Enumeration of supported memory types for categorization",
+        "description": "Enumeration of supported memory types for classification",
         "interface_type": "enum",
         "name": "MemoryType",
         "parameters": [],
@@ -11558,18 +10869,18 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "Memory search result with similarity score",
+        "description": "Memory result with similarity score from search operations",
         "interface_type": "struct",
         "name": "ScoredMemory",
         "parameters": [
           {
-            "description": "The matched memory",
+            "description": "The matched memory object",
             "is_optional": false,
             "name": "memory",
             "param_type": "Memory"
           },
           {
-            "description": "Similarity score (higher is more similar)",
+            "description": "Similarity score between 0-1",
             "is_optional": false,
             "name": "score",
             "param_type": "f32"
@@ -11579,30 +10890,83 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "Query filters for memory search and retrieval",
+        "description": "Result object for memory operations",
+        "interface_type": "struct",
+        "name": "MemoryResult",
+        "parameters": [
+          {
+            "description": "Memory identifier",
+            "is_optional": false,
+            "name": "id",
+            "param_type": "String"
+          },
+          {
+            "description": "Memory content",
+            "is_optional": false,
+            "name": "memory",
+            "param_type": "String"
+          },
+          {
+            "description": "Type of operation performed",
+            "is_optional": false,
+            "name": "event",
+            "param_type": "MemoryEvent"
+          },
+          {
+            "description": "Identifier of the actor performing the operation",
+            "is_optional": true,
+            "name": "actor_id",
+            "param_type": "Option<String>"
+          },
+          {
+            "description": "Role of the actor",
+            "is_optional": true,
+            "name": "role",
+            "param_type": "Option<String>"
+          },
+          {
+            "description": "Previous state of memory before update",
+            "is_optional": true,
+            "name": "previous_memory",
+            "param_type": "Option<String>"
+          }
+        ],
+        "return_type": null,
+        "visibility": "public"
+      },
+      {
+        "description": "Types of memory operations that can be performed",
+        "interface_type": "enum",
+        "name": "MemoryEvent",
+        "parameters": [],
+        "return_type": null,
+        "visibility": "public"
+      },
+      {
+        "description": "Query filters for memory search and retrieval operations",
         "interface_type": "struct",
         "name": "Filters",
         "parameters": [
           {
-            "description": "Filter by user ID",
+            "description": "Filter by user identifier",
             "is_optional": true,
             "name": "user_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Filter by agent ID",
+            "description": "Filter by agent identifier",
             "is_optional": true,
             "name": "agent_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Filter by run ID",
+            "description": "Filter by run/session identifier",
             "is_optional": true,
             "name": "run_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Filter by actor ID",
+            "description": "Filter by actor identifier",
             "is_optional": true,
             "name": "actor_id",
             "param_type": "Option<String>"
@@ -11614,49 +10978,49 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "Option<MemoryType>"
           },
           {
-            "description": "Minimum importance score",
+            "description": "Minimum importance score filter",
             "is_optional": true,
             "name": "min_importance",
             "param_type": "Option<f32>"
           },
           {
-            "description": "Maximum importance score",
+            "description": "Maximum importance score filter",
             "is_optional": true,
             "name": "max_importance",
             "param_type": "Option<f32>"
           },
           {
-            "description": "Filter by creation time (after)",
+            "description": "Filter for memories created after timestamp",
             "is_optional": true,
             "name": "created_after",
             "param_type": "Option<DateTime<Utc>>"
           },
           {
-            "description": "Filter by creation time (before)",
+            "description": "Filter for memories created before timestamp",
             "is_optional": true,
             "name": "created_before",
             "param_type": "Option<DateTime<Utc>>"
           },
           {
-            "description": "Filter by update time (after)",
+            "description": "Filter for memories updated after timestamp",
             "is_optional": true,
             "name": "updated_after",
             "param_type": "Option<DateTime<Utc>>"
           },
           {
-            "description": "Filter by update time (before)",
+            "description": "Filter for memories updated before timestamp",
             "is_optional": true,
             "name": "updated_before",
             "param_type": "Option<DateTime<Utc>>"
           },
           {
-            "description": "Filter by contained entities",
+            "description": "Filter by presence of specific entities",
             "is_optional": true,
             "name": "entities",
             "param_type": "Option<Vec<String>>"
           },
           {
-            "description": "Filter by covered topics",
+            "description": "Filter by presence of specific topics",
             "is_optional": true,
             "name": "topics",
             "param_type": "Option<Vec<String>>"
@@ -11672,12 +11036,12 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "Standardized message format for LLM interactions",
+        "description": "Structured message format for LLM interactions",
         "interface_type": "struct",
         "name": "Message",
         "parameters": [
           {
-            "description": "Role in conversation (user/assistant/system)",
+            "description": "Role in conversation (user, assistant, system)",
             "is_optional": false,
             "name": "role",
             "param_type": "String"
@@ -11697,14 +11061,47 @@ Code analysis results from preprocessing phase, including definitions of functio
         ],
         "return_type": null,
         "visibility": "public"
+      },
+      {
+        "description": "Action instruction for memory modification determined by LLM",
+        "interface_type": "struct",
+        "name": "MemoryAction",
+        "parameters": [
+          {
+            "description": "Target memory identifier",
+            "is_optional": true,
+            "name": "id",
+            "param_type": "Option<String>"
+          },
+          {
+            "description": "Content for the memory operation",
+            "is_optional": false,
+            "name": "text",
+            "param_type": "String"
+          },
+          {
+            "description": "Type of operation to perform",
+            "is_optional": false,
+            "name": "event",
+            "param_type": "MemoryEvent"
+          },
+          {
+            "description": "Previous memory state for updates",
+            "is_optional": true,
+            "name": "old_memory",
+            "param_type": "Option<String>"
+          }
+        ],
+        "return_type": null,
+        "visibility": "public"
       }
     ],
     "responsibilities": [
-      "Define core memory data structure with content, embedding, metadata, and timestamps",
-      "Provide memory categorization through MemoryType enum with parsing utilities",
-      "Support memory filtering via Filters struct with multiple optional criteria",
-      "Enable structured messaging for LLM interactions using Message type",
-      "Ensure data interoperability through serialization and type safety"
+      "Define core data structures for memory storage and retrieval",
+      "Provide type-safe memory classification system through MemoryType enum",
+      "Enable efficient memory filtering and search through structured metadata and filter objects",
+      "Support LLM interaction patterns with standardized message formatting",
+      "Facilitate memory operations tracking through result and action types"
     ]
   },
   {
@@ -11866,7 +11263,7 @@ Code analysis results from preprocessing phase, including definitions of functio
   {
     "code_dossier": {
       "code_purpose": "command",
-      "description": null,
+      "description": "LLM client trait for text generation and embeddings with structured extraction capabilities",
       "file_path": "cortex-mem-core/src/llm/client.rs",
       "functions": [
         "create_llm_client",
@@ -11879,79 +11276,154 @@ Code analysis results from preprocessing phase, including definitions of functio
       "interfaces": [
         "LLMClient",
         "OpenAILLMClient",
-        "create_llm_client"
+        "OpenAILLMClient::new",
+        "OpenAILLMClient::build_keyword_prompt",
+        "OpenAILLMClient::build_summary_prompt",
+        "OpenAILLMClient::parse_keywords"
       ],
       "name": "client.rs",
-      "source_summary": "use async_trait::async_trait;\nuse rig::providers::openai::CompletionModel;\nuse rig::{\n    agent::Agent,\n    client::{CompletionClient, EmbeddingsClient},\n    completion::Prompt,\n    embeddings::EmbeddingsBuilder,\n    providers::openai::{Client, EmbeddingModel as OpenAIEmbeddingModel},\n};\nuse tracing::{debug, error, info};\n\nuse crate::{\n    EmbeddingConfig,\n    config::LLMConfig,\n    error::{MemoryError, Result},\n    llm::extractor_types::*,\n};\n\n/// LLM client trait for text generation and embeddings\n#[async_trait]\npub trait LLMClient: Send + Sync + dyn_clone::DynClone {\n    /// Generate text completion\n    async fn complete(&self, prompt: &str) -> Result<String>;\n\n    /// Generate embeddings for text\n    async fn embed(&self, text: &str) -> Result<Vec<f32>>;\n\n    /// Generate embeddings for multiple texts\n    async fn embed_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>>;\n\n    /// Extract key information from memory content\n    async fn extract_keywords(&self, content: &str) -> Result<Vec<String>>;\n\n    /// Summarize memory content\n    async fn summarize(&self, content: &str, max_length: Option<usize>) -> Result<String>;\n\n    /// Check if the LLM service is available\n    async fn health_check(&self) -> Result<bool>;\n\n    // New extractor-based methods\n\n    /// Extract structured facts from text using rig extractor\n    async fn extract_structured_facts(&self, prompt: &str) -> Result<StructuredFactExtraction>;\n\n    /// Extract detailed facts with metadata using rig extractor\n    async fn extract_detailed_facts(&self, prompt: &str) -> Result<DetailedFactExtraction>;\n\n    /// Extract keywords using rig extractor\n    async fn extract_keywords_structured(&self, prompt: &str) -> Result<KeywordExtraction>;\n\n    /// Classify memory type using rig extractor\n    async fn classify_memory(&self, prompt: &str) -> Result<MemoryClassification>;\n\n    /// Score memory importance using rig extractor\n    async fn score_importance(&self, prompt: &str) -> Result<ImportanceScore>;\n\n    /// Check for duplicates using rig extractor\n    async fn check_duplicates(&self, prompt: &str) -> Result<DeduplicationResult>;\n\n    /// Generate summary using rig extractor\n    async fn generate_summary(&self, prompt: &str) -> Result<SummaryResult>;\n\n    /// Detect language using rig extractor\n    async fn detect_language(&self, prompt: &str) -> Result<LanguageDetection>;\n\n    /// Extract entities using rig extractor\n    async fn extract_entities(&self, prompt: &str) -> Result<EntityExtraction>;\n\n    /// Analyze conversation using rig extractor\n    async fn analyze_conversation(&self, prompt: &str) -> Result<ConversationAnalysis>;\n}\n\ndyn_clone::clone_trait_object!(LLMClient);\n\n/// OpenAI-based LLM client implementation using rig\npub struct OpenAILLMClient {\n    completion_model: Agent<CompletionModel>,\n    completion_model_name: String,\n    embedding_model: OpenAIEmbeddingModel,\n    client: Client,\n}\n\nimpl OpenAILLMClient {\n    /// Create a new OpenAI LLM client\n    pub fn new(llm_config: &LLMConfig, embedding_config: &EmbeddingConfig) -> Result<Self> {\n        let client = Client::builder(&llm_config.api_key)\n            .base_url(&llm_config.api_base_url)\n            .build();\n\n        let completion_model: Agent<CompletionModel> = client\n            .completion_model(&llm_config.model_efficient)\n            .completions_api()\n            .into_agent_builder()\n            .temperature(llm_config.temperature as f64)\n            .max_tokens(llm_config.max_tokens as u64)\n            .build();\n\n        let embedding_client = Client::builder(&embedding_config.api_key)\n            .base_url(&embedding_config.api_base_url)\n            .build();\n        let embedding_model = embedding_client.embedding_model(&embedding_config.model_name);\n\n        Ok(Self {\n            completion_model,\n            completion_model_name: llm_config.model_efficient.clone(),\n            embedding_model,\n            client,\n        })\n    }\n\n    /// Build a prompt for keyword extraction\n    fn build_keyword_prompt(&self, content: &str) -> String {\n        format!(\n            \"Extract the most important keywords and key phrases from the following text. \\\n            Return only the keywords separated by commas, without any additional explanation.\\n\\n\\\n            Text: {}\\n\\n\\\n            Keywords:\",\n            content\n        )\n    }\n\n    /// Build a prompt for summarization\n    fn build_summary_prompt(&self, content: &str, max_length: Option<usize>) -> String {\n        let length_instruction = match max_length {\n            Some(len) => format!(\"in approximately {} words\", len),\n            None => \"concisely\".to_string(),\n        };\n\n        format!(\n            \"Summarize the following text {}. Focus on the main points and key information.\\n\\n\\\n            Text: {}\\n\\n\\\n            Summary:\",\n            length_instruction, content\n        )\n    }\n\n    /// Parse keywords from LLM response\n    fn parse_keywords(&self, response: &str) -> Vec<String> {\n        response\n            .split(',')\n            .map(|s| s.trim().to_string())\n            .filter(|s| !s.is_empty())\n            .collect()\n    }\n}\n\nimpl Clone for OpenAILLMClient {\n    fn clone(&self) -> Self {\n        Self {\n            completion_model: self.completion_model.clone(),\n            completion_model_name: self.completion_model_name.clone(),\n            embedding_model: self.embedding_model.clone(),\n            client: self.client.clone(),\n        }\n    }\n}\n\n#[async_trait]\nimpl LLMClient for OpenAILLMClient {\n    async fn complete(&self, prompt: &str) -> Result<String> {\n        let response = self\n            .completion_model\n            .prompt(prompt)\n            .multi_turn(10)\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))?;\n\n        debug!(\"Generated completion for prompt length: {}\", prompt.len());\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        Ok(response)\n    }\n\n    async fn embed(&self, text: &str) -> Result<Vec<f32>> {\n        let builder = EmbeddingsBuilder::new(self.embedding_model.clone())\n            .document(text)\n            .map_err(|e| MemoryError::LLM(e.to_string()))?;\n\n        let embeddings = builder\n            .build()\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))?;\n\n        if let Some((_, embedding)) = embeddings.first() {\n            debug!(\"Generated embedding for text length: {}\", text.len());\n            Ok(embedding.first().vec.iter().map(|&x| x as f32).collect())\n        } else {\n            Err(MemoryError::LLM(\"No embedding generated\".to_string()))\n        }\n    }\n\n    async fn embed_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>> {\n        let mut results = Vec::new();\n\n        // Process in batches to avoid rate limits\n        for text in texts {\n            let embedding = self.embed(text).await?;\n            results.push(embedding);\n        }\n\n        debug!(\"Generated embeddings for {} texts\", texts.len());\n        Ok(results)\n    }\n\n    async fn extract_keywords(&self, content: &str) -> Result<Vec<String>> {\n        let prompt = self.build_keyword_prompt(content);\n\n        // Use rig's structured extractor instead of string parsing\n        match self.extract_keywords_structured(&prompt).await {\n            Ok(keyword_extraction) => {\n                debug!(\n                    \"Extracted {} keywords from content using rig extractor\",\n                    keyword_extraction.keywords.len()\n                );\n                Ok(keyword_extraction.keywords)\n            }\n            Err(e) => {\n                // Fallback to traditional method if extractor fails\n                debug!(\n                    \"Rig extractor failed, falling back to traditional method: {}\",\n                    e\n                );\n\n                #[cfg(debug_assertions)]\n                tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n                let response = self.complete(&prompt).await?;\n                let keywords = self.parse_keywords(&response);\n                debug!(\n                    \"Extracted {} keywords from content using fallback method\",\n                    keywords.len()\n                );\n                Ok(keywords)\n            }\n        }\n    }\n\n    async fn summarize(&self, content: &str, max_length: Option<usize>) -> Result<String> {\n        let prompt = self.build_summary_prompt(content, max_length);\n\n        // Use rig's structured extractor instead of string parsing\n        match self.generate_summary(&prompt).await {\n            Ok(summary_result) => {\n                debug!(\n                    \"Generated summary of length: {} using rig extractor\",\n                    summary_result.summary.len()\n                );\n                Ok(summary_result.summary.trim().to_string())\n            }\n            Err(e) => {\n                // Fallback to traditional method if extractor fails\n                debug!(\n                    \"Rig extractor failed, falling back to traditional method: {}\",\n                    e\n                );\n                let summary = self.complete(&prompt).await?;\n                debug!(\n                    \"Generated summary of length: {} using fallback method\",\n                    summary.len()\n                );\n                Ok(summary.trim().to_string())\n            }\n        }\n    }\n\n    async fn health_check(&self) -> Result<bool> {\n        // Try a simple embedding request to check if the service is available\n        match self.embed(\"health check\").await {\n            Ok(_) => {\n                info!(\"LLM service health check passed\");\n                Ok(true)\n            }\n            Err(e) => {\n                error!(\"LLM service health check failed: {}\", e);\n                Ok(false)\n            }\n        }\n    }\n\n    async fn extract_structured_facts(&self, prompt: &str) -> Result<StructuredFactExtraction> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<StructuredFactExtraction>(&self.completion_model_name)\n            .preamble(prompt)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn extract_detailed_facts(&self, prompt: &str) -> Result<DetailedFactExtraction> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<DetailedFactExtraction>(&self.completion_model_name)\n            .preamble(prompt)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn extract_keywords_structured(&self, prompt: &str) -> Result<KeywordExtraction> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<KeywordExtraction>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(500)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn classify_memory(&self, prompt: &str) -> Result<MemoryClassification> {\n        // Instead of using the extractor which requires context, we'll use a simpler approach\n        // with direct completion and parse the result\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        // Use direct completion for more reliable classification\n        let completion = self.complete(prompt).await?;\n\n        // Parse the completion to extract the memory type\n        let response = completion.trim();\n\n        // Extract the memory type from the response\n        let memory_type = if response.to_lowercase().contains(\"conversational\") {\n            \"Conversational\".to_string()\n        } else if response.to_lowercase().contains(\"procedural\") {\n            \"Procedural\".to_string()\n        } else if response.to_lowercase().contains(\"factual\") {\n            \"Factual\".to_string()\n        } else if response.to_lowercase().contains(\"semantic\") {\n            \"Semantic\".to_string()\n        } else if response.to_lowercase().contains(\"episodic\") {\n            \"Episodic\".to_string()\n        } else if response.to_lowercase().contains(\"personal\") {\n            \"Personal\".to_string()\n        } else {\n            // Try to extract the exact word and use MemoryType::parse\n            response\n                .lines()\n                .find_map(|line| {\n                    let line = line.trim();\n                    [\n                        \"Conversational\",\n                        \"Procedural\",\n                        \"Factual\",\n                        \"Semantic\",\n                        \"Episodic\",\n                        \"Personal\",\n                    ]\n                    .iter()\n                    .find(|&typ| line.contains(typ))\n                })\n                .map(|typ| typ.to_string())\n                .unwrap_or_else(|| \"Conversational\".to_string())\n        };\n\n        Ok(MemoryClassification {\n            memory_type,\n            confidence: 0.8, // Default confidence\n            reasoning: format!(\"LLM classification response: {}\", response),\n        })\n    }\n\n    async fn score_importance(&self, prompt: &str) -> Result<ImportanceScore> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<ImportanceScore>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(500)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn check_duplicates(&self, prompt: &str) -> Result<DeduplicationResult> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<DeduplicationResult>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(500)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn generate_summary(&self, prompt: &str) -> Result<SummaryResult> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<SummaryResult>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(1000)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn detect_language(&self, prompt: &str) -> Result<LanguageDetection> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<LanguageDetection>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(200)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn extract_entities(&self, prompt: &str) -> Result<EntityExtraction> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<EntityExtraction>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(1000)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn analyze_conversation(&self, prompt: &str) -> Result<ConversationAnalysis> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<ConversationAnalysis>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(1500)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n}\n\n/// Factory function to create LLM clients based on configuration\npub fn create_llm_client(\n    llm_config: &LLMConfig,\n    embedding_config: &EmbeddingConfig,\n) -> Result<Box<dyn LLMClient>> {\n    // For now, we only support OpenAI\n    let client = OpenAILLMClient::new(llm_config, embedding_config)?;\n    Ok(Box::new(client))\n}\n"
+      "source_summary": "use std::time::Duration;\n\nuse async_trait::async_trait;\nuse rig::providers::openai::CompletionModel;\nuse rig::{\n    agent::Agent,\n    client::{CompletionClient, EmbeddingsClient},\n    completion::Prompt,\n    embeddings::EmbeddingsBuilder,\n    providers::openai::{Client, EmbeddingModel as OpenAIEmbeddingModel},\n};\nuse tokio::time::sleep;\nuse tracing::{debug, error, info};\n\nuse crate::{\n    EmbeddingConfig,\n    config::LLMConfig,\n    error::{MemoryError, Result},\n    llm::extractor_types::*,\n};\n\n/// LLM client trait for text generation and embeddings\n#[async_trait]\npub trait LLMClient: Send + Sync + dyn_clone::DynClone {\n    /// Generate text completion\n    async fn complete(&self, prompt: &str) -> Result<String>;\n\n    /// Generate embeddings for text\n    async fn embed(&self, text: &str) -> Result<Vec<f32>>;\n\n    /// Generate embeddings for multiple texts\n    async fn embed_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>>;\n\n    /// Extract key information from memory content\n    async fn extract_keywords(&self, content: &str) -> Result<Vec<String>>;\n\n    /// Summarize memory content\n    async fn summarize(&self, content: &str, max_length: Option<usize>) -> Result<String>;\n\n    /// Check if the LLM service is available\n    async fn health_check(&self) -> Result<bool>;\n\n    // New extractor-based methods\n\n    /// Extract structured facts from text using rig extractor\n    async fn extract_structured_facts(&self, prompt: &str) -> Result<StructuredFactExtraction>;\n\n    /// Extract detailed facts with metadata using rig extractor\n    async fn extract_detailed_facts(&self, prompt: &str) -> Result<DetailedFactExtraction>;\n\n    /// Extract keywords using rig extractor\n    async fn extract_keywords_structured(&self, prompt: &str) -> Result<KeywordExtraction>;\n\n    /// Classify memory type using rig extractor\n    async fn classify_memory(&self, prompt: &str) -> Result<MemoryClassification>;\n\n    /// Score memory importance using rig extractor\n    async fn score_importance(&self, prompt: &str) -> Result<ImportanceScore>;\n\n    /// Check for duplicates using rig extractor\n    async fn check_duplicates(&self, prompt: &str) -> Result<DeduplicationResult>;\n\n    /// Generate summary using rig extractor\n    async fn generate_summary(&self, prompt: &str) -> Result<SummaryResult>;\n\n    /// Detect language using rig extractor\n    async fn detect_language(&self, prompt: &str) -> Result<LanguageDetection>;\n\n    /// Extract entities using rig extractor\n    async fn extract_entities(&self, prompt: &str) -> Result<EntityExtraction>;\n\n    /// Analyze conversation using rig extractor\n    async fn analyze_conversation(&self, prompt: &str) -> Result<ConversationAnalysis>;\n}\n\ndyn_clone::clone_trait_object!(LLMClient);\n\n/// OpenAI-based LLM client implementation using rig\npub struct OpenAILLMClient {\n    completion_model: Agent<CompletionModel>,\n    completion_model_name: String,\n    embedding_model: OpenAIEmbeddingModel,\n    client: Client,\n}\n\nimpl OpenAILLMClient {\n    /// Create a new OpenAI LLM client\n    pub fn new(llm_config: &LLMConfig, embedding_config: &EmbeddingConfig) -> Result<Self> {\n        let client = Client::builder(&llm_config.api_key)\n            .base_url(&llm_config.api_base_url)\n            .build();\n\n        let completion_model: Agent<CompletionModel> = client\n            .completion_model(&llm_config.model_efficient)\n            .completions_api()\n            .into_agent_builder()\n            .temperature(llm_config.temperature as f64)\n            .max_tokens(llm_config.max_tokens as u64)\n            .build();\n\n        let embedding_client = Client::builder(&embedding_config.api_key)\n            .base_url(&embedding_config.api_base_url)\n            .build();\n        let embedding_model = embedding_client.embedding_model(&embedding_config.model_name);\n\n        Ok(Self {\n            completion_model,\n            completion_model_name: llm_config.model_efficient.clone(),\n            embedding_model,\n            client,\n        })\n    }\n\n    /// Build a prompt for keyword extraction\n    fn build_keyword_prompt(&self, content: &str) -> String {\n        format!(\n            \"Extract the most important keywords and key phrases from the following text. \\\n            Return only the keywords separated by commas, without any additional explanation.\\n\\n\\\n            Text: {}\\n\\n\\\n            Keywords:\",\n            content\n        )\n    }\n\n    /// Build a prompt for summarization\n    fn build_summary_prompt(&self, content: &str, max_length: Option<usize>) -> String {\n        let length_instruction = match max_length {\n            Some(len) => format!(\"in approximately {} words\", len),\n            None => \"concisely\".to_string(),\n        };\n\n        format!(\n            \"Summarize the following text {}. Focus on the main points and key information.\\n\\n\\\n            Text: {}\\n\\n\\\n            Summary:\",\n            length_instruction, content\n        )\n    }\n\n    /// Parse keywords from LLM response\n    fn parse_keywords(&self, response: &str) -> Vec<String> {\n        response\n            .split(',')\n            .map(|s| s.trim().to_string())\n            .filter(|s| !s.is_empty())\n            .collect()\n    }\n}\n\nimpl Clone for OpenAILLMClient {\n    fn clone(&self) -> Self {\n        Self {\n            completion_model: self.completion_model.clone(),\n            completion_model_name: self.completion_model_name.clone(),\n            embedding_model: self.embedding_model.clone(),\n            client: self.client.clone(),\n        }\n    }\n}\n\n#[async_trait]\nimpl LLMClient for OpenAILLMClient {\n    async fn complete(&self, prompt: &str) -> Result<String> {\n        let response = self\n            .completion_model\n            .prompt(prompt)\n            .multi_turn(10)\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))?;\n\n        debug!(\"Generated completion for prompt length: {}\", prompt.len());\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        Ok(response)\n    }\n\n    async fn embed(&self, text: &str) -> Result<Vec<f32>> {\n        let builder = EmbeddingsBuilder::new(self.embedding_model.clone())\n            .document(text)\n            .map_err(|e| MemoryError::LLM(e.to_string()))?;\n\n        let embeddings = builder\n            .build()\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))?;\n\n        sleep(Duration::from_secs(2)).await;\n\n        if let Some((_, embedding)) = embeddings.first() {\n            debug!(\"Generated embedding for text length: {}\", text.len());\n            Ok(embedding.first().vec.iter().map(|&x| x as f32).collect())\n        } else {\n            Err(MemoryError::LLM(\"No embedding generated\".to_string()))\n        }\n    }\n\n    async fn embed_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>> {\n        let mut results = Vec::new();\n\n        // Process in batches to avoid rate limits\n        for text in texts {\n            let embedding = self.embed(text).await?;\n            results.push(embedding);\n        }\n\n        debug!(\"Generated embeddings for {} texts\", texts.len());\n        Ok(results)\n    }\n\n    async fn extract_keywords(&self, content: &str) -> Result<Vec<String>> {\n        let prompt = self.build_keyword_prompt(content);\n\n        // Use rig's structured extractor instead of string parsing\n        match self.extract_keywords_structured(&prompt).await {\n            Ok(keyword_extraction) => {\n                debug!(\n                    \"Extracted {} keywords from content using rig extractor\",\n                    keyword_extraction.keywords.len()\n                );\n                Ok(keyword_extraction.keywords)\n            }\n            Err(e) => {\n                // Fallback to traditional method if extractor fails\n                debug!(\n                    \"Rig extractor failed, falling back to traditional method: {}\",\n                    e\n                );\n\n                #[cfg(debug_assertions)]\n                tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n                let response = self.complete(&prompt).await?;\n                let keywords = self.parse_keywords(&response);\n                debug!(\n                    \"Extracted {} keywords from content using fallback method\",\n                    keywords.len()\n                );\n                Ok(keywords)\n            }\n        }\n    }\n\n    async fn summarize(&self, content: &str, max_length: Option<usize>) -> Result<String> {\n        let prompt = self.build_summary_prompt(content, max_length);\n\n        // Use rig's structured extractor instead of string parsing\n        match self.generate_summary(&prompt).await {\n            Ok(summary_result) => {\n                debug!(\n                    \"Generated summary of length: {} using rig extractor\",\n                    summary_result.summary.len()\n                );\n                Ok(summary_result.summary.trim().to_string())\n            }\n            Err(e) => {\n                // Fallback to traditional method if extractor fails\n                debug!(\n                    \"Rig extractor failed, falling back to traditional method: {}\",\n                    e\n                );\n                let summary = self.complete(&prompt).await?;\n                debug!(\n                    \"Generated summary of length: {} using fallback method\",\n                    summary.len()\n                );\n                Ok(summary.trim().to_string())\n            }\n        }\n    }\n\n    async fn health_check(&self) -> Result<bool> {\n        // Try a simple embedding request to check if the service is available\n        match self.embed(\"health check\").await {\n            Ok(_) => {\n                info!(\"LLM service health check passed\");\n                Ok(true)\n            }\n            Err(e) => {\n                error!(\"LLM service health check failed: {}\", e);\n                Ok(false)\n            }\n        }\n    }\n\n    async fn extract_structured_facts(&self, prompt: &str) -> Result<StructuredFactExtraction> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<StructuredFactExtraction>(&self.completion_model_name)\n            .preamble(prompt)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn extract_detailed_facts(&self, prompt: &str) -> Result<DetailedFactExtraction> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<DetailedFactExtraction>(&self.completion_model_name)\n            .preamble(prompt)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn extract_keywords_structured(&self, prompt: &str) -> Result<KeywordExtraction> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<KeywordExtraction>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(500)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn classify_memory(&self, prompt: &str) -> Result<MemoryClassification> {\n        // Instead of using the extractor which requires context, we'll use a simpler approach\n        // with direct completion and parse the result\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        // Use direct completion for more reliable classification\n        let completion = self.complete(prompt).await?;\n\n        // Parse the completion to extract the memory type\n        let response = completion.trim();\n\n        // Extract the memory type from the response\n        let memory_type = if response.to_lowercase().contains(\"conversational\") {\n            \"Conversational\".to_string()\n        } else if response.to_lowercase().contains(\"procedural\") {\n            \"Procedural\".to_string()\n        } else if response.to_lowercase().contains(\"factual\") {\n            \"Factual\".to_string()\n        } else if response.to_lowercase().contains(\"semantic\") {\n            \"Semantic\".to_string()\n        } else if response.to_lowercase().contains(\"episodic\") {\n            \"Episodic\".to_string()\n        } else if response.to_lowercase().contains(\"personal\") {\n            \"Personal\".to_string()\n        } else {\n            // Try to extract the exact word and use MemoryType::parse\n            response\n                .lines()\n                .find_map(|line| {\n                    let line = line.trim();\n                    [\n                        \"Conversational\",\n                        \"Procedural\",\n                        \"Factual\",\n                        \"Semantic\",\n                        \"Episodic\",\n                        \"Personal\",\n                    ]\n                    .iter()\n                    .find(|&typ| line.contains(typ))\n                })\n                .map(|typ| typ.to_string())\n                .unwrap_or_else(|| \"Conversational\".to_string())\n        };\n\n        Ok(MemoryClassification {\n            memory_type,\n            confidence: 0.8, // Default confidence\n            reasoning: format!(\"LLM classification response: {}\", response),\n        })\n    }\n\n    async fn score_importance(&self, prompt: &str) -> Result<ImportanceScore> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<ImportanceScore>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(500)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn check_duplicates(&self, prompt: &str) -> Result<DeduplicationResult> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<DeduplicationResult>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(500)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn generate_summary(&self, prompt: &str) -> Result<SummaryResult> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<SummaryResult>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(1000)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn detect_language(&self, prompt: &str) -> Result<LanguageDetection> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<LanguageDetection>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(200)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn extract_entities(&self, prompt: &str) -> Result<EntityExtraction> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<EntityExtraction>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(1000)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n\n    async fn analyze_conversation(&self, prompt: &str) -> Result<ConversationAnalysis> {\n        let extractor = self\n            .client\n            .extractor_completions_api::<ConversationAnalysis>(&self.completion_model_name)\n            .preamble(prompt)\n            .max_tokens(1500)\n            .build();\n\n        #[cfg(debug_assertions)]\n        tokio::time::sleep(std::time::Duration::from_secs(1)).await;\n\n        extractor\n            .extract(\"\")\n            .await\n            .map_err(|e| MemoryError::LLM(e.to_string()))\n    }\n}\n\n/// Factory function to create LLM clients based on configuration\npub fn create_llm_client(\n    llm_config: &LLMConfig,\n    embedding_config: &EmbeddingConfig,\n) -> Result<Box<dyn LLMClient>> {\n    // For now, we only support OpenAI\n    let client = OpenAILLMClient::new(llm_config, embedding_config)?;\n    Ok(Box::new(client))\n}\n"
     },
     "complexity_metrics": {
       "cyclomatic_complexity": 29.0,
-      "lines_of_code": 495,
+      "lines_of_code": 500,
       "number_of_classes": 1,
-      "number_of_functions": 22
+      "number_of_functions": 25
     },
     "dependencies": [
       {
-        "dependency_type": "crate",
+        "dependency_type": "library",
         "is_external": true,
-        "line_number": null,
+        "line_number": 3,
         "name": "async_trait",
         "path": null,
         "version": null
       },
       {
-        "dependency_type": "crate",
+        "dependency_type": "library",
         "is_external": true,
-        "line_number": null,
+        "line_number": 6,
         "name": "rig",
         "path": null,
         "version": null
       },
       {
-        "dependency_type": "crate",
+        "dependency_type": "library",
         "is_external": true,
-        "line_number": null,
+        "line_number": 10,
+        "name": "tokio",
+        "path": null,
+        "version": null
+      },
+      {
+        "dependency_type": "library",
+        "is_external": true,
+        "line_number": 11,
         "name": "tracing",
         "path": null,
         "version": null
       },
       {
-        "dependency_type": "crate",
-        "is_external": true,
-        "line_number": null,
-        "name": "dyn_clone",
-        "path": null,
-        "version": null
-      },
-      {
-        "dependency_type": "local",
+        "dependency_type": "internal",
         "is_external": false,
-        "line_number": null,
-        "name": "cortex-mem-core",
-        "path": "crate::",
+        "line_number": 14,
+        "name": "crate",
+        "path": null,
         "version": null
       }
     ],
-    "detailed_description": "This component implements an LLM client abstraction layer for OpenAI services, providing both text generation and embeddings capabilities. It serves as a command handler that orchestrates interactions with the language model through the 'rig' framework. The core functionality includes text completion, embedding generation, and structured data extraction using specialized extractors. The implementation features a trait-based design (LLMClient) with an OpenAI-specific implementation (OpenAILLMClient) that supports fallback mechanisms when structured extraction fails. It also includes health checking and various semantic analysis capabilities such as keyword extraction, summarization, memory classification, and conversation analysis.",
+    "detailed_description": "This component implements a comprehensive LLM client for interacting with OpenAI services, providing both traditional text completion/embedding functionality and advanced structured data extraction through the 'rig' framework. The client supports multiple extraction types including keywords, summaries, facts, entities, and conversation analysis. It features fallback mechanisms for critical operations and includes rate limiting considerations through sleep intervals. The implementation follows a factory pattern for client creation and supports configuration-driven initialization.",
     "interfaces": [
       {
-        "description": "Main trait defining LLM client operations for text generation, embeddings, and structured extraction",
+        "description": "Main trait defining LLM client functionality for text generation and embeddings",
         "interface_type": "trait",
         "name": "LLMClient",
         "parameters": [],
         "return_type": null,
-        "visibility": "pub"
+        "visibility": "public"
       },
       {
-        "description": "OpenAI-specific implementation of LLMClient trait",
+        "description": "OpenAI-based implementation of LLMClient trait",
         "interface_type": "struct",
         "name": "OpenAILLMClient",
         "parameters": [],
         "return_type": null,
-        "visibility": "pub"
+        "visibility": "public"
       },
       {
-        "description": "Factory function to create LLM client instances based on configuration",
+        "description": "Create a new OpenAI LLM client with configuration",
+        "interface_type": "method",
+        "name": "OpenAILLMClient::new",
+        "parameters": [
+          {
+            "description": "LLM configuration including API key and model settings",
+            "is_optional": false,
+            "name": "llm_config",
+            "param_type": "LLMConfig"
+          },
+          {
+            "description": "Embedding configuration including API key and model settings",
+            "is_optional": false,
+            "name": "embedding_config",
+            "param_type": "EmbeddingConfig"
+          }
+        ],
+        "return_type": "Result<Self>",
+        "visibility": "public"
+      },
+      {
+        "description": "Build a prompt for keyword extraction",
+        "interface_type": "method",
+        "name": "OpenAILLMClient::build_keyword_prompt",
+        "parameters": [
+          {
+            "description": "Text content to extract keywords from",
+            "is_optional": false,
+            "name": "content",
+            "param_type": "&str"
+          }
+        ],
+        "return_type": "String",
+        "visibility": "private"
+      },
+      {
+        "description": "Build a prompt for summarization",
+        "interface_type": "method",
+        "name": "OpenAILLMClient::build_summary_prompt",
+        "parameters": [
+          {
+            "description": "Text content to summarize",
+            "is_optional": false,
+            "name": "content",
+            "param_type": "&str"
+          },
+          {
+            "description": "Maximum length for the summary",
+            "is_optional": true,
+            "name": "max_length",
+            "param_type": "Option<usize>"
+          }
+        ],
+        "return_type": "String",
+        "visibility": "private"
+      },
+      {
+        "description": "Parse keywords from LLM response",
+        "interface_type": "method",
+        "name": "OpenAILLMClient::parse_keywords",
+        "parameters": [
+          {
+            "description": "LLM response containing comma-separated keywords",
+            "is_optional": false,
+            "name": "response",
+            "param_type": "&str"
+          }
+        ],
+        "return_type": "Vec<String>",
+        "visibility": "private"
+      },
+      {
+        "description": "Factory function to create LLM clients based on configuration",
         "interface_type": "function",
         "name": "create_llm_client",
         "parameters": [
@@ -11969,87 +11441,15 @@ Code analysis results from preprocessing phase, including definitions of functio
           }
         ],
         "return_type": "Result<Box<dyn LLMClient>>",
-        "visibility": "pub"
-      },
-      {
-        "description": "Constructor for OpenAILLMClient",
-        "interface_type": "function",
-        "name": "new",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "llm_config",
-            "param_type": "&LLMConfig"
-          },
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "embedding_config",
-            "param_type": "&EmbeddingConfig"
-          }
-        ],
-        "return_type": "Result<Self>",
-        "visibility": "pub"
-      },
-      {
-        "description": "Helper method to construct keyword extraction prompts",
-        "interface_type": "function",
-        "name": "build_keyword_prompt",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "content",
-            "param_type": "&str"
-          }
-        ],
-        "return_type": "String",
-        "visibility": "private"
-      },
-      {
-        "description": "Helper method to construct summarization prompts",
-        "interface_type": "function",
-        "name": "build_summary_prompt",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "content",
-            "param_type": "&str"
-          },
-          {
-            "description": null,
-            "is_optional": true,
-            "name": "max_length",
-            "param_type": "Option<usize>"
-          }
-        ],
-        "return_type": "String",
-        "visibility": "private"
-      },
-      {
-        "description": "Helper method to parse keywords from raw LLM responses",
-        "interface_type": "function",
-        "name": "parse_keywords",
-        "parameters": [
-          {
-            "description": null,
-            "is_optional": false,
-            "name": "response",
-            "param_type": "&str"
-          }
-        ],
-        "return_type": "Vec<String>",
-        "visibility": "private"
+        "visibility": "public"
       }
     ],
     "responsibilities": [
-      "Provide unified interface for LLM operations including text completion and embeddings",
-      "Implement structured data extraction using rig framework with fallback mechanisms",
-      "Manage OpenAI client configuration and connection handling",
-      "Perform semantic analysis on memory content including summarization, keyword extraction, and classification",
-      "Handle error cases and provide health checking for LLM services"
+      "Provide unified interface for LLM text completion and embedding generation",
+      "Implement structured data extraction for various information types using rig framework",
+      "Handle fallback mechanisms when structured extraction fails",
+      "Manage OpenAI client configuration and connection lifecycle",
+      "Provide health checking and monitoring capabilities for LLM services"
     ]
   },
   {
@@ -14335,7 +13735,7 @@ Code analysis results from preprocessing phase, including definitions of functio
   {
     "code_dossier": {
       "code_purpose": "specificfeature",
-      "description": "内存优化问题检测器，用于识别重复、低质量、过时、分类不当和空间效率低下的记忆条目",
+      "description": "Optimization issue detector for memory management system that identifies various types of memory optimization opportunities including duplicates, quality issues, outdated content, classification problems, and space inefficiency.",
       "file_path": "cortex-mem-core/src/memory/optimization_detector.rs",
       "functions": [
         "new",
@@ -14347,7 +13747,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "detect_outdated_issues",
         "detect_classification_issues",
         "detect_space_inefficiency",
-        "calculate_semantic_similarity",
+        "calculate_semantic_similarity_from_embeddings",
         "cosine_similarity",
         "evaluate_memory_quality",
         "check_classification_quality",
@@ -14365,25 +13765,21 @@ Code analysis results from preprocessing phase, including definitions of functio
         "OptimizationDetector::detect_outdated_issues",
         "OptimizationDetector::detect_classification_issues",
         "OptimizationDetector::detect_space_inefficiency",
-        "OptimizationDetector::calculate_semantic_similarity",
-        "OptimizationDetector::cosine_similarity",
         "OptimizationDetector::evaluate_memory_quality",
-        "OptimizationDetector::check_classification_quality",
-        "OptimizationDetector::detect_memory_type_from_content",
-        "OptimizationDetector::limit_issues_per_type"
+        "OptimizationDetector::check_classification_quality"
       ],
       "name": "optimization_detector.rs",
-      "source_summary": "use chrono::Utc;\nuse std::sync::Arc;\nuse tracing::debug;\nuse uuid::Uuid;\n\nuse crate::{\n    error::Result,\n    memory::MemoryManager,\n    types::{IssueKind, IssueSeverity, OptimizationFilters, OptimizationIssue},\n};\n\n/// 优化问题检测器\npub struct OptimizationDetector {\n    // 检测器配置\n    config: OptimizationDetectorConfig,\n    memory_manager: Arc<MemoryManager>,\n}\n\n#[derive(Debug, Clone)]\npub struct OptimizationDetectorConfig {\n    pub duplicate_threshold: f32,\n    pub quality_threshold: f32,\n    pub time_decay_days: u32,\n    pub max_issues_per_type: usize,\n}\n\nimpl Default for OptimizationDetectorConfig {\n    fn default() -> Self {\n        Self {\n            duplicate_threshold: 0.85,\n            quality_threshold: 0.4,\n            time_decay_days: 180,\n            max_issues_per_type: 1000,\n        }\n    }\n}\n\nimpl OptimizationDetector {\n    pub fn new() -> Self {\n        // 需要MemoryManager才能使用，需要使用with_memory_manager\n        panic!(\"OptimizationDetector requires MemoryManager. Use with_memory_manager() instead.\");\n    }\n\n    pub fn with_memory_manager(memory_manager: Arc<MemoryManager>) -> Self {\n        Self {\n            config: OptimizationDetectorConfig::default(),\n            memory_manager,\n        }\n    }\n\n    pub fn with_config(\n        config: OptimizationDetectorConfig,\n        memory_manager: Arc<MemoryManager>,\n    ) -> Self {\n        Self {\n            config,\n            memory_manager,\n        }\n    }\n\n    /// 检测需要优化的内存问题\n    pub async fn detect_issues(\n        &self,\n        filters: &OptimizationFilters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"开始检测内存优化问题\");\n\n        // 转换为MemoryManager使用的Filters\n        let mm_filters = crate::types::Filters {\n            user_id: filters.user_id.clone(),\n            agent_id: filters.agent_id.clone(),\n            run_id: None,\n            memory_type: filters.memory_type.as_ref().map(|mt| mt.clone()),\n            actor_id: None,\n            min_importance: filters.importance_range.as_ref().and_then(|r| r.min),\n            max_importance: filters.importance_range.as_ref().and_then(|r| r.max),\n            created_after: filters.date_range.as_ref().and_then(|r| r.start),\n            created_before: filters.date_range.as_ref().and_then(|r| r.end),\n            updated_after: None,\n            updated_before: None,\n            entities: None,\n            topics: None,\n            custom: filters.custom_filters.clone(),\n        };\n\n        let mut all_issues = Vec::new();\n\n        // 1. 检测重复问题\n        let duplicates = self.detect_duplicates(&mm_filters).await?;\n        all_issues.extend(duplicates);\n\n        // 2. 检测质量问题\n        let quality_issues = self.detect_quality_issues(&mm_filters).await?;\n        all_issues.extend(quality_issues);\n\n        // 3. 检测过时问题\n        let outdated_issues = self.detect_outdated_issues(&mm_filters).await?;\n        all_issues.extend(outdated_issues);\n\n        // 4. 检测分类问题\n        let classification_issues = self.detect_classification_issues(&mm_filters).await?;\n        all_issues.extend(classification_issues);\n\n        // 5. 检测空间效率问题\n        let space_issues = self.detect_space_inefficiency(&mm_filters).await?;\n        all_issues.extend(space_issues);\n\n        // 限制每个类型的问题数量\n        all_issues = self.limit_issues_per_type(all_issues);\n\n        tracing::info!(\"检测完成，发现 {} 个问题\", all_issues.len());\n        Ok(all_issues)\n    }\n\n    /// 检测重复记忆\n    async fn detect_duplicates(\n        &self,\n        filters: &crate::types::Filters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"检测重复记忆\");\n\n        let mut issues = Vec::new();\n\n        // 获取所有记忆\n        let memories = self.memory_manager.list(filters, None).await?;\n\n        if memories.len() < 2 {\n            tracing::debug!(\"记忆数量不足，跳过重复检测\");\n            return Ok(issues);\n        }\n\n        // 直接使用内存管理器进行重复检测\n        // TODO: 实现真正的重复检测逻辑\n\n        // 检测重复记忆组\n        let mut processed_memories = std::collections::HashSet::new();\n\n        for (i, memory_i) in memories.iter().enumerate() {\n            if processed_memories.contains(&memory_i.id) {\n                continue;\n            }\n\n            // 检查记忆是否已归档\n            let is_archived_i = memory_i\n                .metadata\n                .custom\n                .get(\"archived\")\n                .and_then(|v| v.as_bool())\n                .unwrap_or(false);\n\n            // 如果已归档，跳过检查\n            if is_archived_i {\n                debug!(\"跳过已归档的记忆: {}\", memory_i.id);\n                continue;\n            }\n\n            let mut similar_memories = Vec::new();\n\n            // 与其他记忆进行比较\n            for (j, memory_j) in memories.iter().enumerate() {\n                if i >= j || processed_memories.contains(&memory_j.id) {\n                    continue;\n                }\n\n                // 检查记忆是否已归档\n                let is_archived_j = memory_j\n                    .metadata\n                    .custom\n                    .get(\"archived\")\n                    .and_then(|v| v.as_bool())\n                    .unwrap_or(false);\n\n                // 如果已归档，跳过检查\n                if is_archived_j {\n                    debug!(\"跳过已归档的记忆: {}\", memory_j.id);\n                    continue;\n                }\n\n                // 计算语义相似度\n                let similarity = self\n                    .calculate_semantic_similarity(&memory_i.content, &memory_j.content)\n                    .await?;\n\n                if similarity >= self.config.duplicate_threshold {\n                    similar_memories.push(memory_j.clone());\n                    processed_memories.insert(memory_j.id.clone());\n                }\n            }\n\n            if similar_memories.len() > 0 {\n                // 发现重复记忆组\n                let mut affected_memories = vec![memory_i.clone()];\n                affected_memories.extend(similar_memories.clone());\n\n                let duplicate_count = affected_memories.len();\n                let severity = if similar_memories.len() > 2 {\n                    IssueSeverity::High\n                } else {\n                    IssueSeverity::Medium\n                };\n\n                let issue = OptimizationIssue {\n                    id: Uuid::new_v4().to_string(),\n                    kind: IssueKind::Duplicate,\n                    severity,\n                    description: format!(\"检测到 {} 个高度相似的重复记忆\", duplicate_count),\n                    affected_memories: affected_memories.iter().map(|m| m.id.clone()).collect(),\n                    recommendation: format!(\"建议合并这 {} 个重复记忆\", duplicate_count),\n                };\n                issues.push(issue);\n                processed_memories.insert(memory_i.id.clone());\n            }\n        }\n\n        tracing::info!(\"重复检测完成，发现 {} 个重复问题\", issues.len());\n        Ok(issues)\n    }\n\n    /// 检测质量问题\n    async fn detect_quality_issues(\n        &self,\n        filters: &crate::types::Filters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"检测质量问题\");\n\n        let mut issues = Vec::new();\n\n        // 获取所有记忆\n        let memories = self.memory_manager.list(filters, None).await?;\n\n        for memory in memories {\n            // 检查记忆是否已归档\n            let is_archived = memory\n                .metadata\n                .custom\n                .get(\"archived\")\n                .and_then(|v| v.as_bool())\n                .unwrap_or(false);\n\n            // 如果已归档，跳过检查\n            if is_archived {\n                debug!(\"跳过已归档的记忆: {}\", memory.id);\n                continue;\n            }\n\n            let quality_score = self.evaluate_memory_quality(&memory).await?;\n\n            if quality_score < self.config.quality_threshold {\n                let issue = OptimizationIssue {\n                    id: Uuid::new_v4().to_string(),\n                    kind: IssueKind::LowQuality,\n                    severity: if quality_score < self.config.quality_threshold / 2.0 {\n                        IssueSeverity::High\n                    } else {\n                        IssueSeverity::Low\n                    },\n                    description: format!(\n                        \"记忆质量评分过低: {:.2} (阈值: {:.2})\",\n                        quality_score, self.config.quality_threshold\n                    ),\n                    affected_memories: vec![memory.id],\n                    recommendation: \"建议更新或删除低质量记忆\".to_string(),\n                };\n                issues.push(issue);\n            }\n        }\n\n        tracing::info!(\"质量检测完成，发现 {} 个质量问题\", issues.len());\n        Ok(issues)\n    }\n\n    /// 检测过时问题\n    async fn detect_outdated_issues(\n        &self,\n        filters: &crate::types::Filters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"检测过时问题\");\n\n        let mut issues = Vec::new();\n\n        // 获取所有记忆\n        let memories = self.memory_manager.list(filters, None).await?;\n\n        let _cutoff_date = Utc::now() - chrono::Duration::days(self.config.time_decay_days as i64);\n\n        for memory in memories {\n            // 检查记忆是否已归档\n            let is_archived = memory\n                .metadata\n                .custom\n                .get(\"archived\")\n                .and_then(|v| v.as_bool())\n                .unwrap_or(false);\n\n            // 如果已归档，跳过检查\n            if is_archived {\n                debug!(\"跳过已归档的记忆: {}\", memory.id);\n                continue;\n            }\n\n            let days_since_update = (Utc::now() - memory.updated_at).num_days();\n            let is_outdated = days_since_update as u32 > self.config.time_decay_days;\n\n            if is_outdated {\n                let severity = if days_since_update as u32 > self.config.time_decay_days * 2 {\n                    IssueSeverity::High\n                } else if days_since_update as u32\n                    > (self.config.time_decay_days as f32 * 1.5) as u32\n                {\n                    IssueSeverity::Medium\n                } else {\n                    IssueSeverity::Low\n                };\n\n                let recommendation = if severity == IssueSeverity::High {\n                    \"建议删除过时记忆\".to_string()\n                } else {\n                    \"建议归档过时记忆\".to_string()\n                };\n\n                let issue = OptimizationIssue {\n                    id: Uuid::new_v4().to_string(),\n                    kind: IssueKind::Outdated,\n                    severity,\n                    description: format!(\n                        \"记忆已 {} 天未更新，超过阈值 {} 天\",\n                        days_since_update, self.config.time_decay_days\n                    ),\n                    affected_memories: vec![memory.id],\n                    recommendation,\n                };\n                issues.push(issue);\n            }\n        }\n\n        tracing::info!(\"过时检测完成，发现 {} 个过时问题\", issues.len());\n        Ok(issues)\n    }\n\n    /// 检测分类问题\n    async fn detect_classification_issues(\n        &self,\n        filters: &crate::types::Filters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"检测分类问题\");\n\n        let mut issues = Vec::new();\n\n        // 获取所有记忆\n        let memories = self.memory_manager.list(filters, None).await?;\n\n        for memory in memories {\n            // 检查记忆是否已归档\n            let is_archived = memory\n                .metadata\n                .custom\n                .get(\"archived\")\n                .and_then(|v| v.as_bool())\n                .unwrap_or(false);\n\n            // 如果已归档，跳过检查\n            if is_archived {\n                debug!(\"跳过已归档的记忆: {}\", memory.id);\n                continue;\n            }\n\n            let classification_issues = self.check_classification_quality(&memory).await?;\n\n            for issue_desc in classification_issues {\n                let issue = OptimizationIssue {\n                    id: Uuid::new_v4().to_string(),\n                    kind: IssueKind::PoorClassification,\n                    severity: IssueSeverity::Low,\n                    description: format!(\"分类问题: {}\", issue_desc),\n                    affected_memories: vec![memory.id.clone()],\n                    recommendation: \"建议重新分类记忆\".to_string(),\n                };\n                issues.push(issue);\n            }\n        }\n\n        tracing::info!(\"分类检测完成，发现 {} 个分类问题\", issues.len());\n        Ok(issues)\n    }\n\n    /// 检测空间效率问题\n    async fn detect_space_inefficiency(\n        &self,\n        filters: &crate::types::Filters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"检测空间效率问题\");\n\n        let mut issues = Vec::new();\n\n        // 获取所有记忆\n        let memories = self.memory_manager.list(filters, None).await?;\n\n        // 获取统计数据\n        let stats = self.memory_manager.get_stats(filters).await?;\n\n        // 1. 检查单个记忆的大小问题\n        for memory in &memories {\n            // 检查记忆是否已归档\n            let is_archived = memory\n                .metadata\n                .custom\n                .get(\"archived\")\n                .and_then(|v| v.as_bool())\n                .unwrap_or(false);\n\n            // 如果已归档，跳过检查\n            if is_archived {\n                debug!(\"跳过已归档的记忆: {}\", memory.id);\n                continue;\n            }\n\n            let memory_size = memory.content.len() + memory.embedding.len() * 4; // 粗略估算\n\n            // 如果记忆超过一定大小且重要性很低\n            if memory_size > 10000 && memory.metadata.importance_score < 0.3 {\n                let issue = OptimizationIssue {\n                    id: Uuid::new_v4().to_string(),\n                    kind: IssueKind::SpaceInefficient,\n                    severity: IssueSeverity::Low,\n                    description: format!(\n                        \"大记忆占用空间过多且重要性低，大小: {} 字节\",\n                        memory_size\n                    ),\n                    affected_memories: vec![memory.id.clone()],\n                    recommendation: \"建议对大记忆进行摘要或归档\".to_string(),\n                };\n                issues.push(issue);\n            }\n        }\n\n        // 2. 检查总存储情况\n        let total_memories = stats.total_count;\n        if total_memories > 10000 {\n            let issue = OptimizationIssue {\n                id: Uuid::new_v4().to_string(),\n                kind: IssueKind::SpaceInefficient,\n                severity: IssueSeverity::Medium,\n                description: format!(\"记忆数量过多: {}，可能影响查询性能\", total_memories),\n                affected_memories: Vec::new(), // 影响所有记忆\n                recommendation: \"建议进行深度优化和清理\".to_string(),\n            };\n            issues.push(issue);\n        }\n\n        // 3. 检查低重要性记忆（排除已归档的记忆）\n        let low_importance_memories: Vec<_> = memories\n            .iter()\n            .filter(|m| {\n                m.metadata.importance_score < 0.2 &&\n                // 排除已归档的记忆\n                !m.metadata.custom.get(\"archived\")\n                    .and_then(|v| v.as_bool())\n                    .unwrap_or(false)\n            })\n            .collect();\n\n        let unarchived_count = total_memories\n            - memories\n                .iter()\n                .filter(|m| {\n                    m.metadata\n                        .custom\n                        .get(\"archived\")\n                        .and_then(|v| v.as_bool())\n                        .unwrap_or(false)\n                })\n                .count();\n\n        if low_importance_memories.len() > unarchived_count / 4 {\n            let issue = OptimizationIssue {\n                id: Uuid::new_v4().to_string(),\n                kind: IssueKind::SpaceInefficient,\n                severity: IssueSeverity::Medium,\n                description: format!(\n                    \"低重要性记忆过多: {} / {} ({:.1}%)\",\n                    low_importance_memories.len(),\n                    unarchived_count,\n                    low_importance_memories.len() as f64 / unarchived_count as f64 * 100.0\n                ),\n                affected_memories: low_importance_memories\n                    .iter()\n                    .map(|m| m.id.clone())\n                    .collect(),\n                recommendation: \"建议归档或删除低重要性记忆\".to_string(),\n            };\n            issues.push(issue);\n        }\n\n        tracing::info!(\"空间效率检测完成，发现 {} 个空间问题\", issues.len());\n        Ok(issues)\n    }\n\n    /// 计算记忆的语义相似度\n    async fn calculate_semantic_similarity(&self, content1: &str, content2: &str) -> Result<f32> {\n        // 使用LLM客户端计算embedding并计算余弦相似度\n        let llm_client = self.memory_manager.llm_client();\n\n        // 获取两个内容的embedding\n        let embedding1 = llm_client.embed(content1).await?;\n        let embedding2 = llm_client.embed(content2).await?;\n\n        // 计算余弦相似度\n        let similarity = self.cosine_similarity(&embedding1, &embedding2);\n\n        tracing::debug!(\n            \"语义相似度计算: {} vs {} = {:.3}\",\n            content1.chars().take(50).collect::<String>(),\n            content2.chars().take(50).collect::<String>(),\n            similarity\n        );\n\n        Ok(similarity)\n    }\n\n    /// 计算余弦相似度\n    fn cosine_similarity(&self, vec1: &[f32], vec2: &[f32]) -> f32 {\n        if vec1.len() != vec2.len() || vec1.is_empty() {\n            return 0.0;\n        }\n\n        let mut dot_product = 0.0;\n        let mut norm1 = 0.0;\n        let mut norm2 = 0.0;\n\n        for i in 0..vec1.len() {\n            dot_product += vec1[i] * vec2[i];\n            norm1 += vec1[i] * vec1[i];\n            norm2 += vec2[i] * vec2[i];\n        }\n\n        if norm1 == 0.0 || norm2 == 0.0 {\n            return 0.0;\n        }\n\n        dot_product / (norm1.sqrt() * norm2.sqrt())\n    }\n\n    /// 评估记忆质量\n    async fn evaluate_memory_quality(&self, memory: &crate::types::Memory) -> Result<f32> {\n        let mut quality_score = 0.0;\n        let max_score = 1.0;\n\n        // 1. 内容长度评分 (30%)\n        let content_length_score = if memory.content.len() < 10 {\n            0.1\n        } else if memory.content.len() < 50 {\n            0.5\n        } else if memory.content.len() < 200 {\n            0.8\n        } else {\n            1.0\n        };\n        quality_score += content_length_score * 0.3;\n\n        // 2. 结构化程度评分 (20%)\n        let has_sentences = memory.content.contains('.')\n            || memory.content.contains('!')\n            || memory.content.contains('?');\n        let has_paragraphs = memory.content.contains('\\n');\n        let structural_score = if has_sentences && has_paragraphs {\n            1.0\n        } else if has_sentences || has_paragraphs {\n            0.7\n        } else {\n            0.3\n        };\n        quality_score += structural_score * 0.2;\n\n        // 3. 重要性评分 (20%)\n        quality_score += memory.metadata.importance_score * 0.2;\n\n        // 4. 元数据完整性 (15%)\n        let metadata_score =\n            if !memory.metadata.entities.is_empty() && !memory.metadata.topics.is_empty() {\n                1.0\n            } else if !memory.metadata.entities.is_empty() || !memory.metadata.topics.is_empty() {\n                0.6\n            } else {\n                0.2\n            };\n        quality_score += metadata_score * 0.15;\n\n        // 5. 更新频率评分 (15%)\n        let days_since_update = (chrono::Utc::now() - memory.updated_at).num_days();\n        let update_score = if days_since_update < 7 {\n            1.0\n        } else if days_since_update < 30 {\n            0.8\n        } else if days_since_update < 90 {\n            0.5\n        } else {\n            0.2\n        };\n        quality_score += update_score * 0.15;\n\n        Ok(quality_score.min(max_score))\n    }\n\n    /// 检查分类质量\n    async fn check_classification_quality(\n        &self,\n        memory: &crate::types::Memory,\n    ) -> Result<Vec<String>> {\n        let mut issues = Vec::new();\n\n        // 只有当内容非常短且为默认类型时才检查类型是否合适\n        if memory.metadata.memory_type == crate::types::MemoryType::Conversational\n            && memory.content.len() < 20\n        {\n            tracing::debug!(\"记忆 {} 太短且为默认类型，建议重新分类\", memory.id);\n        }\n\n        // 2. 检查实体提取 - 只有内容很长时才检查\n        if memory.metadata.entities.is_empty() && memory.content.len() > 200 {\n            issues.push(\"缺少实体信息\".to_string());\n        }\n\n        // 3. 检查主题提取 - 只有内容很长时才检查\n        if memory.metadata.topics.is_empty() && memory.content.len() > 100 {\n            issues.push(\"缺少主题信息\".to_string());\n        }\n\n        // 4. 检查记忆类型与内容是否匹配 - 更宽松的逻辑\n        let detected_type = self.detect_memory_type_from_content(&memory.content).await;\n\n        // 如果检测到的类型与当前类型不同，且内容足够长，才认为是问题\n        if detected_type != memory.metadata.memory_type && memory.content.len() > 50 {\n            issues.push(format!(\n                \"记忆类型与内容可能不匹配: 当前 {:?}, 检测到 {:?}\",\n                memory.metadata.memory_type, detected_type\n            ));\n        }\n\n        Ok(issues)\n    }\n\n    /// 使用LLM从内容检测记忆类型\n    async fn detect_memory_type_from_content(&self, content: &str) -> crate::types::MemoryType {\n        let llm_client = self.memory_manager.llm_client();\n\n        // 检查内容是否为空或过短\n        if content.trim().is_empty() {\n            tracing::warn!(\"记忆内容为空，默认分类为Conversational\");\n            return crate::types::MemoryType::Conversational;\n        }\n\n        if content.trim().len() < 5 {\n            tracing::warn!(\"记忆内容过短: '{}'，默认分类为Conversational\", content);\n            return crate::types::MemoryType::Conversational;\n        }\n\n        // 记录调试信息\n        tracing::debug!(\n            \"开始对记忆内容进行LLM分类: '{}...'\",\n            content.chars().take(50).collect::<String>()\n        );\n\n        // 创建分类提示\n        let prompt = format!(\n            r#\"Classify the following memory content into one of these categories:\n\n1. Conversational - Dialogue, conversations, or interactive exchanges\n2. Procedural - Instructions, how-to information, or step-by-step processes\n3. Factual - Objective facts, data, or verifiable information\n4. Semantic - Concepts, meanings, definitions, or general knowledge\n5. Episodic - Specific events, experiences, or temporal information\n6. Personal - Personal preferences, characteristics, or individual-specific information\n\nContent: \"{}\"\n\nRespond with only the category name (e.g., \"Conversational\", \"Procedural\", etc.):\"#,\n            content\n        );\n\n        // 使用LLM分类器进行分类\n        match llm_client.classify_memory(&prompt).await {\n            Ok(classification) => {\n                let memory_type = crate::types::MemoryType::parse(&classification.memory_type);\n\n                tracing::info!(\n                    \"LLM分类成功: '{}' -> {:?} (置信度: {})\",\n                    content.chars().take(30).collect::<String>(),\n                    memory_type,\n                    classification.confidence\n                );\n\n                memory_type\n            }\n            Err(e) => {\n                tracing::error!(\n                    \"LLM分类失败: '{}' -> 错误: {}, 使用默认分类Conversational\",\n                    content.chars().take(30).collect::<String>(),\n                    e\n                );\n                crate::types::MemoryType::Conversational // 失败时的回退\n            }\n        }\n    }\n\n    /// 限制每个类型的问题数量\n    fn limit_issues_per_type(&self, issues: Vec<OptimizationIssue>) -> Vec<OptimizationIssue> {\n        let mut issues_by_type: std::collections::HashMap<IssueKind, Vec<OptimizationIssue>> =\n            std::collections::HashMap::new();\n\n        for issue in &issues {\n            issues_by_type\n                .entry(issue.kind.clone())\n                .or_insert_with(Vec::new)\n                .push(issue.clone());\n        }\n\n        let mut limited_issues = Vec::new();\n\n        for (kind, mut kind_issues) in issues_by_type {\n            if kind_issues.len() > self.config.max_issues_per_type {\n                kind_issues.truncate(self.config.max_issues_per_type);\n                tracing::warn!(\n                    \"{:?} 类型的问题数量超过限制，截取到 {} 个\",\n                    kind,\n                    self.config.max_issues_per_type\n                );\n            }\n            limited_issues.extend(kind_issues);\n        }\n\n        limited_issues\n    }\n}\n\nimpl Default for OptimizationDetector {\n    fn default() -> Self {\n        panic!(\"OptimizationDetector requires MemoryManager. Use with_memory_manager() instead.\");\n    }\n}\n"
+      "source_summary": "use chrono::Utc;\nuse std::sync::Arc;\nuse tracing::debug;\nuse uuid::Uuid;\n\nuse crate::{\n    error::Result,\n    memory::MemoryManager,\n    types::{IssueKind, IssueSeverity, OptimizationFilters, OptimizationIssue},\n};\n\n/// 优化问题检测器\npub struct OptimizationDetector {\n    // 检测器配置\n    config: OptimizationDetectorConfig,\n    memory_manager: Arc<MemoryManager>,\n}\n\n#[derive(Debug, Clone)]\npub struct OptimizationDetectorConfig {\n    pub duplicate_threshold: f32,\n    pub quality_threshold: f32,\n    pub time_decay_days: u32,\n    pub max_issues_per_type: usize,\n}\n\nimpl Default for OptimizationDetectorConfig {\n    fn default() -> Self {\n        Self {\n            duplicate_threshold: 0.85,\n            quality_threshold: 0.4,\n            time_decay_days: 180,\n            max_issues_per_type: 1000,\n        }\n    }\n}\n\nimpl OptimizationDetector {\n    pub fn new() -> Self {\n        // 需要MemoryManager才能使用，需要使用with_memory_manager\n        panic!(\"OptimizationDetector requires MemoryManager. Use with_memory_manager() instead.\");\n    }\n\n    pub fn with_memory_manager(memory_manager: Arc<MemoryManager>) -> Self {\n        Self {\n            config: OptimizationDetectorConfig::default(),\n            memory_manager,\n        }\n    }\n\n    pub fn with_config(\n        config: OptimizationDetectorConfig,\n        memory_manager: Arc<MemoryManager>,\n    ) -> Self {\n        Self {\n            config,\n            memory_manager,\n        }\n    }\n\n    /// 检测需要优化的内存问题\n    pub async fn detect_issues(\n        &self,\n        filters: &OptimizationFilters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"开始检测内存优化问题\");\n\n        // 转换为MemoryManager使用的Filters\n        let mm_filters = crate::types::Filters {\n            user_id: filters.user_id.clone(),\n            agent_id: filters.agent_id.clone(),\n            run_id: None,\n            memory_type: filters.memory_type.as_ref().map(|mt| mt.clone()),\n            actor_id: None,\n            min_importance: filters.importance_range.as_ref().and_then(|r| r.min),\n            max_importance: filters.importance_range.as_ref().and_then(|r| r.max),\n            created_after: filters.date_range.as_ref().and_then(|r| r.start),\n            created_before: filters.date_range.as_ref().and_then(|r| r.end),\n            updated_after: None,\n            updated_before: None,\n            entities: None,\n            topics: None,\n            custom: filters.custom_filters.clone(),\n        };\n\n        let mut all_issues = Vec::new();\n\n        // 1. 检测重复问题\n        let duplicates = self.detect_duplicates(&mm_filters).await?;\n        all_issues.extend(duplicates);\n\n        // 2. 检测质量问题\n        let quality_issues = self.detect_quality_issues(&mm_filters).await?;\n        all_issues.extend(quality_issues);\n\n        // 3. 检测过时问题\n        let outdated_issues = self.detect_outdated_issues(&mm_filters).await?;\n        all_issues.extend(outdated_issues);\n\n        // 4. 检测分类问题\n        let classification_issues = self.detect_classification_issues(&mm_filters).await?;\n        all_issues.extend(classification_issues);\n\n        // 5. 检测空间效率问题\n        let space_issues = self.detect_space_inefficiency(&mm_filters).await?;\n        all_issues.extend(space_issues);\n\n        // 限制每个类型的问题数量\n        all_issues = self.limit_issues_per_type(all_issues);\n\n        tracing::info!(\"检测完成，发现 {} 个问题\", all_issues.len());\n        Ok(all_issues)\n    }\n\n    /// 检测重复记忆\n    async fn detect_duplicates(\n        &self,\n        filters: &crate::types::Filters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"检测重复记忆\");\n\n        let mut issues = Vec::new();\n\n        // 获取所有记忆\n        let memories = self.memory_manager.list(filters, None).await?;\n\n        if memories.len() < 2 {\n            tracing::debug!(\"记忆数量不足，跳过重复检测\");\n            return Ok(issues);\n        }\n\n        // 直接使用内存管理器进行重复检测\n        // TODO: 实现真正的重复检测逻辑\n\n        // 检测重复记忆组\n        let mut processed_memories = std::collections::HashSet::new();\n\n        for (i, memory_i) in memories.iter().enumerate() {\n            if processed_memories.contains(&memory_i.id) {\n                continue;\n            }\n\n            // 检查记忆是否已归档\n            let is_archived_i = memory_i\n                .metadata\n                .custom\n                .get(\"archived\")\n                .and_then(|v| v.as_bool())\n                .unwrap_or(false);\n\n            // 如果已归档，跳过检查\n            if is_archived_i {\n                debug!(\"跳过已归档的记忆: {}\", memory_i.id);\n                continue;\n            }\n\n            let mut similar_memories = Vec::new();\n\n            // 与其他记忆进行比较\n            for (j, memory_j) in memories.iter().enumerate() {\n                if i >= j || processed_memories.contains(&memory_j.id) {\n                    continue;\n                }\n\n                // 检查记忆是否已归档\n                let is_archived_j = memory_j\n                    .metadata\n                    .custom\n                    .get(\"archived\")\n                    .and_then(|v| v.as_bool())\n                    .unwrap_or(false);\n\n                // 如果已归档，跳过检查\n                if is_archived_j {\n                    debug!(\"跳过已归档的记忆: {}\", memory_j.id);\n                    continue;\n                }\n\n                // 使用已存储的embedding计算语义相似度（避免重复调用embed API）\n                let similarity = self.calculate_semantic_similarity_from_embeddings(\n                    &memory_i.embedding,\n                    &memory_j.embedding,\n                    &memory_i.content,\n                    &memory_j.content,\n                );\n\n                if similarity >= self.config.duplicate_threshold {\n                    similar_memories.push(memory_j.clone());\n                    processed_memories.insert(memory_j.id.clone());\n                }\n            }\n\n            if similar_memories.len() > 0 {\n                // 发现重复记忆组\n                let mut affected_memories = vec![memory_i.clone()];\n                affected_memories.extend(similar_memories.clone());\n\n                let duplicate_count = affected_memories.len();\n                let severity = if similar_memories.len() > 2 {\n                    IssueSeverity::High\n                } else {\n                    IssueSeverity::Medium\n                };\n\n                let issue = OptimizationIssue {\n                    id: Uuid::new_v4().to_string(),\n                    kind: IssueKind::Duplicate,\n                    severity,\n                    description: format!(\"检测到 {} 个高度相似的重复记忆\", duplicate_count),\n                    affected_memories: affected_memories.iter().map(|m| m.id.clone()).collect(),\n                    recommendation: format!(\"建议合并这 {} 个重复记忆\", duplicate_count),\n                };\n                issues.push(issue);\n                processed_memories.insert(memory_i.id.clone());\n            }\n        }\n\n        tracing::info!(\"重复检测完成，发现 {} 个重复问题\", issues.len());\n        Ok(issues)\n    }\n\n    /// 检测质量问题\n    async fn detect_quality_issues(\n        &self,\n        filters: &crate::types::Filters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"检测质量问题\");\n\n        let mut issues = Vec::new();\n\n        // 获取所有记忆\n        let memories = self.memory_manager.list(filters, None).await?;\n\n        for memory in memories {\n            // 检查记忆是否已归档\n            let is_archived = memory\n                .metadata\n                .custom\n                .get(\"archived\")\n                .and_then(|v| v.as_bool())\n                .unwrap_or(false);\n\n            // 如果已归档，跳过检查\n            if is_archived {\n                debug!(\"跳过已归档的记忆: {}\", memory.id);\n                continue;\n            }\n\n            let quality_score = self.evaluate_memory_quality(&memory).await?;\n\n            if quality_score < self.config.quality_threshold {\n                let issue = OptimizationIssue {\n                    id: Uuid::new_v4().to_string(),\n                    kind: IssueKind::LowQuality,\n                    severity: if quality_score < self.config.quality_threshold / 2.0 {\n                        IssueSeverity::High\n                    } else {\n                        IssueSeverity::Low\n                    },\n                    description: format!(\n                        \"记忆质量评分过低: {:.2} (阈值: {:.2})\",\n                        quality_score, self.config.quality_threshold\n                    ),\n                    affected_memories: vec![memory.id],\n                    recommendation: \"建议更新或删除低质量记忆\".to_string(),\n                };\n                issues.push(issue);\n            }\n        }\n\n        tracing::info!(\"质量检测完成，发现 {} 个质量问题\", issues.len());\n        Ok(issues)\n    }\n\n    /// 检测过时问题\n    async fn detect_outdated_issues(\n        &self,\n        filters: &crate::types::Filters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"检测过时问题\");\n\n        let mut issues = Vec::new();\n\n        // 获取所有记忆\n        let memories = self.memory_manager.list(filters, None).await?;\n\n        let _cutoff_date = Utc::now() - chrono::Duration::days(self.config.time_decay_days as i64);\n\n        for memory in memories {\n            // 检查记忆是否已归档\n            let is_archived = memory\n                .metadata\n                .custom\n                .get(\"archived\")\n                .and_then(|v| v.as_bool())\n                .unwrap_or(false);\n\n            // 如果已归档，跳过检查\n            if is_archived {\n                debug!(\"跳过已归档的记忆: {}\", memory.id);\n                continue;\n            }\n\n            let days_since_update = (Utc::now() - memory.updated_at).num_days();\n            let is_outdated = days_since_update as u32 > self.config.time_decay_days;\n\n            if is_outdated {\n                let severity = if days_since_update as u32 > self.config.time_decay_days * 2 {\n                    IssueSeverity::High\n                } else if days_since_update as u32\n                    > (self.config.time_decay_days as f32 * 1.5) as u32\n                {\n                    IssueSeverity::Medium\n                } else {\n                    IssueSeverity::Low\n                };\n\n                let recommendation = if severity == IssueSeverity::High {\n                    \"建议删除过时记忆\".to_string()\n                } else {\n                    \"建议归档过时记忆\".to_string()\n                };\n\n                let issue = OptimizationIssue {\n                    id: Uuid::new_v4().to_string(),\n                    kind: IssueKind::Outdated,\n                    severity,\n                    description: format!(\n                        \"记忆已 {} 天未更新，超过阈值 {} 天\",\n                        days_since_update, self.config.time_decay_days\n                    ),\n                    affected_memories: vec![memory.id],\n                    recommendation,\n                };\n                issues.push(issue);\n            }\n        }\n\n        tracing::info!(\"过时检测完成，发现 {} 个过时问题\", issues.len());\n        Ok(issues)\n    }\n\n    /// 检测分类问题\n    async fn detect_classification_issues(\n        &self,\n        filters: &crate::types::Filters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"检测分类问题\");\n\n        let mut issues = Vec::new();\n\n        // 获取所有记忆\n        let memories = self.memory_manager.list(filters, None).await?;\n\n        for memory in memories {\n            // 检查记忆是否已归档\n            let is_archived = memory\n                .metadata\n                .custom\n                .get(\"archived\")\n                .and_then(|v| v.as_bool())\n                .unwrap_or(false);\n\n            // 如果已归档，跳过检查\n            if is_archived {\n                debug!(\"跳过已归档的记忆: {}\", memory.id);\n                continue;\n            }\n\n            let classification_issues = self.check_classification_quality(&memory).await?;\n\n            for issue_desc in classification_issues {\n                let issue = OptimizationIssue {\n                    id: Uuid::new_v4().to_string(),\n                    kind: IssueKind::PoorClassification,\n                    severity: IssueSeverity::Low,\n                    description: format!(\"分类问题: {}\", issue_desc),\n                    affected_memories: vec![memory.id.clone()],\n                    recommendation: \"建议重新分类记忆\".to_string(),\n                };\n                issues.push(issue);\n            }\n        }\n\n        tracing::info!(\"分类检测完成，发现 {} 个分类问题\", issues.len());\n        Ok(issues)\n    }\n\n    /// 检测空间效率问题\n    async fn detect_space_inefficiency(\n        &self,\n        filters: &crate::types::Filters,\n    ) -> Result<Vec<OptimizationIssue>> {\n        tracing::info!(\"检测空间效率问题\");\n\n        let mut issues = Vec::new();\n\n        // 获取所有记忆\n        let memories = self.memory_manager.list(filters, None).await?;\n\n        // 获取统计数据\n        let stats = self.memory_manager.get_stats(filters).await?;\n\n        // 1. 检查单个记忆的大小问题\n        for memory in &memories {\n            // 检查记忆是否已归档\n            let is_archived = memory\n                .metadata\n                .custom\n                .get(\"archived\")\n                .and_then(|v| v.as_bool())\n                .unwrap_or(false);\n\n            // 如果已归档，跳过检查\n            if is_archived {\n                debug!(\"跳过已归档的记忆: {}\", memory.id);\n                continue;\n            }\n\n            let memory_size = memory.content.len() + memory.embedding.len() * 4; // 粗略估算\n\n            // 如果记忆超过一定大小且重要性很低\n            if memory_size > 10000 && memory.metadata.importance_score < 0.3 {\n                let issue = OptimizationIssue {\n                    id: Uuid::new_v4().to_string(),\n                    kind: IssueKind::SpaceInefficient,\n                    severity: IssueSeverity::Low,\n                    description: format!(\n                        \"大记忆占用空间过多且重要性低，大小: {} 字节\",\n                        memory_size\n                    ),\n                    affected_memories: vec![memory.id.clone()],\n                    recommendation: \"建议对大记忆进行摘要或归档\".to_string(),\n                };\n                issues.push(issue);\n            }\n        }\n\n        // 2. 检查总存储情况\n        let total_memories = stats.total_count;\n        if total_memories > 10000 {\n            let issue = OptimizationIssue {\n                id: Uuid::new_v4().to_string(),\n                kind: IssueKind::SpaceInefficient,\n                severity: IssueSeverity::Medium,\n                description: format!(\"记忆数量过多: {}，可能影响查询性能\", total_memories),\n                affected_memories: Vec::new(), // 影响所有记忆\n                recommendation: \"建议进行深度优化和清理\".to_string(),\n            };\n            issues.push(issue);\n        }\n\n        // 3. 检查低重要性记忆（排除已归档的记忆）\n        let low_importance_memories: Vec<_> = memories\n            .iter()\n            .filter(|m| {\n                m.metadata.importance_score < 0.2 &&\n                // 排除已归档的记忆\n                !m.metadata.custom.get(\"archived\")\n                    .and_then(|v| v.as_bool())\n                    .unwrap_or(false)\n            })\n            .collect();\n\n        let unarchived_count = total_memories\n            - memories\n                .iter()\n                .filter(|m| {\n                    m.metadata\n                        .custom\n                        .get(\"archived\")\n                        .and_then(|v| v.as_bool())\n                        .unwrap_or(false)\n                })\n                .count();\n\n        if low_importance_memories.len() > unarchived_count / 4 {\n            let issue = OptimizationIssue {\n                id: Uuid::new_v4().to_string(),\n                kind: IssueKind::SpaceInefficient,\n                severity: IssueSeverity::Medium,\n                description: format!(\n                    \"低重要性记忆过多: {} / {} ({:.1}%)\",\n                    low_importance_memories.len(),\n                    unarchived_count,\n                    low_importance_memories.len() as f64 / unarchived_count as f64 * 100.0\n                ),\n                affected_memories: low_importance_memories\n                    .iter()\n                    .map(|m| m.id.clone())\n                    .collect(),\n                recommendation: \"建议归档或删除低重要性记忆\".to_string(),\n            };\n            issues.push(issue);\n        }\n\n        tracing::info!(\"空间效率检测完成，发现 {} 个空间问题\", issues.len());\n        Ok(issues)\n    }\n\n    /// 计算记忆的语义相似度（使用已存储的embedding）\n    fn calculate_semantic_similarity_from_embeddings(\n        &self, \n        embedding1: &[f32], \n        embedding2: &[f32],\n        content1_preview: &str,\n        content2_preview: &str,\n    ) -> f32 {\n        // 直接计算余弦相似度，无需重新生成embedding\n        let similarity = self.cosine_similarity(embedding1, embedding2);\n\n        tracing::debug!(\n            \"语义相似度计算: {} vs {} = {:.3}\",\n            content1_preview.chars().take(50).collect::<String>(),\n            content2_preview.chars().take(50).collect::<String>(),\n            similarity\n        );\n\n        similarity\n    }\n\n    /// 计算余弦相似度\n    fn cosine_similarity(&self, vec1: &[f32], vec2: &[f32]) -> f32 {\n        if vec1.len() != vec2.len() || vec1.is_empty() {\n            return 0.0;\n        }\n\n        let mut dot_product = 0.0;\n        let mut norm1 = 0.0;\n        let mut norm2 = 0.0;\n\n        for i in 0..vec1.len() {\n            dot_product += vec1[i] * vec2[i];\n            norm1 += vec1[i] * vec1[i];\n            norm2 += vec2[i] * vec2[i];\n        }\n\n        if norm1 == 0.0 || norm2 == 0.0 {\n            return 0.0;\n        }\n\n        dot_product / (norm1.sqrt() * norm2.sqrt())\n    }\n\n    /// 评估记忆质量\n    async fn evaluate_memory_quality(&self, memory: &crate::types::Memory) -> Result<f32> {\n        let mut quality_score = 0.0;\n        let max_score = 1.0;\n\n        // 1. 内容长度评分 (30%)\n        let content_length_score = if memory.content.len() < 10 {\n            0.1\n        } else if memory.content.len() < 50 {\n            0.5\n        } else if memory.content.len() < 200 {\n            0.8\n        } else {\n            1.0\n        };\n        quality_score += content_length_score * 0.3;\n\n        // 2. 结构化程度评分 (20%)\n        let has_sentences = memory.content.contains('.')\n            || memory.content.contains('!')\n            || memory.content.contains('?');\n        let has_paragraphs = memory.content.contains('\\n');\n        let structural_score = if has_sentences && has_paragraphs {\n            1.0\n        } else if has_sentences || has_paragraphs {\n            0.7\n        } else {\n            0.3\n        };\n        quality_score += structural_score * 0.2;\n\n        // 3. 重要性评分 (20%)\n        quality_score += memory.metadata.importance_score * 0.2;\n\n        // 4. 元数据完整性 (15%)\n        let metadata_score =\n            if !memory.metadata.entities.is_empty() && !memory.metadata.topics.is_empty() {\n                1.0\n            } else if !memory.metadata.entities.is_empty() || !memory.metadata.topics.is_empty() {\n                0.6\n            } else {\n                0.2\n            };\n        quality_score += metadata_score * 0.15;\n\n        // 5. 更新频率评分 (15%)\n        let days_since_update = (chrono::Utc::now() - memory.updated_at).num_days();\n        let update_score = if days_since_update < 7 {\n            1.0\n        } else if days_since_update < 30 {\n            0.8\n        } else if days_since_update < 90 {\n            0.5\n        } else {\n            0.2\n        };\n        quality_score += update_score * 0.15;\n\n        Ok(quality_score.min(max_score))\n    }\n\n    /// 检查分类质量\n    async fn check_classification_quality(\n        &self,\n        memory: &crate::types::Memory,\n    ) -> Result<Vec<String>> {\n        let mut issues = Vec::new();\n\n        // 只有当内容非常短且为默认类型时才检查类型是否合适\n        if memory.metadata.memory_type == crate::types::MemoryType::Conversational\n            && memory.content.len() < 20\n        {\n            tracing::debug!(\"记忆 {} 太短且为默认类型，建议重新分类\", memory.id);\n        }\n\n        // 2. 检查实体提取 - 只有内容很长时才检查\n        if memory.metadata.entities.is_empty() && memory.content.len() > 200 {\n            issues.push(\"缺少实体信息\".to_string());\n        }\n\n        // 3. 检查主题提取 - 只有内容很长时才检查\n        if memory.metadata.topics.is_empty() && memory.content.len() > 100 {\n            issues.push(\"缺少主题信息\".to_string());\n        }\n\n        // 4. 检查记忆类型与内容是否匹配 - 更宽松的逻辑\n        let detected_type = self.detect_memory_type_from_content(&memory.content).await;\n\n        // 如果检测到的类型与当前类型不同，且内容足够长，才认为是问题\n        if detected_type != memory.metadata.memory_type && memory.content.len() > 50 {\n            issues.push(format!(\n                \"记忆类型与内容可能不匹配: 当前 {:?}, 检测到 {:?}\",\n                memory.metadata.memory_type, detected_type\n            ));\n        }\n\n        Ok(issues)\n    }\n\n    /// 使用LLM从内容检测记忆类型\n    async fn detect_memory_type_from_content(&self, content: &str) -> crate::types::MemoryType {\n        let llm_client = self.memory_manager.llm_client();\n\n        // 检查内容是否为空或过短\n        if content.trim().is_empty() {\n            tracing::warn!(\"记忆内容为空，默认分类为Conversational\");\n            return crate::types::MemoryType::Conversational;\n        }\n\n        if content.trim().len() < 5 {\n            tracing::warn!(\"记忆内容过短: '{}'，默认分类为Conversational\", content);\n            return crate::types::MemoryType::Conversational;\n        }\n\n        // 记录调试信息\n        tracing::debug!(\n            \"开始对记忆内容进行LLM分类: '{}...'\",\n            content.chars().take(50).collect::<String>()\n        );\n\n        // 创建分类提示\n        let prompt = format!(\n            r#\"Classify the following memory content into one of these categories:\n\n1. Conversational - Dialogue, conversations, or interactive exchanges\n2. Procedural - Instructions, how-to information, or step-by-step processes\n3. Factual - Objective facts, data, or verifiable information\n4. Semantic - Concepts, meanings, definitions, or general knowledge\n5. Episodic - Specific events, experiences, or temporal information\n6. Personal - Personal preferences, characteristics, or individual-specific information\n\nContent: \"{}\"\n\nRespond with only the category name (e.g., \"Conversational\", \"Procedural\", etc.):\"#,\n            content\n        );\n\n        // 使用LLM分类器进行分类\n        match llm_client.classify_memory(&prompt).await {\n            Ok(classification) => {\n                let memory_type = crate::types::MemoryType::parse(&classification.memory_type);\n\n                tracing::info!(\n                    \"LLM分类成功: '{}' -> {:?} (置信度: {})\",\n                    content.chars().take(30).collect::<String>(),\n                    memory_type,\n                    classification.confidence\n                );\n\n                memory_type\n            }\n            Err(e) => {\n                tracing::error!(\n                    \"LLM分类失败: '{}' -> 错误: {}, 使用默认分类Conversational\",\n                    content.chars().take(30).collect::<String>(),\n                    e\n                );\n                crate::types::MemoryType::Conversational // 失败时的回退\n            }\n        }\n    }\n\n    /// 限制每个类型的问题数量\n    fn limit_issues_per_type(&self, issues: Vec<OptimizationIssue>) -> Vec<OptimizationIssue> {\n        let mut issues_by_type: std::collections::HashMap<IssueKind, Vec<OptimizationIssue>> =\n            std::collections::HashMap::new();\n\n        for issue in &issues {\n            issues_by_type\n                .entry(issue.kind.clone())\n                .or_insert_with(Vec::new)\n                .push(issue.clone());\n        }\n\n        let mut limited_issues = Vec::new();\n\n        for (kind, mut kind_issues) in issues_by_type {\n            if kind_issues.len() > self.config.max_issues_per_type {\n                kind_issues.truncate(self.config.max_issues_per_type);\n                tracing::warn!(\n                    \"{:?} 类型的问题数量超过限制，截取到 {} 个\",\n                    kind,\n                    self.config.max_issues_per_type\n                );\n            }\n            limited_issues.extend(kind_issues);\n        }\n\n        limited_issues\n    }\n}\n\nimpl Default for OptimizationDetector {\n    fn default() -> Self {\n        panic!(\"OptimizationDetector requires MemoryManager. Use with_memory_manager() instead.\");\n    }\n}\n"
     },
     "complexity_metrics": {
       "cyclomatic_complexity": 54.0,
-      "lines_of_code": 739,
+      "lines_of_code": 741,
       "number_of_classes": 2,
-      "number_of_functions": 16
+      "number_of_functions": 17
     },
     "dependencies": [
       {
-        "dependency_type": "import",
+        "dependency_type": "external",
         "is_external": true,
         "line_number": 1,
         "name": "chrono",
@@ -14391,15 +13787,15 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "import",
-        "is_external": true,
+        "dependency_type": "standard_library",
+        "is_external": false,
         "line_number": 2,
         "name": "std::sync::Arc",
         "path": null,
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "external",
         "is_external": true,
         "line_number": 3,
         "name": "tracing",
@@ -14407,7 +13803,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "external",
         "is_external": true,
         "line_number": 4,
         "name": "uuid",
@@ -14415,107 +13811,107 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "internal",
         "is_external": false,
         "line_number": 7,
         "name": "crate::error::Result",
-        "path": null,
+        "path": "cortex-mem-core/src/error.rs",
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "internal",
         "is_external": false,
         "line_number": 8,
         "name": "crate::memory::MemoryManager",
-        "path": null,
+        "path": "cortex-mem-core/src/memory/mod.rs",
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "internal",
         "is_external": false,
         "line_number": 9,
         "name": "crate::types::IssueKind",
-        "path": null,
+        "path": "cortex-mem-core/src/types/mod.rs",
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "internal",
         "is_external": false,
         "line_number": 9,
         "name": "crate::types::IssueSeverity",
-        "path": null,
+        "path": "cortex-mem-core/src/types/mod.rs",
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "internal",
         "is_external": false,
         "line_number": 9,
         "name": "crate::types::OptimizationFilters",
-        "path": null,
+        "path": "cortex-mem-core/src/types/mod.rs",
         "version": null
       },
       {
-        "dependency_type": "import",
+        "dependency_type": "internal",
         "is_external": false,
         "line_number": 9,
         "name": "crate::types::OptimizationIssue",
-        "path": null,
+        "path": "cortex-mem-core/src/types/mod.rs",
         "version": null
       }
     ],
-    "detailed_description": "该组件是一个内存优化问题检测器，负责识别和报告需要优化的记忆条目。它通过多种检测策略来发现重复记忆、低质量记忆、过时记忆、分类问题和空间效率问题。检测器使用MemoryManager访问记忆数据，并通过LLM客户端计算语义相似度和进行内容分类。检测结果以OptimizationIssue形式返回，包含问题描述、严重程度和修复建议。检测器支持配置化阈值和过滤条件，能够针对特定用户、代理和记忆类型进行检测。",
+    "detailed_description": "The OptimizationDetector is a comprehensive memory optimization analysis component that systematically identifies various types of memory issues in a memory management system. It implements a multi-faceted approach to memory optimization by detecting five main categories of issues: duplicate memories based on semantic similarity using pre-computed embeddings, low-quality memories based on content length, structure, importance score, metadata completeness, and update frequency, outdated memories based on last update time exceeding configurable thresholds, poor classification issues where memory type doesn't match content characteristics or metadata is incomplete, and space inefficiency issues including oversized memories with low importance, excessive total memory count, and high proportions of low-importance memories. The detector uses a configurable threshold-based approach with parameters for duplicate detection, quality assessment, time decay, and issue limits. It integrates with the MemoryManager to retrieve memories and statistics, and leverages an LLM client for content-based memory type classification. The component follows a builder pattern for construction with required MemoryManager dependency and optional configuration. All detection methods filter out archived memories and can be customized through OptimizationFilters. The results are consolidated and limited by issue type to prevent overwhelming outputs.",
     "interfaces": [
       {
-        "description": "私有构造函数，会panic提示需要使用with_memory_manager",
+        "description": "Default constructor that panics to enforce proper initialization with MemoryManager",
         "interface_type": "constructor",
-        "name": "new",
+        "name": "OptimizationDetector::new",
         "parameters": [],
-        "return_type": "OptimizationDetector",
+        "return_type": "Self",
         "visibility": "public"
       },
       {
-        "description": "使用MemoryManager创建检测器实例",
+        "description": "Constructor that initializes detector with required memory manager dependency",
         "interface_type": "constructor",
-        "name": "with_memory_manager",
+        "name": "OptimizationDetector::with_memory_manager",
         "parameters": [
           {
-            "description": "内存管理器实例",
+            "description": "Shared reference to memory manager for data access",
             "is_optional": false,
             "name": "memory_manager",
             "param_type": "Arc<MemoryManager>"
           }
         ],
-        "return_type": "OptimizationDetector",
+        "return_type": "Self",
         "visibility": "public"
       },
       {
-        "description": "使用配置和MemoryManager创建检测器实例",
+        "description": "Constructor that initializes detector with custom configuration and memory manager",
         "interface_type": "constructor",
-        "name": "with_config",
+        "name": "OptimizationDetector::with_config",
         "parameters": [
           {
-            "description": "检测器配置",
+            "description": "Custom configuration for detection thresholds",
             "is_optional": false,
             "name": "config",
             "param_type": "OptimizationDetectorConfig"
           },
           {
-            "description": "内存管理器实例",
+            "description": "Shared reference to memory manager for data access",
             "is_optional": false,
             "name": "memory_manager",
             "param_type": "Arc<MemoryManager>"
           }
         ],
-        "return_type": "OptimizationDetector",
+        "return_type": "Self",
         "visibility": "public"
       },
       {
-        "description": "执行所有类型的优化问题检测",
+        "description": "Main entry point that orchestrates all detection algorithms and returns consolidated optimization issues",
         "interface_type": "method",
-        "name": "detect_issues",
+        "name": "OptimizationDetector::detect_issues",
         "parameters": [
           {
-            "description": "检测过滤条件",
+            "description": "Filters to constrain the scope of detection",
             "is_optional": false,
             "name": "filters",
             "param_type": "&OptimizationFilters"
@@ -14525,12 +13921,12 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "检测重复记忆条目",
+        "description": "Detects duplicate memories by comparing semantic similarity of embeddings",
         "interface_type": "method",
-        "name": "detect_duplicates",
+        "name": "OptimizationDetector::detect_duplicates",
         "parameters": [
           {
-            "description": "内存过滤条件",
+            "description": "Converted filters for memory retrieval",
             "is_optional": false,
             "name": "filters",
             "param_type": "&crate::types::Filters"
@@ -14540,12 +13936,12 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "检测低质量记忆条目",
+        "description": "Identifies low-quality memories based on multi-dimensional quality scoring",
         "interface_type": "method",
-        "name": "detect_quality_issues",
+        "name": "OptimizationDetector::detect_quality_issues",
         "parameters": [
           {
-            "description": "内存过滤条件",
+            "description": "Converted filters for memory retrieval",
             "is_optional": false,
             "name": "filters",
             "param_type": "&crate::types::Filters"
@@ -14555,12 +13951,12 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "检测过时记忆条目",
+        "description": "Detects memories that haven't been updated within configured time thresholds",
         "interface_type": "method",
-        "name": "detect_outdated_issues",
+        "name": "OptimizationDetector::detect_outdated_issues",
         "parameters": [
           {
-            "description": "内存过滤条件",
+            "description": "Converted filters for memory retrieval",
             "is_optional": false,
             "name": "filters",
             "param_type": "&crate::types::Filters"
@@ -14570,12 +13966,12 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "检测分类不当的记忆条目",
+        "description": "Identifies issues with memory classification including type-content mismatches and missing metadata",
         "interface_type": "method",
-        "name": "detect_classification_issues",
+        "name": "OptimizationDetector::detect_classification_issues",
         "parameters": [
           {
-            "description": "内存过滤条件",
+            "description": "Converted filters for memory retrieval",
             "is_optional": false,
             "name": "filters",
             "param_type": "&crate::types::Filters"
@@ -14585,12 +13981,12 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "检测空间效率低下的记忆条目",
+        "description": "Detects various space efficiency problems including oversized memories and excessive memory counts",
         "interface_type": "method",
-        "name": "detect_space_inefficiency",
+        "name": "OptimizationDetector::detect_space_inefficiency",
         "parameters": [
           {
-            "description": "内存过滤条件",
+            "description": "Converted filters for memory retrieval",
             "is_optional": false,
             "name": "filters",
             "param_type": "&crate::types::Filters"
@@ -14600,54 +13996,12 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "计算两个内容的语义相似度",
+        "description": "Calculates a composite quality score for a memory based on multiple factors",
         "interface_type": "method",
-        "name": "calculate_semantic_similarity",
+        "name": "OptimizationDetector::evaluate_memory_quality",
         "parameters": [
           {
-            "description": "第一个内容",
-            "is_optional": false,
-            "name": "content1",
-            "param_type": "&str"
-          },
-          {
-            "description": "第二个内容",
-            "is_optional": false,
-            "name": "content2",
-            "param_type": "&str"
-          }
-        ],
-        "return_type": "Result<f32>",
-        "visibility": "private"
-      },
-      {
-        "description": "计算两个向量的余弦相似度",
-        "interface_type": "method",
-        "name": "cosine_similarity",
-        "parameters": [
-          {
-            "description": "第一个向量",
-            "is_optional": false,
-            "name": "vec1",
-            "param_type": "&[f32]"
-          },
-          {
-            "description": "第二个向量",
-            "is_optional": false,
-            "name": "vec2",
-            "param_type": "&[f32]"
-          }
-        ],
-        "return_type": "f32",
-        "visibility": "private"
-      },
-      {
-        "description": "评估记忆条目的质量",
-        "interface_type": "method",
-        "name": "evaluate_memory_quality",
-        "parameters": [
-          {
-            "description": "记忆条目",
+            "description": "Memory to evaluate for quality",
             "is_optional": false,
             "name": "memory",
             "param_type": "&crate::types::Memory"
@@ -14657,12 +14011,12 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "private"
       },
       {
-        "description": "检查记忆条目的分类质量",
+        "description": "Evaluates the quality of memory classification and metadata completeness",
         "interface_type": "method",
-        "name": "check_classification_quality",
+        "name": "OptimizationDetector::check_classification_quality",
         "parameters": [
           {
-            "description": "记忆条目",
+            "description": "Memory to evaluate for classification quality",
             "is_optional": false,
             "name": "memory",
             "param_type": "&crate::types::Memory"
@@ -14670,44 +14024,14 @@ Code analysis results from preprocessing phase, including definitions of functio
         ],
         "return_type": "Result<Vec<String>>",
         "visibility": "private"
-      },
-      {
-        "description": "从内容中检测记忆类型",
-        "interface_type": "method",
-        "name": "detect_memory_type_from_content",
-        "parameters": [
-          {
-            "description": "记忆内容",
-            "is_optional": false,
-            "name": "content",
-            "param_type": "&str"
-          }
-        ],
-        "return_type": "crate::types::MemoryType",
-        "visibility": "private"
-      },
-      {
-        "description": "限制每个类型的问题数量",
-        "interface_type": "method",
-        "name": "limit_issues_per_type",
-        "parameters": [
-          {
-            "description": "问题列表",
-            "is_optional": false,
-            "name": "issues",
-            "param_type": "Vec<OptimizationIssue>"
-          }
-        ],
-        "return_type": "Vec<OptimizationIssue>",
-        "visibility": "private"
       }
     ],
     "responsibilities": [
-      "检测并识别重复的记忆条目",
-      "评估记忆条目的质量和分类准确性",
-      "识别过时和空间效率低下的记忆",
-      "生成优化建议并限制问题报告数量",
-      "通过语义相似度计算和LLM分类进行智能检测"
+      "Detect duplicate memories by calculating semantic similarity from pre-computed embeddings using cosine similarity",
+      "Identify low-quality memories through multi-dimensional quality scoring based on content length, structure, importance, metadata completeness, and recency",
+      "Detect outdated memories by comparing last update time against configurable time decay thresholds",
+      "Identify memory classification issues including inappropriate memory types, missing entities/topics, and type-content mismatches",
+      "Detect space inefficiency problems such as oversized low-importance memories, excessive memory counts, and high proportions of low-importance unarchived memories"
     ]
   },
   {
@@ -17401,7 +16725,7 @@ Code analysis results from preprocessing phase, including definitions of functio
   {
     "code_dossier": {
       "code_purpose": "controller",
-      "description": "Controller component for handling HTTP requests related to memory management in a cognitive system, including CRUD operations, search, batch operations, and health checks.",
+      "description": "Controller component handling HTTP requests for memory management operations including CRUD, search, batch operations, and health checks.",
       "file_path": "cortex-mem-service/src/handlers.rs",
       "functions": [
         "health_check",
@@ -17413,18 +16737,32 @@ Code analysis results from preprocessing phase, including definitions of functio
         "list_memories",
         "batch_delete_memories",
         "batch_update_memories",
+        "get_llm_status",
+        "llm_health_check",
         "parse_conversation_content"
       ],
       "importance_score": 0.8,
-      "interfaces": [],
+      "interfaces": [
+        "health_check",
+        "create_memory",
+        "get_memory",
+        "update_memory",
+        "delete_memory",
+        "search_memories",
+        "list_memories",
+        "batch_delete_memories",
+        "batch_update_memories",
+        "get_llm_status",
+        "llm_health_check"
+      ],
       "name": "handlers.rs",
-      "source_summary": "use axum::{\n    extract::{Path, Query, State},\n    http::StatusCode,\n    response::Json,\n};\nuse chrono::Utc;\nuse cortex_mem_core::types::{Filters, MemoryMetadata, MemoryType, Message};\n\nuse tracing::{error, info};\n\nuse crate::{AppState, models::{CreateMemoryRequest, ErrorResponse, HealthResponse, ListMemoryQuery, ListResponse, MemoryMetadataResponse, MemoryResponse, ScoredMemoryResponse, SearchMemoryRequest, SearchResponse, SuccessResponse, UpdateMemoryRequest, BatchDeleteRequest, BatchUpdateRequest, BatchOperationResponse}};\n\n/// Health check endpoint\npub async fn health_check(\n    State(state): State<AppState>,\n) -> Result<Json<HealthResponse>, (StatusCode, Json<ErrorResponse>)> {\n    match state.memory_manager.health_check().await {\n        Ok(health_status) => {\n            let response = HealthResponse {\n                status: if health_status.overall {\n                    \"healthy\".to_string()\n                } else {\n                    \"unhealthy\".to_string()\n                },\n                vector_store: health_status.vector_store,\n                llm_service: health_status.llm_service,\n                timestamp: Utc::now().to_rfc3339(),\n            };\n            Ok(Json(response))\n        }\n        Err(e) => {\n            error!(\"Health check failed: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: \"Health check failed\".to_string(),\n                    code: \"HEALTH_CHECK_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// Create a new memory with enhanced support for procedural memory and conversations\npub async fn create_memory(\n    State(state): State<AppState>,\n    Json(request): Json<CreateMemoryRequest>,\n) -> Result<Json<SuccessResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let memory_type = MemoryType::parse(request.memory_type.as_deref().unwrap_or(\"conversational\"));\n\n    let mut metadata = MemoryMetadata::new(memory_type.clone());\n\n    if let Some(user_id) = &request.user_id {\n        metadata = metadata.with_user_id(user_id.clone());\n    }\n\n    if let Some(agent_id) = &request.agent_id {\n        metadata = metadata.with_agent_id(agent_id.clone());\n    }\n\n    if let Some(run_id) = &request.run_id {\n        metadata = metadata.with_run_id(run_id.clone());\n    }\n\n    if let Some(actor_id) = &request.actor_id {\n        metadata = metadata.with_actor_id(actor_id.clone());\n    }\n\n    if let Some(role) = &request.role {\n        metadata = metadata.with_role(role.clone());\n    }\n\n    if let Some(custom) = &request.custom {\n        metadata.custom = custom.clone();\n    }\n\n    // Check if this should be handled as a conversation (for procedural memory or advanced processing)\n    let is_conversation = memory_type == MemoryType::Procedural\n        || request.content.contains('\\n')\n        || request.content.contains(\"Assistant:\")\n        || request.content.contains(\"User:\");\n\n    if is_conversation {\n        // Handle as conversation for advanced processing\n        let messages = if request.content.contains('\\n') {\n            // Parse conversation format\n            parse_conversation_content(&request.content, &request.user_id, &request.agent_id)\n        } else {\n            // Single user message\n            vec![Message {\n                role: \"user\".to_string(),\n                content: request.content.clone(),\n                name: request.user_id.clone(),\n            }]\n        };\n\n        match state.memory_manager.add_memory(&messages, metadata).await {\n            Ok(results) => {\n                info!(\"Memory created successfully with {} actions\", results.len());\n\n                let ids: Vec<String> = results.iter().map(|r| r.id.clone()).collect();\n                let primary_id = ids.first().cloned().unwrap_or_default();\n\n                Ok(Json(SuccessResponse {\n                    message: format!(\"Memory created successfully with {} actions\", results.len()),\n                    id: Some(primary_id),\n                }))\n            }\n            Err(e) => {\n                error!(\"Failed to create memory: {}\", e);\n                Err((\n                    StatusCode::INTERNAL_SERVER_ERROR,\n                    Json(ErrorResponse {\n                        error: format!(\"Failed to create memory: {}\", e),\n                        code: \"MEMORY_CREATION_FAILED\".to_string(),\n                    }),\n                ))\n            }\n        }\n    } else {\n        // Handle as simple content storage\n        match state.memory_manager.store(request.content, metadata).await {\n            Ok(memory_id) => {\n                info!(\"Memory created with ID: {}\", memory_id);\n                Ok(Json(SuccessResponse {\n                    message: \"Memory created successfully\".to_string(),\n                    id: Some(memory_id),\n                }))\n            }\n            Err(e) => {\n                error!(\"Failed to create memory: {}\", e);\n                Err((\n                    StatusCode::INTERNAL_SERVER_ERROR,\n                    Json(ErrorResponse {\n                        error: format!(\"Failed to create memory: {}\", e),\n                        code: \"MEMORY_CREATION_FAILED\".to_string(),\n                    }),\n                ))\n            }\n        }\n    }\n}\n\n/// Parse conversation content from HTTP request\nfn parse_conversation_content(\n    content: &str,\n    user_id: &Option<String>,\n    agent_id: &Option<String>,\n) -> Vec<Message> {\n    let mut messages = Vec::new();\n    let lines: Vec<&str> = content.lines().collect();\n\n    for line in lines {\n        let trimmed = line.trim();\n        if trimmed.is_empty() {\n            continue;\n        }\n\n        if trimmed.starts_with(\"User:\") || trimmed.starts_with(\"user:\") {\n            let user_content = trimmed[5..].trim();\n            messages.push(Message {\n                role: \"user\".to_string(),\n                content: user_content.to_string(),\n                name: user_id.clone(),\n            });\n        } else if trimmed.starts_with(\"Assistant:\")\n            || trimmed.starts_with(\"assistant:\")\n            || trimmed.starts_with(\"AI:\")\n        {\n            let assistant_content = trimmed[10..].trim();\n            messages.push(Message {\n                role: \"assistant\".to_string(),\n                content: assistant_content.to_string(),\n                name: agent_id.clone(),\n            });\n        } else {\n            // If no role prefix, treat as user message\n            messages.push(Message {\n                role: \"user\".to_string(),\n                content: trimmed.to_string(),\n                name: user_id.clone(),\n            });\n        }\n    }\n\n    // If no messages were parsed, treat entire content as user message\n    if messages.is_empty() {\n        messages.push(Message {\n            role: \"user\".to_string(),\n            content: content.to_string(),\n            name: user_id.clone(),\n        });\n    }\n\n    messages\n}\n\n/// Get a memory by ID\npub async fn get_memory(\n    State(state): State<AppState>,\n    Path(id): Path<String>,\n) -> Result<Json<MemoryResponse>, (StatusCode, Json<ErrorResponse>)> {\n    match state.memory_manager.get(&id).await {\n        Ok(Some(memory)) => {\n            let response = MemoryResponse {\n                id: memory.id,\n                content: memory.content,\n                metadata: MemoryMetadataResponse {\n                    user_id: memory.metadata.user_id,\n                    agent_id: memory.metadata.agent_id,\n                    run_id: memory.metadata.run_id,\n                    actor_id: memory.metadata.actor_id,\n                    role: memory.metadata.role,\n                    memory_type: format!(\"{:?}\", memory.metadata.memory_type),\n                    hash: memory.metadata.hash,\n                    custom: memory.metadata.custom,\n                },\n                created_at: memory.created_at.to_rfc3339(),\n                updated_at: memory.updated_at.to_rfc3339(),\n            };\n            Ok(Json(response))\n        }\n        Ok(None) => Err((\n            StatusCode::NOT_FOUND,\n            Json(ErrorResponse {\n                error: \"Memory not found\".to_string(),\n                code: \"MEMORY_NOT_FOUND\".to_string(),\n            }),\n        )),\n        Err(e) => {\n            error!(\"Failed to get memory: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: format!(\"Failed to get memory: {}\", e),\n                    code: \"MEMORY_RETRIEVAL_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// Update a memory\npub async fn update_memory(\n    State(state): State<AppState>,\n    Path(id): Path<String>,\n    Json(request): Json<UpdateMemoryRequest>,\n) -> Result<Json<SuccessResponse>, (StatusCode, Json<ErrorResponse>)> {\n    match state.memory_manager.update(&id, request.content).await {\n        Ok(()) => {\n            info!(\"Memory updated: {}\", id);\n            Ok(Json(SuccessResponse {\n                message: \"Memory updated successfully\".to_string(),\n                id: Some(id),\n            }))\n        }\n        Err(e) => {\n            error!(\"Failed to update memory: {}\", e);\n            let status_code = if e.to_string().contains(\"not found\") {\n                StatusCode::NOT_FOUND\n            } else {\n                StatusCode::INTERNAL_SERVER_ERROR\n            };\n\n            Err((\n                status_code,\n                Json(ErrorResponse {\n                    error: format!(\"Failed to update memory: {}\", e),\n                    code: \"MEMORY_UPDATE_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// Delete a memory\npub async fn delete_memory(\n    State(state): State<AppState>,\n    Path(id): Path<String>,\n) -> Result<Json<SuccessResponse>, (StatusCode, Json<ErrorResponse>)> {\n    match state.memory_manager.delete(&id).await {\n        Ok(()) => {\n            info!(\"Memory deleted: {}\", id);\n            Ok(Json(SuccessResponse {\n                message: \"Memory deleted successfully\".to_string(),\n                id: Some(id),\n            }))\n        }\n        Err(e) => {\n            error!(\"Failed to delete memory: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: format!(\"Failed to delete memory: {}\", e),\n                    code: \"MEMORY_DELETION_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// Search memories\npub async fn search_memories(\n    State(state): State<AppState>,\n    Json(request): Json<SearchMemoryRequest>,\n) -> Result<Json<SearchResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let mut filters = Filters::new();\n\n    if let Some(user_id) = request.user_id {\n        filters.user_id = Some(user_id);\n    }\n\n    if let Some(agent_id) = request.agent_id {\n        filters.agent_id = Some(agent_id);\n    }\n\n    if let Some(run_id) = request.run_id {\n        filters.run_id = Some(run_id);\n    }\n\n    if let Some(actor_id) = request.actor_id {\n        filters.actor_id = Some(actor_id);\n    }\n\n    if let Some(memory_type_str) = request.memory_type {\n        filters.memory_type = Some(MemoryType::parse(&memory_type_str));\n    }\n\n    let limit = request.limit.unwrap_or(10);\n\n    match state\n        .memory_manager\n        .search_with_threshold(\n            &request.query,\n            &filters,\n            limit,\n            request.similarity_threshold,\n        )\n        .await\n    {\n        Ok(results) => {\n            let scored_memories: Vec<ScoredMemoryResponse> = results\n                .into_iter()\n                .map(|scored_memory| ScoredMemoryResponse {\n                    memory: MemoryResponse {\n                        id: scored_memory.memory.id,\n                        content: scored_memory.memory.content,\n                        metadata: MemoryMetadataResponse {\n                            user_id: scored_memory.memory.metadata.user_id,\n                            agent_id: scored_memory.memory.metadata.agent_id,\n                            run_id: scored_memory.memory.metadata.run_id,\n                            actor_id: scored_memory.memory.metadata.actor_id,\n                            role: scored_memory.memory.metadata.role,\n                            memory_type: format!(\"{:?}\", scored_memory.memory.metadata.memory_type),\n                            hash: scored_memory.memory.metadata.hash,\n                            custom: scored_memory.memory.metadata.custom,\n                        },\n                        created_at: scored_memory.memory.created_at.to_rfc3339(),\n                        updated_at: scored_memory.memory.updated_at.to_rfc3339(),\n                    },\n                    score: scored_memory.score,\n                })\n                .collect();\n\n            let response = SearchResponse {\n                total: scored_memories.len(),\n                results: scored_memories,\n            };\n\n            info!(\"Search completed: {} results found\", response.total);\n            Ok(Json(response))\n        }\n        Err(e) => {\n            error!(\"Failed to search memories: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: format!(\"Failed to search memories: {}\", e),\n                    code: \"MEMORY_SEARCH_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// List memories\npub async fn list_memories(\n    State(state): State<AppState>,\n    Query(query): Query<ListMemoryQuery>,\n) -> Result<Json<ListResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let mut filters = Filters::new();\n\n    if let Some(user_id) = query.user_id {\n        filters.user_id = Some(user_id);\n    }\n\n    if let Some(agent_id) = query.agent_id {\n        filters.agent_id = Some(agent_id);\n    }\n\n    if let Some(run_id) = query.run_id {\n        filters.run_id = Some(run_id);\n    }\n\n    if let Some(actor_id) = query.actor_id {\n        filters.actor_id = Some(actor_id);\n    }\n\n    if let Some(memory_type_str) = query.memory_type {\n        filters.memory_type = Some(MemoryType::parse(&memory_type_str));\n    }\n\n    let limit = query.limit;\n\n    match state.memory_manager.list(&filters, limit).await {\n        Ok(memories) => {\n            let memory_responses: Vec<MemoryResponse> = memories\n                .into_iter()\n                .map(|memory| MemoryResponse {\n                    id: memory.id,\n                    content: memory.content,\n                    metadata: MemoryMetadataResponse {\n                        user_id: memory.metadata.user_id,\n                        agent_id: memory.metadata.agent_id,\n                        run_id: memory.metadata.run_id,\n                        actor_id: memory.metadata.actor_id,\n                        role: memory.metadata.role,\n                        memory_type: format!(\"{:?}\", memory.metadata.memory_type),\n                        hash: memory.metadata.hash,\n                        custom: memory.metadata.custom,\n                    },\n                    created_at: memory.created_at.to_rfc3339(),\n                    updated_at: memory.updated_at.to_rfc3339(),\n                })\n                .collect();\n\n            let response = ListResponse {\n                total: memory_responses.len(),\n                memories: memory_responses,\n            };\n\n            info!(\"List completed: {} memories found\", response.total);\n            Ok(Json(response))\n        }\n        Err(e) => {\n            error!(\"Failed to list memories: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: format!(\"Failed to list memories: {}\", e),\n                    code: \"MEMORY_LIST_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n\n\n\n/// Batch delete memories\npub async fn batch_delete_memories(\n    State(state): State<AppState>,\n    Json(request): Json<BatchDeleteRequest>,\n) -> Result<Json<BatchOperationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let mut success_count = 0;\n    let mut failure_count = 0;\n    let mut errors = Vec::new();\n\n    for memory_id in &request.ids {\n        match state.memory_manager.delete(memory_id).await {\n            Ok(()) => {\n                success_count += 1;\n                info!(\"Memory deleted in batch: {}\", memory_id);\n            }\n            Err(e) => {\n                failure_count += 1;\n                let error_msg = format!(\"Failed to delete memory {}: {}\", memory_id, e);\n                error!(\"{}\", error_msg);\n                errors.push(error_msg);\n            }\n        }\n    }\n\n    let response = BatchOperationResponse {\n        success_count,\n        failure_count,\n        errors,\n        message: format!(\"Batch delete completed: {} succeeded, {} failed\", success_count, failure_count),\n    };\n\n    if failure_count > 0 {\n        Err((\n            StatusCode::PARTIAL_CONTENT,\n            Json(ErrorResponse {\n                error: format!(\"Batch delete partially failed: {} errors\", failure_count),\n                code: \"BATCH_DELETE_PARTIAL_FAILURE\".to_string(),\n            }),\n        ))\n    } else {\n        Ok(Json(response))\n    }\n}\n\n/// Batch update memories\npub async fn batch_update_memories(\n    State(state): State<AppState>,\n    Json(request): Json<BatchUpdateRequest>,\n) -> Result<Json<BatchOperationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let mut success_count = 0;\n    let mut failure_count = 0;\n    let mut errors = Vec::new();\n\n    for update in &request.updates {\n        match state.memory_manager.update(&update.id, update.content.clone()).await {\n            Ok(()) => {\n                success_count += 1;\n                info!(\"Memory updated in batch: {}\", update.id);\n            }\n            Err(e) => {\n                failure_count += 1;\n                let error_msg = format!(\"Failed to update memory {}: {}\", update.id, e);\n                error!(\"{}\", error_msg);\n                errors.push(error_msg);\n            }\n        }\n    }\n\n    let response = BatchOperationResponse {\n        success_count,\n        failure_count,\n        errors,\n        message: format!(\"Batch update completed: {} succeeded, {} failed\", success_count, failure_count),\n    };\n\n    if failure_count > 0 {\n        Err((\n            StatusCode::PARTIAL_CONTENT,\n            Json(ErrorResponse {\n                error: format!(\"Batch update partially failed: {} errors\", failure_count),\n                code: \"BATCH_UPDATE_PARTIAL_FAILURE\".to_string(),\n            }),\n        ))\n    } else {\n        Ok(Json(response))\n    }\n}"
+      "source_summary": "use axum::{\n    extract::{Path, Query, State},\n    http::StatusCode,\n    response::Json,\n};\nuse chrono::Utc;\nuse cortex_mem_core::types::{Filters, MemoryMetadata, MemoryType, Message};\nuse std::time::Instant;\n\nuse tracing::{error, info};\n\nuse crate::{\n    AppState,\n    models::{\n        BatchDeleteRequest, BatchOperationResponse, BatchUpdateRequest, CreateMemoryRequest,\n        ErrorResponse, HealthResponse, LLMHealthResponse, LLMStatusResponse, ListMemoryQuery,\n        ListResponse, MemoryMetadataResponse, MemoryResponse, ModelStatus, ScoredMemoryResponse,\n        SearchMemoryRequest, SearchResponse, SuccessResponse, UpdateMemoryRequest,\n    },\n};\n\n/// Health check endpoint\npub async fn health_check(\n    State(state): State<AppState>,\n) -> Result<Json<HealthResponse>, (StatusCode, Json<ErrorResponse>)> {\n    match state.memory_manager.health_check().await {\n        Ok(health_status) => {\n            let response = HealthResponse {\n                status: if health_status.overall {\n                    \"healthy\".to_string()\n                } else {\n                    \"unhealthy\".to_string()\n                },\n                vector_store: health_status.vector_store,\n                llm_service: health_status.llm_service,\n                timestamp: Utc::now().to_rfc3339(),\n            };\n            Ok(Json(response))\n        }\n        Err(e) => {\n            error!(\"Health check failed: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: \"Health check failed\".to_string(),\n                    code: \"HEALTH_CHECK_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// Create a new memory with enhanced support for procedural memory and conversations\npub async fn create_memory(\n    State(state): State<AppState>,\n    Json(request): Json<CreateMemoryRequest>,\n) -> Result<Json<SuccessResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let memory_type = MemoryType::parse(request.memory_type.as_deref().unwrap_or(\"conversational\"));\n\n    let mut metadata = MemoryMetadata::new(memory_type.clone());\n\n    if let Some(user_id) = &request.user_id {\n        metadata = metadata.with_user_id(user_id.clone());\n    }\n\n    if let Some(agent_id) = &request.agent_id {\n        metadata = metadata.with_agent_id(agent_id.clone());\n    }\n\n    if let Some(run_id) = &request.run_id {\n        metadata = metadata.with_run_id(run_id.clone());\n    }\n\n    if let Some(actor_id) = &request.actor_id {\n        metadata = metadata.with_actor_id(actor_id.clone());\n    }\n\n    if let Some(role) = &request.role {\n        metadata = metadata.with_role(role.clone());\n    }\n\n    if let Some(custom) = &request.custom {\n        metadata.custom = custom.clone();\n    }\n\n    // Check if this should be handled as a conversation (for procedural memory or advanced processing)\n    let is_conversation = memory_type == MemoryType::Procedural\n        || request.content.contains('\\n')\n        || request.content.contains(\"Assistant:\")\n        || request.content.contains(\"User:\");\n\n    if is_conversation {\n        // Handle as conversation for advanced processing\n        let messages = if request.content.contains('\\n') {\n            // Parse conversation format\n            parse_conversation_content(&request.content, &request.user_id, &request.agent_id)\n        } else {\n            // Single user message\n            vec![Message {\n                role: \"user\".to_string(),\n                content: request.content.clone(),\n                name: request.user_id.clone(),\n            }]\n        };\n\n        match state.memory_manager.add_memory(&messages, metadata).await {\n            Ok(results) => {\n                info!(\"Memory created successfully with {} actions\", results.len());\n\n                let ids: Vec<String> = results.iter().map(|r| r.id.clone()).collect();\n                let primary_id = ids.first().cloned().unwrap_or_default();\n\n                Ok(Json(SuccessResponse {\n                    message: format!(\"Memory created successfully with {} actions\", results.len()),\n                    id: Some(primary_id),\n                }))\n            }\n            Err(e) => {\n                error!(\"Failed to create memory: {}\", e);\n                Err((\n                    StatusCode::INTERNAL_SERVER_ERROR,\n                    Json(ErrorResponse {\n                        error: format!(\"Failed to create memory: {}\", e),\n                        code: \"MEMORY_CREATION_FAILED\".to_string(),\n                    }),\n                ))\n            }\n        }\n    } else {\n        // Handle as simple content storage\n        match state.memory_manager.store(request.content, metadata).await {\n            Ok(memory_id) => {\n                info!(\"Memory created with ID: {}\", memory_id);\n                Ok(Json(SuccessResponse {\n                    message: \"Memory created successfully\".to_string(),\n                    id: Some(memory_id),\n                }))\n            }\n            Err(e) => {\n                error!(\"Failed to create memory: {}\", e);\n                Err((\n                    StatusCode::INTERNAL_SERVER_ERROR,\n                    Json(ErrorResponse {\n                        error: format!(\"Failed to create memory: {}\", e),\n                        code: \"MEMORY_CREATION_FAILED\".to_string(),\n                    }),\n                ))\n            }\n        }\n    }\n}\n\n/// Parse conversation content from HTTP request\nfn parse_conversation_content(\n    content: &str,\n    user_id: &Option<String>,\n    agent_id: &Option<String>,\n) -> Vec<Message> {\n    let mut messages = Vec::new();\n    let lines: Vec<&str> = content.lines().collect();\n\n    for line in lines {\n        let trimmed = line.trim();\n        if trimmed.is_empty() {\n            continue;\n        }\n\n        if trimmed.starts_with(\"User:\") || trimmed.starts_with(\"user:\") {\n            let user_content = trimmed[5..].trim();\n            messages.push(Message {\n                role: \"user\".to_string(),\n                content: user_content.to_string(),\n                name: user_id.clone(),\n            });\n        } else if trimmed.starts_with(\"Assistant:\")\n            || trimmed.starts_with(\"assistant:\")\n            || trimmed.starts_with(\"AI:\")\n        {\n            let assistant_content = trimmed[10..].trim();\n            messages.push(Message {\n                role: \"assistant\".to_string(),\n                content: assistant_content.to_string(),\n                name: agent_id.clone(),\n            });\n        } else {\n            // If no role prefix, treat as user message\n            messages.push(Message {\n                role: \"user\".to_string(),\n                content: trimmed.to_string(),\n                name: user_id.clone(),\n            });\n        }\n    }\n\n    // If no messages were parsed, treat entire content as user message\n    if messages.is_empty() {\n        messages.push(Message {\n            role: \"user\".to_string(),\n            content: content.to_string(),\n            name: user_id.clone(),\n        });\n    }\n\n    messages\n}\n\n/// Get a memory by ID\npub async fn get_memory(\n    State(state): State<AppState>,\n    Path(id): Path<String>,\n) -> Result<Json<MemoryResponse>, (StatusCode, Json<ErrorResponse>)> {\n    match state.memory_manager.get(&id).await {\n        Ok(Some(memory)) => {\n            let response = MemoryResponse {\n                id: memory.id,\n                content: memory.content,\n                metadata: MemoryMetadataResponse {\n                    user_id: memory.metadata.user_id,\n                    agent_id: memory.metadata.agent_id,\n                    run_id: memory.metadata.run_id,\n                    actor_id: memory.metadata.actor_id,\n                    role: memory.metadata.role,\n                    memory_type: format!(\"{:?}\", memory.metadata.memory_type),\n                    hash: memory.metadata.hash,\n                    custom: memory.metadata.custom,\n                },\n                created_at: memory.created_at.to_rfc3339(),\n                updated_at: memory.updated_at.to_rfc3339(),\n            };\n            Ok(Json(response))\n        }\n        Ok(None) => Err((\n            StatusCode::NOT_FOUND,\n            Json(ErrorResponse {\n                error: \"Memory not found\".to_string(),\n                code: \"MEMORY_NOT_FOUND\".to_string(),\n            }),\n        )),\n        Err(e) => {\n            error!(\"Failed to get memory: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: format!(\"Failed to get memory: {}\", e),\n                    code: \"MEMORY_RETRIEVAL_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// Update a memory\npub async fn update_memory(\n    State(state): State<AppState>,\n    Path(id): Path<String>,\n    Json(request): Json<UpdateMemoryRequest>,\n) -> Result<Json<SuccessResponse>, (StatusCode, Json<ErrorResponse>)> {\n    match state.memory_manager.update(&id, request.content).await {\n        Ok(()) => {\n            info!(\"Memory updated: {}\", id);\n            Ok(Json(SuccessResponse {\n                message: \"Memory updated successfully\".to_string(),\n                id: Some(id),\n            }))\n        }\n        Err(e) => {\n            error!(\"Failed to update memory: {}\", e);\n            let status_code = if e.to_string().contains(\"not found\") {\n                StatusCode::NOT_FOUND\n            } else {\n                StatusCode::INTERNAL_SERVER_ERROR\n            };\n\n            Err((\n                status_code,\n                Json(ErrorResponse {\n                    error: format!(\"Failed to update memory: {}\", e),\n                    code: \"MEMORY_UPDATE_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// Delete a memory\npub async fn delete_memory(\n    State(state): State<AppState>,\n    Path(id): Path<String>,\n) -> Result<Json<SuccessResponse>, (StatusCode, Json<ErrorResponse>)> {\n    match state.memory_manager.delete(&id).await {\n        Ok(()) => {\n            info!(\"Memory deleted: {}\", id);\n            Ok(Json(SuccessResponse {\n                message: \"Memory deleted successfully\".to_string(),\n                id: Some(id),\n            }))\n        }\n        Err(e) => {\n            error!(\"Failed to delete memory: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: format!(\"Failed to delete memory: {}\", e),\n                    code: \"MEMORY_DELETION_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// Search memories\npub async fn search_memories(\n    State(state): State<AppState>,\n    Json(request): Json<SearchMemoryRequest>,\n) -> Result<Json<SearchResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let mut filters = Filters::new();\n\n    if let Some(user_id) = request.user_id {\n        filters.user_id = Some(user_id);\n    }\n\n    if let Some(agent_id) = request.agent_id {\n        filters.agent_id = Some(agent_id);\n    }\n\n    if let Some(run_id) = request.run_id {\n        filters.run_id = Some(run_id);\n    }\n\n    if let Some(actor_id) = request.actor_id {\n        filters.actor_id = Some(actor_id);\n    }\n\n    if let Some(memory_type_str) = request.memory_type {\n        filters.memory_type = Some(MemoryType::parse(&memory_type_str));\n    }\n\n    let limit = request.limit.unwrap_or(10);\n\n    match state\n        .memory_manager\n        .search_with_threshold(\n            &request.query,\n            &filters,\n            limit,\n            request.similarity_threshold,\n        )\n        .await\n    {\n        Ok(results) => {\n            let scored_memories: Vec<ScoredMemoryResponse> = results\n                .into_iter()\n                .map(|scored_memory| ScoredMemoryResponse {\n                    memory: MemoryResponse {\n                        id: scored_memory.memory.id,\n                        content: scored_memory.memory.content,\n                        metadata: MemoryMetadataResponse {\n                            user_id: scored_memory.memory.metadata.user_id,\n                            agent_id: scored_memory.memory.metadata.agent_id,\n                            run_id: scored_memory.memory.metadata.run_id,\n                            actor_id: scored_memory.memory.metadata.actor_id,\n                            role: scored_memory.memory.metadata.role,\n                            memory_type: format!(\"{:?}\", scored_memory.memory.metadata.memory_type),\n                            hash: scored_memory.memory.metadata.hash,\n                            custom: scored_memory.memory.metadata.custom,\n                        },\n                        created_at: scored_memory.memory.created_at.to_rfc3339(),\n                        updated_at: scored_memory.memory.updated_at.to_rfc3339(),\n                    },\n                    score: scored_memory.score,\n                })\n                .collect();\n\n            let response = SearchResponse {\n                total: scored_memories.len(),\n                results: scored_memories,\n            };\n\n            info!(\"Search completed: {} results found\", response.total);\n            Ok(Json(response))\n        }\n        Err(e) => {\n            error!(\"Failed to search memories: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: format!(\"Failed to search memories: {}\", e),\n                    code: \"MEMORY_SEARCH_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// List memories\npub async fn list_memories(\n    State(state): State<AppState>,\n    Query(query): Query<ListMemoryQuery>,\n) -> Result<Json<ListResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let mut filters = Filters::new();\n\n    if let Some(user_id) = query.user_id {\n        filters.user_id = Some(user_id);\n    }\n\n    if let Some(agent_id) = query.agent_id {\n        filters.agent_id = Some(agent_id);\n    }\n\n    if let Some(run_id) = query.run_id {\n        filters.run_id = Some(run_id);\n    }\n\n    if let Some(actor_id) = query.actor_id {\n        filters.actor_id = Some(actor_id);\n    }\n\n    if let Some(memory_type_str) = query.memory_type {\n        filters.memory_type = Some(MemoryType::parse(&memory_type_str));\n    }\n\n    let limit = query.limit;\n\n    match state.memory_manager.list(&filters, limit).await {\n        Ok(memories) => {\n            let memory_responses: Vec<MemoryResponse> = memories\n                .into_iter()\n                .map(|memory| MemoryResponse {\n                    id: memory.id,\n                    content: memory.content,\n                    metadata: MemoryMetadataResponse {\n                        user_id: memory.metadata.user_id,\n                        agent_id: memory.metadata.agent_id,\n                        run_id: memory.metadata.run_id,\n                        actor_id: memory.metadata.actor_id,\n                        role: memory.metadata.role,\n                        memory_type: format!(\"{:?}\", memory.metadata.memory_type),\n                        hash: memory.metadata.hash,\n                        custom: memory.metadata.custom,\n                    },\n                    created_at: memory.created_at.to_rfc3339(),\n                    updated_at: memory.updated_at.to_rfc3339(),\n                })\n                .collect();\n\n            let response = ListResponse {\n                total: memory_responses.len(),\n                memories: memory_responses,\n            };\n\n            info!(\"List completed: {} memories found\", response.total);\n            Ok(Json(response))\n        }\n        Err(e) => {\n            error!(\"Failed to list memories: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: format!(\"Failed to list memories: {}\", e),\n                    code: \"MEMORY_LIST_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// Batch delete memories\npub async fn batch_delete_memories(\n    State(state): State<AppState>,\n    Json(request): Json<BatchDeleteRequest>,\n) -> Result<Json<BatchOperationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let mut success_count = 0;\n    let mut failure_count = 0;\n    let mut errors = Vec::new();\n\n    for memory_id in &request.ids {\n        match state.memory_manager.delete(memory_id).await {\n            Ok(()) => {\n                success_count += 1;\n                info!(\"Memory deleted in batch: {}\", memory_id);\n            }\n            Err(e) => {\n                failure_count += 1;\n                let error_msg = format!(\"Failed to delete memory {}: {}\", memory_id, e);\n                error!(\"{}\", error_msg);\n                errors.push(error_msg);\n            }\n        }\n    }\n\n    let response = BatchOperationResponse {\n        success_count,\n        failure_count,\n        errors,\n        message: format!(\n            \"Batch delete completed: {} succeeded, {} failed\",\n            success_count, failure_count\n        ),\n    };\n\n    if failure_count > 0 {\n        Err((\n            StatusCode::PARTIAL_CONTENT,\n            Json(ErrorResponse {\n                error: format!(\"Batch delete partially failed: {} errors\", failure_count),\n                code: \"BATCH_DELETE_PARTIAL_FAILURE\".to_string(),\n            }),\n        ))\n    } else {\n        Ok(Json(response))\n    }\n}\n\n/// Batch update memories\npub async fn batch_update_memories(\n    State(state): State<AppState>,\n    Json(request): Json<BatchUpdateRequest>,\n) -> Result<Json<BatchOperationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let mut success_count = 0;\n    let mut failure_count = 0;\n    let mut errors = Vec::new();\n\n    for update in &request.updates {\n        match state\n            .memory_manager\n            .update(&update.id, update.content.clone())\n            .await\n        {\n            Ok(()) => {\n                success_count += 1;\n                info!(\"Memory updated in batch: {}\", update.id);\n            }\n            Err(e) => {\n                failure_count += 1;\n                let error_msg = format!(\"Failed to update memory {}: {}\", update.id, e);\n                error!(\"{}\", error_msg);\n                errors.push(error_msg);\n            }\n        }\n    }\n\n    let response = BatchOperationResponse {\n        success_count,\n        failure_count,\n        errors,\n        message: format!(\n            \"Batch update completed: {} succeeded, {} failed\",\n            success_count, failure_count\n        ),\n    };\n\n    if failure_count > 0 {\n        Err((\n            StatusCode::PARTIAL_CONTENT,\n            Json(ErrorResponse {\n                error: format!(\"Batch update partially failed: {} errors\", failure_count),\n                code: \"BATCH_UPDATE_PARTIAL_FAILURE\".to_string(),\n            }),\n        ))\n    } else {\n        Ok(Json(response))\n    }\n}\n\n/// Get detailed LLM service status including both completion and embedding models\npub async fn get_llm_status(\n    State(state): State<AppState>,\n) -> Result<Json<LLMStatusResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let timestamp = Utc::now().to_rfc3339();\n\n    // Check completion model (text generation)\n    let completion_start = Instant::now();\n    let (completion_available, completion_error) = match state\n        .memory_manager\n        .llm_client()\n        .complete(\"只给我返回“health”单词，不要输出其他内容\")\n        .await\n    {\n        Ok(_) => (true, None),\n        Err(e) => {\n            error!(\"Completion model health check failed: {}\", e);\n            (false, Some(e.to_string()))\n        }\n    };\n    let completion_latency = completion_start.elapsed().as_millis() as u64;\n\n    // Check embedding model\n    let embedding_start = Instant::now();\n    let (embedding_available, embedding_error) = match state\n        .memory_manager\n        .llm_client()\n        .embed(\"health check\")\n        .await\n    {\n        Ok(_) => (true, None),\n        Err(e) => {\n            error!(\"Embedding model health check failed: {}\", e);\n            (false, Some(e.to_string()))\n        }\n    };\n    let embedding_latency = embedding_start.elapsed().as_millis() as u64;\n\n    let overall_healthy = completion_available && embedding_available;\n    let overall_status = if overall_healthy {\n        \"healthy\".to_string()\n    } else {\n        \"unhealthy\".to_string()\n    };\n\n    let response = LLMStatusResponse {\n        overall_status,\n        completion_model: ModelStatus {\n            available: completion_available,\n            provider: \"openai\".to_string(),\n            model_name: \"cortex-memory-llm\".to_string(), // TODO: Get actual model name from config\n            latency_ms: if completion_available {\n                Some(completion_latency)\n            } else {\n                None\n            },\n            error_message: completion_error,\n            last_check: timestamp.clone(),\n        },\n        embedding_model: ModelStatus {\n            available: embedding_available,\n            provider: \"openai\".to_string(),\n            model_name: \"cortex-memory-embed\".to_string(), // TODO: Get actual model name from config\n            latency_ms: if embedding_available {\n                Some(embedding_latency)\n            } else {\n                None\n            },\n            error_message: embedding_error,\n            last_check: timestamp.clone(),\n        },\n        timestamp,\n    };\n\n    Ok(Json(response))\n}\n\n/// Simple LLM health check endpoint\npub async fn llm_health_check(\n    State(state): State<AppState>,\n) -> Result<Json<LLMHealthResponse>, (StatusCode, Json<ErrorResponse>)> {\n    // Quick health check for both models\n    let (completion_available, embedding_available) = tokio::join!(\n        async {\n            match state\n                .memory_manager\n                .llm_client()\n                .complete(\"只给我返回“health”单词，不要输出其他内容\")\n                .await\n            {\n                Ok(_) => true,\n                Err(_) => false,\n            }\n        },\n        async {\n            match state.memory_manager.llm_client().embed(\"Hi\").await {\n                Ok(_) => true,\n                Err(_) => false,\n            }\n        }\n    );\n\n    let response = LLMHealthResponse {\n        completion_model_available: completion_available,\n        embedding_model_available: embedding_available,\n        timestamp: Utc::now().to_rfc3339(),\n    };\n\n    Ok(Json(response))\n}\n"
     },
     "complexity_metrics": {
-      "cyclomatic_complexity": 44.0,
-      "lines_of_code": 547,
+      "cyclomatic_complexity": 52.0,
+      "lines_of_code": 674,
       "number_of_classes": 0,
-      "number_of_functions": 10
+      "number_of_functions": 12
     },
     "dependencies": [
       {
@@ -17436,7 +16774,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "utility",
+        "dependency_type": "library",
         "is_external": true,
         "line_number": null,
         "name": "chrono",
@@ -17452,31 +16790,23 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       },
       {
-        "dependency_type": "logging",
+        "dependency_type": "library",
         "is_external": true,
         "line_number": null,
         "name": "tracing",
         "path": null,
         "version": null
-      },
-      {
-        "dependency_type": "internal",
-        "is_external": false,
-        "line_number": null,
-        "name": "crate",
-        "path": null,
-        "version": null
       }
     ],
-    "detailed_description": "This controller handles all HTTP endpoints for memory operations in a cognitive memory service. It provides comprehensive functionality including creating memories (with special handling for conversational and procedural memory), retrieving, updating, and deleting individual memories, searching with similarity thresholds, listing with filters, and batch operations. The component uses Axum for routing and extraction, integrates with a memory manager for business logic, and handles structured responses with proper error reporting. It supports advanced features like conversation parsing from text input and metadata enrichment based on request parameters.",
+    "detailed_description": "This controller component implements RESTful endpoints for a memory management service. It handles all HTTP requests related to memory operations including creation (with special handling for conversational/procedural memory), retrieval, update, deletion, searching with similarity scoring, listing with filters, and batch operations. The component also provides health check endpoints to monitor both the overall system health and LLM service status (completion and embedding models). Each handler follows a consistent pattern of extracting state and parameters, delegating to the memory manager service, and returning appropriate JSON responses or error codes. The create_memory function includes sophisticated logic to detect and parse conversation content format.",
     "interfaces": [
       {
-        "description": "Returns health status of the memory system including vector store and LLM service",
+        "description": "Returns system health status including vector store and LLM service health",
         "interface_type": "function",
         "name": "health_check",
         "parameters": [
           {
-            "description": "Application state containing memory manager and configuration",
+            "description": "Application state containing memory manager",
             "is_optional": false,
             "name": "state",
             "param_type": "State<AppState>"
@@ -17486,7 +16816,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "Creates a new memory with support for both simple content and conversation parsing",
+        "description": "Creates new memory with support for both simple content and conversation formats",
         "interface_type": "function",
         "name": "create_memory",
         "parameters": [
@@ -17497,7 +16827,7 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "State<AppState>"
           },
           {
-            "description": "Request containing memory content and metadata",
+            "description": "Memory creation request with content and metadata",
             "is_optional": false,
             "name": "request",
             "param_type": "Json<CreateMemoryRequest>"
@@ -17507,7 +16837,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "Retrieves a specific memory by ID with full metadata",
+        "description": "Retrieves a specific memory by ID",
         "interface_type": "function",
         "name": "get_memory",
         "parameters": [
@@ -17518,7 +16848,7 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "State<AppState>"
           },
           {
-            "description": "Memory identifier",
+            "description": "ID of memory to retrieve",
             "is_optional": false,
             "name": "id",
             "param_type": "Path<String>"
@@ -17539,13 +16869,13 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "State<AppState>"
           },
           {
-            "description": "Memory identifier to update",
+            "description": "ID of memory to update",
             "is_optional": false,
             "name": "id",
             "param_type": "Path<String>"
           },
           {
-            "description": "Request containing new content for the memory",
+            "description": "Update request with new content",
             "is_optional": false,
             "name": "request",
             "param_type": "Json<UpdateMemoryRequest>"
@@ -17566,7 +16896,7 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "State<AppState>"
           },
           {
-            "description": "Memory identifier to delete",
+            "description": "ID of memory to delete",
             "is_optional": false,
             "name": "id",
             "param_type": "Path<String>"
@@ -17576,7 +16906,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "Searches memories using vector similarity with filters and threshold",
+        "description": "Searches memories by semantic similarity with filtering",
         "interface_type": "function",
         "name": "search_memories",
         "parameters": [
@@ -17587,7 +16917,7 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "State<AppState>"
           },
           {
-            "description": "Search parameters including query, filters, and similarity threshold",
+            "description": "Search request with query and filters",
             "is_optional": false,
             "name": "request",
             "param_type": "Json<SearchMemoryRequest>"
@@ -17597,7 +16927,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "Lists memories with filtering and pagination",
+        "description": "Lists memories with optional filtering and pagination",
         "interface_type": "function",
         "name": "list_memories",
         "parameters": [
@@ -17608,7 +16938,7 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "State<AppState>"
           },
           {
-            "description": "Filter parameters for listing memories",
+            "description": "Query parameters for listing with filters",
             "is_optional": false,
             "name": "query",
             "param_type": "Query<ListMemoryQuery>"
@@ -17618,7 +16948,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "Performs batch deletion of multiple memories with partial success handling",
+        "description": "Performs batch deletion of multiple memories",
         "interface_type": "function",
         "name": "batch_delete_memories",
         "parameters": [
@@ -17629,7 +16959,7 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "State<AppState>"
           },
           {
-            "description": "Request containing list of memory IDs to delete",
+            "description": "Batch delete request with list of memory IDs",
             "is_optional": false,
             "name": "request",
             "param_type": "Json<BatchDeleteRequest>"
@@ -17639,7 +16969,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "Performs batch update of multiple memories with partial success handling",
+        "description": "Performs batch update of multiple memories",
         "interface_type": "function",
         "name": "batch_update_memories",
         "parameters": [
@@ -17650,7 +16980,7 @@ Code analysis results from preprocessing phase, including definitions of functio
             "param_type": "State<AppState>"
           },
           {
-            "description": "Request containing list of memory updates",
+            "description": "Batch update request with list of update operations",
             "is_optional": false,
             "name": "request",
             "param_type": "Json<BatchUpdateRequest>"
@@ -17660,24 +16990,54 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "public"
       },
       {
-        "description": "Parses conversation text into structured messages with role detection",
+        "description": "Gets detailed status of LLM service including both completion and embedding models",
+        "interface_type": "function",
+        "name": "get_llm_status",
+        "parameters": [
+          {
+            "description": "Application state containing memory manager",
+            "is_optional": false,
+            "name": "state",
+            "param_type": "State<AppState>"
+          }
+        ],
+        "return_type": "Result<Json<LLMStatusResponse>, (StatusCode, Json<ErrorResponse>)>",
+        "visibility": "public"
+      },
+      {
+        "description": "Simple health check for LLM service availability",
+        "interface_type": "function",
+        "name": "llm_health_check",
+        "parameters": [
+          {
+            "description": "Application state containing memory manager",
+            "is_optional": false,
+            "name": "state",
+            "param_type": "State<AppState>"
+          }
+        ],
+        "return_type": "Result<Json<LLMHealthResponse>, (StatusCode, Json<ErrorResponse>)>",
+        "visibility": "public"
+      },
+      {
+        "description": "Parses conversation content into structured messages with roles",
         "interface_type": "function",
         "name": "parse_conversation_content",
         "parameters": [
           {
-            "description": "Raw conversation text to parse",
+            "description": "Raw conversation content to parse",
             "is_optional": false,
             "name": "content",
             "param_type": "&str"
           },
           {
-            "description": "Optional user identifier for message attribution",
+            "description": "Optional user ID for message attribution",
             "is_optional": false,
             "name": "user_id",
             "param_type": "&Option<String>"
           },
           {
-            "description": "Optional agent identifier for message attribution",
+            "description": "Optional agent ID for message attribution",
             "is_optional": false,
             "name": "agent_id",
             "param_type": "&Option<String>"
@@ -17688,17 +17048,17 @@ Code analysis results from preprocessing phase, including definitions of functio
       }
     ],
     "responsibilities": [
-      "Handle HTTP requests for memory lifecycle operations (create, read, update, delete)",
-      "Process and validate incoming memory data, including conversation parsing and metadata enrichment",
-      "Coordinate with memory manager service for business logic execution and data persistence",
-      "Implement search functionality with filtering, similarity scoring, and pagination",
-      "Provide health check endpoint and batch operations for multiple memories"
+      "Handling HTTP requests for memory CRUD operations",
+      "Implementing search and list functionality with filtering capabilities",
+      "Managing batch operations for memory deletion and updates",
+      "Providing health check endpoints for system and LLM service monitoring",
+      "Parsing and validating request data and converting between internal and external representations"
     ]
   },
   {
     "code_dossier": {
       "code_purpose": "model",
-      "description": "Defines data transfer objects for memory operations including creation, update, search, and batch operations, along with corresponding response structures.",
+      "description": "Data transfer objects and response structures for memory service operations including CRUD, batch processing, search, and health monitoring.",
       "file_path": "cortex-mem-service/src/models.rs",
       "functions": [],
       "importance_score": 0.8,
@@ -17718,15 +17078,18 @@ Code analysis results from preprocessing phase, including definitions of functio
         "ListResponse",
         "SuccessResponse",
         "ErrorResponse",
-        "HealthResponse"
+        "HealthResponse",
+        "LLMStatusResponse",
+        "ModelStatus",
+        "LLMHealthResponse"
       ],
       "name": "models.rs",
-      "source_summary": "use serde::{Deserialize, Serialize};\nuse std::collections::HashMap;\n\n/// Request to create a new memory\n#[derive(Debug, Deserialize)]\npub struct CreateMemoryRequest {\n    pub content: String,\n    pub user_id: Option<String>,\n    pub agent_id: Option<String>,\n    pub run_id: Option<String>,\n    pub actor_id: Option<String>,\n    pub role: Option<String>,\n    pub memory_type: Option<String>,\n    pub custom: Option<HashMap<String, serde_json::Value>>,\n}\n\n/// Request to update an existing memory\n#[derive(Debug, Deserialize)]\npub struct UpdateMemoryRequest {\n    pub content: String,\n}\n\n/// Request to batch delete memories\n#[derive(Debug, Deserialize)]\npub struct BatchDeleteRequest {\n    pub ids: Vec<String>,\n}\n\n/// Request to batch update memories\n#[derive(Debug, Deserialize)]\npub struct BatchUpdateRequest {\n    pub updates: Vec<MemoryUpdate>,\n}\n\n/// Single memory update for batch operation\n#[derive(Debug, Deserialize)]\npub struct MemoryUpdate {\n    pub id: String,\n    pub content: String,\n}\n\n/// Response for batch operations\n#[derive(Debug, Serialize)]\npub struct BatchOperationResponse {\n    pub success_count: usize,\n    pub failure_count: usize,\n    pub errors: Vec<String>,\n    pub message: String,\n}\n\n/// Request to search memories\n#[derive(Debug, Deserialize)]\npub struct SearchMemoryRequest {\n    pub query: String,\n    pub user_id: Option<String>,\n    pub agent_id: Option<String>,\n    pub run_id: Option<String>,\n    pub actor_id: Option<String>,\n    pub memory_type: Option<String>,\n    pub limit: Option<usize>,\n    pub similarity_threshold: Option<f32>,\n}\n\n/// Query parameters for listing memories\n#[derive(Debug, Deserialize)]\npub struct ListMemoryQuery {\n    pub user_id: Option<String>,\n    pub agent_id: Option<String>,\n    pub run_id: Option<String>,\n    pub actor_id: Option<String>,\n    pub memory_type: Option<String>,\n    pub limit: Option<usize>,\n}\n\n/// Response for memory operations\n#[derive(Debug, Serialize)]\npub struct MemoryResponse {\n    pub id: String,\n    pub content: String,\n    pub metadata: MemoryMetadataResponse,\n    pub created_at: String,\n    pub updated_at: String,\n}\n\n/// Response for memory metadata\n#[derive(Debug, Serialize)]\npub struct MemoryMetadataResponse {\n    pub user_id: Option<String>,\n    pub agent_id: Option<String>,\n    pub run_id: Option<String>,\n    pub actor_id: Option<String>,\n    pub role: Option<String>,\n    pub memory_type: String,\n    pub hash: String,\n    pub custom: HashMap<String, serde_json::Value>,\n}\n\n/// Response for search results\n#[derive(Debug, Serialize)]\npub struct SearchResponse {\n    pub results: Vec<ScoredMemoryResponse>,\n    pub total: usize,\n}\n\n/// Response for scored memory\n#[derive(Debug, Serialize)]\npub struct ScoredMemoryResponse {\n    pub memory: MemoryResponse,\n    pub score: f32,\n}\n\n/// Response for list results\n#[derive(Debug, Serialize)]\npub struct ListResponse {\n    pub memories: Vec<MemoryResponse>,\n    pub total: usize,\n}\n\n/// Response for successful operations\n#[derive(Debug, Serialize)]\npub struct SuccessResponse {\n    pub message: String,\n    pub id: Option<String>,\n}\n\n/// Error response\n#[derive(Debug, Serialize)]\npub struct ErrorResponse {\n    pub error: String,\n    pub code: String,\n}\n\n/// Health check response\n#[derive(Debug, Serialize)]\npub struct HealthResponse {\n    pub status: String,\n    pub vector_store: bool,\n    pub llm_service: bool,\n    pub timestamp: String,\n}\n\n\n"
+      "source_summary": "use serde::{Deserialize, Serialize};\nuse std::collections::HashMap;\n\n/// Request to create a new memory\n#[derive(Debug, Deserialize)]\npub struct CreateMemoryRequest {\n    pub content: String,\n    pub user_id: Option<String>,\n    pub agent_id: Option<String>,\n    pub run_id: Option<String>,\n    pub actor_id: Option<String>,\n    pub role: Option<String>,\n    pub memory_type: Option<String>,\n    pub custom: Option<HashMap<String, serde_json::Value>>,\n}\n\n/// Request to update an existing memory\n#[derive(Debug, Deserialize)]\npub struct UpdateMemoryRequest {\n    pub content: String,\n}\n\n/// Request to batch delete memories\n#[derive(Debug, Deserialize)]\npub struct BatchDeleteRequest {\n    pub ids: Vec<String>,\n}\n\n/// Request to batch update memories\n#[derive(Debug, Deserialize)]\npub struct BatchUpdateRequest {\n    pub updates: Vec<MemoryUpdate>,\n}\n\n/// Single memory update for batch operation\n#[derive(Debug, Deserialize)]\npub struct MemoryUpdate {\n    pub id: String,\n    pub content: String,\n}\n\n/// Response for batch operations\n#[derive(Debug, Serialize)]\npub struct BatchOperationResponse {\n    pub success_count: usize,\n    pub failure_count: usize,\n    pub errors: Vec<String>,\n    pub message: String,\n}\n\n/// Request to search memories\n#[derive(Debug, Deserialize)]\npub struct SearchMemoryRequest {\n    pub query: String,\n    pub user_id: Option<String>,\n    pub agent_id: Option<String>,\n    pub run_id: Option<String>,\n    pub actor_id: Option<String>,\n    pub memory_type: Option<String>,\n    pub limit: Option<usize>,\n    pub similarity_threshold: Option<f32>,\n}\n\n/// Query parameters for listing memories\n#[derive(Debug, Deserialize)]\npub struct ListMemoryQuery {\n    pub user_id: Option<String>,\n    pub agent_id: Option<String>,\n    pub run_id: Option<String>,\n    pub actor_id: Option<String>,\n    pub memory_type: Option<String>,\n    pub limit: Option<usize>,\n}\n\n/// Response for memory operations\n#[derive(Debug, Serialize)]\npub struct MemoryResponse {\n    pub id: String,\n    pub content: String,\n    pub metadata: MemoryMetadataResponse,\n    pub created_at: String,\n    pub updated_at: String,\n}\n\n/// Response for memory metadata\n#[derive(Debug, Serialize)]\npub struct MemoryMetadataResponse {\n    pub user_id: Option<String>,\n    pub agent_id: Option<String>,\n    pub run_id: Option<String>,\n    pub actor_id: Option<String>,\n    pub role: Option<String>,\n    pub memory_type: String,\n    pub hash: String,\n    pub custom: HashMap<String, serde_json::Value>,\n}\n\n/// Response for search results\n#[derive(Debug, Serialize)]\npub struct SearchResponse {\n    pub results: Vec<ScoredMemoryResponse>,\n    pub total: usize,\n}\n\n/// Response for scored memory\n#[derive(Debug, Serialize)]\npub struct ScoredMemoryResponse {\n    pub memory: MemoryResponse,\n    pub score: f32,\n}\n\n/// Response for list results\n#[derive(Debug, Serialize)]\npub struct ListResponse {\n    pub memories: Vec<MemoryResponse>,\n    pub total: usize,\n}\n\n/// Response for successful operations\n#[derive(Debug, Serialize)]\npub struct SuccessResponse {\n    pub message: String,\n    pub id: Option<String>,\n}\n\n/// Error response\n#[derive(Debug, Serialize)]\npub struct ErrorResponse {\n    pub error: String,\n    pub code: String,\n}\n\n/// Health check response\n#[derive(Debug, Serialize)]\npub struct HealthResponse {\n    pub status: String,\n    pub vector_store: bool,\n    pub llm_service: bool,\n    pub timestamp: String,\n}\n\n/// LLM service status response\n#[derive(Debug, Serialize)]\npub struct LLMStatusResponse {\n    pub overall_status: String,\n    pub completion_model: ModelStatus,\n    pub embedding_model: ModelStatus,\n    pub timestamp: String,\n}\n\n/// Individual model status\n#[derive(Debug, Serialize)]\npub struct ModelStatus {\n    pub available: bool,\n    pub provider: String,\n    pub model_name: String,\n    pub latency_ms: Option<u64>,\n    pub error_message: Option<String>,\n    pub last_check: String,\n}\n\n/// Simple health check response for LLM services\n#[derive(Debug, Serialize)]\npub struct LLMHealthResponse {\n    pub completion_model_available: bool,\n    pub embedding_model_available: bool,\n    pub timestamp: String,\n}\n\n\n"
     },
     "complexity_metrics": {
-      "cyclomatic_complexity": 10.0,
-      "lines_of_code": 142,
-      "number_of_classes": 16,
+      "cyclomatic_complexity": 11.0,
+      "lines_of_code": 170,
+      "number_of_classes": 0,
       "number_of_functions": 0
     },
     "dependencies": [
@@ -17747,57 +17110,57 @@ Code analysis results from preprocessing phase, including definitions of functio
         "version": null
       }
     ],
-    "detailed_description": "This component defines a comprehensive set of data models used for handling memory-related operations in a service architecture. It includes request types for creating, updating, searching, and batch operations on memory entries, as well as response types that encapsulate operation results, search results, and error conditions. Each model is properly annotated with serde traits to enable serialization and deserialization, making them suitable for use in API endpoints. The models support optional filtering by various identifiers (user_id, agent_id, etc.) and include metadata tracking fields. The design follows a clear pattern of separating concerns between input requests and output responses, with specialized types for different operation modes (batch, search, individual operations).",
+    "detailed_description": "This component defines all the data models used for request and response payloads in the memory service. It supports core operations including creating, updating, deleting, searching, and listing memory records with rich metadata. The models facilitate interaction between the API layer and external clients, ensuring consistent data structure across the system. Specialized types are provided for batch operations, error handling, and health monitoring, including detailed status reporting for LLM services. All request types use Deserialize for incoming data parsing, while response types use Serialize for output formatting, following REST API best practices.",
     "interfaces": [
       {
-        "description": "Request payload for creating a new memory entry with content and optional metadata",
+        "description": "Request payload for creating a new memory record with content and optional metadata",
         "interface_type": "struct",
         "name": "CreateMemoryRequest",
         "parameters": [
           {
-            "description": "The content of the memory to be created",
+            "description": "The actual memory content",
             "is_optional": false,
             "name": "content",
             "param_type": "String"
           },
           {
-            "description": "Optional user identifier associated with the memory",
+            "description": "Optional user identifier",
             "is_optional": true,
             "name": "user_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Optional agent identifier associated with the memory",
+            "description": "Optional agent identifier",
             "is_optional": true,
             "name": "agent_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Optional run identifier associated with the memory",
+            "description": "Optional run/session identifier",
             "is_optional": true,
             "name": "run_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Optional actor identifier associated with the memory",
+            "description": "Optional actor identifier",
             "is_optional": true,
             "name": "actor_id",
             "param_type": "Option<String>"
           },
           {
-            "description": "Optional role associated with the memory",
+            "description": "Optional role information",
             "is_optional": true,
             "name": "role",
             "param_type": "Option<String>"
           },
           {
-            "description": "Optional type categorization of the memory",
+            "description": "Optional memory type categorization",
             "is_optional": true,
             "name": "memory_type",
             "param_type": "Option<String>"
           },
           {
-            "description": "Optional custom metadata stored as key-value pairs",
+            "description": "Optional custom metadata fields",
             "is_optional": true,
             "name": "custom",
             "param_type": "Option<HashMap<String, serde_json::Value>>"
@@ -17807,225 +17170,24 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "pub"
       },
       {
-        "description": "Request payload for updating an existing memory's content",
-        "interface_type": "struct",
-        "name": "UpdateMemoryRequest",
-        "parameters": [
-          {
-            "description": "The new content to update the memory with",
-            "is_optional": false,
-            "name": "content",
-            "param_type": "String"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Request payload for batch deletion of multiple memory entries by ID",
-        "interface_type": "struct",
-        "name": "BatchDeleteRequest",
-        "parameters": [
-          {
-            "description": "List of memory IDs to delete",
-            "is_optional": false,
-            "name": "ids",
-            "param_type": "Vec<String>"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Request payload for batch updating multiple memory entries",
-        "interface_type": "struct",
-        "name": "BatchUpdateRequest",
-        "parameters": [
-          {
-            "description": "List of individual memory updates to apply",
-            "is_optional": false,
-            "name": "updates",
-            "param_type": "Vec<MemoryUpdate>"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Individual memory update specification used in batch operations",
-        "interface_type": "struct",
-        "name": "MemoryUpdate",
-        "parameters": [
-          {
-            "description": "ID of the memory to update",
-            "is_optional": false,
-            "name": "id",
-            "param_type": "String"
-          },
-          {
-            "description": "New content for the memory",
-            "is_optional": false,
-            "name": "content",
-            "param_type": "String"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Response structure for batch operations indicating success/failure statistics",
-        "interface_type": "struct",
-        "name": "BatchOperationResponse",
-        "parameters": [
-          {
-            "description": "Number of successful operations",
-            "is_optional": false,
-            "name": "success_count",
-            "param_type": "usize"
-          },
-          {
-            "description": "Number of failed operations",
-            "is_optional": false,
-            "name": "failure_count",
-            "param_type": "usize"
-          },
-          {
-            "description": "List of error messages from failed operations",
-            "is_optional": false,
-            "name": "errors",
-            "param_type": "Vec<String>"
-          },
-          {
-            "description": "Summary message about the batch operation result",
-            "is_optional": false,
-            "name": "message",
-            "param_type": "String"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Request structure for searching memories with query and optional filters",
-        "interface_type": "struct",
-        "name": "SearchMemoryRequest",
-        "parameters": [
-          {
-            "description": "Search query string",
-            "is_optional": false,
-            "name": "query",
-            "param_type": "String"
-          },
-          {
-            "description": "Optional filter by user ID",
-            "is_optional": true,
-            "name": "user_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional filter by agent ID",
-            "is_optional": true,
-            "name": "agent_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional filter by run ID",
-            "is_optional": true,
-            "name": "run_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional filter by actor ID",
-            "is_optional": true,
-            "name": "actor_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional filter by memory type",
-            "is_optional": true,
-            "name": "memory_type",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional limit on number of results",
-            "is_optional": true,
-            "name": "limit",
-            "param_type": "Option<usize>"
-          },
-          {
-            "description": "Optional minimum similarity score for results",
-            "is_optional": true,
-            "name": "similarity_threshold",
-            "param_type": "Option<f32>"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Query parameters for listing memories with optional filtering and pagination",
-        "interface_type": "struct",
-        "name": "ListMemoryQuery",
-        "parameters": [
-          {
-            "description": "Optional filter by user ID",
-            "is_optional": true,
-            "name": "user_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional filter by agent ID",
-            "is_optional": true,
-            "name": "agent_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional filter by run ID",
-            "is_optional": true,
-            "name": "run_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional filter by actor ID",
-            "is_optional": true,
-            "name": "actor_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional filter by memory type",
-            "is_optional": true,
-            "name": "memory_type",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional limit on number of results",
-            "is_optional": true,
-            "name": "limit",
-            "param_type": "Option<usize>"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Complete response structure for a single memory entry",
+        "description": "Standard response structure for memory operations containing full memory details",
         "interface_type": "struct",
         "name": "MemoryResponse",
         "parameters": [
           {
-            "description": "Unique identifier of the memory",
+            "description": "Unique identifier for the memory",
             "is_optional": false,
             "name": "id",
             "param_type": "String"
           },
           {
-            "description": "Content of the memory",
+            "description": "The memory content",
             "is_optional": false,
             "name": "content",
             "param_type": "String"
           },
           {
-            "description": "Metadata associated with the memory",
+            "description": "Associated metadata for the memory",
             "is_optional": false,
             "name": "metadata",
             "param_type": "MemoryMetadataResponse"
@@ -18047,64 +17209,7 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "pub"
       },
       {
-        "description": "Metadata structure associated with a memory entry",
-        "interface_type": "struct",
-        "name": "MemoryMetadataResponse",
-        "parameters": [
-          {
-            "description": "Optional user identifier",
-            "is_optional": true,
-            "name": "user_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional agent identifier",
-            "is_optional": true,
-            "name": "agent_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional run identifier",
-            "is_optional": true,
-            "name": "run_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional actor identifier",
-            "is_optional": true,
-            "name": "actor_id",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Optional role associated with the memory",
-            "is_optional": true,
-            "name": "role",
-            "param_type": "Option<String>"
-          },
-          {
-            "description": "Type categorization of the memory (required)",
-            "is_optional": false,
-            "name": "memory_type",
-            "param_type": "String"
-          },
-          {
-            "description": "Hash value of the memory content",
-            "is_optional": false,
-            "name": "hash",
-            "param_type": "String"
-          },
-          {
-            "description": "Custom metadata stored as key-value pairs",
-            "is_optional": false,
-            "name": "custom",
-            "param_type": "HashMap<String, serde_json::Value>"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Response structure for memory search operations",
+        "description": "Response structure for memory search operations containing scored results",
         "interface_type": "struct",
         "name": "SearchResponse",
         "parameters": [
@@ -18125,114 +17230,30 @@ Code analysis results from preprocessing phase, including definitions of functio
         "visibility": "pub"
       },
       {
-        "description": "Memory entry with associated similarity score for search results",
+        "description": "Comprehensive status reporting for LLM services including individual model statuses",
         "interface_type": "struct",
-        "name": "ScoredMemoryResponse",
+        "name": "LLMStatusResponse",
         "parameters": [
           {
-            "description": "The memory entry",
+            "description": "Aggregated status of all LLM services",
             "is_optional": false,
-            "name": "memory",
-            "param_type": "MemoryResponse"
-          },
-          {
-            "description": "Similarity score for the search result",
-            "is_optional": false,
-            "name": "score",
-            "param_type": "f32"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Response structure for listing multiple memory entries",
-        "interface_type": "struct",
-        "name": "ListResponse",
-        "parameters": [
-          {
-            "description": "List of memory entries",
-            "is_optional": false,
-            "name": "memories",
-            "param_type": "Vec<MemoryResponse>"
-          },
-          {
-            "description": "Total number of memories available",
-            "is_optional": false,
-            "name": "total",
-            "param_type": "usize"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Standard response for successful operations",
-        "interface_type": "struct",
-        "name": "SuccessResponse",
-        "parameters": [
-          {
-            "description": "Success message",
-            "is_optional": false,
-            "name": "message",
+            "name": "overall_status",
             "param_type": "String"
           },
           {
-            "description": "Optional ID of the created/affected resource",
-            "is_optional": true,
-            "name": "id",
-            "param_type": "Option<String>"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Standard response structure for error conditions",
-        "interface_type": "struct",
-        "name": "ErrorResponse",
-        "parameters": [
-          {
-            "description": "Error message",
+            "description": "Status of the completion model",
             "is_optional": false,
-            "name": "error",
-            "param_type": "String"
+            "name": "completion_model",
+            "param_type": "ModelStatus"
           },
           {
-            "description": "Error code identifier",
+            "description": "Status of the embedding model",
             "is_optional": false,
-            "name": "code",
-            "param_type": "String"
-          }
-        ],
-        "return_type": null,
-        "visibility": "pub"
-      },
-      {
-        "description": "Health check response structure for system monitoring",
-        "interface_type": "struct",
-        "name": "HealthResponse",
-        "parameters": [
-          {
-            "description": "Overall health status",
-            "is_optional": false,
-            "name": "status",
-            "param_type": "String"
+            "name": "embedding_model",
+            "param_type": "ModelStatus"
           },
           {
-            "description": "Health status of vector store component",
-            "is_optional": false,
-            "name": "vector_store",
-            "param_type": "bool"
-          },
-          {
-            "description": "Health status of LLM service component",
-            "is_optional": false,
-            "name": "llm_service",
-            "param_type": "bool"
-          },
-          {
-            "description": "Timestamp of health check",
+            "description": "Timestamp of the status check",
             "is_optional": false,
             "name": "timestamp",
             "param_type": "String"
@@ -18243,11 +17264,195 @@ Code analysis results from preprocessing phase, including definitions of functio
       }
     ],
     "responsibilities": [
-      "Define data structures for memory creation and update operations",
-      "Provide request and response models for batch memory operations",
-      "Support search and list operations with filtering capabilities",
-      "Encapsulate error and success responses for API consistency",
-      "Maintain metadata and audit information for memory entries"
+      "Define structured data schemas for API request and response payloads",
+      "Support CRUD operations on memory records with appropriate metadata",
+      "Enable batch operations with comprehensive success/failure tracking",
+      "Facilitate memory search and filtering with configurable parameters",
+      "Provide health check and service status monitoring data structures"
+    ]
+  },
+  {
+    "code_dossier": {
+      "code_purpose": "controller",
+      "description": "Controller component for handling memory optimization tasks including starting, monitoring, analyzing, and cleaning up optimization jobs. Manages asynchronous optimization workflows and provides status tracking.",
+      "file_path": "cortex-mem-service/src/optimization_handlers.rs",
+      "functions": [
+        "start_optimization",
+        "execute_optimization",
+        "get_optimization_status",
+        "cancel_optimization",
+        "get_optimization_history",
+        "analyze_optimization",
+        "get_optimization_statistics",
+        "cleanup_history"
+      ],
+      "importance_score": 0.8,
+      "interfaces": [
+        "StartOptimizationRequest",
+        "OptimizationJobState",
+        "OptimizationResponse",
+        "OptimizationHistoryQuery",
+        "CleanupRequest",
+        "AnalyzeRequest"
+      ],
+      "name": "optimization_handlers.rs",
+      "source_summary": "use axum::{\n    extract::{Path, Query, State},\n    http::StatusCode,\n    response::Json,\n};\nuse chrono::Utc;\nuse cortex_mem_core::{\n    memory::{DefaultMemoryOptimizer, MemoryOptimizer},\n    types::{\n        OptimizationConfig, OptimizationFilters, OptimizationRequest, OptimizationResult,\n        OptimizationStrategy,\n    },\n};\nuse serde::{Deserialize, Serialize};\nuse std::collections::HashMap;\nuse tracing::{error, info};\nuse uuid::Uuid;\n\nuse crate::{models::ErrorResponse, AppState};\n\n/// 优化任务状态（用于内存存储）\n#[derive(Debug, Clone, Serialize)]\npub struct OptimizationJobState {\n    pub job_id: String,\n    pub status: String,\n    pub progress: u8,\n    pub current_phase: String,\n    pub logs: Vec<String>,\n    pub result: Option<OptimizationResult>,\n    pub start_time: String,\n    pub end_time: Option<String>,\n    pub duration: Option<i64>,\n}\n\n/// 启动优化请求\n#[derive(Debug, Deserialize)]\npub struct StartOptimizationRequest {\n    pub memory_type: Option<String>,\n    pub user_id: Option<String>,\n    pub agent_id: Option<String>,\n    pub run_id: Option<String>,\n    pub actor_id: Option<String>,\n    pub similarity_threshold: Option<f32>,\n    pub dry_run: Option<bool>,\n    pub verbose: Option<bool>,\n    pub strategy: Option<String>,\n    pub aggressive: Option<bool>,\n    pub timeout_minutes: Option<u64>,\n}\n\n/// 优化响应\n#[derive(Debug, Serialize)]\npub struct OptimizationResponse {\n    pub success: bool,\n    pub data: Option<serde_json::Value>,\n    pub error: Option<ErrorInfo>,\n    pub timestamp: String,\n}\n\n#[derive(Debug, Serialize)]\npub struct ErrorInfo {\n    pub code: String,\n    pub message: String,\n}\n\n/// 优化历史查询参数\n#[derive(Debug, Deserialize)]\npub struct OptimizationHistoryQuery {\n    pub limit: Option<usize>,\n    pub offset: Option<usize>,\n    pub status: Option<String>,\n    pub start_date: Option<String>,\n    pub end_date: Option<String>,\n}\n\n/// 清理请求\n#[derive(Debug, Deserialize)]\npub struct CleanupRequest {\n    pub max_age_days: Option<u64>,\n}\n\n/// 分析请求\n#[derive(Debug, Deserialize)]\npub struct AnalyzeRequest {\n    pub memory_type: Option<String>,\n    pub user_id: Option<String>,\n    pub agent_id: Option<String>,\n    pub run_id: Option<String>,\n    pub actor_id: Option<String>,\n    pub similarity_threshold: Option<f32>,\n}\n\n/// 启动优化任务\npub async fn start_optimization(\n    State(state): State<AppState>,\n    Json(request): Json<StartOptimizationRequest>,\n) -> Result<Json<OptimizationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let job_id = format!(\"opt_{}_{}\", Utc::now().timestamp(), Uuid::new_v4());\n\n    // 初始化任务状态\n    let job_state = OptimizationJobState {\n        job_id: job_id.clone(),\n        status: \"pending\".to_string(),\n        progress: 0,\n        current_phase: \"初始化\".to_string(),\n        logs: vec![format!(\"优化任务 {} 已创建\", job_id)],\n        result: None,\n        start_time: Utc::now().to_rfc3339(),\n        end_time: None,\n        duration: None,\n    };\n\n    // 存储任务状态\n    {\n        let mut jobs = state.optimization_jobs.write().await;\n        jobs.insert(job_id.clone(), job_state.clone());\n    }\n\n    // 解析策略\n    let strategy = match request.strategy.as_deref() {\n        Some(\"full\") => OptimizationStrategy::Full,\n        Some(\"deduplication\") => OptimizationStrategy::Deduplication,\n        Some(\"quality\") => OptimizationStrategy::Quality,\n        Some(\"relevance\") => OptimizationStrategy::Relevance,\n        _ => OptimizationStrategy::Full,\n    };\n\n    // 构建优化请求\n    let opt_request = OptimizationRequest {\n        optimization_id: Some(job_id.clone()),\n        strategy,\n        filters: OptimizationFilters {\n            user_id: request.user_id.clone(),\n            agent_id: request.agent_id.clone(),\n            memory_type: request\n                .memory_type\n                .as_ref()\n                .map(|t| cortex_mem_core::types::MemoryType::parse(t)),\n            date_range: None,\n            importance_range: None,\n            custom_filters: HashMap::new(),\n        },\n        aggressive: request.aggressive.unwrap_or(false),\n        dry_run: request.dry_run.unwrap_or(false),\n        timeout_minutes: request.timeout_minutes,\n    };\n\n    // 异步执行优化\n    let state_clone = state.clone();\n    let job_id_clone = job_id.clone();\n    tokio::spawn(async move {\n        execute_optimization(state_clone, job_id_clone, opt_request).await;\n    });\n\n    // 返回响应\n    let response = OptimizationResponse {\n        success: true,\n        data: Some(serde_json::json!({\n            \"job_id\": job_id,\n            \"message\": \"优化任务已启动\",\n            \"status\": \"pending\",\n            \"start_time\": job_state.start_time,\n        })),\n        error: None,\n        timestamp: Utc::now().to_rfc3339(),\n    };\n\n    Ok(Json(response))\n}\n\n/// 执行优化任务\nasync fn execute_optimization(\n    state: AppState,\n    job_id: String,\n    request: OptimizationRequest,\n) {\n    // 更新状态为运行中\n    {\n        let mut jobs = state.optimization_jobs.write().await;\n        if let Some(job) = jobs.get_mut(&job_id) {\n            job.status = \"running\".to_string();\n            job.progress = 10;\n            job.current_phase = \"准备优化\".to_string();\n            job.logs.push(\"开始准备优化任务...\".to_string());\n        }\n    }\n\n    // 创建优化器（使用默认配置）\n    let config = OptimizationConfig::default();\n\n    let optimizer = DefaultMemoryOptimizer::new(state.memory_manager.clone(), config);\n\n    // 执行优化\n    {\n        let mut jobs = state.optimization_jobs.write().await;\n        if let Some(job) = jobs.get_mut(&job_id) {\n            job.progress = 30;\n            job.current_phase = \"执行优化命令\".to_string();\n            job.logs.push(\"正在执行优化...\".to_string());\n        }\n    }\n\n    match optimizer.optimize(&request).await {\n        Ok(result) => {\n            // 成功完成\n            let mut jobs = state.optimization_jobs.write().await;\n            if let Some(job) = jobs.get_mut(&job_id) {\n                let end_time = Utc::now();\n                let duration = (end_time.timestamp() - Utc::now().timestamp()).abs();\n\n                job.status = \"completed\".to_string();\n                job.progress = 100;\n                job.current_phase = \"完成\".to_string();\n                job.result = Some(result);\n                job.end_time = Some(end_time.to_rfc3339());\n                job.duration = Some(duration);\n                job.logs.push(\"优化任务完成\".to_string());\n            }\n\n            info!(\"优化任务 {} 完成\", job_id);\n        }\n        Err(e) => {\n            // 失败\n            let mut jobs = state.optimization_jobs.write().await;\n            if let Some(job) = jobs.get_mut(&job_id) {\n                let end_time = Utc::now();\n                let duration = (end_time.timestamp() - Utc::now().timestamp()).abs();\n\n                job.status = \"failed\".to_string();\n                job.end_time = Some(end_time.to_rfc3339());\n                job.duration = Some(duration);\n                job.logs\n                    .push(format!(\"执行失败: {}\", e.to_string()));\n            }\n\n            error!(\"优化任务 {} 失败: {}\", job_id, e);\n        }\n    }\n}\n\n/// 获取优化任务状态\npub async fn get_optimization_status(\n    State(state): State<AppState>,\n    Path(job_id): Path<String>,\n) -> Result<Json<OptimizationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let jobs = state.optimization_jobs.read().await;\n\n    if let Some(job_state) = jobs.get(&job_id) {\n        let response = OptimizationResponse {\n            success: true,\n            data: Some(serde_json::to_value(job_state).unwrap()),\n            error: None,\n            timestamp: Utc::now().to_rfc3339(),\n        };\n        Ok(Json(response))\n    } else {\n        Err((\n            StatusCode::NOT_FOUND,\n            Json(ErrorResponse {\n                error: format!(\"优化任务 {} 不存在\", job_id),\n                code: \"JOB_NOT_FOUND\".to_string(),\n            }),\n        ))\n    }\n}\n\n/// 取消优化任务\npub async fn cancel_optimization(\n    State(state): State<AppState>,\n    Path(job_id): Path<String>,\n) -> Result<Json<OptimizationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let mut jobs = state.optimization_jobs.write().await;\n\n    if let Some(job_state) = jobs.get_mut(&job_id) {\n        if job_state.status == \"completed\"\n            || job_state.status == \"failed\"\n            || job_state.status == \"cancelled\"\n        {\n            return Err((\n                StatusCode::BAD_REQUEST,\n                Json(ErrorResponse {\n                    error: format!(\"优化任务 {} 已结束，无法取消\", job_id),\n                    code: \"JOB_COMPLETED\".to_string(),\n                }),\n            ));\n        }\n\n        job_state.status = \"cancelled\".to_string();\n        job_state.logs.push(\"优化任务已被用户取消\".to_string());\n        let end_time = Utc::now();\n        job_state.end_time = Some(end_time.to_rfc3339());\n\n        let response = OptimizationResponse {\n            success: true,\n            data: Some(serde_json::json!({\n                \"job_id\": job_id,\n                \"message\": \"优化任务已取消\",\n                \"status\": \"cancelled\",\n                \"cancelled_at\": end_time.to_rfc3339(),\n            })),\n            error: None,\n            timestamp: Utc::now().to_rfc3339(),\n        };\n\n        Ok(Json(response))\n    } else {\n        Err((\n            StatusCode::NOT_FOUND,\n            Json(ErrorResponse {\n                error: format!(\"优化任务 {} 不存在\", job_id),\n                code: \"JOB_NOT_FOUND\".to_string(),\n            }),\n        ))\n    }\n}\n\n/// 获取优化历史\npub async fn get_optimization_history(\n    State(state): State<AppState>,\n    Query(query): Query<OptimizationHistoryQuery>,\n) -> Result<Json<OptimizationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let jobs = state.optimization_jobs.read().await;\n\n    let limit = query.limit.unwrap_or(20);\n    let offset = query.offset.unwrap_or(0);\n\n    let mut history: Vec<_> = jobs.values().cloned().collect();\n\n    // 应用过滤器\n    if let Some(status) = &query.status {\n        history.retain(|job| &job.status == status);\n    }\n\n    // 按开始时间倒序排序\n    history.sort_by(|a, b| b.start_time.cmp(&a.start_time));\n\n    // 分页\n    let total = history.len();\n    let paginated: Vec<_> = history\n        .into_iter()\n        .skip(offset)\n        .take(limit)\n        .map(|job| {\n            serde_json::json!({\n                \"job_id\": job.job_id,\n                \"status\": job.status,\n                \"start_time\": job.start_time,\n                \"end_time\": job.end_time,\n                \"duration\": job.duration,\n                \"logs_count\": job.logs.len(),\n                \"has_result\": job.result.is_some(),\n            })\n        })\n        .collect();\n\n    let response = OptimizationResponse {\n        success: true,\n        data: Some(serde_json::json!({\n            \"total\": total,\n            \"history\": paginated,\n            \"pagination\": {\n                \"limit\": limit,\n                \"offset\": offset,\n                \"total\": total,\n            },\n        })),\n        error: None,\n        timestamp: Utc::now().to_rfc3339(),\n    };\n\n    Ok(Json(response))\n}\n\n/// 分析优化问题（预览模式）\npub async fn analyze_optimization(\n    State(state): State<AppState>,\n    Json(request): Json<AnalyzeRequest>,\n) -> Result<Json<OptimizationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    // 构建优化请求（dry_run模式）\n    let opt_request = OptimizationRequest {\n        optimization_id: None,\n        strategy: OptimizationStrategy::Full,\n        filters: OptimizationFilters {\n            user_id: request.user_id.clone(),\n            agent_id: request.agent_id.clone(),\n            memory_type: request\n                .memory_type\n                .as_ref()\n                .map(|t| cortex_mem_core::types::MemoryType::parse(t)),\n            date_range: None,\n            importance_range: None,\n            custom_filters: HashMap::new(),\n        },\n        aggressive: false,\n        dry_run: true,\n        timeout_minutes: Some(5),\n    };\n\n    // 创建优化器（使用默认配置）\n    let config = OptimizationConfig::default();\n\n    let optimizer = DefaultMemoryOptimizer::new(state.memory_manager.clone(), config);\n\n    match optimizer.optimize(&opt_request).await {\n        Ok(result) => {\n            // 解析结果\n            let issues = &result.issues_found;\n            let total_affected = issues.iter().map(|i| i.affected_memories.len()).sum::<usize>();\n\n            let response = OptimizationResponse {\n                success: true,\n                data: Some(serde_json::json!({\n                    \"issues\": issues,\n                    \"summary\": {\n                        \"total_issues\": issues.len(),\n                        \"total_affected_memories\": total_affected,\n                        \"estimated_savings_mb\": (total_affected as f64 * 0.15).round(),\n                        \"estimated_duration_minutes\": (total_affected / 10).max(1),\n                    },\n                    \"recommendations\": issues.iter().map(|issue| {\n                        serde_json::json!({\n                            \"type\": format!(\"{:?}\", issue.kind),\n                            \"action\": match issue.severity {\n                                cortex_mem_core::types::IssueSeverity::High | cortex_mem_core::types::IssueSeverity::Critical => \"立即处理\",\n                                cortex_mem_core::types::IssueSeverity::Medium => \"建议处理\",\n                                cortex_mem_core::types::IssueSeverity::Low => \"可选处理\",\n                            },\n                            \"priority\": format!(\"{:?}\", issue.severity),\n                        })\n                    }).collect::<Vec<_>>(),\n                })),\n                error: None,\n                timestamp: Utc::now().to_rfc3339(),\n            };\n\n            Ok(Json(response))\n        }\n        Err(e) => {\n            error!(\"分析优化问题失败: {}\", e);\n            Err((\n                StatusCode::INTERNAL_SERVER_ERROR,\n                Json(ErrorResponse {\n                    error: format!(\"分析失败: {}\", e),\n                    code: \"ANALYSIS_FAILED\".to_string(),\n                }),\n            ))\n        }\n    }\n}\n\n/// 获取优化统计\npub async fn get_optimization_statistics(\n    State(state): State<AppState>,\n) -> Result<Json<OptimizationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let jobs = state.optimization_jobs.read().await;\n\n    let history: Vec<_> = jobs.values().collect();\n\n    let total_jobs = history.len();\n    let successful_jobs = history.iter().filter(|j| j.status == \"completed\").count();\n    let failed_jobs = history.iter().filter(|j| j.status == \"failed\").count();\n    let cancelled_jobs = history.iter().filter(|j| j.status == \"cancelled\").count();\n\n    let total_memories_processed = history\n        .iter()\n        .filter_map(|j| {\n            j.result.as_ref().map(|r| {\n                r.actions_performed.len()\n            })\n        })\n        .sum::<usize>();\n\n    let avg_duration = if !history.is_empty() {\n        history\n            .iter()\n            .filter_map(|j| j.duration)\n            .sum::<i64>() as f64\n            / history.len() as f64\n    } else {\n        0.0\n    };\n\n    let last_run = history\n        .iter()\n        .max_by(|a, b| a.start_time.cmp(&b.start_time))\n        .map(|j| j.start_time.clone());\n\n    let response = OptimizationResponse {\n        success: true,\n        data: Some(serde_json::json!({\n            \"total_jobs\": total_jobs,\n            \"successful_jobs\": successful_jobs,\n            \"failed_jobs\": failed_jobs,\n            \"cancelled_jobs\": cancelled_jobs,\n            \"total_memories_processed\": total_memories_processed,\n            \"avg_duration\": avg_duration,\n            \"last_run\": last_run,\n        })),\n        error: None,\n        timestamp: Utc::now().to_rfc3339(),\n    };\n\n    Ok(Json(response))\n}\n\n/// 清理旧的历史记录\npub async fn cleanup_history(\n    State(state): State<AppState>,\n    Json(request): Json<CleanupRequest>,\n) -> Result<Json<OptimizationResponse>, (StatusCode, Json<ErrorResponse>)> {\n    let max_age_days = request.max_age_days.unwrap_or(7);\n    let cutoff_time = Utc::now().timestamp() - (max_age_days as i64 * 24 * 60 * 60);\n\n    let mut jobs = state.optimization_jobs.write().await;\n    let mut deleted = 0;\n\n    jobs.retain(|id, _| {\n        if let Some(timestamp_str) = id.split('_').nth(1) {\n            if let Ok(timestamp) = timestamp_str.parse::<i64>() {\n                if timestamp < cutoff_time {\n                    deleted += 1;\n                    return false;\n                }\n            }\n        }\n        true\n    });\n\n    let response = OptimizationResponse {\n        success: true,\n        data: Some(serde_json::json!({\n            \"deleted\": deleted,\n            \"remaining\": jobs.len(),\n            \"message\": format!(\"已清理 {} 条旧记录\", deleted),\n        })),\n        error: None,\n        timestamp: Utc::now().to_rfc3339(),\n    };\n\n    Ok(Json(response))\n}\n"
+    },
+    "complexity_metrics": {
+      "cyclomatic_complexity": 17.0,
+      "lines_of_code": 541,
+      "number_of_classes": 7,
+      "number_of_functions": 8
+    },
+    "dependencies": [
+      {
+        "dependency_type": "framework",
+        "is_external": true,
+        "line_number": null,
+        "name": "axum",
+        "path": null,
+        "version": null
+      },
+      {
+        "dependency_type": "time",
+        "is_external": true,
+        "line_number": null,
+        "name": "chrono",
+        "path": null,
+        "version": null
+      },
+      {
+        "dependency_type": "internal",
+        "is_external": false,
+        "line_number": null,
+        "name": "cortex_mem_core",
+        "path": null,
+        "version": null
+      },
+      {
+        "dependency_type": "serialization",
+        "is_external": true,
+        "line_number": null,
+        "name": "serde",
+        "path": null,
+        "version": null
+      },
+      {
+        "dependency_type": "logging",
+        "is_external": true,
+        "line_number": null,
+        "name": "tracing",
+        "path": null,
+        "version": null
+      },
+      {
+        "dependency_type": "utility",
+        "is_external": true,
+        "line_number": null,
+        "name": "uuid",
+        "path": null,
+        "version": null
+      }
+    ],
+    "detailed_description": "This controller manages the lifecycle of memory optimization tasks in a distributed system. It provides REST API endpoints for initiating optimization jobs, monitoring their status, canceling running jobs, viewing historical results, analyzing potential optimization opportunities, retrieving statistics, and cleaning up old records. The component uses asynchronous execution via tokio::spawn to handle long-running optimization processes without blocking the main thread. It maintains job state in memory through AppState and communicates with the core optimization logic via DefaultMemoryOptimizer. The implementation follows clean separation of concerns with dedicated request/response DTOs and comprehensive error handling. All operations are timestamped and logged for audit purposes.",
+    "interfaces": [
+      {
+        "description": "Initiates a new optimization task with the specified parameters",
+        "interface_type": "function",
+        "name": "start_optimization",
+        "parameters": [
+          {
+            "description": "Application state containing shared resources",
+            "is_optional": false,
+            "name": "state",
+            "param_type": "State<AppState>"
+          },
+          {
+            "description": "Request payload containing optimization parameters",
+            "is_optional": false,
+            "name": "request",
+            "param_type": "Json<StartOptimizationRequest>"
+          }
+        ],
+        "return_type": "Result<Json<OptimizationResponse>, (StatusCode, Json<ErrorResponse>)>",
+        "visibility": "public"
+      },
+      {
+        "description": "Retrieves the current status and progress of a specific optimization job",
+        "interface_type": "function",
+        "name": "get_optimization_status",
+        "parameters": [
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "state",
+            "param_type": "State<AppState>"
+          },
+          {
+            "description": "Identifier of the optimization job to query",
+            "is_optional": false,
+            "name": "job_id",
+            "param_type": "Path<String>"
+          }
+        ],
+        "return_type": "Result<Json<OptimizationResponse>, (StatusCode, Json<ErrorResponse>)>",
+        "visibility": "public"
+      },
+      {
+        "description": "Cancels a running optimization job if it hasn't completed",
+        "interface_type": "function",
+        "name": "cancel_optimization",
+        "parameters": [
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "state",
+            "param_type": "State<AppState>"
+          },
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "job_id",
+            "param_type": "Path<String>"
+          }
+        ],
+        "return_type": "Result<Json<OptimizationResponse>, (StatusCode, Json<ErrorResponse>)>",
+        "visibility": "public"
+      },
+      {
+        "description": "Internal function that performs the actual optimization work asynchronously",
+        "interface_type": "function",
+        "name": "execute_optimization",
+        "parameters": [
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "state",
+            "param_type": "AppState"
+          },
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "job_id",
+            "param_type": "String"
+          },
+          {
+            "description": null,
+            "is_optional": false,
+            "name": "request",
+            "param_type": "OptimizationRequest"
+          }
+        ],
+        "return_type": "None",
+        "visibility": "private"
+      }
+    ],
+    "responsibilities": [
+      "Manage the complete lifecycle of memory optimization tasks (start, monitor, cancel)",
+      "Provide HTTP APIs for optimization job status tracking and historical data retrieval",
+      "Execute asynchronous optimization workflows using background tasks",
+      "Maintain real-time job state in memory with progress tracking and logging",
+      "Offer analytical capabilities for previewing optimization impact before execution"
     ]
   },
   {
@@ -19021,25 +18226,19 @@ Code analysis results from preprocessing phase, including definitions of functio
 
 ## Memory Storage Statistics
 
-**Total Storage Size**: 1806486 bytes
+**Total Storage Size**: 1693607 bytes
 
-- **preprocess**: 1504860 bytes (83.3%)
-- **documentation**: 176621 bytes (9.8%)
-- **timing**: 40 bytes (0.0%)
-- **studies_research**: 124965 bytes (6.9%)
+- **preprocess**: 1533048 bytes (90.5%)
+- **timing**: 36 bytes (0.0%)
+- **documentation**: 99706 bytes (5.9%)
+- **studies_research**: 60817 bytes (3.6%)
 
 ## Generated Documents Statistics
 
-Number of Generated Documents: 11
+Number of Generated Documents: 5
 
-- Architecture Description
-- Key Modules and Components Research Report_Storage Integration Domain
-- Key Modules and Components Research Report_Service Layer Domain
-- Core Workflows
-- Project Overview
-- Key Modules and Components Research Report_Memory Core Domain
-- Key Modules and Components Research Report_AI Processing Domain
-- Key Modules and Components Research Report_User Interface Domain
-- Key Modules and Components Research Report_Evaluation Domain
-- Key Modules and Components Research Report_Configuration Management Domain
 - Boundary Interfaces
+- Architecture Description
+- Core Workflows
+- Key Modules and Components Research Report_Memory Management Domain
+- Project Overview

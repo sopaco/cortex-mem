@@ -139,4 +139,32 @@ pub struct HealthResponse {
     pub timestamp: String,
 }
 
+/// LLM service status response
+#[derive(Debug, Serialize)]
+pub struct LLMStatusResponse {
+    pub overall_status: String,
+    pub completion_model: ModelStatus,
+    pub embedding_model: ModelStatus,
+    pub timestamp: String,
+}
+
+/// Individual model status
+#[derive(Debug, Serialize)]
+pub struct ModelStatus {
+    pub available: bool,
+    pub provider: String,
+    pub model_name: String,
+    pub latency_ms: Option<u64>,
+    pub error_message: Option<String>,
+    pub last_check: String,
+}
+
+/// Simple health check response for LLM services
+#[derive(Debug, Serialize)]
+pub struct LLMHealthResponse {
+    pub completion_model_available: bool,
+    pub embedding_model_available: bool,
+    pub timestamp: String,
+}
+
 

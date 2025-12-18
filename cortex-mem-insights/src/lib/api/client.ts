@@ -129,11 +129,6 @@ export const memoryApi = {
     });
   },
   
-  // 获取统计信息
-  statistics: () => {
-    return request('/api/memories/stats/summary');
-  },
-  
   // 导出记忆
   export: (params: {
     format: 'json' | 'csv' | 'txt';
@@ -195,6 +190,21 @@ export const optimizationApi = {
   cancel: (jobId: string) => {
     return request(`/api/optimization/${jobId}/cancel`, {
       method: 'POST',
+    });
+  },
+  
+  // 分析优化问题（预览模式）
+  analyze: (params?: {
+    memory_type?: string;
+    user_id?: string;
+    agent_id?: string;
+    run_id?: string;
+    actor_id?: string;
+    similarity_threshold?: number;
+  }) => {
+    return request('/api/optimization/analyze', {
+      method: 'POST',
+      body: JSON.stringify(params || {}),
     });
   },
   

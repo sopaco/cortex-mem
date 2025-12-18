@@ -7,6 +7,7 @@ use rig::{
     embeddings::EmbeddingsBuilder,
     providers::openai::{Client, EmbeddingModel as OpenAIEmbeddingModel},
 };
+use tokio::time::sleep;
 use tracing::{debug, error, info};
 
 use crate::{
@@ -196,6 +197,7 @@ impl LLMClient for OpenAILLMClient {
         // Process in batches to avoid rate limits
         for text in texts {
             let embedding = self.embed(text).await?;
+            sleep(std::time::Duration::from_secs(1)).await;
             results.push(embedding);
         }
 
