@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use async_trait::async_trait;
 use rig::providers::openai::CompletionModel;
 use rig::{
@@ -185,8 +183,6 @@ impl LLMClient for OpenAILLMClient {
             .await
             .map_err(|e| MemoryError::LLM(e.to_string()))?;
 
-        sleep(Duration::from_secs(2)).await;
-
         if let Some((_, embedding)) = embeddings.first() {
             debug!("Generated embedding for text length: {}", text.len());
             Ok(embedding.first().vec.iter().map(|&x| x as f32).collect())
@@ -201,6 +197,7 @@ impl LLMClient for OpenAILLMClient {
         // Process in batches to avoid rate limits
         for text in texts {
             let embedding = self.embed(text).await?;
+            sleep(std::time::Duration::from_secs(1)).await;
             results.push(embedding);
         }
 
