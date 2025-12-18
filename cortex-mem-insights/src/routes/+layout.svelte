@@ -24,9 +24,7 @@
 					<!-- Logo -->
 					<div class="flex-shrink-0 flex items-center">
 						<div class="flex items-center space-x-2">
-							<div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-								<span class="text-white font-bold">CM</span>
-							</div>
+							<img src="/favicon.png" alt="Cortex Memory" class="w-8 h-8 rounded-lg" />
 							<span class="text-xl font-bold text-gray-900 dark:text-white">
 								Cortex Memory Insights
 							</span>
