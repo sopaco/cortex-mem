@@ -129,11 +129,6 @@ export const memoryApi = {
     });
   },
   
-  // 获取统计信息
-  statistics: () => {
-    return request('/api/memories/stats/summary');
-  },
-  
   // 导出记忆
   export: (params: {
     format: 'json' | 'csv' | 'txt';
