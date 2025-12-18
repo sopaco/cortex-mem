@@ -120,8 +120,8 @@ export const systemRoutes = new Elysia({ prefix: '/api/system' })
   .get('/status', async () => {
     try {
       // 获取真实的cortex-mem-service状态
-      const llmStatus = await cortexMemService.getLLMStatus();
       const healthCheck = await cortexMemService.healthCheck();
+      const llmStatus = await cortexMemService.getLLMStatus();
       
       // 检查Qdrant状态（通过cortex-mem-service的健康检查）
       const vectorStoreStatus = healthCheck.vector_store;
@@ -145,12 +145,13 @@ export const systemRoutes = new Elysia({ prefix: '/api/system' })
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('获取系统状态失败:', error);
+      console.error('获取系统状态失败 - cortex-mem-service不可用:', error);
+      // 当cortex-mem-service不可用时，返回错误状态
       return {
         success: false,
         error: {
-          code: 'STATUS_CHECK_FAILED',
-          message: error instanceof Error ? error.message : '获取系统状态失败',
+          code: 'CORTEX_MEM_SERVICE_UNAVAILABLE',
+          message: error instanceof Error ? error.message : 'Cortex Memory Service不可用',
         },
         timestamp: new Date().toISOString(),
       };
@@ -173,12 +174,13 @@ export const systemRoutes = new Elysia({ prefix: '/api/system' })
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('获取向量存储状态失败:', error);
+      console.error('获取向量存储状态失败 - cortex-mem-service不可用:', error);
+      // 当cortex-mem-service不可用时，向量存储也不可用
       return {
         success: false,
         error: {
-          code: 'VECTOR_STORE_CHECK_FAILED',
-          message: error instanceof Error ? error.message : '获取向量存储状态失败',
+          code: 'CORTEX_MEM_SERVICE_UNAVAILABLE',
+          message: error instanceof Error ? error.message : 'Cortex Memory Service不可用',
         },
         timestamp: new Date().toISOString(),
       };
@@ -196,12 +198,13 @@ export const systemRoutes = new Elysia({ prefix: '/api/system' })
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('获取LLM服务状态失败:', error);
+      console.error('获取LLM服务状态失败 - cortex-mem-service不可用:', error);
+      // 当cortex-mem-service不可用时，LLM服务也不可用
       return {
         success: false,
         error: {
-          code: 'LLM_STATUS_CHECK_FAILED',
-          message: error instanceof Error ? error.message : '获取LLM服务状态失败',
+          code: 'CORTEX_MEM_SERVICE_UNAVAILABLE',
+          message: error instanceof Error ? error.message : 'Cortex Memory Service不可用',
         },
         timestamp: new Date().toISOString(),
       };

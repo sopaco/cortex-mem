@@ -10,21 +10,11 @@ export class CortexMemServiceClient {
   
   // 健康检查
   async healthCheck(): Promise<HealthResponse> {
-    try {
-      const response = await fetch(`${this.baseUrl}/health`);
-      if (!response.ok) {
-        throw new Error(`Health check failed: ${response.statusText}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error('Health check error:', error);
-      return {
-        status: 'unhealthy',
-        vector_store: false,
-        llm_service: false,
-        timestamp: new Date().toISOString()
-      };
+    const response = await fetch(`${this.baseUrl}/health`);
+    if (!response.ok) {
+      throw new Error(`Health check failed: ${response.statusText}`);
     }
+    return await response.json();
   }
   
   // 获取记忆列表
@@ -581,35 +571,13 @@ export class CortexMemServiceClient {
     };
     timestamp: string;
   }> {
-    try {
-      const response = await fetch(`${this.baseUrl}/llm/status`);
-      
-      if (!response.ok) {
-        throw new Error(`Get LLM status failed: ${response.statusText}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('获取LLM状态错误:', error);
-      return {
-        overall_status: 'error',
-        completion_model: {
-          available: false,
-          provider: 'unknown',
-          model_name: 'unknown',
-          error_message: error instanceof Error ? error.message : 'Failed to connect',
-          last_check: new Date().toISOString(),
-        },
-        embedding_model: {
-          available: false,
-          provider: 'unknown',
-          model_name: 'unknown',
-          error_message: error instanceof Error ? error.message : 'Failed to connect',
-          last_check: new Date().toISOString(),
-        },
-        timestamp: new Date().toISOString(),
-      };
+    const response = await fetch(`${this.baseUrl}/llm/status`);
+    
+    if (!response.ok) {
+      throw new Error(`Get LLM status failed: ${response.statusText}`);
     }
+    
+    return await response.json();
   }
 
   // 简单的LLM健康检查
@@ -618,22 +586,13 @@ export class CortexMemServiceClient {
     embedding_model_available: boolean;
     timestamp: string;
   }> {
-    try {
-      const response = await fetch(`${this.baseUrl}/llm/health-check`);
-      
-      if (!response.ok) {
-        throw new Error(`LLM health check failed: ${response.statusText}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('LLM健康检查错误:', error);
-      return {
-        completion_model_available: false,
-        embedding_model_available: false,
-        timestamp: new Date().toISOString(),
-      };
+    const response = await fetch(`${this.baseUrl}/llm/health-check`);
+    
+    if (!response.ok) {
+      throw new Error(`LLM health check failed: ${response.statusText}`);
     }
+    
+    return await response.json();
   }
 }
 

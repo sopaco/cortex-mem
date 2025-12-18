@@ -115,13 +115,13 @@
 						}
 					} catch (parseErr) {
 						console.warn('API响应解析失败:', parseErr);
-						mainService.status = 'connecting';
+						mainService.status = 'disconnected';
 						mainService.latency = serviceLatency;
 					}
 				} else {
 					// HTTP错误状态码
 					console.warn(`API请求失败: HTTP ${serviceResponse.status}`);
-					mainService.status = 'connecting';
+					mainService.status = 'disconnected';
 					mainService.latency = serviceLatency;
 				}
 			} catch (fetchErr) {
@@ -131,13 +131,13 @@
 					mainService.status = 'disconnected';
 				} else {
 					console.warn('cortex-mem-service检测失败:', fetchErr);
-					mainService.status = 'connecting';
+					mainService.status = 'disconnected';
 				}
 				mainService.latency = Date.now() - serviceStartTime;
 			}
 		} catch (serviceErr) {
 			console.warn('cortex-mem-service检测异常:', serviceErr);
-			mainService.status = 'connecting';
+			mainService.status = 'disconnected';
 		}
 
 		try {
@@ -161,12 +161,14 @@
 						vectorStore.status = vectorStoreData.data.status;
 						vectorStore.latency = vectorStoreLatency;
 					} else {
-						console.warn('向量存储API返回无效数据:', vectorStoreData);
-						vectorStore.status = 'connecting';
+						// API返回失败，说明cortex-mem-service不可用
+						console.warn('向量存储API返回失败 - cortex-mem-service不可用:', vectorStoreData);
+						vectorStore.status = 'disconnected';
 					}
 				} else {
-					console.warn(`向量存储API请求失败: HTTP ${vectorStoreResponse.status}`);
-					vectorStore.status = 'connecting';
+					// HTTP错误状态码，说明cortex-mem-service不可用
+					console.warn(`向量存储API请求失败 - cortex-mem-service不可用: HTTP ${vectorStoreResponse.status}`);
+					vectorStore.status = 'disconnected';
 				}
 			} catch (vectorStoreFetchErr) {
 				clearTimeout(vectorStoreTimeoutId);
@@ -175,13 +177,13 @@
 					vectorStore.status = 'disconnected';
 				} else {
 					console.warn('获取向量存储状态失败:', vectorStoreFetchErr);
-					vectorStore.status = 'connecting';
+					vectorStore.status = 'disconnected';
 				}
 				vectorStore.latency = Date.now() - vectorStoreStartTime;
 			}
 		} catch (vectorStoreErr) {
 			console.warn('向量存储检测异常:', vectorStoreErr);
-			vectorStore.status = 'connecting';
+			vectorStore.status = 'disconnected';
 		}
 
 		try {
@@ -205,7 +207,7 @@
 						const { overall_status, completion_model, embedding_model } = llmData.data;
 
 						// 更新LLM服务状态
-						llmService.status = overall_status === 'healthy' ? 'connected' : 'connecting';
+						llmService.status = overall_status === 'healthy' ? 'connected' : 'disconnected';
 						llmService.latency = llmLatency;
 						llmService.provider = completion_model.provider;
 						llmService.model = `${completion_model.model_name} / ${embedding_model.model_name}`;
@@ -224,12 +226,14 @@
 							error: embedding_model.error_message
 						};
 					} else {
-						console.warn('LLM API返回无效数据:', llmData);
-						llmService.status = 'connecting';
+						// API返回失败，说明cortex-mem-service不可用
+						console.warn('LLM API返回失败 - cortex-mem-service不可用:', llmData);
+						llmService.status = 'disconnected';
 					}
 				} else {
-					console.warn(`LLM API请求失败: HTTP ${llmResponse.status}`);
-					llmService.status = 'connecting';
+					// HTTP错误状态码，说明cortex-mem-service不可用
+					console.warn(`LLM API请求失败 - cortex-mem-service不可用: HTTP ${llmResponse.status}`);
+					llmService.status = 'disconnected';
 				}
 			} catch (llmFetchErr) {
 				clearTimeout(llmTimeoutId);
@@ -238,13 +242,13 @@
 					llmService.status = 'disconnected';
 				} else {
 					console.warn('获取LLM服务状态失败:', llmFetchErr);
-					llmService.status = 'connecting';
+					llmService.status = 'disconnected';
 				}
 				llmService.latency = Date.now() - llmStartTime;
 			}
 		} catch (llmErr) {
 			console.warn('LLM服务检测异常:', llmErr);
-			llmService.status = 'connecting';
+			llmService.status = 'disconnected';
 		}
 
 		return { mainService, vectorStore, llmService };
