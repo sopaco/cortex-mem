@@ -1,6 +1,6 @@
 [package]
 name = "cortex-mem-tools"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 description = "Shared memory tools for cortex-mem system"
 license = "MIT"

@@ -1,6 +1,6 @@
 [package]
 name = "cortex-mem-cli"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 description = "Command line interface for Rust agent memory system"
 license = "MIT"

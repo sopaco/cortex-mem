@@ -7,7 +7,9 @@ use tracing::{error, info};
 
 #[derive(Parser)]
 #[command(name = "cortex-mem-mcp")]
-#[command(about = "MCP server for Cortex Memo memory management system")]
+#[command(about = "MCP server of Cortex Memory to enhance agent's memory layer")]
+#[command(author = "Sopaco")]
+#[command(version)]
 struct Cli {
     /// Path to the configuration file
     #[arg(short, long, default_value = "config.toml")]

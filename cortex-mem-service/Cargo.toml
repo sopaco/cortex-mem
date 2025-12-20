@@ -1,6 +1,6 @@
 [package]
 name = "cortex-mem-service"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 description = "HTTP API service for Rust agent memory system"
 license = "MIT"

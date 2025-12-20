@@ -581,7 +581,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cortex-mem-core",
  "tracing",
@@ -589,7 +589,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -609,7 +609,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-config"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -619,7 +619,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -647,7 +647,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-evaluation"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -675,7 +675,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-mcp"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -698,7 +698,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-rig"
-version = "0.2.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -715,7 +715,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-service"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "axum 0.8.6",
@@ -737,7 +737,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-tars"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -760,7 +760,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-tools"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2202,7 +2202,7 @@ checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
 name = "memory-tools-refactor"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "async-trait",
  "chrono",

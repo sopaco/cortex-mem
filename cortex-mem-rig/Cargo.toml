@@ -1,6 +1,6 @@
 [package]
 name = "cortex-mem-rig"
-version = "0.2.0"
+version = "1.0.0"
 edition = "2024"
 description = "Rig framework integration for Rust agent memory system"
 license = "MIT"

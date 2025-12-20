@@ -13,9 +13,9 @@ use tracing_subscriber;
 mod commands;
 
 use commands::{
-    OptimizeCommand, 
-    OptimizationStatusCommand, 
-    OptimizationConfigCommand, 
+    OptimizeCommand,
+    OptimizationStatusCommand,
+    OptimizationConfigCommand,
     OptimizeCommandRunner,
 };
 use commands::add::AddCommand;
@@ -25,7 +25,9 @@ use commands::search::SearchCommand;
 
 #[derive(Parser)]
 #[command(name = "cortex-mem-cli")]
-#[command(about = "Rust Agent Memory System CLI")]
+#[command(about = "Cortex Memory CLI for Agent Memory Layer")]
+#[command(author = "Sopaco")]
+#[command(version)]
 pub struct Cli {
     #[command(subcommand)]
     pub command: Commands,

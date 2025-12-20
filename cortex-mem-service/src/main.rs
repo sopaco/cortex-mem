@@ -38,7 +38,9 @@ pub struct AppState {
 
 #[derive(Parser)]
 #[command(name = "cortex-mem-service")]
-#[command(about = "Rust Agent Memory System HTTP Service")]
+#[command(about = "Cortex Memory HTTP Service")]
+#[command(author = "Sopaco")]
+#[command(version)]
 struct Cli {
     /// Path to the configuration file
     #[arg(short, long, default_value = "config.toml")]

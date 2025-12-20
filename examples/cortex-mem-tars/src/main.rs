@@ -31,8 +31,10 @@ use terminal::cleanup_terminal_final;
 use ui::draw_ui;
 
 #[derive(Parser)]
-#[command(name = "multi-round-interactive")]
-#[command(about = "Multi-round interactive conversation with a memory-enabled agent")]
+#[command(name = "Cortex Memory Tars")]
+#[command(about = "A Multi-round interactive conversation with a memory-enabled agent")]
+#[command(author = "Sopaco")]
+#[command(version)]
 struct Cli {
     /// Path to the configuration file
     #[arg(short, long, default_value = "config.toml")]
@@ -134,7 +136,7 @@ async fn run_application(
                 }
                 AppMessage::StreamingChunk { user, chunk } => {
                     // 如果是新的用户输入，开始新的流式回复
-                    if app.current_streaming_response.is_none() || 
+                    if app.current_streaming_response.is_none() ||
                        app.current_streaming_response.as_ref().map(|(u, _)| u != &user).unwrap_or(false) {
                         app.start_streaming_response(user);
                     }
@@ -201,7 +203,7 @@ async fn run_application(
                     tokio::spawn(async move {
                         // 创建流式通道
                         let (stream_tx, mut stream_rx) = mpsc::unbounded_channel::<String>();
-                        
+
                         // 启动流式处理任务
                         let agent_clone2 = agent_clone.clone();
                         let memory_manager_clone2 = memory_manager_clone.clone();
@@ -210,7 +212,7 @@ async fn run_application(
                         let user_id_clone2 = user_id_clone.clone();
                         let input_clone = input.clone();
                         let current_conversations_clone = current_conversations.clone();
-                        
+
                         let generation_task = tokio::spawn(async move {
                             agent_reply_with_memory_retrieval_streaming(
                                 &agent_clone2,
@@ -295,7 +297,7 @@ async fn run_application(
                     }
                     AppMessage::StreamingChunk { user, chunk } => {
                         // 如果是新的用户输入，开始新的流式回复
-                        if app.current_streaming_response.is_none() || 
+                        if app.current_streaming_response.is_none() ||
                            app.current_streaming_response.as_ref().map(|(u, _)| u != &user).unwrap_or(false) {
                             app.start_streaming_response(user);
                         }
