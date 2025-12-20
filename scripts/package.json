@@ -1,0 +1,20 @@
+{
+  "name": "cortex-mem-version-updater",
+  "version": "1.0.0",
+  "description": "Tool to update Cargo.toml versions across all crates",
+  "main": "update-versions.js",
+  "scripts": {
+    "update-versions": "node update-versions.js"
+  },
+  "dependencies": {
+    "glob": "^10.3.10"
+  },
+  "keywords": [
+    "cargo",
+    "rust",
+    "version",
+    "update"
+  ],
+  "author": "cortex-mem",
+  "license": "MIT"
+}
