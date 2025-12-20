@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import api from '$lib/api/client';
 	import ServiceStatus from '$lib/components/ServiceStatus.svelte';
+	import { t, format } from '$lib/i18n';
 
 	// 真实数据
 	let stats = {
@@ -248,8 +249,8 @@
 <div class="space-y-8">
 	<!-- 欢迎标题 -->
 	<div>
-		<h1 class="text-3xl font-bold text-gray-900 dark:text-white">仪表盘</h1>
-		<p class="mt-2 text-gray-600 dark:text-gray-400">监控和分析 Cortex Memory 系统的运行状态</p>
+		<h1 class="text-3xl font-bold text-gray-900 dark:text-white">{$t('dashboard.title')}</h1>
+		<p class="mt-2 text-gray-600 dark:text-gray-400">{$t('dashboard.welcome')}</p>
 	</div>
 
 	{#if isLoading}
@@ -269,7 +270,7 @@
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-blue-500">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">总记忆数</p>
+						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">{$t('dashboard.totalMemories')}</p>
 						<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
 							{stats.totalMemories.toLocaleString()}
 						</p>
@@ -291,7 +292,7 @@
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-yellow-500">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">平均质量</p>
+						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">{$t('analytics.averageQuality')}</p>
 						<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
 							{stats.averageQuality.toFixed(2)}
 						</p>
@@ -316,7 +317,7 @@
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border-l-4 border-green-500">
 				<div class="flex items-center justify-between">
 					<div>
-						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">质量分布</p>
+						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">{$t('dashboard.qualityDistribution')}</p>
 						<p class="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
 							{stats.qualityDistribution.high}/{stats.qualityDistribution.medium}/{stats
 								.qualityDistribution.low}
@@ -355,7 +356,7 @@
 			<div class="lg:col-span-2">
 				<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
 					<div class="flex items-center justify-between mb-6">
-						<h2 class="text-lg font-semibold text-gray-900 dark:text-white">最近记忆</h2>
+						<h2 class="text-lg font-semibold text-gray-900 dark:text-white">{$t('dashboard.recentMemories')}</h2>
 						<a
 							href="/memories"
 							class="text-sm font-medium text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
@@ -423,7 +424,7 @@
 							<span class="text-xl">⚡</span>
 						</div>
 						<div class="text-left">
-							<p class="font-medium text-gray-900 dark:text-white">运行优化</p>
+							<p class="font-medium text-gray-900 dark:text-white">{$t('optimization.runOptimization')}</p>
 							<p class="text-sm text-gray-500 dark:text-gray-400">清理重复和低质量记忆</p>
 						</div>
 					</div>

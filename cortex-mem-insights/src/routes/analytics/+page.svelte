@@ -13,6 +13,7 @@
 		Filler
 	} from 'chart.js';
 	import api from '$lib/api/client';
+	import { t } from '$lib/i18n';
 
 	// 注册Chart.js组件
 	ChartJS.register(
@@ -361,8 +362,8 @@
 <div class="space-y-8">
 	<!-- 页面标题 -->
 	<div>
-		<h1 class="text-3xl font-bold text-gray-900 dark:text-white">统计分析</h1>
-		<p class="mt-2 text-gray-600 dark:text-gray-400">深入分析记忆数据的分布、质量和趋势</p>
+		<h1 class="text-3xl font-bold text-gray-900 dark:text-white">{$t('analytics.title')}</h1>
+		<p class="mt-2 text-gray-600 dark:text-gray-400">{$t('analytics.description')}</p>
 	</div>
 
 	{#if isLoading}
@@ -396,35 +397,35 @@
 		<!-- 统计概览 -->
 		<div class="grid grid-cols-1 md:grid-cols-4 gap-6">
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-				<p class="text-sm font-medium text-gray-600 dark:text-gray-400">总记忆数</p>
+				<p class="text-sm font-medium text-gray-600 dark:text-gray-400">{$t('analytics.totalMemories')}</p>
 				<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
 					{summaryStats.totalMemories.toLocaleString()}
 				</p>
-				<p class="mt-2 text-sm text-green-600 dark:text-green-400">当前总数</p>
+				<p class="mt-2 text-sm text-green-600 dark:text-green-400">{$t('analytics.currentTotal')}</p>
 			</div>
 
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-				<p class="text-sm font-medium text-gray-600 dark:text-gray-400">平均质量</p>
+				<p class="text-sm font-medium text-gray-600 dark:text-gray-400">{$t('analytics.averageQuality')}</p>
 				<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
 					{summaryStats.averageQuality.toFixed(2)}
 				</p>
-				<p class="mt-2 text-sm text-blue-600 dark:text-blue-400">基于重要性评分</p>
+				<p class="mt-2 text-sm text-blue-600 dark:text-blue-400">{$t('analytics.basedOnImportance')}</p>
 			</div>
 
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-				<p class="text-sm font-medium text-gray-600 dark:text-gray-400">活跃用户</p>
+				<p class="text-sm font-medium text-gray-600 dark:text-gray-400">{$t('analytics.activeUsers')}</p>
 				<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
 					{summaryStats.activeUsers}
 				</p>
-				<p class="mt-2 text-sm text-purple-600 dark:text-purple-400">有记忆的用户</p>
+				<p class="mt-2 text-sm text-purple-600 dark:text-purple-400">{$t('analytics.usersWithMemories')}</p>
 			</div>
 
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-				<p class="text-sm font-medium text-gray-600 dark:text-gray-400">优化次数</p>
+				<p class="text-sm font-medium text-gray-600 dark:text-gray-400">{$t('analytics.optimizationCount')}</p>
 				<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
 					{summaryStats.optimizationCount}
 				</p>
-				<p class="mt-2 text-sm text-yellow-600 dark:text-yellow-400">历史优化记录</p>
+				<p class="mt-2 text-sm text-yellow-600 dark:text-yellow-400">{$t('analytics.historicalOptimization')}</p>
 			</div>
 		</div>
 
@@ -432,7 +433,7 @@
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 			<!-- 类型分布 -->
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">记忆类型分布</h2>
+				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">{$t('analytics.memoryTypeDistribution')}</h2>
 
 				<div class="space-y-4">
 					{#each typeDistribution as item}
@@ -465,14 +466,14 @@
 
 				<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
 					<div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-						<span>总计: {summaryStats.totalMemories} 条记忆</span>
+						<span>{$t('analytics.totalMemories')}: {summaryStats.totalMemories}</span>
 					</div>
 				</div>
 			</div>
 
 			<!-- 质量分布 -->
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">质量评分分布</h2>
+				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">{$t('analytics.qualityScoreDistribution')}</h2>
 
 				<div class="space-y-4">
 					{#each qualityDistribution as item}
@@ -502,17 +503,17 @@
 			<!-- 时间趋势 -->
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 lg:col-span-2">
 				<div class="flex items-center justify-between mb-6">
-					<h2 class="text-lg font-semibold text-gray-900 dark:text-white">新增记忆趋势</h2>
+					<h2 class="text-lg font-semibold text-gray-900 dark:text-white">{$t('analytics.newMemoriesAdded')}</h2>
 					<div class="flex space-x-2">
 						<button
 							class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded"
 						>
-							最近7天
+							{$t('analytics.last7Days')}
 						</button>
 						<button
 							class="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
 						>
-							最近30天
+							{$t('analytics.last30Days')}
 						</button>
 					</div>
 				</div>
@@ -544,23 +545,23 @@
 					<div class="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
 						<div class="text-center">
 							<div class="text-4xl mb-2">📊</div>
-							<p>暂无数据</p>
-							<p class="text-sm">等待记忆数据加载...</p>
+							<p>{$t('analytics.noData')}</p>
+							<p class="text-sm">{$t('analytics.loadingAnalytics')}</p>
 						</div>
 					</div>
 				{/if}
 
 				<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
 					<div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-						<span>日均新增: 54.8 条</span>
-						<span>峰值: 68 条 (12月13日)</span>
+						<span>{$t('analytics.averageDaily')}: 54.8</span>
+						<span>{$t('analytics.peak')}: 68 (12月13日)</span>
 					</div>
 				</div>
 			</div>
 
 			<!-- 用户统计 -->
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 lg:col-span-2">
-				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">用户维度统计</h2>
+				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">{$t('analytics.userDimensionStatistics')}</h2>
 
 				<div class="overflow-x-auto">
 					<table class="w-full">
@@ -569,27 +570,27 @@
 								<th
 									class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
 								>
-									用户ID
+									{$t('memories.userId')}
 								</th>
 								<th
 									class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
 								>
-									记忆数量
+									{$t('analytics.memoryCount')}
 								</th>
 								<th
 									class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
 								>
-									平均质量
+									{$t('analytics.avgImportance')}
 								</th>
 								<th
 									class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
 								>
-									占比
+									{$t('analytics.proportion')}
 								</th>
 								<th
 									class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
 								>
-									趋势
+									{$t('analytics.trend')}
 								</th>
 							</tr>
 						</thead>
@@ -634,7 +635,7 @@
 									</td>
 									<td class="px-4 py-3">
 										<span class="text-gray-600 dark:text-gray-400 text-sm font-medium">
-											数据不足
+											{$t('analytics.insufficientData')}
 										</span>
 									</td>
 								</tr>
@@ -646,13 +647,13 @@
 				<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
 					<div class="flex items-center justify-between">
 						<span class="text-sm text-gray-500 dark:text-gray-400">
-							前{userStats.length}用户占总记忆的 {summaryStats.totalMemories > 0
+							{$t('analytics.top')} {userStats.length} {$t('analytics.usersAccountFor')} {summaryStats.totalMemories > 0
 								? (
 										(userStats.reduce((sum, user) => sum + user.memoryCount, 0) /
 											summaryStats.totalMemories) *
 										100
 									).toFixed(1)
-								: '0.0'}%
+								: '0.0'}% {$t('analytics.ofTotalMemories')}
 						</span>
 					</div>
 				</div>
@@ -661,7 +662,7 @@
 
 		<!-- 分析工具 -->
 		<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-			<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">分析工具</h2>
+			<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">{$t('analytics.analysisTools')}</h2>
 
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 				<button
@@ -675,8 +676,8 @@
 							<span class="text-xl">📈</span>
 						</div>
 						<div class="text-left">
-							<p class="font-medium text-gray-900 dark:text-white">质量分析报告</p>
-							<p class="text-sm text-gray-500 dark:text-gray-400">生成详细的质量分析</p>
+							<p class="font-medium text-gray-900 dark:text-white">{$t('analytics.qualityAnalysisReport')}</p>
+							<p class="text-sm text-gray-500 dark:text-gray-400">{$t('analytics.detailedQualityAnalysis')}</p>
 						</div>
 					</div>
 				</button>
@@ -692,8 +693,8 @@
 							<span class="text-xl">🔮</span>
 						</div>
 						<div class="text-left">
-							<p class="font-medium text-gray-900 dark:text-white">趋势预测</p>
-							<p class="text-sm text-gray-500 dark:text-gray-400">预测未来增长趋势</p>
+							<p class="font-medium text-gray-900 dark:text-white">{$t('analytics.trendPrediction')}</p>
+							<p class="text-sm text-gray-500 dark:text-gray-400">{$t('analytics.futureGrowthTrends')}</p>
 						</div>
 					</div>
 				</button>
@@ -709,8 +710,8 @@
 							<span class="text-xl">⚖️</span>
 						</div>
 						<div class="text-left">
-							<p class="font-medium text-gray-900 dark:text-white">对比分析</p>
-							<p class="text-sm text-gray-500 dark:text-gray-400">不同时间段对比</p>
+							<p class="font-medium text-gray-900 dark:text-white">{$t('analytics.comparativeAnalysis')}</p>
+							<p class="text-sm text-gray-500 dark:text-gray-400">{$t('analytics.differentTimePeriods')}</p>
 						</div>
 					</div>
 				</button>
