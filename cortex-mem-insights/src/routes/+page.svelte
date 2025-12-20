@@ -92,7 +92,7 @@
 					id: memory.id,
 					content: memory.content,
 					type: memory.metadata.memory_type || 'Unknown',
-					importance: calculateImportanceScore(memory),
+					importance: memory.metadata.importance_score || 0.5,
 					createdAt: formatDate(memory.created_at)
 				}));
 
@@ -150,7 +150,7 @@
 		let totalScore = 0;
 
 		memories.forEach((memory) => {
-			const score = calculateImportanceScore(memory);
+			const score = memory.metadata.importance_score || 0.5;
 			totalScore += score;
 
 			if (score >= 0.8) {
@@ -170,37 +170,7 @@
 		};
 	}
 
-	// 计算重要性评分
-	function calculateImportanceScore(memory: any) {
-		// 基于记忆类型、角色和自定义字段计算重要性
-		let score = 0.5; // 基础分数
-
-		const memoryType = memory.metadata?.memory_type?.toLowerCase() || '';
-		const role = memory.metadata?.role?.toLowerCase() || '';
-
-		// 根据记忆类型调整分数
-		if (memoryType.includes('procedural') || memoryType.includes('workflow')) {
-			score += 0.3;
-		} else if (memoryType.includes('personal')) {
-			score += 0.2;
-		} else if (memoryType.includes('conversational')) {
-			score += 0.1;
-		}
-
-		// 根据角色调整分数
-		if (role.includes('admin') || role.includes('system')) {
-			score += 0.2;
-		} else if (role.includes('user')) {
-			score += 0.1;
-		}
-
-		// 检查自定义字段中的重要性标识
-		if (memory.metadata?.custom?.importance) {
-			score += memory.metadata.custom.importance * 0.3;
-		}
-
-		return Math.min(1.0, Math.max(0.0, score));
-	}
+	// 重要性评分已经在cortex-mem-core中计算好了，直接使用memory.metadata.importance_score字段
 
 	function fallbackToMockData() {
 		console.log('回退到默认数据');
@@ -244,10 +214,7 @@
 	// 服务状态相关函数已移至ServiceStatus组件
 
 	function formatImportance(importance: number) {
-		if (importance >= 0.9) return '极高';
-		if (importance >= 0.7) return '高';
-		if (importance >= 0.5) return '中';
-		return '低';
+		return importance.toFixed(2);
 	}
 
 	function getImportanceColor(importance: number) {
@@ -326,7 +293,7 @@
 					<div>
 						<p class="text-sm font-medium text-gray-600 dark:text-gray-400">平均质量</p>
 						<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-							{(stats.averageQuality * 100).toFixed(1)}%
+							{stats.averageQuality.toFixed(2)}
 						</p>
 					</div>
 					<div
@@ -339,7 +306,7 @@
 					<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
 						<div
 							class="bg-yellow-500 h-2 rounded-full"
-							style={`width: ${stats.averageQuality * 100}%`}
+							style={`width: ${(stats.averageQuality * 100).toFixed(1)}%`}
 						></div>
 					</div>
 				</div>

@@ -89,14 +89,10 @@
 					console.warn('解码内容失败，使用原始内容:', decodeError);
 				}
 
-				// 从custom字段获取重要性分数，如果没有则使用默认值
-				let importance = 0.7;
-				if (memory.metadata.custom && memory.metadata.custom.importance) {
-					importance = parseFloat(memory.metadata.custom.importance);
-				} else if (memory.metadata.custom && memory.metadata.custom.score) {
-					importance = parseFloat(memory.metadata.custom.score);
-				}
-
+				// 使用cortex-mem-core计算好的importance_score字段
+				// 如果没有该字段，则使用默认值0.5（中性重要性）
+				let importance = memory.metadata.importance_score || 0.5;
+				
 				// 确保重要性在0-1范围内
 				importance = Math.max(0, Math.min(1, importance));
 
@@ -203,7 +199,7 @@
 	}
 
 	function formatImportance(importance: number) {
-		return (importance * 100).toFixed(1) + '%';
+		return importance.toFixed(2);
 	}
 
 	function formatDate(isoString: string): string {

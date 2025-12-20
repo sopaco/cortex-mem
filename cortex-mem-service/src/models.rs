@@ -92,6 +92,7 @@ pub struct MemoryMetadataResponse {
     pub role: Option<String>,
     pub memory_type: String,
     pub hash: String,
+    pub importance_score: Option<f32>,
     pub custom: HashMap<String, serde_json::Value>,
 }
 

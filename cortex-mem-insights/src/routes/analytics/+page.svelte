@@ -235,38 +235,13 @@
 		if (memories.length === 0) return 0;
 
 		const totalScore = memories.reduce((sum, memory) => {
-			return sum + calculateImportanceScore(memory);
+			return sum + (memory.metadata.importance_score || 0.5);
 		}, 0);
 
 		return totalScore / memories.length;
 	}
 
-	function calculateImportanceScore(memory: any): number {
-		let score = 0.5;
-
-		const memoryType = memory.metadata?.memory_type?.toLowerCase() || '';
-		const role = memory.metadata?.role?.toLowerCase() || '';
-
-		if (memoryType.includes('procedural') || memoryType.includes('workflow')) {
-			score += 0.3;
-		} else if (memoryType.includes('personal')) {
-			score += 0.2;
-		} else if (memoryType.includes('conversational')) {
-			score += 0.1;
-		}
-
-		if (role.includes('admin') || role.includes('system')) {
-			score += 0.2;
-		} else if (role.includes('user')) {
-			score += 0.1;
-		}
-
-		if (memory.metadata?.custom?.importance) {
-			score += memory.metadata.custom.importance * 0.3;
-		}
-
-		return Math.min(1.0, Math.max(0.0, score));
-	}
+	// 重要性评分已经在cortex-mem-core中计算好了，直接使用memory.metadata.importance_score字段
 
 	function calculateActiveUsers(memories: any[]): number {
 		const users = new Set();
@@ -307,7 +282,7 @@
 		let low = 0; // 0-49%
 
 		memories.forEach((memory) => {
-			const score = calculateImportanceScore(memory);
+			const score = memory.metadata.importance_score || 0.5;
 			if (score >= 0.9) {
 				high++;
 			} else if (score >= 0.7) {
@@ -319,11 +294,12 @@
 			}
 		});
 
+		const total = memories.length;
 		return [
-			{ range: '90-100%', count: high, color: 'bg-green-500' },
-			{ range: '70-89%', count: good, color: 'bg-blue-500' },
-			{ range: '50-69%', count: medium, color: 'bg-yellow-500' },
-			{ range: '0-49%', count: low, color: 'bg-red-500' }
+			{ range: '0.90-1.00', count: high, color: 'bg-green-500' },
+			{ range: '0.70-0.89', count: good, color: 'bg-blue-500' },
+			{ range: '0.50-0.69', count: medium, color: 'bg-yellow-500' },
+			{ range: '0.00-0.49', count: low, color: 'bg-red-500' }
 		];
 	}
 
@@ -361,7 +337,7 @@
 				userData[userId] = { count: 0, totalScore: 0 };
 			}
 			userData[userId].count++;
-			userData[userId].totalScore += calculateImportanceScore(memory);
+			userData[userId].totalScore += memory.metadata.importance_score || 0.5;
 		});
 
 		return Object.entries(userData)
@@ -430,7 +406,7 @@
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
 				<p class="text-sm font-medium text-gray-600 dark:text-gray-400">平均质量</p>
 				<p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-					{(summaryStats.averageQuality * 100).toFixed(1)}%
+					{summaryStats.averageQuality.toFixed(2)}
 				</p>
 				<p class="mt-2 text-sm text-blue-600 dark:text-blue-400">基于重要性评分</p>
 			</div>
@@ -515,7 +491,7 @@
 							<div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
 								<div
 									class={`h-3 rounded-full ${item.color}`}
-									style={`width: ${(item.count / 1245) * 100}%`}
+									style={`width: ${summaryStats.totalMemories > 0 ? (item.count / summaryStats.totalMemories * 100).toFixed(1) : 0}%`}
 								></div>
 							</div>
 						</div>
@@ -648,7 +624,7 @@
 														: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
 											}`}
 										>
-											{(user.avgImportance * 100).toFixed(1)}%
+											{user.avgImportance.toFixed(2)}
 										</span>
 									</td>
 									<td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">

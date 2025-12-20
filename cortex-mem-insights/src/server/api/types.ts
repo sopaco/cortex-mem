@@ -16,6 +16,7 @@ export interface MemoryMetadataResponse {
   role?: string;
   memory_type: string;
   hash: string;
+  importance_score?: number;
   custom?: Record<string, any>;
 }
 
