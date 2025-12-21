@@ -196,3 +196,29 @@ If you use this code or dataset in your research, please cite our paper:
 - [Taranjeet Singh](https://github.com/taranjeet)
 - [Deshraj Yadav](https://github.com/deshraj)
 
+1. 先下载数据集：
+   1    # 从 Google Drive 下载 LOCOMO 数据集
+     2    # 创建 dataset/ 目录并放入 locomo10.json 和 locomo10_rag.json
+
+       2. 安装完整依赖：
+         1    pip install openai tqdm toml python-dotenv
+
+           3. 配置环境：
+                - 复制 .env.example 为 .env
+                      - 更新 config.toml 中的 API key
+
+                         4. 启动依赖服务：
+                           1    # 启动 Qdrant
+                             2    docker run -p 6333:6333 qdrant/qdrant
+                               3
+                                 4    # 构建 cortex-mem-cli
+                                   5    cd ../..
+                                     6    cargo build --bin cortex-mem-cli
+
+                                       5. 运行测试：
+                                         1    python test_cortex_mem.py
+
+                                        https://drive.google.com/drive/folders/1L-cTjTm0ohMsitsHg4dijSPJtqNflwX-?usp=drive_link
+                                        - 包含两个文件：
+                                             - locomo10.json: 原始数据集格式
+                                                 - locomo10_rag.json: RAG实验格式
