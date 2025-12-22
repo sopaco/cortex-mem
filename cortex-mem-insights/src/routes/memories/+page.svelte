@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import api from '$lib/api/client';
+	import { t } from '$lib/i18n';
 
 	interface Memory {
 		id: string;
@@ -51,11 +52,11 @@
 	$: importanceSortIcon = sortBy === 'importance' ? (sortOrder === 'asc' ? '↑' : '↓') : '↓';
 
 	const memoryTypes = [
-		{ value: 'all', label: '全部类型' },
-		{ value: 'conversational', label: '对话' },
-		{ value: 'factual', label: '事实' },
-		{ value: 'personal', label: '个人' },
-		{ value: 'procedural', label: '流程' }
+		{ value: 'all', label: $t('memories.allTypes') },
+		{ value: 'conversational', label: $t('memories.conversational') },
+		{ value: 'factual', label: $t('memories.factual') },
+		{ value: 'personal', label: $t('memories.personal') },
+		{ value: 'procedural', label: $t('memories.procedural') }
 	];
 
 	onMount(async () => {
@@ -89,14 +90,10 @@
 					console.warn('解码内容失败，使用原始内容:', decodeError);
 				}
 
-				// 从custom字段获取重要性分数，如果没有则使用默认值
-				let importance = 0.7;
-				if (memory.metadata.custom && memory.metadata.custom.importance) {
-					importance = parseFloat(memory.metadata.custom.importance);
-				} else if (memory.metadata.custom && memory.metadata.custom.score) {
-					importance = parseFloat(memory.metadata.custom.score);
-				}
-
+				// 使用cortex-mem-core计算好的importance_score字段
+				// 如果没有该字段，则使用默认值0.5（中性重要性）
+				let importance = memory.metadata.importance_score || 0.5;
+				
 				// 确保重要性在0-1范围内
 				importance = Math.max(0, Math.min(1, importance));
 
@@ -190,20 +187,20 @@
 	function getTypeLabel(type: string) {
 		switch (type) {
 			case 'conversational':
-				return '对话';
+				return $t('memories.conversational');
 			case 'factual':
-				return '事实';
+				return $t('memories.factual');
 			case 'personal':
-				return '个人';
+				return $t('memories.personal');
 			case 'procedural':
-				return '流程';
+				return $t('memories.procedural');
 			default:
-				return '未知';
+				return $t('memories.unknown');
 		}
 	}
 
 	function formatImportance(importance: number) {
-		return (importance * 100).toFixed(1) + '%';
+		return importance.toFixed(2);
 	}
 
 	function formatDate(isoString: string): string {
@@ -479,38 +476,37 @@
 <div class="max-w-[95vw] mx-auto space-y-6">
 	<!-- 页面标题 -->
 	<div>
-		<h1 class="text-3xl font-bold text-gray-900 dark:text-white">记忆浏览器</h1>
-		<p class="mt-2 text-gray-600 dark:text-gray-400">浏览、搜索和管理所有记忆记录</p>
+		<h1 class="text-3xl font-bold text-gray-900 dark:text-white">{$t('memories.title')}</h1>
+		<p class="mt-2 text-gray-600 dark:text-gray-400">{$t('memories.description')}</p>
 	</div>
 
-	<!-- 错误显示 -->
-	{#if error}
-		<div
-			class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
-		>
-			<div class="flex items-center">
-				<div class="flex-shrink-0">
-					<span class="text-red-500">⚠️</span>
-				</div>
-				<div class="ml-3">
-					<h3 class="text-sm font-medium text-red-800 dark:text-red-300">加载失败</h3>
-					<div class="mt-1 text-sm text-red-700 dark:text-red-400">
-						{error}
+			<!-- 错误显示 -->
+			{#if error}
+				<div
+					class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4"
+				>
+					<div class="flex items-center">
+						<div class="flex-shrink-0">
+							<span class="text-red-500">⚠️</span>
+						</div>
+						<div class="ml-3">
+							<h3 class="text-sm font-medium text-red-800 dark:text-red-300">{$t('memories.loadFailed')}</h3>
+							<div class="mt-1 text-sm text-red-700 dark:text-red-400">
+								{error}
+							</div>
+							<div class="mt-3">
+								<button
+									type="button"
+									class="text-sm font-medium text-red-800 dark:text-red-300 hover:text-red-900 dark:hover:text-red-200"
+									on:click={loadMemories}
+								>
+									{$t('memories.retry')}
+								</button>
+							</div>
+						</div>
 					</div>
-					<div class="mt-3">
-						<button
-							type="button"
-							class="text-sm font-medium text-red-800 dark:text-red-300 hover:text-red-900 dark:hover:text-red-200"
-							on:click={loadMemories}
-						>
-							重试
-						</button>
-					</div>
 				</div>
-			</div>
-		</div>
-	{/if}
-
+			{/if}
 	<!-- 搜索和过滤栏 -->
 	<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
 		<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -523,7 +519,7 @@
 					<input
 						type="text"
 						bind:value={searchQuery}
-						placeholder="搜索记忆内容、ID、用户或Agent..."
+						placeholder={$t('memories.searchPlaceholder')}
 						class="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						on:keydown={(e) => {
 							if (e.key === 'Enter') {
@@ -552,7 +548,7 @@
 					class="flex-1 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
 					on:click={handleSearch}
 				>
-					搜索
+					{$t('memories.search')}
 				</button>
 				<button
 					class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200"
@@ -564,7 +560,7 @@
 						loadMemories();
 					}}
 				>
-					重置
+					{$t('memories.reset')}
 				</button>
 			</div>
 		</div>
@@ -572,80 +568,80 @@
 		<!-- 统计信息 -->
 		<div class="mt-4 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
 			<span>
-				共 <span class="font-medium text-gray-700 dark:text-gray-300"
+				{$t('memories.totalMemories')}: <span class="font-medium text-gray-700 dark:text-gray-300"
 					>{filteredMemories.length}</span
 				>
-				条记忆， 显示第
+				, {$t('memories.showing')}
 				<span class="font-medium text-gray-700 dark:text-gray-300"
 					>{(currentPage - 1) * pageSize + 1}</span
 				>
-				到
+				{$t('memories.to')}
 				<span class="font-medium text-gray-700 dark:text-gray-300"
 					>{Math.min(currentPage * pageSize, filteredMemories.length)}</span
-				> 条
+				>
+				{$t('memories.of')} {filteredMemories.length}
 			</span>
 			<div class="flex items-center space-x-4">
-				<span>排序:</span>
+				<span>{$t('memories.sort')}:</span>
 				<div class="flex space-x-2">
 					<button
 						class={`px-3 py-1 rounded ${sortBy === 'createdAt' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}
 						on:click={() => toggleSort('createdAt')}
 					>
-						创建时间 {createdAtSortIcon}
+						{$t('memories.createdAt')} {createdAtSortIcon}
 					</button>
 					<button
 						class={`px-3 py-1 rounded ${sortBy === 'importance' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-600 dark:text-gray-400'}`}
 						on:click={() => toggleSort('importance')}
 					>
-						重要性 {importanceSortIcon}
+						{$t('memories.importance')} {importanceSortIcon}
 					</button>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- 批量操作栏 -->
-	{#if showBatchOperations}
-		<div
-			class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4"
-		>
-			<div class="flex items-center justify-between">
-				<div class="flex items-center space-x-4">
-					<span class="text-sm font-medium text-blue-800 dark:text-blue-300">
-						已选择 <span class="font-bold">{selectedMemories.size}</span> 条记忆
-					</span>
-					<button
-						class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-						on:click={deselectAll}
-					>
-						取消选择
-					</button>
+			<!-- 批量操作栏 -->
+			{#if showBatchOperations}
+				<div
+					class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4"
+				>
+					<div class="flex items-center justify-between">
+						<div class="flex items-center space-x-4">
+							<span class="text-sm font-medium text-blue-800 dark:text-blue-300">
+								{$t('memories.batchOperations')}: <span class="font-bold">{selectedMemories.size}</span> {$t('memories.totalMemories')}
+							</span>
+							<button
+								class="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+								on:click={deselectAll}
+							>
+								{$t('memories.selectAll')}
+							</button>
+						</div>
+						<div class="flex flex-wrap gap-2">
+							<button
+								class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded font-medium transition-colors duration-200"
+								on:click={batchExport}
+							>
+								📤 {$t('memories.exportSelected')}
+							</button>
+	
+							<button
+								class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded font-medium transition-colors duration-200"
+								on:click={batchOptimize}
+							>
+								⚡ {$t('memories.optimizeSelected')}
+							</button>
+							<button
+								class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded font-medium transition-colors duration-200"
+								on:click={batchDelete}
+							>
+								🗑️ {$t('memories.deleteSelected')}
+							</button>
+						</div>
+					</div>
 				</div>
-				<div class="flex flex-wrap gap-2">
-					<button
-						class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded font-medium transition-colors duration-200"
-						on:click={batchExport}
-					>
-						📤 批量导出
-					</button>
-
-					<button
-						class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded font-medium transition-colors duration-200"
-						on:click={batchOptimize}
-					>
-						⚡ 批量优化
-					</button>
-					<button
-						class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded font-medium transition-colors duration-200"
-						on:click={batchDelete}
-					>
-						🗑️ 批量删除
-					</button>
-				</div>
-			</div>
-		</div>
-	{/if}
-
+			{/if}
 	<!-- 记忆列表 -->
 	<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
 		{#if isLoading}
@@ -665,9 +661,9 @@
 				>
 					<span class="text-2xl">📭</span>
 				</div>
-				<h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">未找到记忆记录</h3>
+				<h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{$t('memories.noMemoriesFound')}</h3>
 				<p class="text-gray-500 dark:text-gray-400 mb-6">
-					{searchQuery || selectedType !== 'all' ? '尝试调整搜索条件' : '系统暂无记忆记录'}
+					{searchQuery || selectedType !== 'all' ? $t('memories.adjustSearch') : $t('memories.noMemoriesInSystem')}
 				</p>
 				{#if searchQuery || selectedType !== 'all'}
 					<button
@@ -677,7 +673,7 @@
 							selectedType = 'all';
 						}}
 					>
-						清除筛选条件
+						{$t('memories.clearFilters')}
 					</button>
 				{/if}
 			</div>
@@ -689,15 +685,15 @@
 				>
 					<span class="text-2xl">📄</span>
 				</div>
-				<h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">当前页无数据</h3>
+				<h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">{$t('memories.noDataOnCurrentPage')}</h3>
 				<p class="text-gray-500 dark:text-gray-400 mb-6">
-					第 {currentPage} 页暂无数据，请检查页码或调整筛选条件
+					{$t('memories.page')} {currentPage} {$t('memories.checkPageOrFilters')}
 				</p>
 				<button
 					class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
 					on:click={() => goToPage(1)}
 				>
-					返回第一页
+					{$t('memories.goToFirstPage')}
 				</button>
 			</div>
 		{:else}
@@ -730,27 +726,27 @@
 							<th
 								class="w-1/2 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
-								内容
+								{$t('memories.content')}
 							</th>
 							<th
 								class="w-24 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
-								类型
+								{$t('memories.type')}
 							</th>
 							<th
 								class="w-28 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
-								重要性
+								{$t('memories.importance')}
 							</th>
 							<th
 								class="w-32 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
-								用户/Agent
+								{$t('memories.userAgent')}
 							</th>
 							<th
 								class="w-40 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
 							>
-								创建时间
+								{$t('memories.created')}
 							</th>
 						</tr>
 					</thead>
@@ -781,14 +777,14 @@
 													showFullContent(memory.content, memory.id);
 												}
 											}}
-											title="点击查看完整内容"
+											title={$t('memories.clickToViewFullContent')}
 											type="button"
 										>
 											{memory.content}
 										</button>
 										{#if memory.content.length > 100}
 											<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-												点击查看完整内容 ({memory.content.length} 字符)
+												{$t('memories.clickToViewFullContent')} ({memory.content.length} {$t('memories.characters')})
 											</div>
 										{/if}
 									</div>
@@ -835,13 +831,13 @@
 				>
 					<div class="flex items-center justify-between">
 						<div class="text-sm text-gray-500 dark:text-gray-400">
-							显示第 <span class="font-medium">{(currentPage - 1) * pageSize + 1}</span> 到
+							{$t('memories.showing')} <span class="font-medium">{(currentPage - 1) * pageSize + 1}</span> {$t('memories.to')}
 							<span class="font-medium"
 								>{Math.min(currentPage * pageSize, filteredMemories.length)}</span
 							>
-							条， 共 <span class="font-medium">{filteredMemories.length}</span> 条，第
+							{$t('memories.of')} <span class="font-medium">{filteredMemories.length}</span>, {$t('memories.page')}
 							<span class="font-medium">{currentPage}</span>
-							/ {totalPages} 页
+							/ {totalPages}
 						</div>
 						<div class="flex items-center space-x-2">
 							<button
@@ -849,7 +845,7 @@
 								disabled={currentPage === 1}
 								on:click={prevPage}
 							>
-								上一页
+								{$t('memories.previousPage')}
 							</button>
 
 							<!-- 页码按钮 -->
@@ -877,7 +873,7 @@
 								disabled={currentPage === totalPages}
 								on:click={nextPage}
 							>
-								下一页
+								{$t('memories.nextPage')}
 							</button>
 						</div>
 					</div>
@@ -896,7 +892,7 @@
 					class="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700"
 				>
 					<div>
-						<h3 class="text-lg font-semibold text-gray-900 dark:text-white">记忆内容详情</h3>
+						<h3 class="text-lg font-semibold text-gray-900 dark:text-white">{$t('memories.fullContent')}</h3>
 						<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ID: {selectedMemoryId}</p>
 					</div>
 					<button
@@ -919,7 +915,7 @@
 						class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200"
 						on:click={hideContentModal}
 					>
-						关闭
+						{$t('memories.close')}
 					</button>
 				</div>
 			</div>

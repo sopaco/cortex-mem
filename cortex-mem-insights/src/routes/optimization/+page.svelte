@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { optimizationApi } from '$lib/api/client';
 	import IssueDetailModal from '$lib/components/IssueDetailModal.svelte';
+	import { t } from '$lib/i18n';
 
 	let isLoading = true;
 	let isOptimizing = false;
@@ -19,18 +20,28 @@
 	const strategies = [
 		{
 			id: 'full',
-			name: '全面优化',
-			description: '检测并处理所有类型的问题',
-			estimatedTime: '60分钟'
+			name: $t('optimization.fullOptimization'),
+			description: $t('optimization.detectAllIssues'),
+			estimatedTime: '60' + $t('optimization.minutes')
 		},
 		{
 			id: 'deduplication',
-			name: '去重优化',
-			description: '仅处理重复记忆',
-			estimatedTime: '20分钟'
+			name: $t('optimization.deduplicationOptimization'),
+			description: $t('optimization.handleDuplicatesOnly'),
+			estimatedTime: '20' + $t('optimization.minutes')
 		},
-		{ id: 'quality', name: '质量优化', description: '处理低质量记忆', estimatedTime: '30分钟' },
-		{ id: 'relevance', name: '相关性优化', description: '优化记忆相关性', estimatedTime: '25分钟' }
+		{ 
+			id: 'quality', 
+			name: $t('optimization.qualityOptimization'), 
+			description: $t('optimization.handleLowQuality'), 
+			estimatedTime: '30' + $t('optimization.minutes') 
+		},
+		{ 
+			id: 'relevance', 
+			name: $t('optimization.relevanceOptimization'), 
+			description: $t('optimization.optimizeRelevance'), 
+			estimatedTime: '25' + $t('optimization.minutes') 
+		}
 	];
 
 	let selectedStrategy = 'full';
@@ -396,8 +407,8 @@ ${reportData.logs?.join('\n') || '无日志'}
 <div class="space-y-8">
 	<!-- 页面标题 -->
 	<div>
-		<h1 class="text-3xl font-bold text-gray-900 dark:text-white">优化面板</h1>
-		<p class="mt-2 text-gray-600 dark:text-gray-400">检测和优化记忆数据，提升系统性能和信息密度</p>
+		<h1 class="text-3xl font-bold text-gray-900 dark:text-white">{$t('optimization.optimizationPanel')}</h1>
+		<p class="mt-2 text-gray-600 dark:text-gray-400">{$t('optimization.description')}</p>
 	</div>
 
 	<!-- 错误提示 -->
@@ -451,12 +462,12 @@ ${reportData.logs?.join('\n') || '无日志'}
 	{:else}
 		<!-- 优化控制面板 -->
 		<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-			<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">优化控制</h2>
+			<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">{$t('optimization.optimizationControl')}</h2>
 
 			<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 				<!-- 策略选择 -->
 				<div>
-					<h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">优化策略</h3>
+					<h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{$t('optimization.optimizationStrategy')}</h3>
 					<div class="space-y-3">
 						{#each strategies as strategy}
 							<label
@@ -474,13 +485,19 @@ ${reportData.logs?.join('\n') || '无日志'}
 								/>
 								<div class="flex-1">
 									<div class="font-medium text-gray-900 dark:text-white">
-										{strategy.name}
+										{strategy.id === 'full' ? $t('optimization.fullOptimization') :
+										 strategy.id === 'deduplication' ? $t('optimization.deduplicationOptimization') :
+										 strategy.id === 'quality' ? $t('optimization.qualityOptimization') :
+										 $t('optimization.relevanceOptimization')}
 									</div>
 									<div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-										{strategy.description}
+										{strategy.id === 'full' ? $t('optimization.detectAllIssues') :
+										 strategy.id === 'deduplication' ? $t('optimization.handleDuplicatesOnly') :
+										 strategy.id === 'quality' ? $t('optimization.handleLowQuality') :
+										 $t('optimization.optimizeRelevance')}
 									</div>
 									<div class="text-xs text-gray-400 dark:text-gray-500 mt-2">
-										预计时间: {strategy.estimatedTime}
+										{$t('optimization.estimatedTime')}: {strategy.estimatedTime}
 									</div>
 								</div>
 							</label>
@@ -490,14 +507,14 @@ ${reportData.logs?.join('\n') || '无日志'}
 
 				<!-- 选项配置 -->
 				<div>
-					<h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">优化选项</h3>
+					<h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{$t('optimization.optimizationOptions')}</h3>
 					<div class="space-y-4">
 						<label
 							class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
 						>
 							<div>
-								<div class="font-medium text-gray-900 dark:text-white">预览模式</div>
-								<div class="text-sm text-gray-500 dark:text-gray-400">仅分析问题，不执行优化</div>
+								<div class="font-medium text-gray-900 dark:text-white">{$t('optimization.previewMode')}</div>
+								<div class="text-sm text-gray-500 dark:text-gray-400">{$t('optimization.analyzeOnly')}</div>
 							</div>
 							<input
 								type="checkbox"
@@ -511,8 +528,8 @@ ${reportData.logs?.join('\n') || '无日志'}
 							class="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
 						>
 							<div>
-								<div class="font-medium text-gray-900 dark:text-white">激进模式</div>
-								<div class="text-sm text-gray-500 dark:text-gray-400">更严格的优化标准</div>
+								<div class="font-medium text-gray-900 dark:text-white">{$t('optimization.aggressiveMode')}</div>
+								<div class="text-sm text-gray-500 dark:text-gray-400">{$t('optimization.stricterStandards')}</div>
 							</div>
 							<input
 								type="checkbox"
@@ -523,7 +540,7 @@ ${reportData.logs?.join('\n') || '无日志'}
 						</label>
 
 						<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-							<div class="font-medium text-gray-900 dark:text-white mb-2">超时时间</div>
+							<div class="font-medium text-gray-900 dark:text-white mb-2">{$t('optimization.timeout')}</div>
 							<div class="flex items-center space-x-4">
 								<input
 									type="range"
@@ -535,7 +552,7 @@ ${reportData.logs?.join('\n') || '无日志'}
 									disabled={isOptimizing}
 								/>
 								<span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-									{timeoutMinutes} 分钟
+									{timeoutMinutes} {$t('optimization.minutes')}
 								</span>
 							</div>
 						</div>
@@ -544,29 +561,29 @@ ${reportData.logs?.join('\n') || '无日志'}
 
 				<!-- 预估影响 -->
 				<div>
-					<h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">预估影响</h3>
+					<h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">{$t('optimization.estimatedImpact')}</h3>
 					<div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-3">
 						<div class="flex justify-between">
-							<span class="text-gray-600 dark:text-gray-400">预计影响记忆:</span>
+							<span class="text-gray-600 dark:text-gray-400">{$t('optimization.estimatedAffectedMemories')}:</span>
 							<span class="font-medium text-gray-900 dark:text-white">
-								~{getEstimatedImpact()} 条
+								~{getEstimatedImpact()} {$t('common.unit')}
 							</span>
 						</div>
 						<div class="flex justify-between">
-							<span class="text-gray-600 dark:text-gray-400">预计节省空间:</span>
+							<span class="text-gray-600 dark:text-gray-400">{$t('optimization.estimatedSpaceSaved')}:</span>
 							<span class="font-medium text-green-600 dark:text-green-400">
 								~{(getEstimatedImpact() * 0.15).toFixed(1)}MB
 							</span>
 						</div>
 						<div class="flex justify-between">
-							<span class="text-gray-600 dark:text-gray-400">预计提升质量:</span>
+							<span class="text-gray-600 dark:text-gray-400">{$t('optimization.estimatedQualityImprovement')}:</span>
 							<span class="font-medium text-blue-600 dark:text-blue-400">
 								+{aggressiveMode ? '15' : '10'}%
 							</span>
 						</div>
 						<div class="pt-3 border-t border-gray-200 dark:border-gray-700">
 							<div class="text-sm text-gray-500 dark:text-gray-400">
-								{previewMode ? '预览模式不会实际修改数据' : '优化将永久修改记忆数据'}
+								{previewMode ? $t('optimization.previewModeWarning') : $t('optimization.optimizationWarning')}
 							</div>
 						</div>
 					</div>
@@ -578,14 +595,14 @@ ${reportData.logs?.join('\n') || '无日志'}
 								on:click={cancelOptimization}
 								class="w-full px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors duration-200"
 							>
-								取消优化
+								{$t('optimization.cancelOptimization')}
 							</button>
 						{:else}
 							<button
 								on:click={startOptimization}
 								class="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors duration-200"
 							>
-								{previewMode ? '分析问题' : '开始优化'}
+								{previewMode ? $t('optimization.analyzeIssues') : $t('optimization.startOptimization')}
 							</button>
 						{/if}
 
@@ -593,7 +610,7 @@ ${reportData.logs?.join('\n') || '无日志'}
 							on:click={() => console.log('导出报告')}
 							class="w-full px-4 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors duration-200"
 						>
-							导出优化报告
+							{$t('optimization.exportReport')}
 						</button>
 					</div>
 				</div>
@@ -603,7 +620,7 @@ ${reportData.logs?.join('\n') || '无日志'}
 		<!-- 优化进度 -->
 		{#if isOptimizing}
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">优化进度</h2>
+				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">{$t('optimization.optimizationProgress')}</h2>
 
 				<div class="space-y-6">
 					<!-- 进度条 -->
@@ -611,12 +628,12 @@ ${reportData.logs?.join('\n') || '无日志'}
 						<div class="flex justify-between mb-2">
 							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">
 								{optimizationStatus === 'analyzing'
-									? '分析问题中...'
+									? $t('optimization.analyzingIssues')
 									: optimizationStatus === 'executing'
-										? '执行优化中...'
+										? $t('optimization.executingOptimization')
 										: optimizationStatus === 'completed'
-											? '优化完成'
-											: '优化失败'}
+											? $t('optimization.optimizationComplete')
+											: $t('optimization.optimizationFailed')}
 							</span>
 							<span class="text-sm font-medium text-gray-900 dark:text-white">
 								{optimizationProgress}%
@@ -633,36 +650,36 @@ ${reportData.logs?.join('\n') || '无日志'}
 					<!-- 状态信息 -->
 					<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 						<div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-							<div class="text-sm text-blue-700 dark:text-blue-300">当前阶段</div>
+							<div class="text-sm text-blue-700 dark:text-blue-300">{$t('optimization.currentPhase')}</div>
 							<div class="text-lg font-medium text-blue-900 dark:text-blue-100 mt-1">
 								{optimizationStatus === 'analyzing'
-									? '问题分析'
+									? $t('optimization.issueAnalysis')
 									: optimizationStatus === 'executing'
-										? '执行优化'
+										? $t('optimization.execution')
 										: optimizationStatus === 'completed'
-											? '完成'
-											: '失败'}
+											? $t('optimization.completed')
+											: $t('optimization.failed')}
 							</div>
 						</div>
 
 						<div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-							<div class="text-sm text-green-700 dark:text-green-300">已处理记忆</div>
+							<div class="text-sm text-green-700 dark:text-green-300">{$t('optimization.memoriesProcessed')}</div>
 							<div class="text-lg font-medium text-green-900 dark:text-green-100 mt-1">
-								{Math.floor(optimizationProgress * 1.5)} 条
+								{Math.floor(optimizationProgress * 1.5)} {$t('common.unit')}
 							</div>
 						</div>
 
 						<div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-							<div class="text-sm text-purple-700 dark:text-purple-300">预计剩余时间</div>
+							<div class="text-sm text-purple-700 dark:text-purple-300">{$t('optimization.estimatedRemainingTime')}</div>
 							<div class="text-lg font-medium text-purple-900 dark:text-purple-100 mt-1">
-								{Math.max(0, Math.floor((100 - optimizationProgress) * 0.3))} 分钟
+								{Math.max(0, Math.floor((100 - optimizationProgress) * 0.3))} {$t('optimization.minutes')}
 							</div>
 						</div>
 					</div>
 
 					<!-- 实时日志 -->
 					<div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-						<div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">实时日志</div>
+						<div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{$t('optimization.realtimeLogs')}</div>
 						<div class="space-y-2 max-h-40 overflow-y-auto">
 							{#each Array(Math.floor(optimizationProgress / 10)) as _, i}
 								<div class="text-sm text-gray-600 dark:text-gray-400">
@@ -683,12 +700,12 @@ ${reportData.logs?.join('\n') || '无日志'}
 		<!-- 检测到的问题 -->
 		<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
 			<div class="flex items-center justify-between mb-6">
-				<h2 class="text-lg font-semibold text-gray-900 dark:text-white">检测到的问题</h2>
+				<h2 class="text-lg font-semibold text-gray-900 dark:text-white">{$t('optimization.detectedIssues')}</h2>
 				<button
 					on:click={() => console.log('重新检测')}
 					class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium"
 				>
-					重新检测
+					{$t('optimization.rescan')}
 				</button>
 			</div>
 
@@ -701,25 +718,29 @@ ${reportData.logs?.join('\n') || '无日志'}
 							<span
 								class={`px-2 py-1 rounded text-xs font-medium ${getSeverityColor(issue.severity)}`}
 							>
-								{issue.severity === 'high' ? '高' : issue.severity === 'medium' ? '中' : '低'}
+								{issue.severity === 'high' ? $t('optimization.high') : issue.severity === 'medium' ? $t('optimization.medium') : $t('optimization.low')}
 							</span>
 							<span class="text-2xl font-bold text-gray-900 dark:text-white">
 								{issue.count}
 							</span>
 						</div>
 						<div class="font-medium text-gray-900 dark:text-white mb-1">
-							{issue.type}
+							{issue.type === '重复记忆' ? $t('optimization.duplicateMemories') :
+							 issue.type === '低质量记忆' ? $t('optimization.lowQualityMemories') :
+							 issue.type === '过时记忆' ? $t('optimization.outdatedMemories') :
+							 issue.type === '分类不当' ? $t('optimization.misclassifiedMemories') : issue.type}
 						</div>
 						<div class="text-sm text-gray-500 dark:text-gray-400">
-							{issue.description}
+							{issue.description === '语义相似度超过85%的记忆' ? $t('optimization.semanticSimilarity') :
+							 issue.description === '重要性评分低于50%的记忆' ? $t('optimization.importanceBelowThreshold') :
+							 issue.description === '超过30天未更新的记忆' ? $t('optimization.notUpdated30Days') :
+							 issue.description === '类型与内容不匹配的记忆' ? $t('optimization.typeContentMismatch') : issue.description}
 						</div>
 						<div class="mt-3">
 							<button
 								on:click={() => showIssueDetail(issue)}
 								class="w-full px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
-							>
-								查看详情
-							</button>
+							>{$t('optimization.viewDetails')}</button>
 						</div>
 					</div>
 				{/each}
@@ -728,7 +749,7 @@ ${reportData.logs?.join('\n') || '无日志'}
 
 		<!-- 优化历史 -->
 		<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-			<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">优化历史</h2>
+			<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">{$t('optimization.optimizationHistory')}</h2>
 
 			<div class="overflow-x-auto">
 				<table class="w-full">
@@ -737,43 +758,37 @@ ${reportData.logs?.join('\n') || '无日志'}
 							<th
 								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
 							>
-								优化ID
+								{$t('optimization.optimizationId')}
 							</th>
 							<th
 								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
 							>
-								策略
+								{$t('optimization.strategy')}
+							</th>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+							>{$t('optimization.status')}</th>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+							>{$t('optimization.startTime')}</th>
+							<th
+								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
+							>
+								{$t('optimization.timeConsumed')}
 							</th>
 							<th
 								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
 							>
-								状态
+								{$t('optimization.affectedMemories')}
 							</th>
 							<th
 								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
 							>
-								开始时间
+								{$t('optimization.spaceSaved')}
 							</th>
 							<th
 								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-							>
-								耗时
-							</th>
-							<th
-								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-							>
-								影响记忆
-							</th>
-							<th
-								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-							>
-								节省空间
-							</th>
-							<th
-								class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase"
-							>
-								操作
-							</th>
+							>{$t('optimization.actions')}</th>
 						</tr>
 					</thead>
 					<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -794,10 +809,10 @@ ${reportData.logs?.join('\n') || '无日志'}
 										class={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(record.status)}`}
 									>
 										{record.status === 'completed'
-											? '完成'
+											? $t('optimization.completed')
 											: record.status === 'running'
-												? '进行中'
-												: '失败'}
+												? $t('optimization.running')
+												: $t('optimization.failed')}
 									</span>
 								</td>
 								<td class="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
@@ -822,7 +837,7 @@ ${reportData.logs?.join('\n') || '无日志'}
 											on:click={() => viewOptimizationReport(record.id)}
 											class="text-sm text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
 										>
-											报告
+											{$t('optimization.report')}
 										</button>
 									</div>
 								</td>
@@ -835,13 +850,13 @@ ${reportData.logs?.join('\n') || '无日志'}
 			<div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
 				<div class="flex items-center justify-between">
 					<div class="text-sm text-gray-500 dark:text-gray-400">
-						共 {optimizationHistory.length} 次优化记录
+						{$t('optimization.totalOptimizations', { count: optimizationHistory.length })}
 					</div>
 					<button
 						on:click={clearOptimizationHistory}
 						class="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg"
 					>
-						清空历史记录
+						{$t('optimization.clearHistory')}
 					</button>
 				</div>
 			</div>

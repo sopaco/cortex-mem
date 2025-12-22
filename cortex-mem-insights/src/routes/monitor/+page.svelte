@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import api from '$lib/api/client';
 	import ServiceStatus from '$lib/components/ServiceStatus.svelte';
+	import { t } from '$lib/i18n';
 
 	let isLoading = true;
 	let error: string | null = null;
@@ -197,28 +198,28 @@
 
 			return [
 				{
-					name: 'API响应时间',
+					name: $t('monitor.apiResponseTime'),
 					value: apiLatency,
 					unit: 'ms',
 					trend: apiLatency < 200 ? 'down' : apiLatency > 500 ? 'up' : 'stable',
 					threshold: 500
 				},
 				{
-					name: '搜索延迟',
+					name: $t('monitor.searchLatency'),
 					value: searchLatency,
 					unit: 'ms',
 					trend: searchLatency < 300 ? 'down' : searchLatency > 1000 ? 'up' : 'stable',
 					threshold: 1000
 				},
 				{
-					name: '健康检查',
+					name: $t('monitor.healthCheck'),
 					value: healthLatency,
 					unit: 'ms',
 					trend: healthLatency < 100 ? 'down' : healthLatency > 300 ? 'up' : 'stable',
 					threshold: 300
 				},
 				{
-					name: '向量查询',
+					name: $t('monitor.vectorQuery'),
 					value: Math.max(50, apiLatency + 100),
 					unit: 'ms',
 					trend: 'stable',
@@ -228,10 +229,10 @@
 		} catch (err) {
 			console.warn('性能指标计算失败，使用默认值:', err);
 			return [
-				{ name: 'API响应时间', value: 0, unit: 'ms', trend: 'stable', threshold: 500 },
-				{ name: '搜索延迟', value: 0, unit: 'ms', trend: 'stable', threshold: 1000 },
-				{ name: '健康检查', value: 0, unit: 'ms', trend: 'stable', threshold: 300 },
-				{ name: '向量查询', value: 0, unit: 'ms', trend: 'stable', threshold: 2000 }
+				{ name: $t('monitor.apiResponseTime'), value: 0, unit: 'ms', trend: 'stable', threshold: 500 },
+				{ name: $t('monitor.searchLatency'), value: 0, unit: 'ms', trend: 'stable', threshold: 1000 },
+				{ name: $t('monitor.healthCheck'), value: 0, unit: 'ms', trend: 'stable', threshold: 300 },
+				{ name: $t('monitor.vectorQuery'), value: 0, unit: 'ms', trend: 'stable', threshold: 2000 }
 			];
 		}
 	}
@@ -445,8 +446,8 @@
 	<!-- 页面标题 -->
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold text-gray-900 dark:text-white">系统监控</h1>
-			<p class="mt-2 text-gray-600 dark:text-gray-400">实时监控系统状态、性能指标和运行日志</p>
+			<h1 class="text-3xl font-bold text-gray-900 dark:text-white">{$t('monitor.title')}</h1>
+			<p class="mt-2 text-gray-600 dark:text-gray-400">{$t('monitor.description')}</p>
 		</div>
 		<div class="flex items-center space-x-4">
 			<label class="flex items-center space-x-2">
@@ -456,13 +457,13 @@
 					on:change={toggleAutoRefresh}
 					class="w-4 h-4 rounded"
 				/>
-				<span class="text-sm text-gray-700 dark:text-gray-300">自动刷新</span>
+				<span class="text-sm text-gray-700 dark:text-gray-300">{$t('monitor.autoRefresh')}</span>
 			</label>
 			<button
 				on:click={updateMetrics}
 				class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium"
 			>
-				立即刷新
+				{$t('monitor.refreshNow')}
 			</button>
 		</div>
 	</div>
@@ -493,13 +494,13 @@
 					<span class="text-red-600 dark:text-red-400">⚠️</span>
 				</div>
 				<div>
-					<h3 class="text-lg font-medium text-red-800 dark:text-red-200">加载失败</h3>
+					<h3 class="text-lg font-medium text-red-800 dark:text-red-200">{$t('common.error')}</h3>
 					<p class="text-red-600 dark:text-red-400">{error}</p>
 					<button
 						on:click={() => location.reload()}
 						class="mt-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium"
 					>
-						重新加载
+						{$t('common.refresh')}
 					</button>
 				</div>
 			</div>
@@ -519,13 +520,13 @@
 
 			<!-- 资源使用 -->
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">资源使用</h2>
+				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">{$t('monitor.resourceUsage')}</h2>
 
 				<div class="space-y-6">
 					<!-- 内存使用 -->
 					<div>
 						<div class="flex justify-between mb-2">
-							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">内存使用</span>
+							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('monitor.memoryUsage')}</span>
 							<span class="text-sm font-medium text-gray-900 dark:text-white">
 								{systemMetrics.memoryUsage.percentage.toFixed(1)}%
 							</span>
@@ -551,7 +552,7 @@
 					<!-- CPU使用 -->
 					<div>
 						<div class="flex justify-between mb-2">
-							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">CPU使用</span>
+							<span class="text-sm font-medium text-gray-700 dark:text-gray-300">{$t('monitor.cpuUsage')}</span>
 							<span class="text-sm font-medium text-gray-900 dark:text-white">
 								{systemMetrics.cpuUsage.percentage.toFixed(1)}%
 							</span>
@@ -571,12 +572,12 @@
 					</div>
 					<!-- 网络 -->
 					<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-						<div class="text-sm font-medium text-gray-900 dark:text-white mb-2">网络状态</div>
+						<div class="text-sm font-medium text-gray-900 dark:text-white mb-2">{$t('monitor.networkStatus')}</div>
 						<div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
 							<div>
-								活跃连接: <span class="font-medium">{systemMetrics.network.activeConnections}</span>
+								{$t('monitor.activeConnections')}: <span class="font-medium">{systemMetrics.network.activeConnections}</span>
 							</div>
-							<div>吞吐量: <span class="font-medium">{systemMetrics.network.throughput}</span></div>
+							<div>{$t('monitor.throughput')}: <span class="font-medium">{systemMetrics.network.throughput}</span></div>
 						</div>
 					</div>
 				</div>
@@ -584,14 +585,17 @@
 
 			<!-- 性能指标 -->
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">性能指标</h2>
+				<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">{$t('monitor.performanceMetrics')}</h2>
 
 				<div class="space-y-4">
 					{#each performanceMetrics as metric}
 						<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
 							<div class="flex items-center justify-between mb-2">
 								<span class="font-medium text-gray-900 dark:text-white">
-									{metric.name}
+									{metric.name === 'API响应时间' ? $t('monitor.apiResponseTime') : 
+									 metric.name === '搜索延迟' ? $t('monitor.searchLatency') :
+									 metric.name === '健康检查' ? $t('monitor.healthCheck') :
+									 metric.name === '向量查询' ? $t('monitor.vectorQuery') : metric.name}
 								</span>
 								<div class="flex items-center space-x-2">
 									<span class={`text-sm ${getTrendColor(metric.trend)}`}>
@@ -617,8 +621,8 @@
 							</div>
 
 							<div class="flex justify-between mt-1 text-xs text-gray-500 dark:text-gray-400">
-								<span>阈值: {metric.threshold}{metric.unit}</span>
-								<span>使用率: {((metric.value / metric.threshold) * 100).toFixed(1)}%</span>
+								<span>{$t('monitor.threshold')}: {metric.threshold}{metric.unit}</span>
+								<span>{$t('monitor.usageRate')}: {((metric.value / metric.threshold) * 100).toFixed(1)}%</span>
 							</div>
 						</div>
 					{/each}
@@ -631,11 +635,11 @@
 			<!-- 告警 -->
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
 				<div class="flex items-center justify-between mb-6">
-					<h2 class="text-lg font-semibold text-gray-900 dark:text-white">系统告警</h2>
+					<h2 class="text-lg font-semibold text-gray-900 dark:text-white">{$t('monitor.systemAlerts')}</h2>
 					<span
 						class="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded text-sm font-medium"
 					>
-						{alerts.filter((a) => !a.acknowledged).length} 个未处理
+						{alerts.filter((a) => !a.acknowledged).length} {$t('monitor.unprocessed')}
 					</span>
 				</div>
 
@@ -655,16 +659,16 @@
 											class={`px-2 py-1 rounded text-xs font-medium ${getLevelColor(alert.level)}`}
 										>
 											{alert.level === 'error'
-												? '错误'
+												? $t('monitor.error')
 												: alert.level === 'warning'
-													? '警告'
-													: '信息'}
+													? $t('monitor.warning')
+													: $t('monitor.info')}
 										</span>
 										{#if !alert.acknowledged}
 											<span
 												class="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 rounded text-xs"
 											>
-												未处理
+												{$t('monitor.unprocessed')}
 											</span>
 										{/if}
 									</div>
@@ -684,16 +688,16 @@
 			<!-- 实时日志 -->
 			<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
 				<div class="flex items-center justify-between mb-6">
-					<h2 class="text-lg font-semibold text-gray-900 dark:text-white">实时日志</h2>
+					<h2 class="text-lg font-semibold text-gray-900 dark:text-white">{$t('monitor.realtimeLogs')}</h2>
 					<div class="flex items-center space-x-2">
 						<span class="text-sm text-gray-500 dark:text-gray-400">
-							最后更新: {lastUpdate || '未知'}
+							{$t('monitor.lastUpdated')}: {lastUpdate || $t('common.unknown')}
 						</span>
 						<button
 							on:click={() => (realtimeLogs = [])}
 							class="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
 						>
-							清空
+							{$t('monitor.clear')}
 						</button>
 					</div>
 				</div>
@@ -702,7 +706,7 @@
 				>
 					{#if realtimeLogs.length === 0}
 						<div class="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-							暂无日志
+							{$t('monitor.noLogs')}
 						</div>
 					{:else}
 						<div class="space-y-2">
@@ -729,7 +733,7 @@
 
 		<!-- 监控工具 -->
 		<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
-			<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">监控工具</h2>
+			<h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6">{$t('monitor.monitoringTools')}</h2>
 
 			<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 				<button
@@ -743,8 +747,8 @@
 							<span class="text-xl">❤️</span>
 						</div>
 						<div class="text-left">
-							<p class="font-medium text-gray-900 dark:text-white">健康检查</p>
-							<p class="text-sm text-gray-500 dark:text-gray-400">全面检查系统健康状态</p>
+							<p class="font-medium text-gray-900 dark:text-white">{$t('monitor.healthCheckTool')}</p>
+							<p class="text-sm text-gray-500 dark:text-gray-400">{$t('monitor.comprehensiveHealthCheck')}</p>
 						</div>
 					</div>
 				</button>
@@ -760,8 +764,8 @@
 							<span class="text-xl">⚡</span>
 						</div>
 						<div class="text-left">
-							<p class="font-medium text-gray-900 dark:text-white">性能测试</p>
-							<p class="text-sm text-gray-500 dark:text-gray-400">运行性能基准测试</p>
+							<p class="font-medium text-gray-900 dark:text-white">{$t('monitor.performanceTest')}</p>
+							<p class="text-sm text-gray-500 dark:text-gray-400">{$t('monitor.runPerformanceBenchmark')}</p>
 						</div>
 					</div>
 				</button>
@@ -777,8 +781,8 @@
 							<span class="text-xl">🔧</span>
 						</div>
 						<div class="text-left">
-							<p class="font-medium text-gray-900 dark:text-white">诊断工具</p>
-							<p class="text-sm text-gray-500 dark:text-gray-400">系统问题诊断和修复</p>
+							<p class="font-medium text-gray-900 dark:text-white">{$t('monitor.diagnosticTools')}</p>
+							<p class="text-sm text-gray-500 dark:text-gray-400">{$t('monitor.systemDiagnosisAndRepair')}</p>
 						</div>
 					</div>
 				</button>

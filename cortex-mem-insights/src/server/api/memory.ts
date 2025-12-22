@@ -13,6 +13,7 @@ interface MemoryResponse {
     role?: string;
     memory_type: string;
     hash: string;
+    importance_score?: number;
     custom: Record<string, any>;
   };
   created_at: string;

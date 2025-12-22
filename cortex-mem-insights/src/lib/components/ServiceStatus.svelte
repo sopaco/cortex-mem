@@ -84,15 +84,15 @@
 
 		// 首先通过/api/system/status检测cortex-mem-service的可用性
 		let cortexMemServiceAvailable = false;
-		
+
 		try {
 			// 1. 通过insights server的/api/system/status检测cortex-mem-service
 			const serviceStartTime = Date.now();
-			
+
 			// 创建带超时的请求
 			const controller = new AbortController();
 			const timeoutId = setTimeout(() => controller.abort(), 5000); // 5秒超时
-			
+
 			try {
 				const serviceResponse = await fetch('/api/system/status', {
 					signal: controller.signal
@@ -158,7 +158,7 @@
 				const vectorStoreStartTime = Date.now();
 				const vectorStoreController = new AbortController();
 				const vectorStoreTimeoutId = setTimeout(() => vectorStoreController.abort(), 3000);
-				
+
 				try {
 					const vectorStoreResponse = await fetch('/api/system/vector-store/status', {
 						signal: vectorStoreController.signal
@@ -190,13 +190,13 @@
 					vectorStore.latency = Date.now() - vectorStoreStartTime;
 				}
 			})(),
-			
+
 			// 检测LLM服务状态
 			(async () => {
 				const llmStartTime = Date.now();
 				const llmController = new AbortController();
 				const llmTimeoutId = setTimeout(() => llmController.abort(), 3000);
-				
+
 				try {
 					const llmResponse = await fetch('/api/system/llm/status', {
 						signal: llmController.signal
@@ -252,7 +252,7 @@
 			console.warn('向量存储检测异常:', vectorStoreResult.reason);
 			vectorStore.status = 'disconnected';
 		}
-		
+
 		if (llmResult.status === 'rejected') {
 			console.warn('LLM服务检测异常:', llmResult.reason);
 			llmService.status = 'disconnected';
@@ -266,7 +266,7 @@
 		isDetectingServices = true;
 		try {
 			const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-			
+
 			// 初始化为检测中状态
 			localSystemStatus = {
 				cortexMemService: { status: 'detecting', latency: 0, lastCheck: timestamp },
@@ -389,9 +389,19 @@
 				class="px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors duration-200 flex items-center space-x-2"
 			>
 				{#if isDetectingServices}
-					<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-						<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+					<svg
+						class="animate-spin h-4 w-4 text-white"
+						xmlns="http://www.w3.org/2000/svg"
+						fill="none"
+						viewBox="0 0 24 24"
+					>
+						<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"
+						></circle>
+						<path
+							class="opacity-75"
+							fill="currentColor"
+							d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+						></path>
 					</svg>
 					<span>检测中...</span>
 				{:else}
@@ -404,49 +414,43 @@
 	<div class="space-y-4">
 		{#if localSystemStatus}
 			{#each Object.entries(localSystemStatus) as [service, data]}
-			{#if data && typeof data === 'object' && data.status}
-				<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
-					<div class="flex items-center justify-between mb-2">
-						<div class="flex items-center space-x-2">
-							<div class={`w-2 h-2 rounded-full ${getStatusLightColor(data.status)}`}></div>
-							<span class="font-medium text-gray-900 dark:text-white">
-								{service === 'cortexMemService'
-									? 'Cortex Memory Service'
-									: service === 'qdrant'
-										? 'Qdrant 数据库'
-										: 'LLM 服务'}
+				{#if data && typeof data === 'object' && data.status}
+					<div class="p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+						<div class="flex items-center justify-between mb-2">
+							<div class="flex items-center space-x-2">
+								<div class={`w-2 h-2 rounded-full ${getStatusLightColor(data.status)}`}></div>
+								<span class="font-medium text-gray-900 dark:text-white">
+									{service === 'cortexMemService'
+										? 'Cortex Memory Service'
+										: service === 'qdrant'
+											? 'Qdrant 数据库'
+											: 'LLM 服务'}
+								</span>
+							</div>
+							<span class={`text-sm font-medium ${getStatusColor(data.status)}`}>
+								{getStatusText(data.status)}
 							</span>
 						</div>
-						<span class={`text-sm font-medium ${getStatusColor(data.status)}`}>
-							{getStatusText(data.status)}
-						</span>
-					</div>
 
-					<div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
-						<div>
-							延迟: <span class="font-medium">
-								{#if data.status === 'detecting'}
-									<span class="animate-pulse">检测中...</span>
-								{:else}
-									{data.latency}ms
-								{/if}
-							</span>
+						<div class="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+							<div>
+								延迟: <span class="font-medium">
+									{#if data.status === 'detecting'}
+										<span class="animate-pulse">检测中...</span>
+									{:else}
+										{data.latency}ms
+									{/if}
+								</span>
+							</div>
 						</div>
-						{#if data.provider}
-							<div>提供商: <span class="font-medium">{data.provider}</span></div>
-						{/if}
-						{#if data.model}
-							<div>模型: <span class="font-medium text-xs">{data.model}</span></div>
+
+						{#if data.lastCheck}
+							<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+								最后检查: {data.lastCheck}
+							</div>
 						{/if}
 					</div>
-
-					{#if data.lastCheck}
-						<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-							最后检查: {data.lastCheck}
-						</div>
-					{/if}
-				</div>
-			{/if}
+				{/if}
 			{/each}
 		{/if}
 	</div>
@@ -454,7 +458,8 @@
 
 <style>
 	@keyframes pulse {
-		0%, 100% {
+		0%,
+		100% {
 			opacity: 1;
 		}
 		50% {

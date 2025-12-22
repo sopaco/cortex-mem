@@ -89,45 +89,33 @@ API_PORT=3001
 
 ## 部署
 
-### 使用 Docker
+cortex-mem-insights 支持多种部署方式,详见 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
-```dockerfile
-FROM oven/bun:latest
+### 快速部署 (推荐)
 
-WORKDIR /app
-
-# 复制依赖文件
-COPY package.json bun.lock ./
-RUN bun install --production
-
-# 复制源代码
-COPY . .
-
-# 构建前端
-RUN bun run build
-
-# 暴露端口
-EXPOSE 3000 3001
-
-# 启动服务
-CMD ["bun", "start:prod"]
-```
-
-### 使用 PM2
+使用独立可执行文件部署:
 
 ```bash
-# 安装 PM2
-npm install -g pm2
+# 1. 构建独立可执行文件
+bun run build:executable
 
-# 启动服务
-pm2 start start-prod.js --name cortex-mem-insights
-
-# 查看日志
-pm2 logs cortex-mem-insights
-
-# 停止服务
-pm2 stop cortex-mem-insights
+# 2. 运行
+./dist/cortex-mem-insights
 ```
+
+优点:
+- ✅ 单文件分发,包含所有依赖
+- ✅ 无需安装 Node.js 或 Bun
+- ✅ 启动速度快
+- ✅ 跨平台支持
+
+### 其他部署方式
+
+- **Bun 运行时**: 适合开发环境和频繁更新
+- **Docker 容器**: 适合云环境和 Kubernetes
+- **静态托管**: 前后端分离,CDN 加速
+
+详细说明请参考 [DEPLOYMENT.md](./DEPLOYMENT.md)。
 
 ## 开发指南
 
