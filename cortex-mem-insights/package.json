@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "build:executable": "bun run build-executable.js",
     "preview": "vite preview",
     "start": "bun run start.js",
     "start:prod": "bun run start-prod.js",
