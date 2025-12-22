@@ -12,11 +12,7 @@ from openai import OpenAI
 from prompts import ANSWER_PROMPT
 from tqdm import tqdm
 
-from .config_utils import (
-    validate_config,
-    check_openai_config,
-    get_config_value
-)
+from .config_utils import check_openai_config, get_config_value, validate_config
 
 load_dotenv()
 
@@ -29,65 +25,75 @@ class CortexMemSearch:
         self.output_path = output_path
         self.config_path = config_path or self._find_config_file()
         self.ANSWER_PROMPT = ANSWER_PROMPT
-        
+
         # Validate config file
         if not validate_config(self.config_path):
             raise ValueError(f"Invalid config file: {self.config_path}")
-        
+
         # Check OpenAI configuration
         if not check_openai_config(self.config_path):
-            raise ValueError(f"OpenAI configuration not properly set in {self.config_path}")
+            raise ValueError(
+                f"OpenAI configuration not properly set in {self.config_path}"
+            )
 
     def _find_config_file(self):
         """Find config.toml file in standard locations"""
         # Check current directory
         if os.path.exists("config.toml"):
             return "config.toml"
-        
+
         # Check parent directories
         current_dir = Path.cwd()
         for parent in current_dir.parents:
             config_file = parent / "config.toml"
             if config_file.exists():
                 return str(config_file)
-        
+
         # Check examples directory
-        examples_config = Path(__file__).parent.parent.parent.parent / "examples" / "config.toml"
+        examples_config = (
+            Path(__file__).parent.parent.parent.parent / "examples" / "config.toml"
+        )
         if examples_config.exists():
             return str(examples_config)
-        
+
         # Check project root
         project_root = Path(__file__).parent.parent.parent.parent.parent
         config_file = project_root / "config.toml"
         if config_file.exists():
             return str(config_file)
-        
+
         raise FileNotFoundError("Could not find config.toml file")
 
     def _run_cortex_mem_cli(self, args):
         """Run cortex-mem-cli command"""
         # First, ensure the project is built
-        build_cmd = ["cargo", "build", "--bin", "cortex-mem-cli"]
+        build_cmd = ["cargo", "build", "-p", "cortex-mem-cli"]
         subprocess.run(build_cmd, capture_output=True, text=True)
-        
-        # Run the CLI with original config file
-        cmd = ["cargo", "run", "--bin", "cortex-mem-cli", "--quiet", "--"]
-        cmd.extend(["--config", self.config_path])
+
+        # Use absolute path for config file to avoid path resolution issues
+        config_path = os.path.abspath(self.config_path)
+
+        # Run the CLI with absolute config file path
+        cmd = ["cargo", "run", "-p", "cortex-mem-cli", "--quiet", "--"]
+        cmd.extend(["--config", config_path])
         cmd.extend(args)
-        
+
         try:
-            # Use project root as working directory
-            project_root = Path(__file__).parent.parent.parent.parent.parent
+            # Use project root as working directory (examples/lomoco-evaluation -> cortex-mem)
+            project_root = Path(__file__).parent.parent.parent.parent
+            
+            # Use UTF-8 encoding to avoid GBK codec errors on Windows
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
+                cmd, 
+                capture_output=True, 
+                text=True, 
+                encoding='utf-8',
                 cwd=str(project_root)
             )
-            
+
             if result.returncode != 0:
                 print(f"CLI command failed: {result.stderr}")
-            
+
             return result.returncode == 0, result.stdout, result.stderr
         except Exception as e:
             print(f"Error running CLI: {e}")
@@ -97,22 +103,25 @@ class CortexMemSearch:
         """Search for memories using cortex-mem-cli"""
         start_time = time.time()
         retries = 0
-        
+
         while retries < max_retries:
             try:
                 # Build search command
                 args = [
                     "search",
-                    "--query", query,
-                    "--user-id", user_id,
-                    "--limit", str(self.top_k)
+                    "--query",
+                    query,
+                    "--user-id",
+                    user_id,
+                    "--limit",
+                    str(self.top_k),
                 ]
-                
+
                 success, stdout, stderr = self._run_cortex_mem_cli(args)
-                
+
                 if not success:
                     raise RuntimeError(f"Search failed: {stderr}")
-                
+
                 # Parse the output (assuming JSON output from CLI)
                 # This is a simplified parser - adjust based on actual CLI output format
                 memories = []
@@ -125,41 +134,53 @@ class CortexMemSearch:
                                 memory = {
                                     "memory": item.get("content", ""),
                                     "timestamp": item.get("created_at", ""),
-                                    "score": item.get("score", 0.0)
+                                    "score": item.get("score", 0.0),
                                 }
                                 memories.append(memory)
                     except json.JSONDecodeError:
                         # If not JSON, parse line by line
-                        lines = stdout.strip().split('\n')
+                        lines = stdout.strip().split("\n")
                         for line in lines:
                             if line.strip():
                                 memory = {
                                     "memory": line.strip(),
                                     "timestamp": "",
-                                    "score": 0.0
+                                    "score": 0.0,
                                 }
                                 memories.append(memory)
-                
+
                 end_time = time.time()
                 return memories, None, end_time - start_time
-                
+
             except Exception as e:
                 print(f"Search error: {e}, retrying...")
                 retries += 1
                 if retries >= max_retries:
                     raise e
                 time.sleep(retry_delay)
-        
+
         end_time = time.time()
         return [], None, end_time - start_time
 
-    def answer_question(self, speaker_1_user_id, speaker_2_user_id, question, answer, category):
+    def answer_question(
+        self, speaker_1_user_id, speaker_2_user_id, question, answer, category
+    ):
         """Answer a question using retrieved memories"""
-        speaker_1_memories, _, speaker_1_memory_time = self.search_memory(speaker_1_user_id, question)
-        speaker_2_memories, _, speaker_2_memory_time = self.search_memory(speaker_2_user_id, question)
+        speaker_1_memories, _, speaker_1_memory_time = self.search_memory(
+            speaker_1_user_id, question
+        )
+        speaker_2_memories, _, speaker_2_memory_time = self.search_memory(
+            speaker_2_user_id, question
+        )
 
-        search_1_memory = [f"{item.get('timestamp', '')}: {item['memory']}" for item in speaker_1_memories]
-        search_2_memory = [f"{item.get('timestamp', '')}: {item['memory']}" for item in speaker_2_memories]
+        search_1_memory = [
+            f"{item.get('timestamp', '')}: {item['memory']}"
+            for item in speaker_1_memories
+        ]
+        search_2_memory = [
+            f"{item.get('timestamp', '')}: {item['memory']}"
+            for item in speaker_2_memories
+        ]
 
         template = Template(self.ANSWER_PROMPT)
         answer_prompt = template.render(
@@ -167,7 +188,9 @@ class CortexMemSearch:
             speaker_2_user_id=speaker_2_user_id.split("_")[0],
             speaker_1_memories=json.dumps(search_1_memory, indent=4),
             speaker_2_memories=json.dumps(search_2_memory, indent=4),
-            speaker_1_graph_memories=json.dumps([], indent=4),  # Cortex Mem doesn't have graph memories
+            speaker_1_graph_memories=json.dumps(
+                [], indent=4
+            ),  # Cortex Mem doesn't have graph memories
             speaker_2_graph_memories=json.dumps([], indent=4),
             question=question,
         )
@@ -176,11 +199,11 @@ class CortexMemSearch:
         response = self.openai_client.chat.completions.create(
             model=os.getenv("MODEL", "gpt-3.5-turbo"),
             messages=[{"role": "system", "content": answer_prompt}],
-            temperature=0.0
+            temperature=0.0,
         )
         t2 = time.time()
         response_time = t2 - t1
-        
+
         return (
             response.choices[0].message.content,
             speaker_1_memories,
@@ -209,7 +232,9 @@ class CortexMemSearch:
             speaker_1_graph_memories,
             speaker_2_graph_memories,
             response_time,
-        ) = self.answer_question(speaker_a_user_id, speaker_b_user_id, question, answer, category)
+        ) = self.answer_question(
+            speaker_a_user_id, speaker_b_user_id, question, answer, category
+        )
 
         result = {
             "question": question,
@@ -240,7 +265,9 @@ class CortexMemSearch:
         with open(file_path, "r") as f:
             data = json.load(f)
 
-        for idx, item in tqdm(enumerate(data), total=len(data), desc="Processing conversations"):
+        for idx, item in tqdm(
+            enumerate(data), total=len(data), desc="Processing conversations"
+        ):
             qa = item["qa"]
             conversation = item["conversation"]
             speaker_a = conversation["speaker_a"]
@@ -250,9 +277,14 @@ class CortexMemSearch:
             speaker_b_user_id = f"{speaker_b}_{idx}"
 
             for question_item in tqdm(
-                qa, total=len(qa), desc=f"Processing questions for conversation {idx}", leave=False
+                qa,
+                total=len(qa),
+                desc=f"Processing questions for conversation {idx}",
+                leave=False,
             ):
-                result = self.process_question(question_item, speaker_a_user_id, speaker_b_user_id)
+                result = self.process_question(
+                    question_item, speaker_a_user_id, speaker_b_user_id
+                )
                 self.results[idx].append(result)
 
                 # Save results after each question is processed

@@ -15,7 +15,7 @@ members = [
     "cortex-mem-tools",
     "examples/cortex-mem-tars",
     "examples/cortex-mem-evaluation",
-    "examples/memory-tools-refactor"
+    ""
 ]
 
 [dependencies]
