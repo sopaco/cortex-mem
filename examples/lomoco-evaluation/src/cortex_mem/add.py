@@ -2,7 +2,7 @@ import json
 import os
 import subprocess
 import time
-from concurrent.futures import ThreadPoolExecutor
+# Removed ThreadPoolExecutor import - using sequential processing instead
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -203,11 +203,6 @@ class CortexMemAdd:
                 "No data loaded. Please set data_path and call load_data() first."
             )
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [
-                executor.submit(self.process_conversation, item, idx)
-                for idx, item in enumerate(self.data)
-            ]
-
-            for future in futures:
-                future.result()
+        # Process conversations sequentially to avoid concurrency issues
+        for idx, item in enumerate(self.data):
+            self.process_conversation(item, idx)
