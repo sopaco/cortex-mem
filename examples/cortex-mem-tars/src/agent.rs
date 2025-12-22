@@ -8,6 +8,7 @@ use rig::{
     tool::Tool,
 };
 
+use chrono::Local;
 use std::sync::Arc;
 
 // 导入日志重定向函数
@@ -37,14 +38,16 @@ pub async fn create_memory_agent(
         .tool(memory_tools.query_memory())
         .tool(memory_tools.list_memories())
         .tool(memory_tools.get_memory())
-        .preamble(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
+        .preamble(&format!(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
+
+此会话发生的初始时间：{current_time}
 
 你的工具:
 - CortexMemoryTool: 可以存储、搜索和检索记忆。支持以下操作:
-  * store: 存储新记忆
-  * search: 搜索相关记忆
-  * recall: 召回上下文
-  * get: 获取特定记忆
+  * store_memory: 存储新记忆
+  * query_memory: 搜索相关记忆
+  * list_memories: 获取一系列的记忆集合
+  * get_memory: 获取特定记忆
 
 重要指令:
 - 对话历史将作为上下文提供，请使用这些信息来理解当前的对话流程
@@ -52,10 +55,10 @@ pub async fn create_memory_agent(
 - 在需要时可以自主使用memory工具搜索其他相关记忆
 - 当用户提供新的重要信息时，可以主动使用memory工具存储
 - 保持对话的连贯性和一致性
-- 自然地融入记忆信息，避免显得刻意
+- 自然地融入记忆信息，避免刻意复述此前的记忆信息，关注当前的会话内容，记忆主要用于做隐式的逻辑与事实支撑
 - 专注于用户的需求和想要了解的信息，以及想要你做的事情
 
-记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#)
+记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#, current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S")))
         .build();
 
     Ok(completion_model)
