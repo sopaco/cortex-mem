@@ -93,31 +93,34 @@ Cortex Memory is a modular system composed of several crates, each with a specif
 
 ```mermaid
 graph TD
-    subgraph User Facing
-        CLI(cortex-mem-cli)
-        Insights(cortex-mem-insights)
+    subgraph "User Interfaces"
+        CLI["cortex-mem-cli"]
+        Insights["cortex-mem-insights"]
     end
 
-    subgraph Integration Layer
-        Service(cortex-mem-service)
-        MCP(cortex-mem-mcp)
-        Rig(cortex-mem-rig)
+    subgraph "APIs & Integrations"
+        Service["cortex-mem-service"]
+        MCP["cortex-mem-mcp"]
+        Rig["cortex-mem-rig"]
     end
     
-    subgraph Core
-        Core(cortex-mem-core)
+    subgraph "Core Engine"
+        Core["cortex-mem-core"]
     end
 
-    subgraph Backing Services
-        VectorDB[(Vector Database)]
-        LLM[(LLM Provider)]
+    subgraph "External Services"
+        VectorDB[("Vector Database")]
+        LLM[("LLM Provider")]
     end
 
-    CLI --> Service
+    %% Define Dependencies
     Insights --> Service
+
+    CLI --> Core
     Service --> Core
     MCP --> Core
     Rig --> Core
+    
     Core --> VectorDB
     Core --> LLM
 ```
