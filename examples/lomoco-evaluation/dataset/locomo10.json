@@ -1,0 +1,563 @@
+[
+  {
+    "conversation": {
+      "speaker_a": "Alice",
+      "speaker_b": "Bob",
+      "session_1": [
+        {"speaker": "Alice", "text": "Hi Bob! How was your weekend? Did you go hiking like you mentioned last week?"},
+        {"speaker": "Bob", "text": "Hey Alice! Yes, I went hiking at Yellowstone National Park. It was absolutely amazing!"},
+        {"speaker": "Alice", "text": "That sounds incredible! I've never been to Yellowstone. What was your favorite part?"},
+        {"speaker": "Bob", "text": "The geysers were fascinating, especially Old Faithful. Also saw some incredible wildlife - bears, wolves, and bison!"},
+        {"speaker": "Alice", "text": "Wow! I bet the photos are amazing. Did you bring your camera?"},
+        {"speaker": "Bob", "text": "Of course! Took hundreds of photos. I'm planning to share them on my photography blog next week."}
+      ],
+      "session_1_date_time": "2024-01-14 10:30:00",
+      "session_2": [
+        {"speaker": "Bob", "text": "Alice, I wanted to thank you for recommending that hiking gear. The boots were perfect!"},
+        {"speaker": "Alice", "text": "You're welcome! I'm glad they worked well for you. How long did the hiking trail take?"},
+        {"speaker": "Bob", "text": "About 8 hours total. My legs were sore for two days after, but it was so worth it."},
+        {"speaker": "Alice", "text": "Eight hours! You're much more adventurous than me. I usually stick to easy trails."}
+      ],
+      "session_2_date_time": "2024-01-15 14:20:00"
+    },
+    "qa": [
+      {
+        "question": "Where did Bob go hiking last weekend?",
+        "answer": "Yellowstone National Park",
+        "category": "1",
+        "evidence": ["Bob said 'I went hiking at Yellowstone National Park'"],
+        "adversarial_answer": "He went to a local park near his house."
+      },
+      {
+        "question": "What wildlife did Bob see during his hiking trip?",
+        "answer": "bears, wolves, and bison",
+        "category": "1",
+        "evidence": ["Bob mentioned 'saw some incredible wildlife - bears, wolves, and bison'"],
+        "adversarial_answer": "He only saw birds and squirrels."
+      },
+      {
+        "question": "How long did Bob's hiking trail take?",
+        "answer": "8 hours",
+        "category": "3",
+        "evidence": ["Bob said 'About 8 hours total'"],
+        "adversarial_answer": "It took about 4 hours."
+      },
+      {
+        "question": "What was Alice's reaction when Bob mentioned the geysers?",
+        "answer": "She thought it was incredible and said she's never been to Yellowstone",
+        "category": "2",
+        "evidence": ["Alice said 'That sounds incredible! I've never been to Yellowstone'"],
+        "adversarial_answer": "She was not interested in the geysers."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sarah",
+      "speaker_b": "Mike",
+      "session_1": [
+        {"speaker": "Sarah", "text": "Mike! I heard you're starting a new job at the tech company downtown. Congratulations!"},
+        {"speaker": "Mike", "text": "Thanks Sarah! I'm really excited about it. The salary is much better than my current job."},
+        {"speaker": "Sarah", "text": "That's wonderful! When do you start?"},
+        {"speaker": "Mike", "text": "February 1st. Just a few weeks away now. I've been preparing by studying their tech stack."},
+        {"speaker": "Sarah", "text": "That sounds intense! What programming languages will you be working with?"},
+        {"speaker": "Mike", "text": "Mainly Python and JavaScript, with some Go for backend services. Perfect for my skillset."}
+      ],
+      "session_1_date_time": "2024-01-10 16:45:00",
+      "session_2": [
+        {"speaker": "Mike", "text": "Sarah, I have to tell someone! I just got the offer letter today."},
+        {"speaker": "Sarah", "text": "That's amazing news! Did they offer you what you were hoping for?"},
+        {"speaker": "Mike", "text": "Even better! $85,000 a year, plus great benefits and stock options."},
+        {"speaker": "Sarah", "text": "Wow! That's a significant raise. You must be over the moon!"}
+      ],
+      "session_2_date_time": "2024-01-11 11:15:00"
+    },
+    "qa": [
+      {
+        "question": "When does Mike start his new job?",
+        "answer": "February 1st",
+        "category": "3",
+        "evidence": ["Mike said 'February 1st. Just a few weeks away now'"],
+        "adversarial_answer": "He starts in March."
+      },
+      {
+        "question": "What programming languages will Mike be using at his new job?",
+        "answer": "Python, JavaScript, and some Go",
+        "category": "1",
+        "evidence": ["Mike mentioned 'Mainly Python and JavaScript, with some Go for backend services'"],
+        "adversarial_answer": "He'll be using only Java and C++."
+      },
+      {
+        "question": "How much will Mike earn at his new job?",
+        "answer": "$85,000 a year",
+        "category": "1",
+        "evidence": ["Mike said '$85,000 a year, plus great benefits and stock options'"],
+        "adversarial_answer": "He'll earn $70,000 a year."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Emma",
+      "speaker_b": "David",
+      "session_1": [
+        {"speaker": "Emma", "text": "David, I'm so nervous about the job interview tomorrow!"},
+        {"speaker": "David", "text": "Hey, don't worry! You've prepared well. Remember, you have 5 years of experience in marketing."},
+        {"speaker": "Emma", "text": "I know, but it's at a Fortune 500 company. The competition will be fierce."},
+        {"speaker": "David", "text": "That's exactly why they need someone like you. Your portfolio speaks for itself."},
+        {"speaker": "Emma", "text": "Thanks for the confidence boost. What time should I leave home?"},
+        {"speaker": "David", "text": "I'd say leave by 8:30 AM. The interview is at 10:00, and you want to arrive 15 minutes early."}
+      ],
+      "session_1_date_time": "2024-01-20 20:00:00",
+      "session_2": [
+        {"speaker": "Emma", "text": "David! I got the job! They called me this afternoon."},
+        {"speaker": "David", "text": "Emma, that's fantastic! I knew you'd ace it! When do you start?"},
+        {"speaker": "Emma", "text": "March 1st. I'll be the new Marketing Manager with a team of 8 people under me."},
+        {"speaker": "David", "text": "That's incredible! A promotion already. We should celebrate!"},
+        {"speaker": "Emma", "text": "Absolutely! Let's go to that Italian restaurant you love next Friday."}
+      ],
+      "session_2_date_time": "2024-01-21 18:30:00"
+    },
+    "qa": [
+      {
+        "question": "What time should Emma leave for her job interview?",
+        "answer": "8:30 AM",
+        "category": "3",
+        "evidence": ["David said 'I'd say leave by 8:30 AM'"],
+        "adversarial_answer": "She should leave at 9:00 AM."
+      },
+      {
+        "question": "What position did Emma get hired for?",
+        "answer": "Marketing Manager",
+        "category": "1",
+        "evidence": ["Emma said 'I'll be the new Marketing Manager'"],
+        "adversarial_answer": "She got hired as a Marketing Coordinator."
+      },
+      {
+        "question": "How many people will be on Emma's team?",
+        "answer": "8 people",
+        "category": "1",
+        "evidence": ["Emma mentioned 'with a team of 8 people under me'"],
+        "adversarial_answer": "She'll manage a team of 5 people."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Lisa",
+      "speaker_b": "Tom",
+      "session_1": [
+        {"speaker": "Lisa", "text": "Tom, I'm thinking about adopting a dog. What do you think?"},
+        {"speaker": "Tom", "text": "That's a great idea! What kind of dog were you thinking about?"},
+        {"speaker": "Lisa", "text": "I've always loved Golden Retrievers. They're so friendly and loyal."},
+        {"speaker": "Tom", "text": "Perfect choice! My neighbor has one and it's the sweetest dog. Great with kids too."},
+        {"speaker": "Lisa", "text": "That's important since my nephew visits often. Do you know any good shelters?"},
+        {"speaker": "Tom", "text": "There's a great no-kill shelter on Oak Street. They have several Goldens available."}
+      ],
+      "session_1_date_time": "2024-01-05 14:00:00",
+      "session_2": [
+        {"speaker": "Lisa", "text": "Tom! I went to the shelter yesterday and fell in love with a Golden named Buddy."},
+        {"speaker": "Tom", "text": "That's wonderful! Did you adopt him?"},
+        {"speaker": "Lisa", "text": "Yes! I filled out all the paperwork. I can pick him up this Saturday."},
+        {"speaker": "Tom", "text": "I'm so happy for you! Buddy sounds like a perfect name."},
+        {"speaker": "Lisa", "text": "He is! He's 3 years old and already house-trained. The shelter said he's very gentle."}
+      ],
+      "session_2_date_time": "2024-01-06 16:30:00",
+      "session_3": [
+        {"speaker": "Tom", "text": "How's Buddy settling in?"},
+        {"speaker": "Lisa", "text": "Amazingly well! He already knows basic commands and loves playing fetch."},
+        {"speaker": "Tom", "text": "That's fantastic! Does he get along with other dogs?"},
+        {"speaker": "Lisa", "text": "The shelter mentioned he's great with other dogs. We should arrange a playdate with my neighbor's Golden!"}
+      ],
+      "session_3_date_time": "2024-01-10 12:15:00"
+    },
+    "qa": [
+      {
+        "question": "Where is the shelter Tom recommended?",
+        "answer": "on Oak Street",
+        "category": "1",
+        "evidence": ["Tom said 'There's a great no-kill shelter on Oak Street'"],
+        "adversarial_answer": "It's on Pine Street."
+      },
+      {
+        "question": "What is the name of the dog Lisa adopted?",
+        "answer": "Buddy",
+        "category": "1",
+        "evidence": ["Lisa said 'I fell in love with a Golden named Buddy'"],
+        "adversarial_answer": "She named him Max."
+      },
+      {
+        "question": "How old is Buddy?",
+        "answer": "3 years old",
+        "category": "3",
+        "evidence": ["Lisa mentioned 'He's 3 years old'"],
+        "adversarial_answer": "He's 2 years old."
+      },
+      {
+        "question": "When can Lisa pick up Buddy?",
+        "answer": "this Saturday",
+        "category": "3",
+        "evidence": ["Lisa said 'I can pick him up this Saturday'"],
+        "adversarial_answer": "She can pick him up next week."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Kevin",
+      "speaker_b": "Rachel",
+      "session_1": [
+        {"speaker": "Kevin", "text": "Rachel, I finally finished my master's degree in Computer Science!"},
+        {"speaker": "Rachel", "text": "Kevin, that's incredible! I'm so proud of you. Which university?"},
+        {"speaker": "Kevin", "text": "Stanford University. It took me 3 years of night classes while working full-time."},
+        {"speaker": "Rachel", "text": "That's amazing dedication! What was your thesis on?"},
+        {"speaker": "Kevin", "text": "Machine learning applications in medical diagnosis. Specifically, early detection of skin cancer."},
+        {"speaker": "Rachel", "text": "That's fascinating and so important! Are you planning to work in healthcare tech?"},
+        {"speaker": "Kevin", "text": "Actually, I've been offered a position at Google working on their AI health initiatives."}
+      ],
+      "session_1_date_time": "2024-01-12 19:30:00",
+      "session_2": [
+        {"speaker": "Rachel", "text": "Kevin! I heard you got the Google job. Congratulations!"},
+        {"speaker": "Kevin", "text": "Thanks! I'm starting next Monday. The salary is $120,000 plus bonuses."},
+        {"speaker": "Rachel", "text": "Wow! That's amazing compensation. Where will you be working from?"},
+        {"speaker": "Kevin", "text": "Mountain View office, but they also offered remote work options."},
+        {"speaker": "Rachel", "text": "Perfect! You can finally move back closer to family."}
+      ],
+      "session_2_date_time": "2024-01-15 15:45:00"
+    },
+    "qa": [
+      {
+        "question": "Where did Kevin get his master's degree?",
+        "answer": "Stanford University",
+        "category": "1",
+        "evidence": ["Kevin said 'Stanford University'"],
+        "adversarial_answer": "He got it from UC Berkeley."
+      },
+      {
+        "question": "What was Kevin's thesis about?",
+        "answer": "Machine learning applications in medical diagnosis, specifically early detection of skin cancer",
+        "category": "1",
+        "evidence": ["Kevin mentioned 'Machine learning applications in medical diagnosis. Specifically, early detection of skin cancer'"],
+        "adversarial_answer": "It was about artificial intelligence in gaming."
+      },
+      {
+        "question": "How long did Kevin take to complete his master's degree?",
+        "answer": "3 years",
+        "category": "3",
+        "evidence": ["Kevin said 'It took me 3 years of night classes'"],
+        "adversarial_answer": "It took him 2 years."
+      },
+      {
+        "question": "What is Kevin's new salary?",
+        "answer": "$120,000 plus bonuses",
+        "category": "1",
+        "evidence": ["Kevin mentioned 'The salary is $120,000 plus bonuses'"],
+        "adversarial_answer": "He'll earn $100,000 a year."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maria",
+      "speaker_b": "Carlos",
+      "session_1": [
+        {"speaker": "Maria", "text": "Carlos, I'm planning my wedding for June 15th. Can you be my maid of honor?"},
+        {"speaker": "Carlos", "text": "Maria, of course! I'm honored. What do you need me to help with?"},
+        {"speaker": "Maria", "text": "First, we need to choose the venue. I'm thinking about the botanical gardens or the beach resort."},
+        {"speaker": "Carlos", "text": "Both sound beautiful! How many guests are you expecting?"},
+        {"speaker": "Maria", "text": "About 150 people. Mostly family and close friends."},
+        {"speaker": "Carlos", "text": "That's a lovely size. The botanical gardens would be perfect for that many guests."}
+      ],
+      "session_1_date_time": "2024-01-08 13:20:00",
+      "session_2": [
+        {"speaker": "Maria", "text": "Carlos, we decided on the botanical gardens! The wedding coordinator is amazing."},
+        {"speaker": "Carlos", "text": "Perfect choice! When do you need to finalize the guest list?"},
+        {"speaker": "Maria", "text": "Send invitations by March 1st, RSVP by April 15th."},
+        {"speaker": "Carlos", "text": "I'll help you design the invitations. What colors are you thinking?"},
+        {"speaker": "Maria", "text": "Lavender and white, with gold accents. Very elegant and romantic."},
+        {"speaker": "Carlos", "text": "That sounds absolutely stunning! I'll start working on the designs tonight."}
+      ],
+      "session_2_date_time": "2024-01-09 17:30:00",
+      "session_3": [
+        {"speaker": "Carlos", "text": "Maria, I finished the invitation designs! Want to see them?"},
+        {"speaker": "Maria", "text": "Yes! I'm so excited. Show me!"},
+        {"speaker": "Carlos", "text": "Here they are! I used watercolor flowers and elegant script for your names."},
+        {"speaker": "Maria", "text": "Carlos, they're absolutely perfect! The lavender roses are beautiful."},
+        {"speaker": "Carlos", "text": "I'm so glad you love them. Should I start printing them?"},
+        {"speaker": "Maria", "text": "Yes! And can you address them? I trust your handwriting more than mine!"}
+      ],
+      "session_3_date_time": "2024-01-12 11:45:00"
+    },
+    "qa": [
+      {
+        "question": "What date is Maria's wedding?",
+        "answer": "June 15th",
+        "category": "3",
+        "evidence": ["Maria said 'I'm planning my wedding for June 15th'"],
+        "adversarial_answer": "Her wedding is on July 10th."
+      },
+      {
+        "question": "How many guests is Maria expecting?",
+        "answer": "about 150 people",
+        "category": "1",
+        "evidence": ["Maria mentioned 'About 150 people. Mostly family and close friends'"],
+        "adversarial_answer": "She's expecting 200 guests."
+      },
+      {
+        "question": "When should guests RSVP?",
+        "answer": "April 15th",
+        "category": "3",
+        "evidence": ["Maria said 'RSVP by April 15th'"],
+        "adversarial_answer": "Guests should RSVP by March 15th."
+      },
+      {
+        "question": "What colors is Maria using for her wedding?",
+        "answer": "lavender and white, with gold accents",
+        "category": "1",
+        "evidence": ["Maria mentioned 'Lavender and white, with gold accents'"],
+        "adversarial_answer": "She's using pink and blue colors."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Jennifer",
+      "speaker_b": "Mark",
+      "session_1": [
+        {"speaker": "Jennifer", "text": "Mark, I just got accepted to medical school! NYU Grossman School of Medicine."},
+        {"speaker": "Mark", "text": "Jen, that's incredible news! I'm so proud of you. When do you start?"},
+        {"speaker": "Jennifer", "text": "August 2024. It's a 4-year program, so I'll be a doctor by 2028."},
+        {"speaker": "Mark", "text": "That's amazing! What specialty are you thinking about?"},
+        {"speaker": "Jennifer", "text": "I'm really interested in pediatric cardiology. I love working with children."},
+        {"speaker": "Mark", "text": "That sounds perfect for you. You'll make an excellent doctor."}
+      ],
+      "session_1_date_time": "2024-01-16 14:10:00",
+      "session_2": [
+        {"speaker": "Jennifer", "text": "Mark, I got my MCAT scores back! 521 out of 528."},
+        {"speaker": "Mark", "text": "Jen, that's an amazing score! You must be thrilled."},
+        {"speaker": "Jennifer", "text": "I am! It took months of studying, but it paid off."},
+        {"speaker": "Mark", "text": "You deserve it. You're going to help so many people as a doctor."},
+        {"speaker": "Jennifer", "text": "Thank you for supporting me through this journey. It means everything."}
+      ],
+      "session_2_date_time": "2024-01-17 16:30:00"
+    },
+    "qa": [
+      {
+        "question": "When does Jennifer start medical school?",
+        "answer": "August 2024",
+        "category": "3",
+        "evidence": ["Jennifer said 'August 2024'"],
+        "adversarial_answer": "She starts in September 2024."
+      },
+      {
+        "question": "How long is Jennifer's medical school program?",
+        "answer": "4 years",
+        "category": "3",
+        "evidence": ["Jennifer mentioned 'It's a 4-year program'"],
+        "adversarial_answer": "It's a 3-year program."
+      },
+      {
+        "question": "What was Jennifer's MCAT score?",
+        "answer": "521 out of 528",
+        "category": "1",
+        "evidence": ["Jennifer said '521 out of 528'"],
+        "adversarial_answer": "She scored 515 out of 528."
+      },
+      {
+        "question": "What medical specialty is Jennifer interested in?",
+        "answer": "pediatric cardiology",
+        "category": "1",
+        "evidence": ["Jennifer mentioned 'I'm really interested in pediatric cardiology'"],
+        "adversarial_answer": "She wants to specialize in oncology."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Alex",
+      "speaker_b": "Sophie",
+      "session_1": [
+        {"speaker": "Alex", "text": "Sophie, I'm thinking about starting my own bakery business. What do you think?"},
+        {"speaker": "Sophie", "text": "Alex, that's exciting! You've always been amazing at baking. Where would you open it?"},
+        {"speaker": "Alex", "text": "I'm considering downtown near the university. Lots of foot traffic from students."},
+        {"speaker": "Sophie", "text": "Great idea! Students love fresh pastries and coffee. What's your business plan?"},
+        {"speaker": "Alex", "text": "I'll start with artisan breads, croissants, and custom cakes. I already have some regular customers."},
+        {"speaker": "Sophie", "text": "That sounds perfect! Have you looked into the startup costs?"}
+      ],
+      "session_1_date_time": "2024-01-03 10:15:00",
+      "session_2": [
+        {"speaker": "Alex", "text": "Sophie, I found the perfect location! Small space, great rent, perfect for starting out."},
+        {"speaker": "Sophie", "text": "That's wonderful! Did you sign the lease?"},
+        {"speaker": "Alex", "text": "Yes! I'm opening 'Rising Dough Bakery' in March. I just need to get the equipment."},
+        {"speaker": "Sophie", "text": "I love the name! What equipment do you still need?"},
+        {"speaker": "Alex", "text": "Industrial mixer, oven, and display cases. Total cost around $15,000."},
+        {"speaker": "Sophie", "text": "That's reasonable for a bakery startup. Congratulations, Alex!"}
+      ],
+      "session_2_date_time": "2024-01-04 15:20:00",
+      "session_3": [
+        {"speaker": "Alex", "text": "Sophie, the bakery opens next week! I'm so nervous and excited."},
+        {"speaker": "Sophie", "text": "You'll do amazing! I've been telling everyone about your baking skills."},
+        {"speaker": "Alex", "text": "Thank you! I've been practicing all week. My chocolate croissants are getting really good."},
+        {"speaker": "Sophie", "text": "I can't wait to try them! What time do you open?"},
+        {"speaker": "Alex", "text": "7 AM Monday through Saturday. Sunday will be my day off for family time."}
+      ],
+      "session_3_date_time": "2024-02-25 18:45:00"
+    },
+    "qa": [
+      {
+        "question": "What is the name of Alex's bakery?",
+        "answer": "Rising Dough Bakery",
+        "category": "1",
+        "evidence": ["Alex said 'I'm opening Rising Dough Bakery'"],
+        "adversarial_answer": "It's called Fresh Start Bakery."
+      },
+      {
+        "question": "When does Alex's bakery open?",
+        "answer": "March",
+        "category": "3",
+        "evidence": ["Alex mentioned 'I'm opening Rising Dough Bakery in March'"],
+        "adversarial_answer": "It opens in April."
+      },
+      {
+        "question": "What time does the bakery open daily?",
+        "answer": "7 AM",
+        "category": "3",
+        "evidence": ["Alex said '7 AM Monday through Saturday'"],
+        "adversarial_answer": "It opens at 8 AM."
+      },
+      {
+        "question": "What are Alex's specialities?",
+        "answer": "artisan breads, croissants, and custom cakes",
+        "category": "1",
+        "evidence": ["Alex mentioned 'I'll start with artisan breads, croissants, and custom cakes'"],
+        "adversarial_answer": "She specializes in cookies and muffins."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Diana",
+      "speaker_b": "Robert",
+      "session_1": [
+        {"speaker": "Diana", "text": "Robert, I'm thinking about learning a new language. Spanish or French?"},
+        {"speaker": "Robert", "text": "Both are beautiful languages! Why not take a trip to decide?"},
+        {"speaker": "Diana", "text": "That's actually a great idea. I could practice while traveling."},
+        {"speaker": "Robert", "text": "Exactly! Spain in spring or France in summer would be perfect."},
+        {"speaker": "Diana", "text": "I'm leaning toward Spain. I love the culture and the food."},
+        {"speaker": "Robert", "text": "Perfect choice! I have a friend who lives in Barcelona. I can introduce you."}
+      ],
+      "session_1_date_time": "2024-01-11 12:30:00",
+      "session_2": [
+        {"speaker": "Diana", "text": "Robert, I booked my flight to Barcelona! Leaving March 15th."},
+        {"speaker": "Robert", "text": "Diana, that's fantastic! My friend Carlos is excited to show you around."},
+        {"speaker": "Diana", "text": "I can't wait! I'm taking intensive Spanish classes twice a week."},
+        {"speaker": "Robert", "text": "That's a smart approach. How long are you staying?"},
+        {"speaker": "Diana", "text": "Three weeks. I'm staying in a small hotel near La Rambla."},
+        {"speaker": "Robert", "text": "Perfect location! You'll love the atmosphere there."}
+      ],
+      "session_2_date_time": "2024-01-13 16:45:00",
+      "session_3": [
+        {"speaker": "Robert", "text": "Diana, how was your trip to Barcelona?"},
+        {"speaker": "Diana", "text": "It was incredible! My Spanish improved so much, and Carlos was the perfect guide."},
+        {"speaker": "Robert", "text": "What was your favorite part?"},
+        {"speaker": "Diana", "text": "Sagrada Familia and the Gothic Quarter. Also tried authentic paella for the first time!"},
+        {"speaker": "Robert", "text": "That sounds amazing! Are you planning to go back?"},
+        {"speaker": "Diana", "text": "Absolutely! I want to visit Madrid and Valencia too. Maybe next year."}
+      ],
+      "session_3_date_time": "2024-04-02 14:20:00"
+    },
+    "qa": [
+      {
+        "question": "When is Diana leaving for Barcelona?",
+        "answer": "March 15th",
+        "category": "3",
+        "evidence": ["Diana said 'Leaving March 15th'"],
+        "adversarial_answer": "She leaves on March 20th."
+      },
+      {
+        "question": "How long is Diana staying in Barcelona?",
+        "answer": "Three weeks",
+        "category": "3",
+        "evidence": ["Diana mentioned 'Three weeks'"],
+        "adversarial_answer": "She's staying for two weeks."
+      },
+      {
+        "question": "Where is Diana staying in Barcelona?",
+        "answer": "near La Rambla",
+        "category": "1",
+        "evidence": ["Diana said 'I'm staying in a small hotel near La Rambla'"],
+        "adversarial_answer": "She's staying near the beach."
+      },
+      {
+        "question": "What did Diana try for the first time in Spain?",
+        "answer": "authentic paella",
+        "category": "1",
+        "evidence": ["Diana mentioned 'tried authentic paella for the first time'"],
+        "adversarial_answer": "She tried tapas for the first time."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Hannah",
+      "speaker_b": "Tyler",
+      "session_1": [
+        {"speaker": "Hannah", "text": "Tyler, I'm starting a podcast about sustainable living. What do you think?"},
+        {"speaker": "Tyler", "text": "Hannah, that's a great idea! It's such an important topic. What's your first episode about?"},
+        {"speaker": "Hannah", "text": "Zero-waste living. I've been practicing it for two years now."},
+        {"speaker": "Tyler", "text": "That's perfect! You have so much practical experience to share."},
+        {"speaker": "Hannah", "text": "I'm planning to interview experts too. Do you know anyone in environmental science?"},
+        {"speaker": "Tyler", "text": "My sister Sarah is a marine biologist. She might be interested!"}
+      ],
+      "session_1_date_time": "2024-01-07 09:30:00",
+      "session_2": [
+        {"speaker": "Hannah", "text": "Tyler, I launched my podcast! It's called 'Green Life Conversations'."},
+        {"speaker": "Tyler", "text": "Hannah, that's amazing! How many episodes do you have?"},
+        {"speaker": "Hannah", "text": "Three so far. Zero-waste living, organic gardening, and renewable energy."},
+        {"speaker": "Tyler", "text": "That's impressive content! Where can people listen?"},
+        {"speaker": "Hannah", "text": "Spotify, Apple Podcasts, and YouTube. I'm hoping to get 1,000 subscribers by June."},
+        {"speaker": "Tyler", "text": "With your expertise and passion, I'm sure you'll exceed that goal!"}
+      ],
+      "session_2_date_time": "2024-01-19 20:15:00",
+      "session_3": [
+        {"speaker": "Tyler", "text": "Hannah, I listened to your latest episode about renewable energy. It was fascinating!"},
+        {"speaker": "Hannah", "text": "Thank you! I interviewed a solar panel expert. Did you learn anything new?"},
+        {"speaker": "Tyler", "text": "I had no idea solar panels could last 25-30 years! I'm considering installing them."},
+        {"speaker": "Hannah", "text": "They're a great investment! I can connect you with the expert I interviewed."},
+        {"speaker": "Tyler", "text": "That would be incredible! What's your subscriber count now?"},
+        {"speaker": "Hannah", "text": "850 and growing every day! The feedback has been so positive."}
+      ],
+      "session_3_date_time": "2024-02-10 17:40:00"
+    },
+    "qa": [
+      {
+        "question": "What is the name of Hannah's podcast?",
+        "answer": "Green Life Conversations",
+        "category": "1",
+        "evidence": ["Hannah said 'It's called Green Life Conversations'"],
+        "adversarial_answer": "It's called Sustainable Living Podcast."
+      },
+      {
+        "question": "How long has Hannah been practicing zero-waste living?",
+        "answer": "two years",
+        "category": "3",
+        "evidence": ["Hannah mentioned 'I've been practicing it for two years now'"],
+        "adversarial_answer": "She's been doing it for one year."
+      },
+      {
+        "question": "How many subscribers does Hannah have?",
+        "answer": "850",
+        "category": "1",
+        "evidence": ["Hannah said '850 and growing every day'"],
+        "adversarial_answer": "She has 700 subscribers."
+      },
+      {
+        "question": "What is Tyler's sister's profession?",
+        "answer": "marine biologist",
+        "category": "1",
+        "evidence": ["Tyler mentioned 'My sister Sarah is a marine biologist'"],
+        "adversarial_answer": "She's an environmental scientist."
+      }
+    ]
+  }
+]
