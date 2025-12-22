@@ -40,7 +40,7 @@ pub async fn create_memory_agent(
         .tool(memory_tools.get_memory())
         .preamble(&format!(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
 
-当前时间：{current_time}
+此会话发生的初始时间：{current_time}
 
 你的工具:
 - CortexMemoryTool: 可以存储、搜索和检索记忆。支持以下操作:
