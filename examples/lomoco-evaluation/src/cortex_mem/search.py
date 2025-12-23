@@ -3,10 +3,8 @@ import os
 import subprocess
 import time
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from dotenv import load_dotenv
 from jinja2 import Template
 from openai import OpenAI
 from prompts import ANSWER_PROMPT
@@ -14,13 +12,10 @@ from tqdm import tqdm
 
 from .config_utils import check_openai_config, get_config_value, validate_config
 
-load_dotenv()
-
 
 class CortexMemSearch:
     def __init__(self, output_path="results.json", top_k=10, config_path=None):
         self.top_k = top_k
-        self.openai_client = OpenAI()
         self.results = defaultdict(list)
         self.output_path = output_path
         self.config_path = config_path or self._find_config_file()
@@ -35,6 +30,21 @@ class CortexMemSearch:
             raise ValueError(
                 f"OpenAI configuration not properly set in {self.config_path}"
             )
+
+        # Initialize OpenAI client from config.toml
+        api_key = get_config_value(self.config_path, "llm", "api_key")
+        api_base = get_config_value(self.config_path, "llm", "api_base_url")
+        self.llm_model = get_config_value(self.config_path, "llm", "model_efficient", "gpt-3.5-turbo")
+        
+        # Create HTTP client with SSL verification disabled for internal APIs
+        import httpx
+        http_client = httpx.Client(verify=False)
+        
+        self.openai_client = OpenAI(
+            api_key=api_key,
+            base_url=api_base,
+            http_client=http_client
+        )
 
     def _find_config_file(self):
         """Find config.toml file in standard locations"""
@@ -166,12 +176,18 @@ class CortexMemSearch:
         self, speaker_1_user_id, speaker_2_user_id, question, answer, category
     ):
         """Answer a question using retrieved memories"""
+        # Sequential search to avoid rate limiting
         speaker_1_memories, _, speaker_1_memory_time = self.search_memory(
             speaker_1_user_id, question
         )
+        # Add a small delay between searches to avoid rate limiting
+        time.sleep(2)
+        
         speaker_2_memories, _, speaker_2_memory_time = self.search_memory(
             speaker_2_user_id, question
         )
+        # Add a small delay before LLM call
+        time.sleep(2)
 
         search_1_memory = [
             f"{item.get('timestamp', '')}: {item['memory']}"
@@ -197,7 +213,7 @@ class CortexMemSearch:
 
         t1 = time.time()
         response = self.openai_client.chat.completions.create(
-            model=os.getenv("MODEL", "gpt-3.5-turbo"),
+            model=self.llm_model,
             messages=[{"role": "system", "content": answer_prompt}],
             temperature=0.0,
         )

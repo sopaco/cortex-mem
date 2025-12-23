@@ -5,9 +5,68 @@ from collections import defaultdict
 import numpy as np
 from openai import OpenAI
 
-from mem0.memory.utils import extract_json
 
-client = OpenAI()
+def extract_json(text):
+    """Extract JSON from text response."""
+    # Try to find JSON in the text
+    import re
+    
+    # First try to parse the entire text as JSON
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    
+    # Try to find JSON object in the text
+    json_match = re.search(r'\{[^{}]*\}', text)
+    if json_match:
+        try:
+            return json.loads(json_match.group())
+        except json.JSONDecodeError:
+            pass
+    
+    # If all else fails, return the original text
+    return text
+
+
+# Initialize OpenAI client from config.toml
+def get_openai_client():
+    """Get OpenAI client configured from config.toml"""
+    import os
+    from pathlib import Path
+    import toml
+    import httpx
+    
+    # Find config.toml
+    config_path = None
+    current_dir = Path(__file__).parent.parent
+    
+    if (current_dir / "config.toml").exists():
+        config_path = current_dir / "config.toml"
+    else:
+        # Check parent directories
+        for parent in current_dir.parents:
+            if (parent / "config.toml").exists():
+                config_path = parent / "config.toml"
+                break
+    
+    if not config_path:
+        raise FileNotFoundError("Could not find config.toml file")
+    
+    # Load config
+    config = toml.load(config_path)
+    
+    # Create HTTP client with SSL verification disabled for internal APIs
+    http_client = httpx.Client(verify=False)
+    
+    return OpenAI(
+        api_key=config['llm']['api_key'],
+        base_url=config['llm']['api_base_url'],
+        http_client=http_client
+    )
+
+
+client = get_openai_client()
 
 ACCURACY_PROMPT = """
 Your task is to label an answer to a question as ’CORRECT’ or ’WRONG’. You will be given the following data:
@@ -38,8 +97,26 @@ Just return the label CORRECT or WRONG in a json format with the key as "label".
 
 def evaluate_llm_judge(question, gold_answer, generated_answer):
     """Evaluate the generated answer against the gold answer using an LLM judge."""
+    import toml
+    from pathlib import Path
+    
+    # Get model from config.toml
+    config_path = None
+    current_dir = Path(__file__).parent.parent
+    
+    if (current_dir / "config.toml").exists():
+        config_path = current_dir / "config.toml"
+    else:
+        for parent in current_dir.parents:
+            if (parent / "config.toml").exists():
+                config_path = parent / "config.toml"
+                break
+    
+    config = toml.load(config_path)
+    model = config['llm'].get('model_efficient', 'gpt-4o-mini')
+    
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=model,
         messages=[
             {
                 "role": "user",
@@ -51,6 +128,11 @@ def evaluate_llm_judge(question, gold_answer, generated_answer):
         response_format={"type": "json_object"},
         temperature=0.0,
     )
+    
+    # Add delay to avoid rate limiting
+    import time
+    time.sleep(0.5)
+    
     label = json.loads(extract_json(response.choices[0].message.content))["label"]
     return 1 if label == "CORRECT" else 0
 

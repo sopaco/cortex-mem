@@ -132,9 +132,46 @@ graph TD
 - <strong>`cortex-mem-mcp` / `cortex-mem-rig`</strong>: Specialized adapter crates to integrate Cortex Memory as a "tool" within various AI agent frameworks.
 - <strong>`cortex-mem-config`</strong>: Shared configuration and type definitions used across the ecosystem.
 
+# 🖼️ Observability Tools​ Integration
+
+Cortex Memory includes a powerful web-based dashboard (`cortex-mem-insights`) that provides real-time monitoring, analytics and management capabilities. Here's what you can expect to see:
+
+<p align="center">
+  <img src="./assets/snapshots/insights/snapshot_dashboard.png" alt="Cortex Memory Dashboard" width="800">
+</p>
+
+<p align="center">
+  <em><strong>Interactive Dashboard:</strong> Get an overview of memory usage, system health, and activity statistics</em>
+</p>
+
+<div style="display: flex; justify-content: space-around; margin: 30px 0;">
+  <div style="text-align: center; width: 48%;">
+    <img src="./assets/snapshots/insights/snapshot_memories.png" alt="Memory Management" width="400">
+    <p><strong>Memory Management:</strong> View and manage individual memory records</p>
+  </div>
+  <div style="text-align: center; width: 48%;">
+    <img src="./assets/snapshots/insights/snapshot_optimization.png" alt="Optimization Panel" width="400">
+    <p><strong>Optimization Tools:</strong> Analyze and optimize memory quality</p>
+  </div>
+</div>
+
+<div style="display: flex; justify-content: space-around; margin: 30px 0;">
+  <div style="text-align: center; width: 48%;">
+    <img src="./assets/snapshots/insights/snapshot_monitor.png" alt="System Monitor" width="400">
+    <p><strong>System Monitor:</strong> Monitor memory performance and activity</p>
+  </div>
+  <div style="text-align: center; width: 48%;">
+    <img src="./assets/snapshots/insights/snapshot_analytics.png" alt="Analytics" width="400">
+    <p><strong>Analytics Dashboard:</strong> Detailed insights and trends over time</p>
+  </div>
+</div>
+
+These visual tools help you understand how Cortex Memory is performing and how your AI agent's memory is evolving over time.
+
 # 🧠 How It Works
 
 Cortex Memory uses a sophisticated pipeline to process and manage memories, orchestrated by the `MemoryManager` in `cortex-mem-core`.
+
 
 ```mermaid
 sequenceDiagram
