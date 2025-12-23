@@ -5,12 +5,9 @@ import time
 # Removed ThreadPoolExecutor import - using sequential processing instead
 from pathlib import Path
 
-from dotenv import load_dotenv
 from tqdm import tqdm
 
 from .config_utils import check_openai_config, get_config_value, validate_config
-
-load_dotenv()
 
 
 class CortexMemAdd:
