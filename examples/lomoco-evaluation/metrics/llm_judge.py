@@ -8,13 +8,17 @@ from openai import OpenAI
 
 def extract_json(text):
     """Extract JSON from text response."""
+    # If already a dict, return it directly
+    if isinstance(text, dict):
+        return text
+    
     # Try to find JSON in the text
     import re
     
     # First try to parse the entire text as JSON
     try:
         return json.loads(text)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, TypeError):
         pass
     
     # Try to find JSON object in the text
@@ -133,7 +137,11 @@ def evaluate_llm_judge(question, gold_answer, generated_answer):
     import time
     time.sleep(0.5)
     
-    label = json.loads(extract_json(response.choices[0].message.content))["label"]
+    # Get the response content and parse it
+    content = response.choices[0].message.content
+    result = extract_json(content)
+    
+    label = result["label"]
     return 1 if label == "CORRECT" else 0
 
 
