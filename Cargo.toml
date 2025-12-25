@@ -13,9 +13,7 @@ members = [
     "cortex-mem-config",
     "cortex-mem-mcp",
     "cortex-mem-tools",
-    "examples/cortex-mem-tars",
-    "examples/cortex-mem-evaluation",
-    ""
+    "examples/cortex-mem-tars"
 ]
 
 [dependencies]
