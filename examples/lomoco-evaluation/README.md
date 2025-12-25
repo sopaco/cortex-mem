@@ -1,37 +1,40 @@
-# LOCOMO Evaluation - Cortex Mem 评估系统
+# Cortex Mem 评估系统
 
 ## 项目概述
 
-本项目是专为评估 Cortex Mem 记忆管理系统的性能而设计的评估框架。支持处理 LOCOMO (LoCoMo: Long-Context Conversations) 数据集，提供记忆添加、搜索和问答生成的完整评估流程。
+本评估系统是专为 Cortex Mem 记忆管理系统设计的专业评估框架，提供数据集、评估指标、基线对比和统计分析的完整解决方案。
 
 ## 核心特性
 
-- 🎯 **专注于 Cortex Mem**: 专门针对 Cortex Mem 系统优化的评估框架
-- 📊 **LOCOMO 数据集支持**: 完整支持 LOCOMO 对话数据集格式
-- ⚡ **串行执行优化**: 避免并发 API 限制，兼容免费额度策略
+- 📊 **专业评估指标**: Recall@K, Precision@K, MRR, NDCG 等记忆系统专用指标
+- 🗄️ **增强数据集**: 50 个对话，150 个问题，涵盖多种场景
+- 📈 **统计分析**: 95% 置信区间、标准差、分类统计
+- 🤖 **基线对比**: 内置简单 RAG 基线用于性能对比
 - 🔧 **模块化设计**: 清晰的组件分离，易于扩展和维护
-- 📈 **完整评估流程**: 从数据处理到结果分析的一站式解决方案
+- 🛡️ **稳定性保障**: 指数退避重试、详细日志、错误恢复
 
 ## 项目架构
 
 ```
 lomoco-evaluation/
-├── src/cortex_mem/           # Cortex Mem 专用模块
-│   ├── add.py               # 记忆添加功能
-│   ├── search.py            # 记忆搜索功能
-│   └── config_utils.py      # 配置管理工具
-├── dataset/                 # 数据集目录
-│   ├── locomo10.json        # 主数据集文件
-│   ├── locomo10_rag.json    # RAG 格式数据
-│   └── locomo10_small_test.json # 小规模测试数据
-├── metrics/                 # 评估指标模块
-│   ├── llm_judge.py         # LLM 评判模块
-│   └── utils.py             # 评估工具
-├── results/                 # 结果输出目录
-├── config.toml             # 主配置文件
-├── run_cortex_mem_evaluation.py # 主评估脚本
-├── test_cortex_mem_simple.py   # 基础测试
-└── test_cortex_mem_integration.py # 集成测试
+├── src/cortex_mem/              # Cortex Mem 专用模块
+│   ├── add.py                   # 记忆添加（含重试+统计）
+│   ├── search.py                # 记忆搜索
+│   └── config_utils.py          # 配置管理工具
+├── dataset/                     # 数据集目录
+│   ├── locomo10.json            # 小型测试数据集 (10 对话)
+│   └── locomo50.json            # 主要评估数据集 (50 对话, 150 问题)
+├── metrics/                     # 评估指标模块
+│   ├── memory_evaluation.py      # 记忆系统专用评估指标
+│   ├── improved_llm_judge.py   # 改进的 LLM 评判器 (0-5 分评分)
+│   └── utils.py                # 辅助工具函数
+├── baselines/                   # 基线对比系统
+│   └── simple_rag.py          # 简单 RAG 基线
+├── results/                     # 结果输出目录
+├── config.toml                 # 主配置文件
+├── generate_enhanced_dataset.py # 数据集生成器
+├── run_cortex_mem_evaluation.py  # 主评估脚本
+└── README.md                   # 本文档
 ```
 
 ## 快速开始
@@ -42,12 +45,13 @@ lomoco-evaluation/
 - Rust 和 Cargo
 - Python 3.8+
 - Qdrant 向量数据库
+- 必需的 Python 包: `pip install openai httpx toml tqdm jinja2 sentence-transformers scipy numpy`
 
 ### 2. 启动 Qdrant 服务
 
 ```bash
-# 启动 Qdrant (HTTP: 6333, gRPC: 6334)
-qdrant
+# 启动 Qdrant (gRPC: 6334)
+qdrant --host 0.0.0.0 --port 6334
 ```
 
 ### 3. 配置 API 密钥
@@ -56,60 +60,117 @@ qdrant
 
 ```toml
 [llm]
-api_base_url = "https://apis.iflow.cn/v1"
-api_key = "your_iflow_api_key"
-model_efficient = "qwen3-235b-a22b-instruct"
+api_base_url = "https://wanqing-api.corp.kuaishou.com/api/gateway/v1/endpoints"
+api_key = "your_api_key"
+model_efficient = "your_model_name"
 
 [embedding]
-api_base_url = "https://ai.gitee.com/v1"
-model_name = "Qwen3-Embedding-8B"
-api_key = "your_gitee_embedding_api_key"
+api_base_url = "https://wanqing-api.corp.kuaishou.com/api/gateway/v1/endpoints"
+model_name = "your_embedding_model"
+api_key = "your_api_key"
+
+[qdrant]
+url = "http://localhost:6334"
 ```
 
-### 4. 运行基础测试
+## 评估流程
+
+### 方式一：使用 Cortex Mem 评估
 
 ```bash
-# 测试核心组件
-python test_cortex_mem_simple.py
+# 1. 添加记忆到 Cortex Mem
+python run_cortex_mem_evaluation.py --method add --data dataset/locomo50.json
 
-# 测试集成功能
-python test_cortex_mem_integration.py
+# 2. 搜索记忆并生成答案
+python run_cortex_mem_evaluation.py --method search --data dataset/locomo50.json --top_k 10
+
+# 3. 评估结果
+python -m metrics.memory_evaluation \
+  --results results/cortex_mem_results.json \
+  --dataset dataset/locomo50.json \
+  --output results/cortex_mem_evaluation.json
 ```
 
-### 5. 执行评估
+### 方式二：使用基线对比
 
 ```bash
-# 添加记忆到 Cortex Mem
-python run_cortex_mem_evaluation.py --method add
+# 1. 运行简单 RAG 基线
+python baselines/simple_rag.py \
+  --data dataset/locomo50.json \
+  --output results/simple_rag_results.json \
+  --top_k 10
 
-# 搜索记忆并生成问答
-python run_cortex_mem_evaluation.py --method search
+# 2. 评估基线结果
+python -m metrics.memory_evaluation \
+  --results results/simple_rag_results.json \
+  --dataset dataset/locomo50.json \
+  --output results/simple_rag_evaluation.json
 ```
 
-## 详细使用指南
+### 生成自定义数据集
 
-### 配置说明
-
-#### 主要配置段
-
-- **[qdrant]**: 向量数据库配置
-- **[llm]**: 大语言模型配置 (用于生成答案)
-- **[embedding]**: 嵌入模型配置 (用于向量化)
-- **[memory]**: 记忆管理参数
-
-#### 关键参数
-
-```toml
-[memory]
-max_memories = 10000           # 最大记忆数量
-similarity_threshold = 0.65    # 相似度阈值
-max_search_results = 50        # 最大搜索结果数
-enable_deduplication = true    # 启用去重
+```bash
+# 生成 100 个对话的数据集
+python generate_enhanced_dataset.py
 ```
 
-### 数据集格式
+## 评估指标说明
 
-LOCOMO 数据集采用 JSON 格式：
+### 检索质量指标
+
+| 指标 | 描述 | 评估内容 |
+|--------|------|----------|
+| **Recall@K** | Top K 结果中至少包含一个相关记忆的概率 | 检索覆盖率 |
+| **Precision@K** | Top K 结果中相关记忆的比例 | 检索精确度 |
+
+### 排名质量指标
+
+| 指标 | 描述 | 评估内容 |
+|--------|------|----------|
+| **MRR** (Mean Reciprocal Rank) | 第一个相关记忆排名的倒数平均值 | 排名准确性 |
+| **NDCG@K** | 考虑排序位置的归一化折损累计增益 | 综合排名质量 |
+
+### 答案质量指标
+
+| 指标 | 描述 | 评估内容 |
+|--------|------|----------|
+| **语义相似度** | 使用 Sentence BERT 计算的相似度 | 语义接近程度 |
+| **关键词 F1** | 基于关键词重叠的 F1 分数 | 内容相关性 |
+| **精确匹配** | 答案是否完全一致 | 严格准确率 |
+
+### 统计指标
+
+- **均值 (Mean)**: 指标的平均水平
+- **标准差 (Std)**: 结果的稳定性
+- **95% 置信区间**: 结果的统计显著性
+- **分类统计**: 按问题类型 (category 1-5) 分组分析
+
+## 结果解读
+
+### 示例输出
+
+```
+📊 OVERALL RESULTS:
+recall_at_1                    : 0.850 ± 0.120  (95% CI: 0.730 - 0.970)
+recall_at_5                    : 0.920 ± 0.090  (95% CI: 0.810 - 1.030)
+precision_at_1                  : 0.800 ± 0.140  (95% CI: 0.660 - 0.940)
+mrr                             : 0.880 ± 0.100  (95% CI: 0.780 - 0.980)
+ndcg_at_5                       : 0.910 ± 0.080  (95% CI: 0.830 - 0.990)
+answer_semantic_similarity      : 0.905 ± 0.095  (95% CI: 0.810 - 1.000)
+```
+
+### 指标判断
+
+| Recall@1 | Precision@1 | MRR | 整体评价 |
+|----------|--------------|-----|----------|
+| > 0.9 | > 0.9 | > 0.9 | 🟢 优秀 |
+| 0.7-0.9 | 0.7-0.9 | 0.7-0.9 | 🟡 良好 |
+| 0.5-0.7 | 0.5-0.7 | 0.5-0.7 | 🟠 一般 |
+| < 0.5 | < 0.5 | < 0.5 | 🔴 需改进 |
+
+## 数据集格式
+
+数据集采用 JSON 格式，包含多个对话和对应的问题答案对：
 
 ```json
 [
@@ -117,210 +178,145 @@ LOCOMO 数据集采用 JSON 格式：
     "conversation": {
       "speaker_a": "Alice",
       "speaker_b": "Bob",
-      "date_time_1": "2024-01-01 10:00:00",
-      "conversation_1": [
+      "session_1": [
         {"speaker": "Alice", "text": "Hello, how are you?"},
         {"speaker": "Bob", "text": "I'm fine, thanks!"}
-      ]
+      ],
+      "session_1_date_time": "2024-01-14 10:30:00"
     },
     "qa": [
       {
         "question": "How is Bob?",
         "answer": "Bob is fine",
-        "category": 1,
-        "evidence": ["conversation_1"]
+        "category": "1",
+        "evidence": ["Bob said 'I'm fine, thanks!'"],
+        "adversarial_answer": "Bob is not doing well."
       }
     ]
   }
 ]
 ```
 
-### API 使用模式
+### 问题类型 (Category)
 
-#### 记忆添加
-
-```python
-from cortex_mem import CortexMemAdd
-
-# 初始化添加管理器
-add_manager = CortexMemAdd(
-    data_path="dataset/locomo10.json",
-    batch_size=2,
-    config_path="config.toml"
-)
-
-# 处理所有对话
-add_manager.process_all_conversations()
-```
-
-#### 记忆搜索
-
-```python
-from cortex_mem import CortexMemSearch
-
-# 初始化搜索管理器
-search_manager = CortexMemSearch(
-    output_path="results/search_results.json",
-    top_k=10,
-    config_path="config.toml"
-)
-
-# 处理数据并生成结果
-search_manager.process_data_file("dataset/locomo10.json")
-```
+- **Category 1**: 事实性问题 (地点、人物、事件等)
+- **Category 2**: 时间性问题 (何时、时间顺序等)
+- **Category 3**: 数量性问题 (多少、多长时间等)
+- **Category 4**: 推理性问题 (为什么、如何等)
+- **Category 5**: 复杂性问题 (需要综合多个信息)
 
 ## 高级功能
 
-### 自定义批处理
+### 错误处理和重试
 
-调整批处理大小以平衡性能和内存使用：
+- 指数退避重试 (最多 3 次)
+- 60 秒超时保护
+- 详细的日志记录
+- 失败统计追踪
 
-```python
-# 小批次：更稳定，内存占用少
-add_manager = CortexMemAdd(data_path="data.json", batch_size=1)
+### 处理统计
 
-# 大批次：更快，但内存占用多
-add_manager = CortexMemAdd(data_path="data.json", batch_size=5)
+评估完成后会显示：
+
+```
+============================================================
+📊 PROCESSING SUMMARY
+============================================================
+Total Conversations:      50
+Successful:               48
+Failed:                   2
+Success Rate:             96.0%
+
+Total Memories:           300
+Successful:               298
+Failed:                   2
+Success Rate:             99.3%
+============================================================
 ```
 
-### 串行执行 vs 并发执行
+## 常见问题
 
-当前版本使用串行执行以避免 API 并发限制：
-
-```python
-# 串行处理（当前默认）
-def process_all_conversations(self):
-    for idx, item in enumerate(self.data):
-        self.process_conversation(item, idx)
-
-# 如需并发处理，可修改 max_workers 参数
-def process_all_conversations(self, max_workers=5):
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # 并发处理逻辑
-```
-
-### 结果分析
-
-生成的结果文件包含详细信息：
-
-```json
-{
-  "0": [
-    {
-      "question": "用户问题",
-      "answer": "标准答案",
-      "response": "AI生成答案",
-      "speaker_1_memories": [...],
-      "speaker_2_memories": [...],
-      "response_time": 1.23
-    }
-  ]
-}
-```
-
-## 性能优化
-
-### 1. 内存管理
-
-- 使用合适的批处理大小
-- 定期清理临时变量
-- 监控内存使用情况
-
-### 2. API 优化
-
-- 串行执行避免并发限制
-- 实现请求重试机制
-- 使用响应缓存
-
-### 3. 数据处理
-
-- 使用进度条监控处理进度
-- 增量处理大数据集
-- 并行化独立的计算任务
-
-## 故障排除
-
-### 常见问题
-
-#### 1. API 额度限制
-
-**错误**: "免费体验访问令牌已达到最大使用额度"
-
-**解决方案**:
-- 升级到付费计划
-- 使用其他兼容的 API
-- 分批处理数据
-
-#### 2. Qdrant 连接失败
+### 1. Qdrant 连接失败
 
 **错误**: 无法连接到 Qdrant 服务
 
 **解决方案**:
 ```bash
 # 检查 Qdrant 服务状态
-curl http://localhost:6333/health
+curl http://localhost:6334/health
 
 # 重启 Qdrant 服务
-qdrant --host 0.0.0.0 --port 6333
+qdrant --host 0.0.0.0 --port 6334
 ```
 
-#### 3. 配置文件错误
+### 2. API 调用失败
 
-**错误**: 配置文件解析失败
+**错误**: LLM 或 Embedding API 返回错误
 
 **解决方案**:
-- 检查 TOML 语法
-- 验证 API 密钥格式
-- 确认路径正确性
+- 检查 `config.toml` 中的 API 密钥
+- 确认 API 端点可访问
+- 检查 API 额度是否充足
+- 查看日志文件了解详细错误
 
-### 调试模式
+### 3. 内存不足
 
-启用详细日志输出：
+**错误**: 处理大型数据集时内存溢出
 
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
-```
+**解决方案**:
+- 使用较小的 `batch_size` 参数
+- 减少并发请求
+- 分批处理数据集
 
 ## 扩展开发
 
 ### 添加新的评估指标
 
-1. 在 `metrics/` 目录下创建新模块
-2. 实现评估函数
-3. 在主评估脚本中集成
+在 `metrics/memory_evaluation.py` 中的 `MemorySystemEvaluator` 类中添加新方法：
 
-### 支持新的记忆系统
+```python
+def calculate_custom_metric(self, ...):
+    """Calculate custom evaluation metric"""
+    # 实现你的指标逻辑
+    return score
+```
 
-1. 创建新的 `src/<system_name>/` 目录
-2. 实现 `add.py` 和 `search.py` 接口
-3. 更新配置和测试脚本
+### 添加新的基线
 
-### 自定义数据集格式
+在 `baselines/` 目录下创建新的基线模块：
 
-1. 修改数据加载逻辑
-2. 更新数据验证规则
-3. 添加格式转换工具
+```python
+class NewBaseline:
+    def __init__(self, config_path: str):
+        # 初始化
+        pass
 
-## 贡献指南
-
-1. Fork 项目仓库
-2. 创建功能分支
-3. 提交变更
-4. 创建 Pull Request
+    def answer_question(self, ...):
+        # 实现基线逻辑
+        pass
+```
 
 ## 许可证
 
-本项目采用 MIT 许可证。详见 LICENSE 文件。
+本项目采用 MIT 许可证。详见项目根目录的 LICENSE 文件。
 
 ## 联系信息
 
 - 项目仓库: https://github.com/sopaco/cortex-mem
 - 问题反馈: 请在 GitHub Issues 中提交
 
-## 更新日志
+## 版本历史
 
-### v1.0.0 (2025-12-22)
+### v2.0.0 (2024-12-24)
+- ✨ 新增专业记忆系统评估指标 (Recall@K, MRR, NDCG)
+- ✨ 新增强数据集 (50 对话, 150 问题)
+- ✨ 新增统计分析功能 (置信区间, 标准差)
+- ✨ 新增改进的 LLM 评判器 (0-5 分六级评分)
+- ✨ 新增简单 RAG 基线对比系统
+- 🛡️ 改进错误处理和重试机制
+- 🧹 删除旧代码和脚本，统一评估方案
+
+### v1.0.0 (2024-12-22)
 - 初始版本发布
 - 支持 Cortex Mem 评估
 - 实现串行执行优化

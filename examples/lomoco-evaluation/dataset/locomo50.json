@@ -1,0 +1,5127 @@
+[
+  {
+    "conversation": {
+      "speaker_a": "Alex",
+      "speaker_b": "Jordan",
+      "session_1": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_1_date_time": "2024-05-20 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_2_date_time": "2024-05-22 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What did Jordan paint?",
+        "answer": "a landscape of the mountains",
+        "category": "1",
+        "evidence": [
+          "Jordan said 'Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long did it take Jordan to finish the painting?",
+        "answer": "two weeks",
+        "category": "3",
+        "evidence": [
+          "Jordan said 'I used oil paints on canvas. It took me about two weeks to complete.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What technique did Jordan use for the sky?",
+        "answer": "glazing technique",
+        "category": "1",
+        "evidence": [
+          "Alex said 'Two weeks of dedication! Did you use any specific technique?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_1_date_time": "2024-02-18 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_2_date_time": "2024-02-25 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "Where is Liam going for his trip?",
+        "answer": "Japan (Tokyo and Kyoto)",
+        "category": "1",
+        "evidence": [
+          "Maya said 'Liam, I heard you're going to Japan next month!'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long is Liam staying in Japan?",
+        "answer": "two weeks",
+        "category": "3",
+        "evidence": [
+          "Liam said 'I'll be there for two weeks, from March 15th to March 29th.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is Liam most excited to see in Kyoto?",
+        "answer": "cherry blossoms",
+        "category": "1",
+        "evidence": [
+          "Liam said 'I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_1_date_time": "2024-12-18 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_2_date_time": "2024-12-24 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_3_date_time": "2024-12-26 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What phase has Taylor's team completed?",
+        "answer": "the first phase",
+        "category": "1",
+        "evidence": [
+          "Sam said 'Taylor, how's the project coming along?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When did they finish the first phase?",
+        "answer": "last Friday",
+        "category": "2",
+        "evidence": [
+          "Taylor said 'We finished last Friday, two days before the deadline.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long will the testing phase take?",
+        "answer": "about a week",
+        "category": "3",
+        "evidence": [
+          "Taylor said 'Now we're moving to the testing phase. We expect it to take about a week.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_1_date_time": "2024-07-07 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_2_date_time": "2024-07-11 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_3_date_time": "2024-07-21 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What ingredients were in the sauce?",
+        "answer": "fresh basil, garlic, and truffle oil",
+        "category": "1",
+        "evidence": [
+          "Chef Marco said 'Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What type of pasta did Chef Marco use?",
+        "answer": "fresh fettuccine",
+        "category": "1",
+        "evidence": [
+          "Chef Marco said 'Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long did it take to make the fresh pasta?",
+        "answer": "45 minutes",
+        "category": "3",
+        "evidence": [
+          "Chef Marco said 'About 45 minutes. It's worth the effort for the texture.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_1_date_time": "2024-04-25 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_2_date_time": "2024-04-30 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What time does practice start tomorrow?",
+        "answer": "6 AM",
+        "category": "3",
+        "evidence": [
+          "Sarah said"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When should players arrive for warm-ups?",
+        "answer": "5:45 AM",
+        "category": "3",
+        "evidence": [
+          "Coach Mike said 'We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Who are they playing against on Saturday?",
+        "answer": "the Tigers",
+        "category": "1",
+        "evidence": [
+          "Coach Mike said 'We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "DJ Luna",
+      "speaker_b": "Kevin",
+      "session_1": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_1_date_time": "2024-09-09 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_2_date_time": "2024-09-13 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_3_date_time": "2024-09-23 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What is the genre of DJ Luna's new track?",
+        "answer": "fusion of deep house and lo-fi beats",
+        "category": "1",
+        "evidence": [
+          "DJ Luna said 'It's a fusion of deep house and lo-fi beats. Really unique sound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Where did DJ Luna get the inspiration for the fusion?",
+        "answer": "Berlin",
+        "category": "1",
+        "evidence": [
+          "DJ Luna said 'I was inspired by my trip to Berlin last summer. The music scene there is incredible.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When did DJ Luna visit Berlin?",
+        "answer": "last summer",
+        "category": "2",
+        "evidence": [
+          "DJ Luna said 'I was inspired by my trip to Berlin last summer. The music scene there is incredible.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Dr. Chen",
+      "speaker_b": "Tom",
+      "session_1": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_1_date_time": "2024-08-27 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_2_date_time": "2024-08-29 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "Which journal is Dr. Chen's paper being published in?",
+        "answer": "Science journal",
+        "category": "1",
+        "evidence": [
+          "Dr. Chen said 'Yes Tom! It's being published in the Science journal next month.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is the main breakthrough in Dr. Chen's research?",
+        "answer": "new error correction algorithm",
+        "category": "1",
+        "evidence": [
+          "Dr. Chen said 'We've developed a new error correction algorithm that reduces decoherence by 40%.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How much does the algorithm reduce decoherence?",
+        "answer": "40%",
+        "category": "3",
+        "evidence": [
+          "Dr. Chen said 'We've developed a new error correction algorithm that reduces decoherence by 40%.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Trainer Alex",
+      "speaker_b": "Maria",
+      "session_1": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_1_date_time": "2024-07-19 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_2_date_time": "2024-07-21 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_3_date_time": "2024-08-02 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "How much is Maria currently bench pressing?",
+        "answer": "135 pounds",
+        "category": "3",
+        "evidence": [
+          "Maria said 'I'm at 135 pounds currently.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How much should Maria add each week?",
+        "answer": "5 pounds",
+        "category": "3",
+        "evidence": [
+          "Maria said 'I'm at 135 pounds currently.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How many sets and reps for strength training?",
+        "answer": "5 sets of 5 reps",
+        "category": "1",
+        "evidence": [
+          "Maria said 'How many sets and reps should I do?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Bookworm Lily",
+      "speaker_b": "Mark",
+      "session_1": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_1_date_time": "2024-11-22 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_2_date_time": "2024-11-27 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What book did Lily just finish reading?",
+        "answer": "The Midnight Library by Matt Haig",
+        "category": "1",
+        "evidence": [
+          "Bookworm Lily said 'Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Who is the author of the book?",
+        "answer": "Matt Haig",
+        "category": "1",
+        "evidence": [
+          "Bookworm Lily said 'Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is the book about?",
+        "answer": "infinite lives based on different choices",
+        "category": "2",
+        "evidence": [
+          "Bookworm Lily said 'It explores the infinite lives we could have lived, based on different choices. Really makes you think.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Gardener Rose",
+      "speaker_b": "Ben",
+      "session_1": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_1_date_time": "2024-09-10 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_2_date_time": "2024-09-15 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_3_date_time": "2024-09-14 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What change did Rose make to her garden this year?",
+        "answer": "switched to organic compost",
+        "category": "1",
+        "evidence": [
+          "Gardener Rose said 'Thanks Ben! I switched to organic compost this year. Makes a huge difference.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long does it take Rose's compost to mature?",
+        "answer": "about 6 months",
+        "category": "3",
+        "evidence": [
+          "Gardener Rose said 'I make my own from kitchen scraps and yard waste. It takes about 6 months to mature.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What else does Rose add to the soil besides compost?",
+        "answer": "worm castings",
+        "category": "1",
+        "evidence": [
+          "Gardener Rose said 'Yes, I also use worm castings. They're rich in nutrients and improve soil structure.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_1_date_time": "2024-02-25 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_2_date_time": "2024-03-02 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What did Jordan paint?",
+        "answer": "a landscape of the mountains",
+        "category": "1",
+        "evidence": [
+          "Jordan said 'Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long did it take Jordan to finish the painting?",
+        "answer": "two weeks",
+        "category": "3",
+        "evidence": [
+          "Jordan said 'I used oil paints on canvas. It took me about two weeks to complete.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What technique did Jordan use for the sky?",
+        "answer": "glazing technique",
+        "category": "1",
+        "evidence": [
+          "Alex said 'Two weeks of dedication! Did you use any specific technique?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_1_date_time": "2024-09-10 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_2_date_time": "2024-09-17 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_3_date_time": "2024-09-22 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "Where is Liam going for his trip?",
+        "answer": "Japan (Tokyo and Kyoto)",
+        "category": "1",
+        "evidence": [
+          "Maya said 'Liam, I heard you're going to Japan next month!'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long is Liam staying in Japan?",
+        "answer": "two weeks",
+        "category": "3",
+        "evidence": [
+          "Liam said 'I'll be there for two weeks, from March 15th to March 29th.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is Liam most excited to see in Kyoto?",
+        "answer": "cherry blossoms",
+        "category": "1",
+        "evidence": [
+          "Liam said 'I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_1_date_time": "2024-06-20 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_2_date_time": "2024-06-26 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_3_date_time": "2024-06-28 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What phase has Taylor's team completed?",
+        "answer": "the first phase",
+        "category": "1",
+        "evidence": [
+          "Sam said 'Taylor, how's the project coming along?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When did they finish the first phase?",
+        "answer": "last Friday",
+        "category": "2",
+        "evidence": [
+          "Taylor said 'We finished last Friday, two days before the deadline.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long will the testing phase take?",
+        "answer": "about a week",
+        "category": "3",
+        "evidence": [
+          "Taylor said 'Now we're moving to the testing phase. We expect it to take about a week.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_1_date_time": "2024-11-26 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_2_date_time": "2024-12-02 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What ingredients were in the sauce?",
+        "answer": "fresh basil, garlic, and truffle oil",
+        "category": "1",
+        "evidence": [
+          "Chef Marco said 'Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What type of pasta did Chef Marco use?",
+        "answer": "fresh fettuccine",
+        "category": "1",
+        "evidence": [
+          "Chef Marco said 'Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long did it take to make the fresh pasta?",
+        "answer": "45 minutes",
+        "category": "3",
+        "evidence": [
+          "Chef Marco said 'About 45 minutes. It's worth the effort for the texture.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_1_date_time": "2024-05-13 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_2_date_time": "2024-05-19 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_3_date_time": "2024-05-27 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What time does practice start tomorrow?",
+        "answer": "6 AM",
+        "category": "3",
+        "evidence": [
+          "Liam said"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When should players arrive for warm-ups?",
+        "answer": "5:45 AM",
+        "category": "3",
+        "evidence": [
+          "Coach Mike said 'We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Who are they playing against on Saturday?",
+        "answer": "the Tigers",
+        "category": "1",
+        "evidence": [
+          "Coach Mike said 'We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_1_date_time": "2024-11-13 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_2_date_time": "2024-11-19 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_3_date_time": "2024-11-17 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What is the genre of DJ Luna's new track?",
+        "answer": "fusion of deep house and lo-fi beats",
+        "category": "1",
+        "evidence": [
+          "DJ Luna said 'It's a fusion of deep house and lo-fi beats. Really unique sound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Where did DJ Luna get the inspiration for the fusion?",
+        "answer": "Berlin",
+        "category": "1",
+        "evidence": [
+          "DJ Luna said 'I was inspired by my trip to Berlin last summer. The music scene there is incredible.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When did DJ Luna visit Berlin?",
+        "answer": "last summer",
+        "category": "2",
+        "evidence": [
+          "DJ Luna said 'I was inspired by my trip to Berlin last summer. The music scene there is incredible.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_1_date_time": "2024-07-21 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_2_date_time": "2024-07-23 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_3_date_time": "2024-07-27 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "Which journal is Dr. Chen's paper being published in?",
+        "answer": "Science journal",
+        "category": "1",
+        "evidence": [
+          "Dr. Chen said 'Yes Tom! It's being published in the Science journal next month.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is the main breakthrough in Dr. Chen's research?",
+        "answer": "new error correction algorithm",
+        "category": "1",
+        "evidence": [
+          "Dr. Chen said 'We've developed a new error correction algorithm that reduces decoherence by 40%.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How much does the algorithm reduce decoherence?",
+        "answer": "40%",
+        "category": "3",
+        "evidence": [
+          "Dr. Chen said 'We've developed a new error correction algorithm that reduces decoherence by 40%.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_1_date_time": "2024-06-27 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_2_date_time": "2024-07-02 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_3_date_time": "2024-07-11 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "How much is Maria currently bench pressing?",
+        "answer": "135 pounds",
+        "category": "3",
+        "evidence": [
+          "Maria said 'I'm at 135 pounds currently.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How much should Maria add each week?",
+        "answer": "5 pounds",
+        "category": "3",
+        "evidence": [
+          "Maria said 'I'm at 135 pounds currently.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How many sets and reps for strength training?",
+        "answer": "5 sets of 5 reps",
+        "category": "1",
+        "evidence": [
+          "Maria said 'How many sets and reps should I do?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_1_date_time": "2024-12-14 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_2_date_time": "2024-12-19 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_3_date_time": "2024-12-28 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What book did Lily just finish reading?",
+        "answer": "The Midnight Library by Matt Haig",
+        "category": "1",
+        "evidence": [
+          "Bookworm Lily said 'Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Who is the author of the book?",
+        "answer": "Matt Haig",
+        "category": "1",
+        "evidence": [
+          "Bookworm Lily said 'Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is the book about?",
+        "answer": "infinite lives based on different choices",
+        "category": "2",
+        "evidence": [
+          "Bookworm Lily said 'It explores the infinite lives we could have lived, based on different choices. Really makes you think.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Maya",
+      "speaker_b": "Liam",
+      "session_1": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_1_date_time": "2024-04-01 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_2_date_time": "2024-04-06 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_3_date_time": "2024-04-13 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What change did Rose make to her garden this year?",
+        "answer": "switched to organic compost",
+        "category": "1",
+        "evidence": [
+          "Gardener Rose said 'Thanks Ben! I switched to organic compost this year. Makes a huge difference.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long does it take Rose's compost to mature?",
+        "answer": "about 6 months",
+        "category": "3",
+        "evidence": [
+          "Gardener Rose said 'I make my own from kitchen scraps and yard waste. It takes about 6 months to mature.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What else does Rose add to the soil besides compost?",
+        "answer": "worm castings",
+        "category": "1",
+        "evidence": [
+          "Gardener Rose said 'Yes, I also use worm castings. They're rich in nutrients and improve soil structure.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_1_date_time": "2024-01-20 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_2_date_time": "2024-01-22 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_3_date_time": "2024-01-26 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What did Jordan paint?",
+        "answer": "a landscape of the mountains",
+        "category": "1",
+        "evidence": [
+          "Jordan said 'Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long did it take Jordan to finish the painting?",
+        "answer": "two weeks",
+        "category": "3",
+        "evidence": [
+          "Jordan said 'I used oil paints on canvas. It took me about two weeks to complete.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What technique did Jordan use for the sky?",
+        "answer": "glazing technique",
+        "category": "1",
+        "evidence": [
+          "Alex said 'Two weeks of dedication! Did you use any specific technique?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_1_date_time": "2024-06-13 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_2_date_time": "2024-06-15 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "Where is Liam going for his trip?",
+        "answer": "Japan (Tokyo and Kyoto)",
+        "category": "1",
+        "evidence": [
+          "Maya said 'Liam, I heard you're going to Japan next month!'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long is Liam staying in Japan?",
+        "answer": "two weeks",
+        "category": "3",
+        "evidence": [
+          "Liam said 'I'll be there for two weeks, from March 15th to March 29th.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is Liam most excited to see in Kyoto?",
+        "answer": "cherry blossoms",
+        "category": "1",
+        "evidence": [
+          "Liam said 'I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_1_date_time": "2024-10-19 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_2_date_time": "2024-10-24 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What phase has Taylor's team completed?",
+        "answer": "the first phase",
+        "category": "1",
+        "evidence": [
+          "Sam said 'Taylor, how's the project coming along?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When did they finish the first phase?",
+        "answer": "last Friday",
+        "category": "2",
+        "evidence": [
+          "Taylor said 'We finished last Friday, two days before the deadline.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long will the testing phase take?",
+        "answer": "about a week",
+        "category": "3",
+        "evidence": [
+          "Taylor said 'Now we're moving to the testing phase. We expect it to take about a week.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_1_date_time": "2024-09-08 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_2_date_time": "2024-09-12 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What ingredients were in the sauce?",
+        "answer": "fresh basil, garlic, and truffle oil",
+        "category": "1",
+        "evidence": [
+          "Chef Marco said 'Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What type of pasta did Chef Marco use?",
+        "answer": "fresh fettuccine",
+        "category": "1",
+        "evidence": [
+          "Chef Marco said 'Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long did it take to make the fresh pasta?",
+        "answer": "45 minutes",
+        "category": "3",
+        "evidence": [
+          "Chef Marco said 'About 45 minutes. It's worth the effort for the texture.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_1_date_time": "2024-09-15 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_2_date_time": "2024-09-17 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_3_date_time": "2024-09-19 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What time does practice start tomorrow?",
+        "answer": "6 AM",
+        "category": "3",
+        "evidence": [
+          "Taylor said"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When should players arrive for warm-ups?",
+        "answer": "5:45 AM",
+        "category": "3",
+        "evidence": [
+          "Coach Mike said 'We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Who are they playing against on Saturday?",
+        "answer": "the Tigers",
+        "category": "1",
+        "evidence": [
+          "Coach Mike said 'We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_1_date_time": "2024-12-26 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_2_date_time": "2024-12-31 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_3_date_time": "2025-01-07 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What is the genre of DJ Luna's new track?",
+        "answer": "fusion of deep house and lo-fi beats",
+        "category": "1",
+        "evidence": [
+          "DJ Luna said 'It's a fusion of deep house and lo-fi beats. Really unique sound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Where did DJ Luna get the inspiration for the fusion?",
+        "answer": "Berlin",
+        "category": "1",
+        "evidence": [
+          "DJ Luna said 'I was inspired by my trip to Berlin last summer. The music scene there is incredible.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When did DJ Luna visit Berlin?",
+        "answer": "last summer",
+        "category": "2",
+        "evidence": [
+          "DJ Luna said 'I was inspired by my trip to Berlin last summer. The music scene there is incredible.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_1_date_time": "2024-08-28 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_2_date_time": "2024-09-02 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_3_date_time": "2024-09-01 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "Which journal is Dr. Chen's paper being published in?",
+        "answer": "Science journal",
+        "category": "1",
+        "evidence": [
+          "Dr. Chen said 'Yes Tom! It's being published in the Science journal next month.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is the main breakthrough in Dr. Chen's research?",
+        "answer": "new error correction algorithm",
+        "category": "1",
+        "evidence": [
+          "Dr. Chen said 'We've developed a new error correction algorithm that reduces decoherence by 40%.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How much does the algorithm reduce decoherence?",
+        "answer": "40%",
+        "category": "3",
+        "evidence": [
+          "Dr. Chen said 'We've developed a new error correction algorithm that reduces decoherence by 40%.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_1_date_time": "2024-04-06 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_2_date_time": "2024-04-11 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_3_date_time": "2024-04-10 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "How much is Maria currently bench pressing?",
+        "answer": "135 pounds",
+        "category": "3",
+        "evidence": [
+          "Maria said 'I'm at 135 pounds currently.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How much should Maria add each week?",
+        "answer": "5 pounds",
+        "category": "3",
+        "evidence": [
+          "Maria said 'I'm at 135 pounds currently.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How many sets and reps for strength training?",
+        "answer": "5 sets of 5 reps",
+        "category": "1",
+        "evidence": [
+          "Maria said 'How many sets and reps should I do?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_1_date_time": "2024-02-24 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_2_date_time": "2024-02-29 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What book did Lily just finish reading?",
+        "answer": "The Midnight Library by Matt Haig",
+        "category": "1",
+        "evidence": [
+          "Bookworm Lily said 'Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Who is the author of the book?",
+        "answer": "Matt Haig",
+        "category": "1",
+        "evidence": [
+          "Bookworm Lily said 'Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is the book about?",
+        "answer": "infinite lives based on different choices",
+        "category": "2",
+        "evidence": [
+          "Bookworm Lily said 'It explores the infinite lives we could have lived, based on different choices. Really makes you think.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Sam",
+      "speaker_b": "Taylor",
+      "session_1": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_1_date_time": "2024-06-03 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_2_date_time": "2024-06-08 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_3_date_time": "2024-06-09 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What change did Rose make to her garden this year?",
+        "answer": "switched to organic compost",
+        "category": "1",
+        "evidence": [
+          "Gardener Rose said 'Thanks Ben! I switched to organic compost this year. Makes a huge difference.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long does it take Rose's compost to mature?",
+        "answer": "about 6 months",
+        "category": "3",
+        "evidence": [
+          "Gardener Rose said 'I make my own from kitchen scraps and yard waste. It takes about 6 months to mature.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What else does Rose add to the soil besides compost?",
+        "answer": "worm castings",
+        "category": "1",
+        "evidence": [
+          "Gardener Rose said 'Yes, I also use worm castings. They're rich in nutrients and improve soil structure.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_1_date_time": "2024-06-05 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_2_date_time": "2024-06-09 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_3_date_time": "2024-06-19 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What did Jordan paint?",
+        "answer": "a landscape of the mountains",
+        "category": "1",
+        "evidence": [
+          "Jordan said 'Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long did it take Jordan to finish the painting?",
+        "answer": "two weeks",
+        "category": "3",
+        "evidence": [
+          "Jordan said 'I used oil paints on canvas. It took me about two weeks to complete.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What technique did Jordan use for the sky?",
+        "answer": "glazing technique",
+        "category": "1",
+        "evidence": [
+          "Alex said 'Two weeks of dedication! Did you use any specific technique?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_1_date_time": "2024-05-21 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_2_date_time": "2024-05-27 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "Where is Liam going for his trip?",
+        "answer": "Japan (Tokyo and Kyoto)",
+        "category": "1",
+        "evidence": [
+          "Maya said 'Liam, I heard you're going to Japan next month!'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long is Liam staying in Japan?",
+        "answer": "two weeks",
+        "category": "3",
+        "evidence": [
+          "Liam said 'I'll be there for two weeks, from March 15th to March 29th.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is Liam most excited to see in Kyoto?",
+        "answer": "cherry blossoms",
+        "category": "1",
+        "evidence": [
+          "Liam said 'I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_1_date_time": "2024-10-07 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_2_date_time": "2024-10-14 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_3_date_time": "2024-10-17 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What phase has Taylor's team completed?",
+        "answer": "the first phase",
+        "category": "1",
+        "evidence": [
+          "Sam said 'Taylor, how's the project coming along?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When did they finish the first phase?",
+        "answer": "last Friday",
+        "category": "2",
+        "evidence": [
+          "Taylor said 'We finished last Friday, two days before the deadline.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long will the testing phase take?",
+        "answer": "about a week",
+        "category": "3",
+        "evidence": [
+          "Taylor said 'Now we're moving to the testing phase. We expect it to take about a week.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_1_date_time": "2024-04-27 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_2_date_time": "2024-04-30 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What ingredients were in the sauce?",
+        "answer": "fresh basil, garlic, and truffle oil",
+        "category": "1",
+        "evidence": [
+          "Chef Marco said 'Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What type of pasta did Chef Marco use?",
+        "answer": "fresh fettuccine",
+        "category": "1",
+        "evidence": [
+          "Chef Marco said 'Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long did it take to make the fresh pasta?",
+        "answer": "45 minutes",
+        "category": "3",
+        "evidence": [
+          "Chef Marco said 'About 45 minutes. It's worth the effort for the texture.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_1_date_time": "2024-09-24 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_2_date_time": "2024-09-30 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What time does practice start tomorrow?",
+        "answer": "6 AM",
+        "category": "3",
+        "evidence": [
+          "Emily said"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When should players arrive for warm-ups?",
+        "answer": "5:45 AM",
+        "category": "3",
+        "evidence": [
+          "Coach Mike said 'We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Who are they playing against on Saturday?",
+        "answer": "the Tigers",
+        "category": "1",
+        "evidence": [
+          "Coach Mike said 'We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_1_date_time": "2024-10-02 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_2_date_time": "2024-10-08 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What is the genre of DJ Luna's new track?",
+        "answer": "fusion of deep house and lo-fi beats",
+        "category": "1",
+        "evidence": [
+          "DJ Luna said 'It's a fusion of deep house and lo-fi beats. Really unique sound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Where did DJ Luna get the inspiration for the fusion?",
+        "answer": "Berlin",
+        "category": "1",
+        "evidence": [
+          "DJ Luna said 'I was inspired by my trip to Berlin last summer. The music scene there is incredible.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When did DJ Luna visit Berlin?",
+        "answer": "last summer",
+        "category": "2",
+        "evidence": [
+          "DJ Luna said 'I was inspired by my trip to Berlin last summer. The music scene there is incredible.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_1_date_time": "2024-06-06 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_2_date_time": "2024-06-09 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "Which journal is Dr. Chen's paper being published in?",
+        "answer": "Science journal",
+        "category": "1",
+        "evidence": [
+          "Dr. Chen said 'Yes Tom! It's being published in the Science journal next month.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is the main breakthrough in Dr. Chen's research?",
+        "answer": "new error correction algorithm",
+        "category": "1",
+        "evidence": [
+          "Dr. Chen said 'We've developed a new error correction algorithm that reduces decoherence by 40%.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How much does the algorithm reduce decoherence?",
+        "answer": "40%",
+        "category": "3",
+        "evidence": [
+          "Dr. Chen said 'We've developed a new error correction algorithm that reduces decoherence by 40%.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_1_date_time": "2024-05-01 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_2_date_time": "2024-05-03 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_3_date_time": "2024-05-05 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "How much is Maria currently bench pressing?",
+        "answer": "135 pounds",
+        "category": "3",
+        "evidence": [
+          "Maria said 'I'm at 135 pounds currently.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How much should Maria add each week?",
+        "answer": "5 pounds",
+        "category": "3",
+        "evidence": [
+          "Maria said 'I'm at 135 pounds currently.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How many sets and reps for strength training?",
+        "answer": "5 sets of 5 reps",
+        "category": "1",
+        "evidence": [
+          "Maria said 'How many sets and reps should I do?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_1_date_time": "2024-11-27 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_2_date_time": "2024-11-30 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_3_date_time": "2024-12-07 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What book did Lily just finish reading?",
+        "answer": "The Midnight Library by Matt Haig",
+        "category": "1",
+        "evidence": [
+          "Bookworm Lily said 'Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Who is the author of the book?",
+        "answer": "Matt Haig",
+        "category": "1",
+        "evidence": [
+          "Bookworm Lily said 'Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is the book about?",
+        "answer": "infinite lives based on different choices",
+        "category": "2",
+        "evidence": [
+          "Bookworm Lily said 'It explores the infinite lives we could have lived, based on different choices. Really makes you think.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Chef Marco",
+      "speaker_b": "Emily",
+      "session_1": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_1_date_time": "2024-12-04 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_2_date_time": "2024-12-11 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What change did Rose make to her garden this year?",
+        "answer": "switched to organic compost",
+        "category": "1",
+        "evidence": [
+          "Gardener Rose said 'Thanks Ben! I switched to organic compost this year. Makes a huge difference.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long does it take Rose's compost to mature?",
+        "answer": "about 6 months",
+        "category": "3",
+        "evidence": [
+          "Gardener Rose said 'I make my own from kitchen scraps and yard waste. It takes about 6 months to mature.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What else does Rose add to the soil besides compost?",
+        "answer": "worm castings",
+        "category": "1",
+        "evidence": [
+          "Gardener Rose said 'Yes, I also use worm castings. They're rich in nutrients and improve soil structure.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_1_date_time": "2024-05-01 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Alex",
+          "text": "Hey Jordan! Have you been working on that painting you mentioned?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown."
+        },
+        {
+          "speaker": "Alex",
+          "text": "That sounds beautiful! What medium did you use?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used oil paints on canvas. It took me about two weeks to complete."
+        },
+        {
+          "speaker": "Alex",
+          "text": "Two weeks of dedication! Did you use any specific technique?"
+        },
+        {
+          "speaker": "Jordan",
+          "text": "I used the glazing technique for the sky. It creates really nice depth."
+        }
+      ],
+      "session_2_date_time": "2024-05-07 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What did Jordan paint?",
+        "answer": "a landscape of the mountains",
+        "category": "1",
+        "evidence": [
+          "Jordan said 'Yes! I actually finished it yesterday. It's a landscape of the mountains near my hometown.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long did it take Jordan to finish the painting?",
+        "answer": "two weeks",
+        "category": "3",
+        "evidence": [
+          "Jordan said 'I used oil paints on canvas. It took me about two weeks to complete.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What technique did Jordan use for the sky?",
+        "answer": "glazing technique",
+        "category": "1",
+        "evidence": [
+          "Alex said 'Two weeks of dedication! Did you use any specific technique?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_1_date_time": "2024-09-08 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_2_date_time": "2024-09-10 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Maya",
+          "text": "Liam, I heard you're going to Japan next month!"
+        },
+        {
+          "speaker": "Liam",
+          "text": "Yes! I'm so excited. I'll be staying in Tokyo and Kyoto."
+        },
+        {
+          "speaker": "Maya",
+          "text": "How long is your trip?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I'll be there for two weeks, from March 15th to March 29th."
+        },
+        {
+          "speaker": "Maya",
+          "text": "That's a great length! What are you most looking forward to?"
+        },
+        {
+          "speaker": "Liam",
+          "text": "I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing."
+        }
+      ],
+      "session_3_date_time": "2024-09-16 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "Where is Liam going for his trip?",
+        "answer": "Japan (Tokyo and Kyoto)",
+        "category": "1",
+        "evidence": [
+          "Maya said 'Liam, I heard you're going to Japan next month!'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long is Liam staying in Japan?",
+        "answer": "two weeks",
+        "category": "3",
+        "evidence": [
+          "Liam said 'I'll be there for two weeks, from March 15th to March 29th.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is Liam most excited to see in Kyoto?",
+        "answer": "cherry blossoms",
+        "category": "1",
+        "evidence": [
+          "Liam said 'I can't wait to visit the cherry blossoms in Kyoto. It should be perfect timing.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_1_date_time": "2024-11-08 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Sam",
+          "text": "Taylor, how's the project coming along?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "It's going well! We've completed the first phase ahead of schedule."
+        },
+        {
+          "speaker": "Sam",
+          "text": "That's great news! When did you finish it?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "We finished last Friday, two days before the deadline."
+        },
+        {
+          "speaker": "Sam",
+          "text": "Excellent! What's next for the team?"
+        },
+        {
+          "speaker": "Taylor",
+          "text": "Now we're moving to the testing phase. We expect it to take about a week."
+        }
+      ],
+      "session_2_date_time": "2024-11-13 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What phase has Taylor's team completed?",
+        "answer": "the first phase",
+        "category": "1",
+        "evidence": [
+          "Sam said 'Taylor, how's the project coming along?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When did they finish the first phase?",
+        "answer": "last Friday",
+        "category": "2",
+        "evidence": [
+          "Taylor said 'We finished last Friday, two days before the deadline.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long will the testing phase take?",
+        "answer": "about a week",
+        "category": "3",
+        "evidence": [
+          "Taylor said 'Now we're moving to the testing phase. We expect it to take about a week.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_1_date_time": "2024-09-21 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Emily",
+          "text": "Chef Marco, that pasta dish was incredible! What was in the sauce?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil."
+        },
+        {
+          "speaker": "Emily",
+          "text": "And what kind of pasta did you use?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "I made fresh fettuccine this morning. It makes such a difference."
+        },
+        {
+          "speaker": "Emily",
+          "text": "How long did it take to make the pasta from scratch?"
+        },
+        {
+          "speaker": "Chef Marco",
+          "text": "About 45 minutes. It's worth the effort for the texture."
+        }
+      ],
+      "session_2_date_time": "2024-09-26 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What ingredients were in the sauce?",
+        "answer": "fresh basil, garlic, and truffle oil",
+        "category": "1",
+        "evidence": [
+          "Chef Marco said 'Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What type of pasta did Chef Marco use?",
+        "answer": "fresh fettuccine",
+        "category": "1",
+        "evidence": [
+          "Chef Marco said 'Thank you, Emily! The secret is fresh basil, garlic, and a touch of truffle oil.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long did it take to make the fresh pasta?",
+        "answer": "45 minutes",
+        "category": "3",
+        "evidence": [
+          "Chef Marco said 'About 45 minutes. It's worth the effort for the texture.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_1_date_time": "2024-11-27 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Sarah",
+          "text": "Coach Mike, what time is our practice tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Got it! What are we focusing on tomorrow?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "Defense drills and stamina training. We have a big game on Saturday."
+        },
+        {
+          "speaker": "Sarah",
+          "text": "Who are we playing against?"
+        },
+        {
+          "speaker": "Coach Mike",
+          "text": "The Tigers. They beat us last year, so we need to be prepared."
+        }
+      ],
+      "session_2_date_time": "2024-12-03 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What time does practice start tomorrow?",
+        "answer": "6 AM",
+        "category": "3",
+        "evidence": [
+          "Sarah said"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When should players arrive for warm-ups?",
+        "answer": "5:45 AM",
+        "category": "3",
+        "evidence": [
+          "Coach Mike said 'We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Who are they playing against on Saturday?",
+        "answer": "the Tigers",
+        "category": "1",
+        "evidence": [
+          "Coach Mike said 'We're starting at 6 AM, Sarah. I want everyone there by 5:45 for warm-ups.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_1_date_time": "2024-10-28 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Kevin",
+          "text": "DJ Luna, that new track you played was amazing!"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "Thanks Kevin! I've been working on it for months."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "What genre would you call it?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "It's a fusion of deep house and lo-fi beats. Really unique sound."
+        },
+        {
+          "speaker": "Kevin",
+          "text": "How did you get the idea for this fusion?"
+        },
+        {
+          "speaker": "DJ Luna",
+          "text": "I was inspired by my trip to Berlin last summer. The music scene there is incredible."
+        }
+      ],
+      "session_2_date_time": "2024-11-02 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What is the genre of DJ Luna's new track?",
+        "answer": "fusion of deep house and lo-fi beats",
+        "category": "1",
+        "evidence": [
+          "DJ Luna said 'It's a fusion of deep house and lo-fi beats. Really unique sound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Where did DJ Luna get the inspiration for the fusion?",
+        "answer": "Berlin",
+        "category": "1",
+        "evidence": [
+          "DJ Luna said 'I was inspired by my trip to Berlin last summer. The music scene there is incredible.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "When did DJ Luna visit Berlin?",
+        "answer": "last summer",
+        "category": "2",
+        "evidence": [
+          "DJ Luna said 'I was inspired by my trip to Berlin last summer. The music scene there is incredible.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_1_date_time": "2024-11-12 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Tom",
+          "text": "Dr. Chen, I heard your paper on quantum computing was accepted!"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "Yes Tom! It's being published in the Science journal next month."
+        },
+        {
+          "speaker": "Tom",
+          "text": "Congratulations! What's the main breakthrough in your research?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "We've developed a new error correction algorithm that reduces decoherence by 40%."
+        },
+        {
+          "speaker": "Tom",
+          "text": "That's significant! How will this impact the field?"
+        },
+        {
+          "speaker": "Dr. Chen",
+          "text": "It could make practical quantum computers feasible within the next 5-10 years."
+        }
+      ],
+      "session_2_date_time": "2024-11-16 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "Which journal is Dr. Chen's paper being published in?",
+        "answer": "Science journal",
+        "category": "1",
+        "evidence": [
+          "Dr. Chen said 'Yes Tom! It's being published in the Science journal next month.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is the main breakthrough in Dr. Chen's research?",
+        "answer": "new error correction algorithm",
+        "category": "1",
+        "evidence": [
+          "Dr. Chen said 'We've developed a new error correction algorithm that reduces decoherence by 40%.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How much does the algorithm reduce decoherence?",
+        "answer": "40%",
+        "category": "3",
+        "evidence": [
+          "Dr. Chen said 'We've developed a new error correction algorithm that reduces decoherence by 40%.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_1_date_time": "2024-09-02 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_2_date_time": "2024-09-06 00:00:00",
+      "session_3": [
+        {
+          "speaker": "Maria",
+          "text": "Trainer Alex, I want to increase my bench press. What should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Let's start with your current weight. How much are you benching now?"
+        },
+        {
+          "speaker": "Maria",
+          "text": "I'm at 135 pounds currently."
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "Good base! We'll use progressive overload. Add 5 pounds every week."
+        },
+        {
+          "speaker": "Maria",
+          "text": "How many sets and reps should I do?"
+        },
+        {
+          "speaker": "Trainer Alex",
+          "text": "For strength, do 5 sets of 5 reps. Rest 3-4 minutes between sets."
+        }
+      ],
+      "session_3_date_time": "2024-09-14 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "How much is Maria currently bench pressing?",
+        "answer": "135 pounds",
+        "category": "3",
+        "evidence": [
+          "Maria said 'I'm at 135 pounds currently.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How much should Maria add each week?",
+        "answer": "5 pounds",
+        "category": "3",
+        "evidence": [
+          "Maria said 'I'm at 135 pounds currently.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How many sets and reps for strength training?",
+        "answer": "5 sets of 5 reps",
+        "category": "1",
+        "evidence": [
+          "Maria said 'How many sets and reps should I do?'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_1_date_time": "2024-02-28 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Mark",
+          "text": "Lily, have you read any good books lately?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound."
+        },
+        {
+          "speaker": "Mark",
+          "text": "I've heard of it. What's it about?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "It explores the infinite lives we could have lived, based on different choices. Really makes you think."
+        },
+        {
+          "speaker": "Mark",
+          "text": "Sounds interesting! What was your favorite part?"
+        },
+        {
+          "speaker": "Bookworm Lily",
+          "text": "The ending was perfect - it showed that even ordinary lives can be meaningful."
+        }
+      ],
+      "session_2_date_time": "2024-03-02 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What book did Lily just finish reading?",
+        "answer": "The Midnight Library by Matt Haig",
+        "category": "1",
+        "evidence": [
+          "Bookworm Lily said 'Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "Who is the author of the book?",
+        "answer": "Matt Haig",
+        "category": "1",
+        "evidence": [
+          "Bookworm Lily said 'Yes! I just finished 'The Midnight Library' by Matt Haig. It was profound.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What is the book about?",
+        "answer": "infinite lives based on different choices",
+        "category": "2",
+        "evidence": [
+          "Bookworm Lily said 'It explores the infinite lives we could have lived, based on different choices. Really makes you think.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  },
+  {
+    "conversation": {
+      "speaker_a": "Coach Mike",
+      "speaker_b": "Sarah",
+      "session_1": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_1_date_time": "2024-03-02 00:00:00",
+      "session_2": [
+        {
+          "speaker": "Ben",
+          "text": "Rose, your garden looks amazing this year! What's your secret?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Thanks Ben! I switched to organic compost this year. Makes a huge difference."
+        },
+        {
+          "speaker": "Ben",
+          "text": "What kind of compost do you use?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "I make my own from kitchen scraps and yard waste. It takes about 6 months to mature."
+        },
+        {
+          "speaker": "Ben",
+          "text": "Do you add anything else to the soil?"
+        },
+        {
+          "speaker": "Gardener Rose",
+          "text": "Yes, I also use worm castings. They're rich in nutrients and improve soil structure."
+        }
+      ],
+      "session_2_date_time": "2024-03-06 00:00:00"
+    },
+    "qa": [
+      {
+        "question": "What change did Rose make to her garden this year?",
+        "answer": "switched to organic compost",
+        "category": "1",
+        "evidence": [
+          "Gardener Rose said 'Thanks Ben! I switched to organic compost this year. Makes a huge difference.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "How long does it take Rose's compost to mature?",
+        "answer": "about 6 months",
+        "category": "3",
+        "evidence": [
+          "Gardener Rose said 'I make my own from kitchen scraps and yard waste. It takes about 6 months to mature.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      },
+      {
+        "question": "What else does Rose add to the soil besides compost?",
+        "answer": "worm castings",
+        "category": "1",
+        "evidence": [
+          "Gardener Rose said 'Yes, I also use worm castings. They're rich in nutrients and improve soil structure.'"
+        ],
+        "adversarial_answer": "I don't have that information."
+      }
+    ]
+  }
+]

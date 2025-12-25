@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 from cortex_mem import CortexMemAdd, CortexMemSearch
 
 
-def run_add_experiment():
+def run_add_experiment(data_path="dataset/locomo50.json"):
     """运行添加记忆的实验"""
     print("=" * 60)
     print("Cortex Mem 添加记忆实验")
@@ -25,7 +25,7 @@ def run_add_experiment():
     try:
         # 初始化 CortexMemAdd
         print("🔄 初始化 CortexMemAdd...")
-        add_manager = CortexMemAdd(data_path="dataset/locomo10.json", batch_size=1)
+        add_manager = CortexMemAdd(data_path=data_path, batch_size=1)
         print("✅ CortexMemAdd 初始化成功")
         
         # 处理所有对话
@@ -45,7 +45,7 @@ def run_add_experiment():
         return False
 
 
-def run_search_experiment():
+def run_search_experiment(data_path="dataset/locomo50.json", top_k=10):
     """运行搜索记忆的实验"""
     print("=" * 60)
     print("Cortex Mem 搜索记忆实验")
@@ -56,13 +56,13 @@ def run_search_experiment():
         print("🔄 初始化 CortexMemSearch...")
         search_manager = CortexMemSearch(
             output_path="results/cortex_mem_results.json", 
-            top_k=10
+            top_k=top_k
         )
         print("✅ CortexMemSearch 初始化成功")
         
         # 处理数据文件并生成结果
         print("🔄 开始搜索记忆并回答问题...")
-        search_manager.process_data_file("dataset/locomo10.json")
+        search_manager.process_data_file(data_path)
         print("✅ 搜索记忆实验完成")
         
         # 检查结果文件
@@ -93,6 +93,12 @@ def main():
         help="要运行的方法: add (添加记忆) 或 search (搜索记忆)"
     )
     parser.add_argument(
+        "--data",
+        type=str,
+        default="dataset/locomo50.json",
+        help="数据集文件路径 (默认: dataset/locomo50.json)"
+    )
+    parser.add_argument(
         "--top_k", 
         type=int, 
         default=10,
@@ -106,19 +112,22 @@ def main():
     
     print("🚀 开始运行 Cortex Mem 评估")
     print(f"📋 方法: {args.method}")
+    print(f"📊 数据集: {args.data}")
     
     success = False
     
     if args.method == "add":
-        success = run_add_experiment()
+        success = run_add_experiment(args.data)
     elif args.method == "search":
-        success = run_search_experiment()
+        success = run_search_experiment(args.data, args.top_k)
     
     if success:
         print("\n🎉 评估成功完成！")
         print("\n📋 后续步骤:")
-        print("1. 运行评估: python evals.py --input_file results/cortex_mem_results.json --output_file results/cortex_mem_evaluated.json")
-        print("2. 生成分数: python generate_scores.py")
+        print("1. 运行评估: python -m metrics.memory_evaluation \\")
+        print(f"   --results results/cortex_mem_results.json \\")
+        print(f"   --dataset {args.data} \\")
+        print(f"   --output results/cortex_mem_evaluated.json")
     else:
         print("\n❌ 评估失败，请检查错误信息")
         sys.exit(1)
