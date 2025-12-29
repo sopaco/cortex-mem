@@ -1,15 +1,15 @@
-# Cortex Mem 评估系统
+# 记忆系统评估框架
 
 ## 项目概述
 
-本评估系统是专为 Cortex Mem 记忆管理系统设计的专业评估框架，提供数据集、评估指标、基线对比和统计分析的完整解决方案。
+本评估系统是专为记忆管理系统设计的专业评估框架，支持 Cortex Memory、LangMem 等多种记忆系统的性能对比评估，提供数据集、评估指标、基线对比和统计分析的完整解决方案。
 
 ## 核心特性
 
 - 📊 **专业评估指标**: Recall@K, Precision@K, MRR, NDCG 等记忆系统专用指标
 - 🗄️ **增强数据集**: 50 个对话，150 个问题，涵盖多种场景
 - 📈 **统计分析**: 95% 置信区间、标准差、分类统计
-- 🤖 **基线对比**: 内置简单 RAG 基线用于性能对比
+- 🤖 **多系统支持**: 支持 Cortex Memory、LangMem、Simple RAG 等系统对比
 - 🔧 **模块化设计**: 清晰的组件分离，易于扩展和维护
 - 🛡️ **稳定性保障**: 指数退避重试、详细日志、错误恢复
 - 📄 **HTML报告**: 美观的可视化报告，包含图表和表格
@@ -18,38 +18,50 @@
 
 ```
 lomoco-evaluation/
-├── src/cortex_mem/              # Cortex Mem 专用模块
-│   ├── add.py                   # 记忆添加（含重试+统计）
-│   ├── search.py                # 记忆搜索
-│   └── config_utils.py          # 配置管理工具
+├── src/
+│   ├── cortex_mem/              # Cortex Memory 专用模块
+│   │   ├── add.py               # 记忆添加（含重试+统计）
+│   │   ├── search.py            # 记忆搜索
+│   │   └── config_utils.py      # 配置管理工具
+│   └── langmem_eval/            # LangMem 评估模块
+│       ├── add.py               # 记忆添加
+│       ├── search.py            # 记忆搜索
+│       └── config_utils.py      # 配置管理工具
 ├── dataset/                     # 数据集目录
-│   ├── locomo10.json            # 小型测试数据集 (10 对话)
+│   ├── locomo10.json            # 小型测试数据集 (10 对话, 40 问题)
 │   └── locomo50.json            # 主要评估数据集 (50 对话, 150 问题)
 ├── metrics/                     # 评估指标模块
-│   ├── memory_evaluation.py      # 记忆系统专用评估指标
-│   ├── improved_llm_judge.py   # 改进的 LLM 评判器 (0-5 分评分)
-│   └── utils.py                # 辅助工具函数
+│   ├── memory_evaluation.py     # 记忆系统专用评估指标
+│   ├── improved_llm_judge.py    # 改进的 LLM 评判器 (0-5 分评分)
+│   └── utils.py                 # 辅助工具函数
 ├── baselines/                   # 基线对比系统
-│   └── simple_rag.py          # 简单 RAG 基线
+│   └── simple_rag.py            # 简单 RAG 基线
 ├── results/                     # 结果输出目录
-├── config.toml                 # 主配置文件
-├── generate_enhanced_dataset.py # 数据集生成器
+├── config.toml                  # 主配置文件（所有系统共享）
 ├── generate_report.py           # HTML报告生成器
-├── run_cortex_mem_evaluation.py  # 主评估脚本
-└── README.md                   # 本文档
+├── run_cortex_mem_evaluation.py # Cortex Memory 评估脚本
+├── run_langmem_evaluation.py    # LangMem 评估脚本
+└── README.md                    # 本文档
 ```
 
 ## 快速开始
 
 ### 1. 环境准备
 
-确保系统已安装：
-- Rust 和 Cargo
+**基础依赖**（所有系统都需要）:
 - Python 3.8+
-- Qdrant 向量数据库
 - 必需的 Python 包: `pip install openai httpx toml tqdm jinja2 sentence-transformers scipy numpy`
 
-### 2. 启动 Qdrant 服务
+**Cortex Memory 专用**:
+- Rust 和 Cargo
+- Qdrant 向量数据库
+
+**LangMem 专用**:
+- LangMem 和 LangGraph: `pip install langmem langgraph`
+
+### 2. 启动 Qdrant 服务（仅 Cortex Memory 需要）
+
+如果使用 Cortex Memory，需要启动 Qdrant 服务：
 
 ```bash
 # macOS: 使用 Homebrew 安装
@@ -74,7 +86,7 @@ curl http://localhost:6334/health
 
 ### 3. 配置 API 密钥
 
-编辑 `config.toml` 文件，配置你的 API 密钥：
+编辑 `config.toml` 文件，配置你的 API 密钥（所有系统共享此配置）：
 
 ```toml
 [llm]
@@ -89,57 +101,158 @@ api_key = "your_api_key"
 
 [qdrant]
 url = "http://localhost:6334"
+collection_name = "memo-rs"
 ```
+
+**注意**:
+- `[llm]` 和 `[embedding]` 配置对所有系统（Cortex Memory、LangMem、Simple RAG）都适用
+- `[qdrant]` 配置仅用于 Cortex Memory
 
 ## 评估流程
 
-### 方式一：使用 Cortex Mem 评估
+### 方式一：使用 Cortex Memory 评估
+
+**适用场景**: 评估基于 Rust 实现的 Cortex Memory 记忆系统
+
+**前置要求**:
+- Rust 和 Cargo
+- Qdrant 向量数据库服务
 
 ```bash
 # 1. 添加记忆到 Cortex Mem
-python run_cortex_mem_evaluation.py --method add --data dataset/locomo50.json
+python3 run_cortex_mem_evaluation.py --method add --data dataset/locomo50.json
 
 # 2. 搜索记忆并生成答案
-python run_cortex_mem_evaluation.py --method search --data dataset/locomo50.json --top_k 10
+python3 run_cortex_mem_evaluation.py --method search --data dataset/locomo50.json --top_k 10
 
 # 3. 评估结果
-python -m metrics.memory_evaluation \
+python3 -m metrics.memory_evaluation \
   --results results/cortex_mem_results.json \
   --dataset dataset/locomo50.json \
   --output results/cortex_mem_evaluation.json
 
-# 4. 生成HTML报告（推荐）
-python generate_report.py \
+# 4. 生成HTML报告
+python3 generate_report.py \
   --results results/cortex_mem_evaluation.json \
-  --output results/report.html
+  --output results/cortex_mem_report.html
 ```
 
-### 方式二：使用基线对比
+### 方式二：使用 LangMem 评估
+
+**适用场景**: 评估基于 LangChain/LangGraph 的 LangMem 记忆系统
+
+**前置要求**:
+- 安装 LangMem: `pip install langmem langgraph`
+
+```bash
+# 1. 添加记忆到 LangMem
+python3 run_langmem_evaluation.py --method add --data dataset/locomo50.json
+
+# 2. 搜索记忆并生成答案
+python3 run_langmem_evaluation.py --method search --data dataset/locomo50.json --top_k 10
+
+# 3. 评估结果
+python3 -m metrics.memory_evaluation \
+  --results results/langmem_results.json \
+  --dataset dataset/locomo50.json \
+  --output results/langmem_evaluation.json
+
+# 4. 生成HTML报告
+python3 generate_report.py \
+  --results results/langmem_evaluation.json \
+  --output results/langmem_report.html
+```
+
+### 方式三：使用 Simple RAG 基线
+
+**适用场景**: 评估简单的 RAG 基线系统作为对比参考
 
 ```bash
 # 1. 运行简单 RAG 基线
-python baselines/simple_rag.py \
+python3 baselines/simple_rag.py \
   --data dataset/locomo50.json \
   --output results/simple_rag_results.json \
   --top_k 10
 
 # 2. 评估基线结果
-python -m metrics.memory_evaluation \
+python3 -m metrics.memory_evaluation \
   --results results/simple_rag_results.json \
   --dataset dataset/locomo50.json \
-  --output results/cortex_mem_evaluated.json
+  --output results/simple_rag_evaluation.json
 
 # 3. 生成HTML报告
-python generate_report.py \
-  --results results/cortex_mem_evaluated.json \
-  --output results/cortex_mem_evaluated.html
+python3 generate_report.py \
+  --results results/simple_rag_evaluation.json \
+  --output results/simple_rag_report.html
 ```
 
-### 生成自定义数据集
+### 快速测试（使用小数据集）
+
+如果要快速验证系统是否正常工作，可以使用小型数据集 `locomo10.json`：
 
 ```bash
-# 生成 100 个对话的数据集
-python generate_enhanced_dataset.py
+# Cortex Memory 快速测试
+python3 run_cortex_mem_evaluation.py --method add --data dataset/locomo10.json
+python3 run_cortex_mem_evaluation.py --method search --data dataset/locomo10.json --top_k 10
+python3 -m metrics.memory_evaluation \
+  --results results/cortex_mem_results.json \
+  --dataset dataset/locomo10.json \
+  --output results/cortex_mem_evaluation.json
+
+# LangMem 快速测试
+python3 run_langmem_evaluation.py --method add --data dataset/locomo10.json
+python3 run_langmem_evaluation.py --method search --data dataset/locomo10.json --top_k 10
+python3 -m metrics.memory_evaluation \
+  --results results/langmem_results.json \
+  --dataset dataset/locomo10.json \
+  --output results/langmem_evaluation.json
+```
+
+### 完整对比评估（推荐）
+
+如果要对比多个系统的性能，可以依次运行所有评估：
+
+```bash
+# 1. 运行 Cortex Memory 评估
+python3 run_cortex_mem_evaluation.py --method add --data dataset/locomo50.json
+python3 run_cortex_mem_evaluation.py --method search --data dataset/locomo50.json --top_k 10
+python3 -m metrics.memory_evaluation \
+  --results results/cortex_mem_results.json \
+  --dataset dataset/locomo50.json \
+  --output results/cortex_mem_evaluation.json
+python3 generate_report.py \
+  --results results/cortex_mem_evaluation.json \
+  --output results/cortex_mem_report.html
+
+# 2. 运行 LangMem 评估
+python3 run_langmem_evaluation.py --method add --data dataset/locomo50.json
+python3 run_langmem_evaluation.py --method search --data dataset/locomo50.json --top_k 10
+python3 -m metrics.memory_evaluation \
+  --results results/langmem_results.json \
+  --dataset dataset/locomo50.json \
+  --output results/langmem_evaluation.json
+python3 generate_report.py \
+  --results results/langmem_evaluation.json \
+  --output results/langmem_report.html
+
+# 3. 运行 Simple RAG 基线
+python3 baselines/simple_rag.py \
+  --data dataset/locomo50.json \
+  --output results/simple_rag_results.json \
+  --top_k 10
+python3 -m metrics.memory_evaluation \
+  --results results/simple_rag_results.json \
+  --dataset dataset/locomo50.json \
+  --output results/simple_rag_evaluation.json
+python3 generate_report.py \
+  --results results/simple_rag_evaluation.json \
+  --output results/simple_rag_report.html
+
+# 4. 对比结果
+# 打开三个报告文件进行对比：
+# - results/cortex_mem_report.html
+# - results/langmem_report.html
+# - results/simple_rag_report.html
 ```
 
 ## 评估指标说明
@@ -186,7 +299,7 @@ python generate_enhanced_dataset.py
 
 ## HTML 报告
 
-使用 `generate_report.py` 生成美观的 HTML 报告，包含：
+使用 `generate_report.py` 生成美观的 HTML 报告，报告会自动根据结果文件名显示对应的系统名称：
 
 - 📊 总体指标概览（卡片布局）
 - 📈 指标对比表格（按类别分组）
@@ -198,12 +311,20 @@ python generate_enhanced_dataset.py
 查看报告：
 
 ```bash
-# 在浏览器中打开
-open results/report.html
+# Cortex Memory 报告
+open results/cortex_mem_report.html
 
-# 或使用绝对路径
-open /path/to/results/report.html
+# LangMem 报告
+open results/langmem_report.html
+
+# Simple RAG 报告
+open results/simple_rag_report.html
 ```
+
+**注意**: 报告生成器会根据结果文件名自动识别系统名称：
+- 包含 `cortex_mem` → "Cortex Memory"
+- 包含 `langmem` → "LangMem"
+- 包含 `simple_rag` → "Simple RAG"
 
 ## 数据集格式
 
@@ -344,6 +465,13 @@ class NewBaseline:
 
 ## 版本历史
 
+### v3.0.0 (2025-12-29)
+- ✨ 新增 LangMem 评估支持
+- ✨ 新增多系统对比能力（Cortex Memory、LangMem、Simple RAG）
+- 📄 更新文档，添加完整的 LangMem 使用说明
+- 🎨 优化 HTML 报告生成器，自动识别系统名称
+- 🔧 改进配置管理，所有系统共享 config.toml
+
 ### v2.0.0 (2024-12-24)
 - ✨ 新增专业记忆系统评估指标 (Recall@K, MRR, NDCG)
 - ✨ 新增强数据集 (50 对话, 150 问题)
@@ -351,11 +479,10 @@ class NewBaseline:
 - ✨ 新增改进的 LLM 评判器 (0-5 分六级评分)
 - ✨ 新增简单 RAG 基线对比系统
 - 🛡️ 改进错误处理和重试机制
-- 🧹 删除旧代码和脚本，统一评估方案
 - 📄 新增 HTML 报告生成器
 
 ### v1.0.0 (2024-12-22)
 - 初始版本发布
-- 支持 Cortex Mem 评估
+- 支持 Cortex Memory 评估
 - 实现串行执行优化
 - 完整的 LOCOMO 数据集支持
