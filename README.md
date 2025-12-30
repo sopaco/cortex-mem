@@ -144,29 +144,94 @@ Cortex Memory includes a powerful web-based dashboard (`cortex-mem-insights`) th
   <em><strong>Interactive Dashboard:</strong> Get an overview of memory usage, system health, and activity statistics</em>
 </p>
 
-<div style="display: flex; justify-content: space-around; margin: 30px 0;">
-  <div style="text-align: center; width: 48%;">
-    <img src="./assets/snapshots/insights/snapshot_memories.png" alt="Memory Management" width="400">
-    <p><strong>Memory Management:</strong> View and manage individual memory records</p>
-  </div>
-  <div style="text-align: center; width: 48%;">
-    <img src="./assets/snapshots/insights/snapshot_optimization.png" alt="Optimization Panel" width="400">
-    <p><strong>Optimization Tools:</strong> Analyze and optimize memory quality</p>
-  </div>
-</div>
-
-<div style="display: flex; justify-content: space-around; margin: 30px 0;">
-  <div style="text-align: center; width: 48%;">
-    <img src="./assets/snapshots/insights/snapshot_monitor.png" alt="System Monitor" width="400">
-    <p><strong>System Monitor:</strong> Monitor memory performance and activity</p>
-  </div>
-  <div style="text-align: center; width: 48%;">
-    <img src="./assets/snapshots/insights/snapshot_analytics.png" alt="Analytics" width="400">
-    <p><strong>Analytics Dashboard:</strong> Detailed insights and trends over time</p>
-  </div>
+<div style="text-align: center;">
+  <table style="width: 100%; margin: 0 auto;">
+    <tr>
+        <th style="width: 50%;"><p><strong>Memory Management:</strong> View and manage individual memory records</p></td>
+        <th style="width: 50%;"><p><strong>Optimization Tools:</strong> Analyze and optimize memory quality</p></td>
+    </tr>
+    <tr>
+      <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_memories.png" alt="snapshot-1" style="width: 100%; height: auto; display: block;"></td>
+      <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_optimization.png" alt="snapshot-2" style="width: 100%; height: auto; display: block;"></td>
+    </tr>
+    <tr>
+        <th style="width: 50%;"><p><strong>System Monitor:</strong> Monitor memory performance and activity</p></td>
+        <th style="width: 50%;"><p><strong>Analytics Dashboard:</strong> Detailed insights and trends over time</p></td>
+    </tr>
+    <tr>
+        <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_monitor.png" alt="snapshot-1" style="width: 100%; height: auto; display: block;"></td>
+        <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_analytics.png" alt="snapshot-2" style="width: 100%; height: auto; display: block;"></td>
+    </tr>
+  </table>
 </div>
 
 These visual tools help you understand how Cortex Memory is performing and how your AI agent's memory is evolving over time.
+
+# 🏆 Benchmark
+
+Cortex Memory has been rigorously evaluated against LangMem using the **LOCOMO dataset** (50 conversations, 150 questions) through a standardized memory system evaluation framework. The results demonstrate Cortex Memory's superior performance across multiple dimensions.
+
+## Performance Comparison
+
+<p align="center">
+  <img src="./assets/benchmark/cortex_mem_vs_langmem.png" alt="Cortex Memory vs LangMem Benchmark" width="800">
+</p>
+
+<p align="center">
+  <em><strong>Overall Performance:</strong> Cortex Memory significantly outperforms LangMem across all key metrics</em>
+</p>
+
+### Key Metrics
+
+| Metric | Cortex Memory | LangMem | Improvement |
+|--------|---------------|---------|-------------|
+| **Recall@1** | 93.33% | 26.32% | **+67.02pp** |
+| **Recall@3** | 94.00% | 50.00% | +44.00pp |
+| **Recall@5** | 94.67% | 55.26% | +39.40pp |
+| **Recall@10** | 94.67% | 63.16% | +31.51pp |
+| **Precision@1** | 93.33% | 26.32% | +67.02pp |
+| **MRR** | 93.72% | 38.83% | **+54.90pp** |
+| **NDCG@5** | 80.73% | 18.72% | **+62.01pp** |
+| **NDCG@10** | 79.41% | 16.83% | **+62.58pp** |
+
+### Detailed Results
+
+<div style="text-align: center;">
+  <table style="width: 100%; margin: 0 auto;">
+    <tr>
+        <th style="width: 50%;"><p><strong>Cortex Memory Evaluation:</strong> Excellent retrieval performance with 93.33% Recall@1 and 93.72% MRR</p></td>
+        <th style="width: 50%;"><p><strong>LangMem Evaluation:</strong> Modest performance with 26.32% Recall@1 and 38.83% MRR</p></td>
+    </tr>
+    <tr>
+      <td style="width: 50%;"><img src="./assets/benchmark/evaluation_cortex_mem.webp" alt="Cortex Memory Evaluation" style="width: 100%; height: auto; display: block;"></td>
+      <td style="width: 50%;"><img src="./assets/benchmark/evaluation_langmem.webp" alt="LangMem Evaluation" style="width: 100%; height: auto; display: block;"></td>
+    </tr>
+  </table>
+</div>
+
+### Key Findings
+
+1. **Significantly Improved Retrieval Accuracy**: Cortex Memory achieves **93.33% Recall@1**, a **67.02 percentage point improvement** over LangMem's 26.32%. This indicates Cortex is far superior at retrieving relevant memories on the first attempt.
+
+2. **Clear Ranking Quality Advantage**: Cortex Memory's **MRR of 93.72%** vs LangMem's **38.83%** shows it not only retrieves accurately but also ranks relevant memories higher in the result list.
+
+3. **Comprehensive Performance Leadership**: Across all metrics — especially **NDCG@5 (80.73% vs 18.72%)** — Cortex demonstrates consistent, significant advantages in retrieval quality, ranking accuracy, and overall performance.
+
+4. **Technical Advantages**: Cortex Memory's performance is attributed to:
+   - Efficient **Rust-based implementation**
+   - Powerful retrieval capabilities of **Qdrant vector database**
+   - Optimized memory management strategies
+
+### Evaluation Framework
+
+The benchmark uses a professional memory system evaluation framework located in `examples/lomoco-evaluation`, which includes:
+
+- **Professional Metrics**: Recall@K, Precision@K, MRR, NDCG, and answer quality metrics
+- **Enhanced Dataset**: 50 conversations with 150 questions covering various scenarios
+- **Statistical Analysis**: 95% confidence intervals, standard deviation, and category-based statistics
+- **Multi-System Support**: Supports comparison between Cortex Memory, LangMem, and Simple RAG baselines
+
+For more details on running the evaluation, see the [lomoco-evaluation README](examples/lomoco-evaluation/README.md).
 
 # 🧠 How It Works
 
