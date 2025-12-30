@@ -147,16 +147,16 @@ Cortex Memory includes a powerful web-based dashboard (`cortex-mem-insights`) th
 <div style="text-align: center;">
   <table style="width: 100%; margin: 0 auto;">
     <tr>
-        <th style="width: 50%;"><p><strong>Management:</strong> View and manage individual memory records</p></td>
-        <th style="width: 50%;"><p><strong>Optimization:</strong> Analyze and optimize memory quality</p></td>
+        <th style="width: 50%;"><strong>View and manage individual memory records</strong></th>
+        <th style="width: 50%;"><strong>Analyze and optimize memory quality</strong></th>
     </tr>
     <tr>
       <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_memories.png" alt="snapshot-1" style="width: 100%; height: auto; display: block;"></td>
       <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_optimization.png" alt="snapshot-2" style="width: 100%; height: auto; display: block;"></td>
     </tr>
     <tr>
-        <th style="width: 50%;"><p><strong>Monitor:</strong> Monitor memory performance and activity</p></td>
-        <th style="width: 50%;"><p><strong>Analytics:</strong> Detailed insights and trends over time</p></td>
+        <th style="width: 50%;"><strong>Monitor memory performance and activity</strong></th>
+        <th style="width: 50%;"><strong>Detailed insights and trends over time</strong></th>
     </tr>
     <tr>
         <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_monitor.png" alt="snapshot-1" style="width: 100%; height: auto; display: block;"></td>
