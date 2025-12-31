@@ -1,74 +1,189 @@
-# Cargo.toml 版本更新工具
+# Cortex Mem 工具集
 
-这是一个用于统一更新 `cortex-mem` 项目中所有 `Cargo.toml` 文件版本的 JavaScript 工具。
+这是一个用于管理 `cortex-mem` Rust workspace 项目的工具集，包含版本更新和 crates.io 发布功能。
 
 ## 功能
+
+### 1. 版本更新工具 (`update-versions.js`)
 
 - 扫描项目中所有的 `Cargo.toml` 文件
 - 更新每个 crate 的版本号为指定值（默认为 1.0.0）
 - 自动更新内部依赖引用的版本号
 - 排除 `target`、`node_modules` 和 `.git` 目录
 
+### 2. Crates.io 发布工具 (`publish-crates.js`)
+
+- 按依赖顺序自动发布多个 crate 到 crates.io
+- 自动处理本地路径依赖（path dependencies）
+- 支持预发布检查（dry-run）
+- 自动等待 crate 在 crates.io 上可用
+- 发布后自动恢复原始 Cargo.toml
+
 ## 使用方法
 
-1. 打开终端或命令提示符
-2. 导航到项目的scripts目录:
-   ```bash
-   cd scripts
-   ```
+### 安装依赖
 
-3. 安装依赖:
-   ```bash
-   npm install
-   ```
+```bash
+cd scripts
+npm install
+```
 
-4. 运行脚本:
-   ```bash
-   npm run update-versions
-   ```
-   或
-   ```bash
-   node update-versions.js
-   ```
+### 更新版本号
 
-## 自定义版本
+要更新所有 crate 的版本号：
 
-要更新为不同的版本号，编辑 `update-versions.js` 文件顶部的 `VERSION` 常量:
+```bash
+npm run update-versions
+```
+
+或直接运行：
+
+```bash
+node update-versions.js
+```
+
+**自定义版本**：编辑 `update-versions.js` 文件顶部的 `VERSION` 常量：
 
 ```javascript
 const VERSION = '2.0.0'; // 更改为你想要的版本号
 ```
 
+### 发布到 crates.io
+
+#### 1. 预发布检查（推荐先运行）
+
+```bash
+npm run publish-dry-run
+```
+
+或：
+
+```bash
+node publish-crates.js --dry-run
+```
+
+这会检查所有 crate 是否可以发布，但不会实际执行发布操作。
+
+#### 2. 实际发布
+
+```bash
+npm run publish-crates
+```
+
+或：
+
+```bash
+node publish-crates.js
+```
+
+#### 3. 跳过等待时间（高级用户）
+
+```bash
+node publish-crates.js --skip-wait
+```
+
+此选项会跳过等待 crate 在 crates.io 上可用的步骤，适用于你知道 crate 已经可用的情况。
+
+## 发布流程
+
+发布工具会按以下顺序发布 crate（依赖顺序）：
+
+1. **cortex-mem-config** - 基础配置库
+2. **cortex-mem-core** - 核心引擎
+3. **cortex-mem-service** - HTTP 服务
+4. **cortex-mem-cli** - 命令行工具
+5. **cortex-mem-mcp** - MCP 服务器
+6. **cortex-mem-tars** - TUI 应用
+
+### 发布步骤
+
+对每个 crate，工具会执行以下操作：
+
+1. 检测是否有本地路径依赖
+2. 将路径依赖转换为版本依赖（临时修改 Cargo.toml）
+3. 运行 `cargo publish --dry-run` 进行预检查
+4. 如果预检查通过，运行 `cargo publish` 发布
+5. 等待 crate 在 crates.io 上可用（最多 120 秒）
+6. 恢复原始 Cargo.toml
+
+## 发布前准备清单
+
+在发布之前，请确保：
+
+- [ ] 已登录 crates.io：`cargo login`
+- [ ] 所有 crate 都有 `description` 和 `license` 字段
+- [ ] 所有 crate 都有 `README.md`
+- [ ] 版本号符合语义化版本规范（Semantic Versioning）
+- [ ] 运行 `cargo test` 确保所有测试通过
+- [ ] 运行 `cargo clippy` 检查代码质量
+- [ ] 更新 CHANGELOG.md（如果有）
+
 ## 示例输出
 
 ```
-==================================================
-Cargo.toml Version Updater
-Updating all versions to 1.0.0
-==================================================
-Scanning for Cargo.toml files...
-Found 11 Cargo.toml files
+============================================================
+Cortex Mem Crates Publishing Tool
+============================================================
 
-Updating package versions...
-  Updated version in Cargo.toml
-  Updated version in cortex-mem-cli/Cargo.toml
-  ...
+📦 Crates to publish (in dependency order):
+  1. cortex-mem-config v1.0.0
+  2. cortex-mem-core v1.0.0
+  3. cortex-mem-service v1.0.0
+  4. cortex-mem-cli v1.0.0
+  5. cortex-mem-mcp v1.0.0
+  6. cortex-mem-tars v1.0.0
 
-Updating internal dependencies...
-  Updated internal dependencies in cortex-mem-config/Cargo.toml
-  ...
+============================================================
 
-==================================================
-Update Summary:
-  11 package versions updated
-  3 dependency references updated
-==================================================
+⚠️  This will publish the above crates to crates.io
+Press Ctrl+C to cancel, or press Enter to continue...
 
-Version update completed successfully!
-You may want to run "cargo check" to verify all changes.
+📦 [1/6] Publishing cortex-mem-config v1.0.0
+    ⚠️  Found path dependencies, converting for publishing...
+    ✓ Dependencies converted
+    🔍 Running dry-run check...
+    ✓ Dry run passed
+    🚀 Publishing to crates.io...
+    ✓ cortex-mem-config v1.0.0 published successfully!
+    Restored original Cargo.toml
+
+...
+
+============================================================
+Publish Summary:
+  ✓ 6 crates published successfully
+============================================================
+
+🎉 All crates published successfully!
+You can now install them with: cargo add cortex-mem-core
 ```
+
+## 常见问题
+
+### Q: 发布失败怎么办？
+
+A: 检查错误信息，常见原因包括：
+- crates.io 上已有相同版本（需要增加版本号）
+- 依赖的 crate 还未发布到 crates.io
+- Cargo.toml 格式错误
+
+### Q: 如何回滚已发布的版本？
+
+A: crates.io 不支持删除已发布的版本。你需要：
+1. 发布一个新版本修复问题
+2. 在新版本中标记旧版本为已废弃（使用 `cargo yank`）
+
+### Q: 可以只发布部分 crate 吗？
+
+A: 可以。编辑 `publish-crates.js` 中的 `CRATES_TO_PUBLISH` 数组，只保留需要发布的 crate。
 
 ## 注意事项
 
-1. 脚本会在更新前自动备份原始文件的内容，但建议在运行前手动版本控制或备份
-2. 更新完成后，建议运行 `cargo check` 或 `cargo build` 验证所有更改
+1. **备份**：脚本会自动备份原始 Cargo.toml 文件，但建议在运行前手动提交到 git
+2. **网络**：发布过程需要稳定的网络连接
+3. **API Token**：确保已使用 `cargo login` 配置 crates.io API token
+4. **等待时间**：每个 crate 发布后需要等待约 1-2 分钟才能在 crates.io 上可用
+
+## 许可证
+
+MIT License - 与 cortex-mem 项目一致
