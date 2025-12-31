@@ -2,6 +2,8 @@
 name = "cortex-mem-config"
 version = "1.0.0"
 edition = "2024"
+description = "Configuration crate for Cortex Memory system"
+license = "MIT"
 
 [dependencies]
 serde = { workspace = true }

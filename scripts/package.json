@@ -1,20 +1,22 @@
 {
-  "name": "cortex-mem-version-updater",
-  "version": "1.0.0",
-  "description": "Tool to update Cargo.toml versions across all crates",
-  "main": "update-versions.js",
-  "scripts": {
-    "update-versions": "node update-versions.js"
-  },
-  "dependencies": {
-    "glob": "^10.3.10"
-  },
-  "keywords": [
-    "cargo",
-    "rust",
-    "version",
-    "update"
-  ],
-  "author": "cortex-mem",
-  "license": "MIT"
+	"name": "cortex-mem-publish-tools",
+	"version": "1.0.0",
+	"description": "Cortex Memory Project Release Tool",
+	"scripts": {
+		"update-versions": "node update-versions.js",
+		"publish-crates": "node publish-crates.js",
+		"publish-dry-run": "node publish-crates.js --dry-run"
+	},
+	"dependencies": {
+		"glob": "^10.3.10"
+	},
+	"keywords": [
+		"cargo",
+		"rust",
+		"version",
+		"publish",
+		"workspace"
+	],
+	"author": "cortex-mem",
+	"license": "MIT"
 }
