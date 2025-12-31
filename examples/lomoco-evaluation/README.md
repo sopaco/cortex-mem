@@ -50,18 +50,17 @@ lomoco-evaluation/
 
 **基础依赖**（所有系统都需要）:
 - Python 3.8+
-- 必需的 Python 包: `pip install openai httpx toml tqdm jinja2 sentence-transformers scipy numpy`
+- 必需的 Python 包: `pip install openai httpx toml tqdm jinja2 sentence-transformers scipy numpy qdrant-client`
 
 **Cortex Memory 专用**:
 - Rust 和 Cargo
-- Qdrant 向量数据库
 
 **LangMem 专用**:
-- LangMem 和 LangGraph: `pip install langmem langgraph`
+- 无额外依赖（现在使用 Qdrant 向量数据库，与 Cortex Memory 相同）
 
-### 2. 启动 Qdrant 服务（仅 Cortex Memory 需要）
+### 2. 启动 Qdrant 服务（所有系统都需要）
 
-如果使用 Cortex Memory，需要启动 Qdrant 服务：
+Cortex Memory 和 LangMem 都需要 Qdrant 向量数据库服务：
 
 ```bash
 # macOS: 使用 Homebrew 安装
@@ -139,16 +138,16 @@ python3 generate_report.py \
 
 ### 方式二：使用 LangMem 评估
 
-**适用场景**: 评估基于 LangChain/LangGraph 的 LangMem 记忆系统
+**适用场景**: 评估基于 Qdrant 向量数据库的 LangMem 记忆系统
 
 **前置要求**:
-- 安装 LangMem: `pip install langmem langgraph`
+- 无额外依赖（使用与 Cortex Memory 相同的 Qdrant 向量数据库）
 
 ```bash
-# 1. 添加记忆到 LangMem
+# 1. 添加记忆到 LangMem（使用 Qdrant 向量数据库）
 python3 run_langmem_evaluation.py --method add --data dataset/locomo50.json
 
-# 2. 搜索记忆并生成答案
+# 2. 搜索记忆并生成答案（使用语义搜索）
 python3 run_langmem_evaluation.py --method search --data dataset/locomo50.json --top_k 10
 
 # 3. 评估结果
@@ -162,6 +161,8 @@ python3 generate_report.py \
   --results results/langmem_evaluation.json \
   --output results/langmem_report.html
 ```
+
+**注意**: LangMem 现在使用与 Cortex Memory 相同的 Qdrant 向量数据库和 embedding 模型，确保评测的公平性。
 
 ### 方式三：使用 Simple RAG 基线
 

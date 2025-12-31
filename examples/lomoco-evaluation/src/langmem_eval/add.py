@@ -2,15 +2,17 @@ import json
 import os
 import time
 import logging
+import toml
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from tqdm import tqdm
 
 try:
-    from langgraph.store.memory import InMemoryStore
+    from qdrant_client import QdrantClient
+    from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
 except ImportError:
     raise ImportError(
-        "langgraph is not installed. Please install it using: pip install langgraph"
+        "qdrant-client is not installed. Please install it using: pip install qdrant-client"
     )
 
 from .config_utils import check_openai_config, get_config_value, validate_config
@@ -20,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class LangMemAdd:
-    """Class to add memories to LangMem for evaluation"""
+    """Class to add memories to LangMem for evaluation using Qdrant vector database"""
     
     def __init__(self, data_path=None, batch_size=2, config_path=None):
         self.batch_size = batch_size
@@ -83,31 +85,89 @@ class LangMemAdd:
         raise FileNotFoundError("Could not find config.toml file")
 
     def _initialize_langmem(self):
-        """Initialize LangMem memory store"""
+        """Initialize LangMem with Qdrant vector database and embedding model"""
         try:
-            # Get LLM configuration
-            api_key = get_config_value(self.config_path, "llm", "api_key")
-            api_base_url = get_config_value(self.config_path, "llm", "api_base_url")
-            model_name = get_config_value(self.config_path, "llm", "model_efficient", "gpt-3.5-turbo")
+            # Load config
+            config_data = toml.load(self.config_path)
             
-            # Create OpenAI client for answer generation
+            # Get Qdrant configuration
+            qdrant_config = config_data.get("qdrant", {})
+            self.qdrant_url = qdrant_config.get("url", "http://localhost:6334")
+            self.collection_name = qdrant_config.get("collection_name", "memo-rs")
+            
+            # Get embedding configuration
+            embedding_config = config_data.get("embedding", {})
+            self.embedding_api_base_url = embedding_config.get("api_base_url", "")
+            self.embedding_api_key = embedding_config.get("api_key", "")
+            self.embedding_model_name = embedding_config.get("model_name", "")
+            self.embedding_batch_size = embedding_config.get("batch_size", 10)
+            
+            # Initialize Qdrant client
+            self.qdrant_client = QdrantClient(url=self.qdrant_url)
+            
+            # Create collection if it doesn't exist
+            self._ensure_collection_exists()
+            
+            # Initialize embedding client
             import httpx
             from openai import OpenAI
             
-            self.openai_client = OpenAI(
-                api_key=api_key,
-                base_url=api_base_url,
+            self.embedding_client = OpenAI(
+                api_key=self.embedding_api_key,
+                base_url=self.embedding_api_base_url,
                 http_client=httpx.Client(verify=False)
             )
             
-            # Create memory store
-            self.store = InMemoryStore()
+            # Get embedding dimension
+            self.embedding_dim = self._get_embedding_dimension()
             
-            logger.info("✅ LangMem initialized successfully")
+            logger.info(f"✅ LangMem initialized successfully with Qdrant at {self.qdrant_url}")
+            logger.info(f"✅ Collection: {self.collection_name}, Embedding dim: {self.embedding_dim}")
             
         except Exception as e:
             logger.error(f"❌ Failed to initialize LangMem: {e}")
             raise
+
+    def _ensure_collection_exists(self):
+        """Ensure Qdrant collection exists, create if not"""
+        try:
+            collections = self.qdrant_client.get_collections().collections
+            collection_names = [c.name for c in collections]
+            
+            if self.collection_name not in collection_names:
+                # Get embedding dimension first
+                embedding_dim = self._get_embedding_dimension()
+                logger.info(f"Creating collection: {self.collection_name} with dim={embedding_dim}")
+                self.qdrant_client.create_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=VectorParams(size=embedding_dim, distance=Distance.COSINE)
+                )
+        except Exception as e:
+            logger.warning(f"Could not ensure collection exists: {e}")
+
+    def _get_embedding_dimension(self) -> int:
+        """Get embedding dimension by making a test call"""
+        try:
+            response = self.embedding_client.embeddings.create(
+                model=self.embedding_model_name,
+                input=["test"]
+            )
+            return len(response.data[0].embedding)
+        except Exception as e:
+            logger.warning(f"Could not get embedding dimension, using default 1024: {e}")
+            return 1024
+
+    def _get_embedding(self, text: str) -> List[float]:
+        """Get embedding for text"""
+        try:
+            response = self.embedding_client.embeddings.create(
+                model=self.embedding_model_name,
+                input=text
+            )
+            return response.data[0].embedding
+        except Exception as e:
+            logger.error(f"Error getting embedding: {e}")
+            return []
 
     def load_data(self):
         if not self.data_path:
@@ -117,23 +177,37 @@ class LangMemAdd:
         return self.data
 
     def add_memory(self, user_id: str, content: str, timestamp: str = "") -> bool:
-        """Add a memory using LangMem store"""
+        """Add a memory using Qdrant vector database with embedding"""
         try:
-            # Create namespace for this user
-            namespace = ("memories", user_id)
+            # Generate embedding for the content
+            embedding = self._get_embedding(content)
             
-            # Generate a unique key for this memory
+            if not embedding:
+                logger.error(f"❌ Failed to generate embedding for user {user_id}")
+                self.stats["failed_memories"] += 1
+                return False
+            
+            # Generate a unique ID for this memory
             import uuid
-            memory_key = str(uuid.uuid4())
+            memory_id = str(uuid.uuid4())
             
-            # Store the memory directly
-            memory_value = {
-                "content": content,
-                "timestamp": timestamp,
-                "created_at": time.time()
-            }
+            # Create point for Qdrant
+            point = PointStruct(
+                id=memory_id,
+                vector=embedding,
+                payload={
+                    "user_id": user_id,
+                    "content": content,
+                    "timestamp": timestamp,
+                    "created_at": time.time()
+                }
+            )
             
-            self.store.put(namespace, memory_key, memory_value)
+            # Insert into Qdrant
+            self.qdrant_client.upsert(
+                collection_name=self.collection_name,
+                points=[point]
+            )
             
             self.stats["successful_memories"] += 1
             logger.debug(f"✅ Successfully added memory for user {user_id}")
@@ -260,39 +334,6 @@ class LangMemAdd:
         
         # Print summary
         self.print_summary()
-        
-        # Save the store to a file for later use
-        self._save_store_to_file()
-    
-    def _save_store_to_file(self):
-        """Save the memory store to a file using JSON"""
-        import json
-        memory_file = "results/langmem_store.json"
-        try:
-            os.makedirs("results", exist_ok=True)
-            
-            # Convert store to a serializable format
-            memories_dict = {}
-            for namespace_tuple in self.store._data.keys():
-                namespace_str = "/".join(namespace_tuple)
-                memories_dict[namespace_str] = {}
-                for key, value in self.store._data[namespace_tuple].items():
-                    # Convert Item to dict
-                    memories_dict[namespace_str][key] = {
-                        "namespace": namespace_tuple,
-                        "key": key,
-                        "value": value.value if hasattr(value, 'value') else value
-                    }
-            
-            # Save as JSON
-            with open(memory_file, 'w') as f:
-                json.dump(memories_dict, f, indent=2)
-            
-            print(f"✅ Saved memory store to {memory_file}")
-        except Exception as e:
-            print(f"⚠️  Could not save memory store to file: {e}")
-            import traceback
-            traceback.print_exc()
     
     def print_summary(self):
         """Print processing summary"""
