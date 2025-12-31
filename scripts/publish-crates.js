@@ -119,12 +119,7 @@ function restoreCargoToml(cratePath) {
 // Run cargo publish
 function publishCrate(cratePath, dryRun = false) {
   try {
-    let command = dryRun ? 'cargo publish --dry-run' : 'cargo publish';
-    
-    // Add --allow-dirty flag for dry-run mode to ignore uncommitted changes
-    if (dryRun) {
-      command += ' --allow-dirty';
-    }
+    let command = dryRun ? 'cargo publish --dry-run --allow-dirty' : 'cargo publish --allow-dirty';
     
     execSync(command, {
       cwd: path.join(PROJECT_ROOT, cratePath),
@@ -146,7 +141,8 @@ function waitForCrateAvailability(crateName, maxWaitSeconds = 120) {
   return new Promise((resolve, reject) => {
     const checkAvailability = () => {
       try {
-        execSync(`cargo search ${crateName} --limit 1`, {
+        // Use curl to check crates.io API directly
+        execSync(`curl -s -f "https://crates.io/api/v1/crates/${crateName}" > /dev/null`, {
           stdio: 'pipe',
         });
         console.log(colorize(`    ✓ ${crateName} is now available on crates.io`, 'green'));
@@ -165,6 +161,19 @@ function waitForCrateAvailability(crateName, maxWaitSeconds = 120) {
   });
 }
 
+// Check if crate is already published on crates.io using API
+function isCratePublished(crateName) {
+  try {
+    // Use curl to check crates.io API directly
+    execSync(`curl -s -f "https://crates.io/api/v1/crates/${crateName}" > /dev/null`, {
+      stdio: 'pipe',
+    });
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 // Main function
 async function main() {
   console.log(colorize('='.repeat(60), 'cyan'));
@@ -174,16 +183,22 @@ async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes('--dry-run');
   const skipWait = args.includes('--skip-wait');
+  const force = args.includes('--force'); // New flag to force republish
 
   if (dryRun) {
     console.log(colorize('\n⚠️  DRY RUN MODE - No actual publishing will occur', 'yellow'));
-    console.log(colorize('   Note: --allow-dirty flag is automatically added in dry-run mode', 'yellow'));
+    console.log(colorize('   Note: --allow-dirty flag is automatically added', 'yellow'));
+  }
+
+  if (force) {
+    console.log(colorize('\n⚠️  FORCE MODE - Will attempt to republish all crates', 'yellow'));
   }
 
   console.log(colorize('\n📦 Crates to publish (in dependency order):', 'blue'));
   CRATES_TO_PUBLISH.forEach((crate, index) => {
     const version = getVersion(crate.path);
-    console.log(`  ${index + 1}. ${colorize(crate.name, 'green')} v${version}`);
+    const published = isCratePublished(crate.name);
+    console.log(`  ${index + 1}. ${colorize(crate.name, published ? 'yellow' : 'green')} v${version} ${published ? '(already published)' : ''}`);
   });
 
   console.log(colorize('\n' + '='.repeat(60), 'cyan'));
@@ -199,10 +214,18 @@ async function main() {
 
   let successCount = 0;
   let failCount = 0;
+  let skippedCount = 0;
 
   for (let i = 0; i < CRATES_TO_PUBLISH.length; i++) {
     const crate = CRATES_TO_PUBLISH[i];
     const version = getVersion(crate.path);
+
+    // Skip if already published (unless force mode)
+    if (!force && isCratePublished(crate.name)) {
+      console.log(colorize(`\n⏭️  [${i + 1}/${CRATES_TO_PUBLISH.length}] Skipping ${crate.name} v${version} - already published`, 'yellow'));
+      skippedCount++;
+      continue;
+    }
 
     console.log(colorize(`\n📦 [${i + 1}/${CRATES_TO_PUBLISH.length}] Publishing ${crate.name} v${version}`, 'bright'));
 
@@ -263,6 +286,9 @@ async function main() {
   console.log(colorize('\n' + '='.repeat(60), 'cyan'));
   console.log(colorize('Publish Summary:', 'bright'));
   console.log(`  ${colorize('✓', 'green')} ${successCount} crates ${dryRun ? 'ready' : 'published'} successfully`);
+  if (skippedCount > 0) {
+    console.log(`  ${colorize('⏭️', 'yellow')} ${skippedCount} crates skipped (already published)`);
+  }
   if (failCount > 0) {
     console.log(`  ${colorize('✗', 'red')} ${failCount} crates failed`);
   }
