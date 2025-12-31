@@ -142,215 +142,266 @@ def generate_html(results_file, output_file="report.html"):
         }}
 
         body {{
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #1a1a2e;
             padding: 20px;
+            min-height: 100vh;
         }}
 
         .container {{
             max-width: 1400px;
             margin: 0 auto;
+            background: white;
+            border-radius: 2px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
         }}
 
         .header {{
-            text-align: center;
-            margin-bottom: 40px;
-            padding: 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 10px;
+            background: #1e3a5f;
             color: white;
+            padding: 20px 30px;
+            text-align: center;
         }}
 
         .header h1 {{
-            margin: 0 0 10px 0;
-            font-size: 2.5em;
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            font-weight: 700;
         }}
 
-        .header p {{
-            margin: 10px 0 0 0;
-            font-size: 1.1em;
+        .header .subtitle {{
+            font-size: 0.9em;
             opacity: 0.9;
         }}
 
-        .section {{
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        .header .date {{
+            margin-top: 8px;
+            font-size: 0.8em;
+            opacity: 0.8;
         }}
 
-        .section-title {{
+        .summary {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 25px;
+            background: #f8fafc;
+        }}
+
+        .summary-card {{
+            background: white;
+            padding: 15px;
+            border-radius: 2px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            text-align: center;
+            transition: transform 0.2s ease;
+        }}
+
+        .summary-card:hover {{
+            transform: translateY(-1px);
+        }}
+
+        .summary-card h3 {{
+            color: #4a5568;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }}
+
+        .summary-card .value {{
             font-size: 1.8em;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #e9ecef;
+            font-weight: 700;
+            color: #1e3a5f;
+            margin-bottom: 3px;
+        }}
+
+        .summary-card .label {{
+            color: #94a3b8;
+            font-size: 0.75em;
+        }}
+
+        .content {{
+            padding: 25px;
+        }}
+
+        .section {{
+            margin-bottom: 30px;
+        }}
+
+        .section h2 {{
+            color: #1e293b;
+            font-size: 1.4em;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #1e3a5f;
         }}
 
         .card-grid {{
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 15px;
+            margin-bottom: 25px;
         }}
 
         .card {{
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 20px;
-            transition: box-shadow 0.3s;
+            background: white;
+            padding: 15px;
+            border-radius: 2px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            border-left: 3px solid #1e3a5f;
         }}
 
         .card:hover {{
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
         }}
 
         .metric-name {{
-            font-size: 1.3em;
+            font-size: 1em;
             font-weight: 600;
-            color: #495057;
+            color: #1e293b;
             margin-bottom: 10px;
         }}
 
         .metric-value {{
-            font-size: 2.5em;
+            font-size: 2em;
             font-weight: 700;
-            color: #2c3e50;
-            margin: 15px 0;
+            color: #1e3a5f;
+            margin: 10px 0;
         }}
 
         .metric-details {{
-            color: #6c757d;
-            font-size: 0.95em;
+            color: #64748b;
+            font-size: 0.85em;
             line-height: 1.5;
         }}
 
-        .badge {{
+        .metric-details > div {{
+            margin-bottom: 4px;
+        }}
+
+        .rating-badge {{
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 0.9em;
-            font-weight: 500;
-            margin-bottom: 10px;
-        }}
-
-        .badge.success {{
-            background: #d4edda;
-            color: #155724;
-        }}
-
-        .badge.info {{
-            background: #d1ecf1;
-            color: #0c5460;
+            padding: 4px 10px;
+            border-radius: 2px;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: white;
+            margin-top: 10px;
         }}
 
         .table {{
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
             background: white;
-            border-radius: 8px;
+            border-radius: 2px;
             overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
         }}
 
         .table thead {{
-            background: #f8f9fa;
+            background: #1e3a5f;
+            color: white;
         }}
 
         .table th {{
-            padding: 15px;
+            padding: 10px;
             text-align: left;
             font-weight: 600;
-            color: #495057;
-            border-bottom: 2px solid #dee2e6;
+            font-size: 0.85em;
         }}
 
         .table td {{
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #e9ecef;
-        }}
-
-        .table tbody tr:last-child td {{
-            border-bottom: none;
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.9em;
         }}
 
         .table tbody tr:hover {{
-            background: #f1f5f9;
-        }}
-
-        .bar-container {{
-            margin: 10px 0;
-            background: #f1f5f9;
-            border-radius: 4px;
-            padding: 3px;
-        }}
-
-        .bar {{
-            height: 24px;
-            border-radius: 4px;
-            transition: width 0.3s;
+            background: #f8fafc;
         }}
 
         .info-grid {{
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 15px;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
             margin-top: 10px;
         }}
 
         .info-item {{
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 4px;
+            padding: 8px 10px;
+            background: #f8fafc;
+            border-radius: 2px;
         }}
 
         .info-label {{
-            font-size: 0.85em;
-            color: #6c757d;
+            font-size: 0.75em;
+            color: #64748b;
             font-weight: 500;
         }}
 
         .info-value {{
-            font-size: 1.1em;
+            font-size: 1em;
             font-weight: 600;
-            color: #495057;
+            color: #1e3a5f;
         }}
 
         .legend {{
-            background: #fff3cd;
-            border: 1px solid #d4edda;
-            border-radius: 6px;
+            background: #f0f4f8;
             padding: 15px;
+            border-radius: 2px;
             margin-top: 20px;
-            font-size: 0.9em;
+            border-left: 3px solid #1e3a5f;
+            font-size: 0.85em;
+        }}
+
+        .legend h3 {{
+            color: #1e3a5f;
+            margin-bottom: 12px;
+            font-size: 1em;
         }}
 
         .legend-item {{
             display: flex;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }}
 
         .legend-color {{
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            margin-right: 10px;
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            margin-right: 8px;
             flex-shrink: 0;
         }}
 
         .footer {{
             text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-            color: #6c757d;
-            font-size: 0.9em;
+            padding: 15px;
+            color: #64748b;
+            font-size: 0.8em;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+        }}
+
+        @media (max-width: 768px) {{
+            .summary {{
+                grid-template-columns: 1fr;
+            }}
+
+            .card-grid {{
+                grid-template-columns: 1fr;
+            }}
+
+            .table {{
+                font-size: 0.85em;
+            }}
+
+            .table th,
+            .table td {{
+                padding: 8px;
+            }}
         }}
     </style>
 </head>
@@ -358,18 +409,12 @@ def generate_html(results_file, output_file="report.html"):
     <div class="container">
         <div class="header">
             <h1>📊 {system_name} 评估报告</h1>
-            <p>生成时间: {datetime.now().strftime("%Y年%m月%d日 %H:%M")}</p>
-            <div>
-                <span class="badge success">数据集</span>
-                <span class="badge info">150 个问题</span>
-            </div>
+            <p class="subtitle">记忆系统性能评估报告</p>
+            <p class="date">生成时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
         </div>
 
         <!-- 总体指标概览 -->
-        <div class="section">
-            <h2 class="section-title">📈 总体指标概览</h2>
-
-            <div class="card-grid">
+        <div class="summary">
 """
 
     # 生成核心指标卡片
@@ -385,43 +430,36 @@ def generate_html(results_file, output_file="report.html"):
         if metric_key in overall:
             metric_data = overall[metric_key]
             html_content += f"""
-                <div class="card">
-                    <div class="metric-name">{label}</div>
-                    <div class="metric-value">{format_value(metric_data["mean"], 3)}</div>
-                    <div class="metric-details">
-                        <div>标准差: ±{format_value(metric_data["std"], 3)}</div>
-                        <div>中位数: {format_value(metric_data["median"], 3)}</div>
-                        <div>样本数: {metric_data["count"]}</div>
-                        <div style="margin-top: 10px; padding: 10px; background: {get_rating_color(metric_data["mean"])}; color: white; border-radius: 4px;">
-                            评级: {get_rating_label(metric_data["mean"])}
-                        </div>
-                    </div>
-                </div>
+            <div class="summary-card">
+                <h3>{label}</h3>
+                <div class="value">{format_value(metric_data["mean"], 3)}</div>
+                <div class="label">标准差: ±{format_value(metric_data["std"], 3)}</div>
+            </div>
 """
 
     html_content += """
-            </div>
         </div>
 """
 
     # 指标对比表格
     html_content += """
-        <div class="section">
-            <h2 class="section-title">📊 指标对比表格</h2>
+        <div class="content">
+            <div class="section">
+                <h2>📊 指标对比表格</h2>
 
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>指标名称</th>
-                        <th>类别</th>
-                        <th>均值</th>
-                        <th>标准差</th>
-                        <th>95% 置信区间</th>
-                        <th>样本数</th>
-                        <th>评级</th>
-                    </tr>
-                </thead>
-                <tbody>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>指标名称</th>
+                            <th>类别</th>
+                            <th>均值</th>
+                            <th>标准差</th>
+                            <th>95% 置信区间</th>
+                            <th>样本数</th>
+                            <th>评级</th>
+                        </tr>
+                    </thead>
+                    <tbody>
 """
 
     for metric_key in sorted(overall.keys()):
@@ -433,29 +471,29 @@ def generate_html(results_file, output_file="report.html"):
             ci_low, ci_high = metric_data["confidence_interval_95"]
 
             html_content += f"""
-                    <tr>
-                        <td><strong>{info["name"]}</strong></td>
-                        <td>{info["category"]}</td>
-                        <td>{format_value(metric_data["mean"], 4)}</td>
-                        <td>{format_value(metric_data["std"], 4)}</td>
-                        <td>{format_value(ci_low, 4)} - {format_value(ci_high, 4)}</td>
-                        <td>{metric_data["count"]}</td>
-                        <td style="color: {get_rating_color(metric_data["mean"])}; font-weight: 600;">{rating}</td>
-                    </tr>
+                        <tr>
+                            <td><strong>{info["name"]}</strong></td>
+                            <td>{info["category"]}</td>
+                            <td>{format_value(metric_data["mean"], 4)}</td>
+                            <td>{format_value(metric_data["std"], 4)}</td>
+                            <td>{format_value(ci_low, 4)} - {format_value(ci_high, 4)}</td>
+                            <td>{metric_data["count"]}</td>
+                            <td style="color: {get_rating_color(metric_data["mean"])}; font-weight: 600;">{rating}</td>
+                        </tr>
 """
 
     html_content += """
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
+            </div>
 """
 
     # 按分类别的指标
     html_content += """
-        <div class="section">
-            <h2 class="section-title">📂 分类指标详情</h2>
+            <div class="section">
+                <h2>📂 分类指标详情</h2>
 
-            <div class="card-grid">
+                <div class="card-grid">
 """
 
     category_names = {
@@ -468,78 +506,78 @@ def generate_html(results_file, output_file="report.html"):
         if cat_key in categories:
             cat_data = categories[cat_key]
             html_content += f"""
-                <div class="card">
-                    <h3 style="margin: 0 0 15px 0; color: #2c3e50;">{cat_name}</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <div class="info-label">问题数量</div>
-                            <div class="info-value">{cat_data.get("recall_at_1", {}).get("count", 0)}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Recall@1</div>
-                            <div class="info-value">{format_value(cat_data.get("recall_at_1", {}).get("mean", 0), 3)}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">Precision@1</div>
-                            <div class="info-value">{format_value(cat_data.get("precision_at_1", {}).get("mean", 0), 3)}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">MRR</div>
-                            <div class="info-value">{format_value(cat_data.get("mrr", {}).get("mean", 0), 3)}</div>
-                        </div>
-                        <div class="info-item">
-                            <div class="info-label">语义相似度</div>
-                            <div class="info-value">{format_value(cat_data.get("answer_semantic_similarity", {}).get("mean", 0), 3)}</div>
+                    <div class="card">
+                        <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 1em;">{cat_name}</h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">问题数量</div>
+                                <div class="info-value">{cat_data.get("recall_at_1", {}).get("count", 0)}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Recall@1</div>
+                                <div class="info-value">{format_value(cat_data.get("recall_at_1", {}).get("mean", 0), 3)}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Precision@1</div>
+                                <div class="info-value">{format_value(cat_data.get("precision_at_1", {}).get("mean", 0), 3)}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">MRR</div>
+                                <div class="info-value">{format_value(cat_data.get("mrr", {}).get("mean", 0), 3)}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">语义相似度</div>
+                                <div class="info-value">{format_value(cat_data.get("answer_semantic_similarity", {}).get("mean", 0), 3)}</div>
+                            </div>
                         </div>
                     </div>
-                </div>
 """
 
     html_content += """
+                </div>
             </div>
-        </div>
 """
 
     # 指标说明
     html_content += """
-        <div class="section">
-            <h2 class="section-title">📖 指标定义和说明</h2>
+            <div class="section">
+                <h2>📖 指标定义和说明</h2>
 
-            <div class="card-grid">
+                <div class="card-grid">
 """
 
     for metric_key, info in metrics_info.items():
         if metric_key in overall:
             html_content += f"""
-                <div class="card">
-                    <div class="metric-name">{info["name"]}</div>
-                    <div class="metric-details">
-                        <div style="margin-bottom: 8px;"><strong>类别:</strong> {info["category"]}</div>
-                        <div style="margin-bottom: 8px;"><strong>说明:</strong> {info["description"]}</div>
+                    <div class="card">
+                        <div class="metric-name">{info["name"]}</div>
+                        <div class="metric-details">
+                            <div style="margin-bottom: 6px;"><strong>类别:</strong> {info["category"]}</div>
+                            <div><strong>说明:</strong> {info["description"]}</div>
+                        </div>
                     </div>
-                </div>
 """
 
     html_content += """
+                </div>
             </div>
-        </div>
 
-        <div class="legend">
-            <h3 style="margin: 0 0 15px 0;">📊 评级说明</h3>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #10b981;"></div>
-                <span>优秀 (≥ 0.90)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #f59e0b;"></div>
-                <span>良好 (0.70 - 0.89)</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #ef4444;"></div>
-                <span>需要改进 (&lt; 0.70)</span>
+            <div class="legend">
+                <h3>📊 评级说明</h3>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #10b981;"></div>
+                    <span>优秀 (≥ 0.90)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f59e0b;"></div>
+                    <span>良好 (0.70 - 0.89)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ef4444;"></div>
+                    <span>需要改进 (&lt; 0.70)</span>
+                </div>
             </div>
         </div>
-    </div>
 """
 
     # 页脚
