@@ -202,14 +202,29 @@ impl QdrantVectorStore {
 
         // Store entities and topics as arrays
         if !memory.metadata.entities.is_empty() {
-            let entities_json =
-                serde_json::to_string(&memory.metadata.entities).unwrap_or_default();
-            payload.insert("entities".to_string(), entities_json.into());
+            let entities_values: Vec<qdrant_client::qdrant::Value> =
+                memory.metadata.entities.iter()
+                    .map(|entity| entity.to_string().into())
+                    .collect();
+            payload.insert("entities".to_string(), qdrant_client::qdrant::Value {
+                kind: Some(qdrant_client::qdrant::value::Kind::ListValue(
+                    qdrant_client::qdrant::ListValue {
+                        values: entities_values,
+                    })),
+            });
         }
 
         if !memory.metadata.topics.is_empty() {
-            let topics_json = serde_json::to_string(&memory.metadata.topics).unwrap_or_default();
-            payload.insert("topics".to_string(), topics_json.into());
+            let topics_values: Vec<qdrant_client::qdrant::Value> =
+                memory.metadata.topics.iter()
+                    .map(|topic| topic.to_string().into())
+                    .collect();
+            payload.insert("topics".to_string(), qdrant_client::qdrant::Value {
+                kind: Some(qdrant_client::qdrant::value::Kind::ListValue(
+                    qdrant_client::qdrant::ListValue {
+                        values: topics_values,
+                    })),
+            });
         }
 
         // Custom metadata
@@ -278,23 +293,13 @@ impl QdrantVectorStore {
         // Filter by topics - check if any of the requested topics are present
         if let Some(topics) = &filters.topics {
             if !topics.is_empty() {
-                let topic_conditions: Vec<Condition> = topics
-                    .iter()
-                    .map(|topic| Condition {
+                for topic in topics {
+                    conditions.push(Condition {
                         condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
                             key: "topics".to_string(),
                             r#match: Some(Match {
-                                match_value: Some(r#match::MatchValue::Text(topic.clone())),
+                                match_value: Some(r#match::MatchValue::Keyword(topic.clone())),
                             }),
-                            ..Default::default()
-                        })),
-                    })
-                    .collect();
-
-                if !topic_conditions.is_empty() {
-                    conditions.push(Condition {
-                        condition_one_of: Some(condition::ConditionOneOf::Filter(Filter {
-                            should: topic_conditions,
                             ..Default::default()
                         })),
                     });
@@ -305,23 +310,13 @@ impl QdrantVectorStore {
         // Filter by entities - check if any of the requested entities are present
         if let Some(entities) = &filters.entities {
             if !entities.is_empty() {
-                let entity_conditions: Vec<Condition> = entities
-                    .iter()
-                    .map(|entity| Condition {
+                for entity in entities {
+                    conditions.push(Condition {
                         condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
                             key: "entities".to_string(),
                             r#match: Some(Match {
-                                match_value: Some(r#match::MatchValue::Text(entity.clone())),
+                                match_value: Some(r#match::MatchValue::Keyword(entity.clone())),
                             }),
-                            ..Default::default()
-                        })),
-                    })
-                    .collect();
-
-                if !entity_conditions.is_empty() {
-                    conditions.push(Condition {
-                        condition_one_of: Some(condition::ConditionOneOf::Filter(Filter {
-                            should: entity_conditions,
                             ..Default::default()
                         })),
                     });
@@ -549,21 +544,45 @@ impl QdrantVectorStore {
                 .get("entities")
                 .and_then(|v| match v {
                     qdrant_client::qdrant::Value {
+                        kind: Some(qdrant_client::qdrant::value::Kind::ListValue(list)),
+                    } => {
+                        Some(list.values.iter().filter_map(|val| match val {
+                            qdrant_client::qdrant::Value {
+                                kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                            } => Some(s.clone()),
+                            _ => None,
+                        }).collect::<Vec<String>>())
+                    },
+                    qdrant_client::qdrant::Value {
                         kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
-                    } => Some(s.as_str()),
+                    } => {
+                        // Backward compatibility: parse JSON string format
+                        serde_json::from_str(s).ok()
+                    },
                     _ => None,
                 })
-                .and_then(|s| serde_json::from_str(s).ok())
                 .unwrap_or_default(),
             topics: payload
                 .get("topics")
                 .and_then(|v| match v {
                     qdrant_client::qdrant::Value {
+                        kind: Some(qdrant_client::qdrant::value::Kind::ListValue(list)),
+                    } => {
+                        Some(list.values.iter().filter_map(|val| match val {
+                            qdrant_client::qdrant::Value {
+                                kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                            } => Some(s.clone()),
+                            _ => None,
+                        }).collect::<Vec<String>>())
+                    },
+                    qdrant_client::qdrant::Value {
                         kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
-                    } => Some(s.as_str()),
+                    } => {
+                        // Backward compatibility: parse JSON string format
+                        serde_json::from_str(s).ok()
+                    },
                     _ => None,
                 })
-                .and_then(|s| serde_json::from_str(s).ok())
                 .unwrap_or_default(),
             custom,
         };
