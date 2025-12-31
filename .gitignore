@@ -1,6 +1,6 @@
 /target
 /.idea
-/.litho
+/**/.litho
 .DS_Store
 logs/
 config.toml
