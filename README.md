@@ -201,8 +201,8 @@ Cortex Memory has been rigorously evaluated against LangMem using the **LOCOMO d
 <div style="text-align: center;">
   <table style="width: 100%; margin: 0 auto;">
     <tr>
-        <th style="width: 50%;"><p><strong>Cortex Memory Evaluation:</strong> Excellent retrieval performance with 93.33% Recall@1 and 93.72% MRR</p></td>
-        <th style="width: 50%;"><p><strong>LangMem Evaluation:</strong> Modest performance with 26.32% Recall@1 and 38.83% MRR</p></td>
+        <th style="width: 50%;"><strong>Cortex Memory Evaluation:</strong> Excellent retrieval performance with 93.33% Recall@1 and 93.72% MRR</td>
+        <th style="width: 50%;"><strong>LangMem Evaluation:</strong> Modest performance with 26.32% Recall@1 and 38.83% MRR</td>
     </tr>
     <tr>
       <td style="width: 50%;"><img src="./assets/benchmark/evaluation_cortex_mem.webp" alt="Cortex Memory Evaluation" style="width: 100%; height: auto; display: block;"></td>

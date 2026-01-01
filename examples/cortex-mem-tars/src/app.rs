@@ -1,366 +1,567 @@
-use ratatui::widgets::ScrollbarState;
-use std::collections::VecDeque;
+use crate::agent::{ChatMessage, create_memory_agent, extract_user_basic_info, store_conversations_batch, agent_reply_with_memory_retrieval_streaming};
+use crate::config::{BotConfig, ConfigManager};
+use crate::infrastructure::Infrastructure;
+use crate::logger::LogManager;
+use crate::ui::{AppState, AppUi};
+use anyhow::{Context, Result};
+use crossterm::{
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event},
+    execute,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+};
+use ratatui::backend::CrosstermBackend;
+use ratatui::layout::Rect;
+use rig::agent::Agent as RigAgent;
+use rig::providers::openai::CompletionModel;
+use std::io;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
-use chrono::{DateTime, Local};
 
-// 全局消息发送器，用于日志重定向
-use once_cell::sync::OnceCell;
-use std::sync::Mutex;
-
-static LOG_SENDER: OnceCell<Mutex<Option<mpsc::UnboundedSender<AppMessage>>>> = OnceCell::new();
-
-// 设置全局日志发送器 (crate可见性)
-pub(crate) fn set_global_log_sender(sender: mpsc::UnboundedSender<AppMessage>) {
-    LOG_SENDER
-        .get_or_init(|| Mutex::new(None))
-        .lock()
-        .unwrap()
-        .replace(sender);
+/// 应用程序
+pub struct App {
+    #[allow(dead_code)]
+    config_manager: ConfigManager,
+    log_manager: Arc<LogManager>,
+    ui: AppUi,
+    current_bot: Option<BotConfig>,
+    rig_agent: Option<RigAgent<CompletionModel>>,
+    infrastructure: Option<Arc<Infrastructure>>,
+    user_id: String,
+    user_info: Option<String>,
+    should_quit: bool,
+    message_sender: mpsc::UnboundedSender<AppMessage>,
+    message_receiver: mpsc::UnboundedReceiver<AppMessage>,
 }
 
-// 获取全局日志发送器 (crate可见性)
-pub(crate) fn get_global_log_sender() -> Option<mpsc::UnboundedSender<AppMessage>> {
-    LOG_SENDER
-        .get()
-        .and_then(|mutex| mutex.lock().unwrap().clone())
-}
-
-// 简单的日志重定向函数
-pub fn redirect_log_to_ui(level: &str, message: &str) {
-    if let Some(sender) = get_global_log_sender() {
-        let full_message = format!("[{}] {}", level, message);
-        let _ = sender.send(AppMessage::Log(full_message));
-    }
-}
-
-#[derive(Debug)]
+/// 应用消息类型
+#[derive(Debug, Clone)]
 pub enum AppMessage {
+    #[allow(dead_code)]
     Log(String),
-    Conversation {
-        user: String,
-        assistant: String,
-    },
     StreamingChunk {
+        #[allow(dead_code)]
         user: String,
         chunk: String,
     },
     StreamingComplete {
+        #[allow(dead_code)]
         user: String,
         full_response: String,
     },
-    #[allow(dead_code)]
-    MemoryIterationCompleted,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum FocusArea {
-    Input,        // 输入框
-    Conversation, // 对话区域
-    Logs,         // 日志区域
-}
-
-/// 应用状态
-pub struct App {
-    // 对话历史 - 包含时间戳
-    pub conversations: VecDeque<(String, String, DateTime<Local>)>,
-    // 当前输入
-    pub current_input: String,
-    // 光标位置（以字符为单位）
-    pub cursor_position: usize,
-    // 日志信息
-    pub logs: VecDeque<String>,
-    // Agent 是否正在处理
-    pub is_processing: bool,
-    // 用户信息
-    pub user_info: Option<String>,
-    // 是否需要退出
-    pub should_quit: bool,
-    // 是否在shut down过程中
-    pub is_shutting_down: bool,
-    // 记忆迭代是否完成
-    pub memory_iteration_completed: bool,
-    // 消息发送器
-    pub message_sender: Option<mpsc::UnboundedSender<AppMessage>>,
-    // 日志滚动偏移
-    pub log_scroll_offset: usize,
-    // 对话滚动偏移
-    pub conversation_scroll_offset: usize,
-    // 当前焦点区域
-    pub focus_area: FocusArea,
-    // 用户是否手动滚动过日志（用于决定是否自动滚动到底部）
-    pub user_scrolled_logs: bool,
-    // 用户是否手动滚动过对话（用于决定是否自动滚动到底部）
-    pub user_scrolled_conversations: bool,
-    // 滚动条状态
-    pub conversation_scrollbar_state: ScrollbarState,
-    pub log_scrollbar_state: ScrollbarState,
-    // 当前正在流式生成的回复
-    pub current_streaming_response: Option<(String, String)>, // (user_input, partial_response)
-}
-
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            conversations: VecDeque::with_capacity(100),
-            current_input: String::new(),
-            cursor_position: 0,
-            logs: VecDeque::with_capacity(50),
-            is_processing: false,
-            user_info: None,
-            should_quit: false,
-            is_shutting_down: false,
-            memory_iteration_completed: false,
-            message_sender: None,
-            log_scroll_offset: 0,
-            conversation_scroll_offset: 0,
-            focus_area: FocusArea::Input,
-            user_scrolled_logs: false,
-            user_scrolled_conversations: false,
-            conversation_scrollbar_state: ScrollbarState::default(),
-            log_scrollbar_state: ScrollbarState::default(),
-            current_streaming_response: None,
-        }
-    }
 }
 
 impl App {
-    pub fn new(message_sender: mpsc::UnboundedSender<AppMessage>) -> Self {
-        Self {
-            message_sender: Some(message_sender),
-            current_streaming_response: None,
-            ..Default::default()
-        }
+    /// 创建新的应用
+    pub fn new(config_manager: ConfigManager, log_manager: Arc<LogManager>, infrastructure: Option<Arc<Infrastructure>>) -> Result<Self> {
+        let mut ui = AppUi::new();
+
+        // 加载机器人列表
+        let bots = config_manager.get_bots()?;
+        ui.set_bot_list(bots);
+
+        // 创建消息通道
+        let (msg_tx, msg_rx) = mpsc::unbounded_channel::<AppMessage>();
+
+        log::info!("应用程序初始化完成");
+
+        Ok(Self {
+            config_manager,
+            log_manager,
+            ui,
+            current_bot: None,
+            rig_agent: None,
+            infrastructure,
+            user_id: "tars_user".to_string(),
+            user_info: None,
+            should_quit: false,
+            message_sender: msg_tx,
+            message_receiver: msg_rx,
+        })
     }
 
-    pub fn add_log(&mut self, log: String) {
-        self.logs.push_back(log);
-        if self.logs.len() > 50 {
-            self.logs.pop_front();
-        }
+    /// 设置用户信息
+    pub async fn load_user_info(&mut self) -> Result<()> {
+        if let Some(infrastructure) = &self.infrastructure {
+            let user_info = extract_user_basic_info(
+                infrastructure.config(),
+                infrastructure.memory_manager().clone(),
+                &self.user_id,
+            ).await.map_err(|e| anyhow::anyhow!("加载用户信息失败: {}", e))?;
 
-        // 如果用户没有手动滚动过，自动滚动到最新日志
-        if !self.user_scrolled_logs {
-            self.scroll_logs_to_bottom();
+            if let Some(info) = user_info {
+                log::info!("已加载用户基本信息");
+                self.user_info = Some(info);
+            } else {
+                log::info!("未找到用户基本信息");
+            }
         }
+        Ok(())
     }
 
-    pub fn add_conversation(&mut self, user: String, assistant: String) {
-        let timestamp = Local::now();
-        self.conversations.push_back((user, assistant, timestamp));
-        if self.conversations.len() > 100 {
-            self.conversations.pop_front();
+    /// 检查服务可用性
+    pub async fn check_service_status(&mut self) -> Result<()> {
+        use reqwest::Method;
+
+        if let Some(infrastructure) = &self.infrastructure {
+            let api_base_url = &infrastructure.config().llm.api_base_url;
+            // 拼接完整的 API 地址
+            let check_url = format!("{}/chat/completions", api_base_url.trim_end_matches('/'));
+
+            log::info!("检查服务可用性: {}", check_url);
+
+            let client = reqwest::Client::builder()
+                .timeout(Duration::from_secs(5))
+                .build()
+                .context("无法创建 HTTP 客户端")?;
+
+            match client
+                .request(Method::OPTIONS, &check_url)
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    if response.status().is_success() || response.status().as_u16() == 405 {
+                        // 200 OK 或 405 Method Not Allowed 都表示服务可用
+                        log::info!("服务可用，状态码: {}", response.status());
+                        self.ui.service_status = crate::ui::ServiceStatus::Active;
+                    } else {
+                        log::warn!("服务不可用，状态码: {}", response.status());
+                        self.ui.service_status = crate::ui::ServiceStatus::Inactive;
+                    }
+                }
+                Err(e) => {
+                    log::error!("服务检查失败: {}", e);
+                    self.ui.service_status = crate::ui::ServiceStatus::Inactive;
+                }
+            }
+        } else {
+            log::warn!("基础设施未初始化，无法检查服务状态");
+            self.ui.service_status = crate::ui::ServiceStatus::Inactive;
         }
 
-        // 如果用户没有手动滚动过，自动滚动到最新对话
-        if !self.user_scrolled_conversations {
-            self.scroll_conversations_to_bottom();
+        Ok(())
+    }
+
+    /// 运行应用
+    pub async fn run(&mut self) -> Result<()> {
+        enable_raw_mode().context("无法启用原始模式")?;
+
+        let mut stdout = io::stdout();
+        execute!(
+            stdout,
+            EnterAlternateScreen,
+            EnableMouseCapture,
+            crossterm::terminal::DisableLineWrap
+        )
+        .context("无法设置终端")?;
+
+        let backend = CrosstermBackend::new(stdout);
+        let mut terminal = ratatui::Terminal::new(backend).context("无法创建终端")?;
+
+        let mut last_log_update = Instant::now();
+        let mut last_service_check = Instant::now();
+        let tick_rate = Duration::from_millis(100);
+
+        loop {
+            // 更新日志
+            if last_log_update.elapsed() > Duration::from_secs(1) {
+                self.update_logs();
+                last_log_update = Instant::now();
+            }
+
+            // 定期检查服务状态（每5秒）
+            if last_service_check.elapsed() > Duration::from_secs(5) {
+                // 在后台检查服务状态，不阻塞主循环
+                let _ = self.check_service_status().await;
+                last_service_check = Instant::now();
+            }
+
+            // 处理流式消息
+            if let Ok(msg) = self.message_receiver.try_recv() {
+                match msg {
+                    AppMessage::StreamingChunk { user: _, chunk } => {
+                        // 添加流式内容到当前正在生成的消息
+                        if let Some(last_msg) = self.ui.messages.last_mut() {
+                            if last_msg.role == crate::agent::MessageRole::Assistant {
+                                last_msg.content.push_str(&chunk);
+                            } else {
+                                // 如果最后一条不是助手消息，创建新的助手消息
+                                self.ui.messages.push(ChatMessage::assistant(chunk));
+                            }
+                        } else {
+                            // 如果没有消息，创建新的助手消息
+                            self.ui.messages.push(ChatMessage::assistant(chunk));
+                        }
+                        // 确保自动滚动启用
+                        self.ui.auto_scroll = true;
+                    }
+                    AppMessage::StreamingComplete { user: _, full_response } => {
+                        // 流式完成，确保完整响应已保存
+                        if let Some(last_msg) = self.ui.messages.last_mut() {
+                            if last_msg.role == crate::agent::MessageRole::Assistant {
+                                last_msg.content = full_response;
+                            } else {
+                                self.ui.messages.push(ChatMessage::assistant(full_response));
+                            }
+                        } else {
+                            self.ui.messages.push(ChatMessage::assistant(full_response));
+                        }
+                        // 确保自动滚动启用
+                        self.ui.auto_scroll = true;
+                    }
+                    AppMessage::Log(_) => {
+                        // 日志消息暂时忽略
+                    }
+                }
+            }
+
+            // 渲染 UI
+            terminal.draw(|f| self.ui.render(f)).context("渲染失败")?;
+
+            // 处理事件
+            if event::poll(tick_rate).context("事件轮询失败")? {
+                let event = event::read().context("读取事件失败")?;
+                log::trace!("收到事件: {:?}", event);
+
+                match event {
+                    Event::Key(key) => {
+                        let action = self.ui.handle_key_event(key);
+
+                        match action {
+                            crate::ui::KeyAction::Quit => {
+                                self.should_quit = true;
+                                break;
+                            }
+                            crate::ui::KeyAction::SendMessage => {
+                                if self.ui.state == AppState::Chat {
+                                    self.send_message().await?;
+                                }
+                            }
+                            crate::ui::KeyAction::ClearChat => {
+                                if self.ui.state == AppState::Chat {
+                                    self.clear_chat();
+                                }
+                            }
+                            crate::ui::KeyAction::ShowHelp => {
+                                if self.ui.state == AppState::Chat {
+                                    self.show_help();
+                                }
+                            }
+                            crate::ui::KeyAction::DumpChats => {
+                                if self.ui.state == AppState::Chat {
+                                    self.dump_chats();
+                                }
+                            }
+                            crate::ui::KeyAction::Continue => {}
+                        }
+                    }
+                    Event::Mouse(mouse) => {
+                        let size = terminal.size()?;
+                        self.ui
+                            .handle_mouse_event(mouse, Rect::new(0, 0, size.width, size.height));
+                    }
+                    _ => {}
+                }
+            }
+
+            if self.should_quit {
+                break;
+            }
         }
+
+        disable_raw_mode().context("无法禁用原始模式")?;
+        execute!(
+            terminal.backend_mut(),
+            LeaveAlternateScreen,
+            DisableMouseCapture
+        )
+        .context("无法恢复终端")?;
+
+        terminal.show_cursor().context("无法显示光标")?;
+
+        log::info!("应用程序退出");
+        Ok(())
     }
 
-    /// 开始流式回复
-    pub fn start_streaming_response(&mut self, user_input: String) {
-        self.current_streaming_response = Some((user_input, String::new()));
-        self.is_processing = true;
-    }
-
-    /// 添加流式内容块
-    pub fn add_streaming_chunk(&mut self, chunk: String) {
-        if let Some((_, ref mut response)) = self.current_streaming_response {
-            response.push_str(&chunk);
-            
-            // 如果用户没有手动滚动过，自动滚动到最新对话
-            if !self.user_scrolled_conversations {
-                self.scroll_conversations_to_bottom();
+    /// 更新日志
+    fn update_logs(&mut self) {
+        match self.log_manager.read_logs(1000) {
+            Ok(logs) => {
+                self.ui.log_lines = logs;
+            }
+            Err(e) => {
+                log::error!("读取日志失败: {}", e);
             }
         }
     }
 
-    /// 完成流式回复
-    pub fn complete_streaming_response(&mut self) {
-        if let Some((user_input, full_response)) = self.current_streaming_response.take() {
-            self.add_conversation(user_input, full_response);
+    /// 发送消息
+    async fn send_message(&mut self) -> Result<()> {
+        let input_text = self.ui.get_input_text();
+        let input_text = input_text.trim();
+
+        log::debug!("准备发送消息，长度: {}", input_text.len());
+
+        if input_text.is_empty() {
+            log::debug!("消息为空，忽略");
+            return Ok(());
         }
-        self.is_processing = false;
+
+        // 检查是否是命令
+        if let Some(command_action) = self.ui.parse_and_execute_command(input_text) {
+            self.ui.clear_input();
+
+            match command_action {
+                crate::ui::KeyAction::Quit => {
+                    self.should_quit = true;
+                }
+                crate::ui::KeyAction::ClearChat => {
+                    self.clear_chat();
+                }
+                crate::ui::KeyAction::ShowHelp => {
+                    self.show_help();
+                }
+                crate::ui::KeyAction::DumpChats => {
+                    self.dump_chats();
+                }
+                _ => {}
+            }
+            return Ok(());
+        }
+
+        // 检查是否刚进入聊天模式
+        if self.current_bot.is_none() {
+            if let Some(bot) = self.ui.selected_bot() {
+                self.current_bot = Some(bot.clone());
+
+                // 如果有基础设施，创建真实的带记忆的 Agent
+                if let Some(infrastructure) = &self.infrastructure {
+                    let memory_tool_config = cortex_mem_rig::tool::MemoryToolConfig {
+                        default_user_id: Some(self.user_id.clone()),
+                        ..Default::default()
+                    };
+
+                    match create_memory_agent(
+                        infrastructure.memory_manager().clone(),
+                        memory_tool_config,
+                        infrastructure.config(),
+                    ).await {
+                        Ok(rig_agent) => {
+                            self.rig_agent = Some(rig_agent);
+                            log::info!("已创建带记忆功能的真实 Agent");
+                        }
+                        Err(e) => {
+                            log::error!("创建真实 Agent 失败，使用 Mock Agent: {}", e);
+                        }
+                    }
+                }
+
+                log::info!("选择机器人: {}", bot.name);
+            } else {
+                log::warn!("没有选中的机器人");
+                return Ok(());
+            }
+        }
+
+        // 添加用户消息
+        let user_message = ChatMessage::user(input_text);
+        self.ui.messages.push(user_message.clone());
+        self.ui.clear_input();
+
+        // 用户发送新消息，重新启用自动滚动
+        self.ui.auto_scroll = true;
+
+        log::info!("用户发送消息: {}", input_text);
+        log::debug!("当前消息总数: {}", self.ui.messages.len());
+
+        // 使用真实的带记忆的 Agent 或 Mock Agent
+        if let Some(rig_agent) = &self.rig_agent {
+            // 使用真实 Agent 进行流式响应
+            let current_conversations: Vec<(String, String)> = self.ui.messages
+                .iter()
+                .filter_map(|msg| match msg.role {
+                    crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
+                    crate::agent::MessageRole::Assistant => {
+                        if let Some(last) = self.ui.messages.iter().rev().find(|m| m.role == crate::agent::MessageRole::User) {
+                            Some((last.content.clone(), msg.content.clone()))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None
+                })
+                .collect();
+
+            let user_info_clone = self.user_info.clone();
+            let infrastructure_clone = self.infrastructure.clone();
+            let rig_agent_clone = rig_agent.clone();
+            let msg_tx = self.message_sender.clone();
+            let user_input = input_text.to_string();
+            let user_id = self.user_id.clone();
+            let user_input_for_stream = user_input.clone();
+
+            tokio::spawn(async move {
+                let (stream_tx, mut stream_rx) = mpsc::unbounded_channel::<String>();
+
+                let generation_task = tokio::spawn(async move {
+                    agent_reply_with_memory_retrieval_streaming(
+                        &rig_agent_clone,
+                        infrastructure_clone.unwrap().memory_manager().clone(),
+                        &user_input,
+                        &user_id,
+                        user_info_clone.as_deref(),
+                        &current_conversations,
+                        stream_tx,
+                    ).await
+                });
+
+                while let Some(chunk) = stream_rx.recv().await {
+                    if let Err(_) = msg_tx.send(AppMessage::StreamingChunk {
+                        user: user_input_for_stream.clone(),
+                        chunk,
+                    }) {
+                        break;
+                    }
+                }
+
+                match generation_task.await {
+                    Ok(Ok(full_response)) => {
+                        let _ = msg_tx.send(AppMessage::StreamingComplete {
+                            user: user_input_for_stream.clone(),
+                            full_response,
+                        });
+                    }
+                    Ok(Err(e)) => {
+                        log::error!("生成回复失败: {}", e);
+                    }
+                    Err(e) => {
+                        log::error!("任务执行失败: {}", e);
+                    }
+                }
+            });
+
+        } else {
+            log::warn!("Agent 未初始化");
+        }
+
+        // 滚动到底部 - 将在渲染时自动计算
+        self.ui.auto_scroll = true;
+
+        Ok(())
     }
 
-    /// 获取当前显示的对话（包括正在流式生成的）
-    pub fn get_display_conversations(&self) -> Vec<(String, String, Option<DateTime<Local>>)> {
-        let mut conversations: Vec<(String, String, Option<DateTime<Local>>)> = self.conversations
+    /// 清空会话
+    fn clear_chat(&mut self) {
+        log::info!("清空会话");
+        self.ui.messages.clear();
+        self.ui.scroll_offset = 0;
+        self.ui.auto_scroll = true;
+    }
+
+    /// 显示帮助信息
+    fn show_help(&mut self) {
+        log::info!("显示帮助信息");
+        let help_message = ChatMessage::assistant(AppUi::get_help_message());
+        self.ui.messages.push(help_message);
+        self.ui.auto_scroll = true;
+    }
+
+    /// 导出会话到剪贴板
+    fn dump_chats(&mut self) {
+        match self.ui.dump_chats_to_clipboard() {
+            Ok(msg) => {
+                log::info!("{}", msg);
+                let success_message = ChatMessage::assistant(msg);
+                self.ui.messages.push(success_message);
+            }
+            Err(e) => {
+                log::error!("{}", e);
+                let error_message = ChatMessage::assistant(format!("❌ {}", e));
+                self.ui.messages.push(error_message);
+            }
+        }
+        self.ui.auto_scroll = true;
+    }
+
+    /// 退出时保存对话到记忆系统
+    pub async fn save_conversations_to_memory(&self) -> Result<()> {
+        if let Some(infrastructure) = &self.infrastructure {
+            let conversations: Vec<(String, String)> = self.ui.messages
+                .iter()
+                .filter_map(|msg| match msg.role {
+                    crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
+                    crate::agent::MessageRole::Assistant => {
+                        if let Some(last) = self.ui.messages.iter().rev().find(|m| m.role == crate::agent::MessageRole::User) {
+                            Some((last.content.clone(), msg.content.clone()))
+                        } else {
+                            None
+                        }
+                    },
+                    _ => None
+                })
+                .filter(|(user, assistant)| !user.is_empty() && !assistant.is_empty())
+                .collect();
+
+            if !conversations.is_empty() {
+                log::info!("正在保存 {} 条对话到记忆系统...", conversations.len());
+                store_conversations_batch(
+                    infrastructure.memory_manager().clone(),
+                    &conversations,
+                    &self.user_id,
+                ).await.map_err(|e| anyhow::anyhow!("保存对话到记忆系统失败: {}", e))?;
+                log::info!("对话保存完成");
+            }
+        }
+        Ok(())
+    }
+
+    /// 获取所有对话
+    pub fn get_conversations(&self) -> Vec<(String, String)> {
+        self.ui.messages
             .iter()
-            .map(|(user, assistant, timestamp)| (user.clone(), assistant.clone(), Some(*timestamp)))
-            .collect();
-        
-        // 如果有正在流式生成的回复，添加到显示列表（没有时间戳）
-        if let Some((ref user_input, ref partial_response)) = self.current_streaming_response {
-            conversations.push((user_input.clone(), partial_response.clone(), None));
-        }
-        
-        conversations
+            .filter_map(|msg| match msg.role {
+                crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
+                crate::agent::MessageRole::Assistant => {
+                    if let Some(last) = self.ui.messages.iter().rev().find(|m| m.role == crate::agent::MessageRole::User) {
+                        Some((last.content.clone(), msg.content.clone()))
+                    } else {
+                        None
+                    }
+                },
+                _ => None,
+            })
+            .collect()
     }
 
-    /// 在光标位置插入字符
-    pub fn insert_char_at_cursor(&mut self, c: char) {
-        // 将光标位置转换为字节索引
-        let byte_pos = self
-            .current_input
-            .chars()
-            .take(self.cursor_position)
-            .map(|ch| ch.len_utf8())
-            .sum();
+    /// 获取用户ID
+    pub fn get_user_id(&self) -> String {
+        self.user_id.clone()
+    }
+}
 
-        self.current_input.insert(byte_pos, c);
-        self.cursor_position += 1;
+/// 创建默认机器人
+pub fn create_default_bots(config_manager: &ConfigManager) -> Result<()> {
+    let bots = config_manager.get_bots()?;
+
+    if bots.is_empty() {
+        // 创建默认机器人
+        let default_bot = BotConfig::new(
+            "助手",
+            "你是一个有用的 AI 助手，能够回答各种问题并提供帮助。",
+            "password",
+        );
+        config_manager.add_bot(default_bot)?;
+
+        let coder_bot = BotConfig::new(
+            "程序员",
+            "你是一个经验丰富的程序员，精通多种编程语言，能够帮助解决编程问题。",
+            "password",
+        );
+        config_manager.add_bot(coder_bot)?;
+
+        log::info!("已创建默认机器人");
     }
 
-    /// 在光标位置删除字符（退格键）
-    pub fn delete_char_at_cursor(&mut self) {
-        if self.cursor_position > 0 {
-            // 将光标位置转换为字节索引
-            let chars: Vec<char> = self.current_input.chars().collect();
-            if self.cursor_position <= chars.len() {
-                // 找到要删除字符的字节范围
-                let byte_start: usize = chars
-                    .iter()
-                    .take(self.cursor_position - 1)
-                    .map(|ch| ch.len_utf8())
-                    .sum();
-
-                let byte_end: usize = chars
-                    .iter()
-                    .take(self.cursor_position)
-                    .map(|ch| ch.len_utf8())
-                    .sum();
-
-                // 安全地删除字符
-                self.current_input.drain(byte_start..byte_end);
-                self.cursor_position -= 1;
-            }
-        }
-    }
-
-    /// 将光标向左移动一个字符
-    pub fn move_cursor_left(&mut self) {
-        if self.cursor_position > 0 {
-            self.cursor_position -= 1;
-        }
-    }
-
-    /// 将光标向右移动一个字符
-    pub fn move_cursor_right(&mut self) {
-        let input_len = self.current_input.chars().count();
-        if self.cursor_position < input_len {
-            self.cursor_position += 1;
-        }
-    }
-
-    /// 重置光标位置到末尾
-    pub fn reset_cursor_to_end(&mut self) {
-        self.cursor_position = self.current_input.chars().count();
-    }
-
-    /// 滚动到日志底部（最新日志）
-    pub fn scroll_logs_to_bottom(&mut self) {
-        self.log_scroll_offset = 0;
-    }
-
-    /// 滚动到对话底部（最新对话）
-    pub fn scroll_conversations_to_bottom(&mut self) {
-        self.conversation_scroll_offset = 0;
-    }
-
-    /// 向前滚动日志（查看更早日志）
-    pub fn scroll_logs_forward(&mut self) {
-        if self.logs.is_empty() {
-            return;
-        }
-
-        let page_size = 10; // 每次翻页的行数
-
-        // 简单增加偏移量，让UI层处理边界
-        self.log_scroll_offset += page_size;
-        self.user_scrolled_logs = true;
-    }
-
-    /// 向后滚动日志（查看更新日志）
-    pub fn scroll_logs_backward(&mut self) {
-        if self.logs.is_empty() {
-            return;
-        }
-
-        let page_size = 10; // 每次翻页的行数
-
-        // 向后翻页（减少偏移量，查看更新的日志）
-        if self.log_scroll_offset >= page_size {
-            self.log_scroll_offset -= page_size;
-        } else {
-            self.log_scroll_offset = 0;
-            self.user_scrolled_logs = false;
-        }
-    }
-
-    /// 向前滚动对话（查看更早内容）
-    pub fn scroll_conversations_forward(&mut self) {
-        if self.conversations.is_empty() {
-            return;
-        }
-
-        let page_size = 5; // 每次翻页的行数
-
-        // 简单增加偏移量，让UI层处理边界
-        self.conversation_scroll_offset += page_size;
-        self.user_scrolled_conversations = true;
-    }
-
-    /// 向后滚动对话（查看更新内容）
-    pub fn scroll_conversations_backward(&mut self) {
-        if self.conversations.is_empty() {
-            return;
-        }
-
-        let page_size = 5; // 每次翻页的行数
-
-        // 向后翻页（减少偏移量，查看更新的内容）
-        if self.conversation_scroll_offset >= page_size {
-            self.conversation_scroll_offset -= page_size;
-        } else {
-            self.conversation_scroll_offset = 0;
-            self.user_scrolled_conversations = false;
-        }
-    }
-
-    /// 切换焦点到下一个区域
-    pub fn next_focus(&mut self) {
-        self.focus_area = match self.focus_area {
-            FocusArea::Input => {
-                if self.is_shutting_down {
-                    // 在退出过程中，跳过输入框，直接到对话区域
-                    FocusArea::Conversation
-                } else {
-                    FocusArea::Conversation
-                }
-            }
-            FocusArea::Conversation => {
-                if self.is_shutting_down {
-                    // 在退出过程中，从对话区域切换到日志区域
-                    FocusArea::Logs
-                } else {
-                    FocusArea::Logs
-                }
-            }
-            FocusArea::Logs => {
-                if self.is_shutting_down {
-                    // 在退出过程中，从日志区域切换回对话区域
-                    FocusArea::Conversation
-                } else {
-                    FocusArea::Input
-                }
-            }
-        };
-    }
-
-    pub fn log_info(&self, message: &str) {
-        if let Some(sender) = &self.message_sender {
-            let _ = sender.send(AppMessage::Log(format!("[INFO] {}", message)));
-        }
-    }
+    Ok(())
 }
