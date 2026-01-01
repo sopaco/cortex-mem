@@ -745,6 +745,7 @@ dependencies = [
  "once_cell",
  "ratatui",
  "ratatui-core",
+ "reqwest",
  "rig-core",
  "serde",
  "serde_json",

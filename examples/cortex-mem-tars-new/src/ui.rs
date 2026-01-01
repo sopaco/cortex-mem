@@ -19,6 +19,14 @@ pub enum AppState {
     Chat,
 }
 
+/// 服务状态
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ServiceStatus {
+    Initing,   // 初始化中
+    Active,    // 服务可用
+    Inactive,  // 服务不可用
+}
+
 /// 聊天界面状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChatState {
@@ -30,6 +38,7 @@ pub enum ChatState {
 /// 应用 UI 状态
 pub struct AppUi {
     pub state: AppState,
+    pub service_status: ServiceStatus,
     pub chat_state: ChatState,
     pub bot_list_state: ListState,
     pub bot_list: Vec<BotConfig>,
@@ -75,6 +84,7 @@ impl AppUi {
 
         Self {
             state: AppState::BotSelection,
+            service_status: ServiceStatus::Initing,
             chat_state: ChatState::Normal,
             bot_list_state,
             bot_list: vec![],
@@ -791,10 +801,18 @@ impl AppUi {
                     .border_type(ratatui::widgets::BorderType::Double)
                     .title_style(
                         Style::default()
-                            .fg(Color::Cyan)
+                            .fg(match self.service_status {
+                                ServiceStatus::Initing => Color::Blue,
+                                ServiceStatus::Active => Color::Green,
+                                ServiceStatus::Inactive => Color::Red,
+                            })
                             .add_modifier(Modifier::BOLD)
                     )
-                    .title(" [ SYSTEM ACTIVE ] ")
+                    .title(match self.service_status {
+                        ServiceStatus::Initing => " [ SYSTEM INITING ] ",
+                        ServiceStatus::Active => " [ SYSTEM ACTIVE ] ",
+                        ServiceStatus::Inactive => " [ SYSTEM INACTIVE ] ",
+                    })
             )
             .alignment(Alignment::Center)
             .style(
@@ -848,10 +866,18 @@ impl AppUi {
                     .border_type(ratatui::widgets::BorderType::Double)
                     .title_style(
                         Style::default()
-                            .fg(Color::Cyan)
+                            .fg(match self.service_status {
+                                ServiceStatus::Initing => Color::Blue,
+                                ServiceStatus::Active => Color::Green,
+                                ServiceStatus::Inactive => Color::Red,
+                            })
                             .add_modifier(Modifier::BOLD)
                     )
-                    .title(" [ SYSTEM ACTIVE ] ")
+                    .title(match self.service_status {
+                        ServiceStatus::Initing => " [ SYSTEM INITING ] ",
+                        ServiceStatus::Active => " [ SYSTEM ACTIVE ] ",
+                        ServiceStatus::Inactive => " [ SYSTEM INACTIVE ] ",
+                    })
             )
             .alignment(Alignment::Center)
             .style(
@@ -977,7 +1003,7 @@ impl AppUi {
         };
 
         // 渲染边框
-        let title = "聊天记录 (鼠标拖拽选择, Esc 清除选择)";
+        let title = "交互信息 (鼠标拖拽选择, Esc 清除选择)";
         let block = Block::default()
             .borders(Borders::ALL)
             .title(title);

@@ -47,6 +47,9 @@ tokio = { version = "1.40", features = ["full"] }
 futures = "0.3"
 async-stream = "0.3"
 
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
+
 # Utilities
 uuid = { version = "1.10", features = ["v4"] }
 clipboard = "0.5"

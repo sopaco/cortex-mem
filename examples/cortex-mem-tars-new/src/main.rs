@@ -45,6 +45,9 @@ async fn main() -> Result<()> {
     ).context("无法创建应用")?;
     log::info!("应用创建成功");
 
+    // 检查服务可用性
+    app.check_service_status().await.context("无法检查服务状态")?;
+
     // 加载用户基本信息
     app.load_user_info().await.context("无法加载用户信息")?;
 

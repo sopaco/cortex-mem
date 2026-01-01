@@ -97,6 +97,50 @@ impl App {
         Ok(())
     }
 
+    /// 检查服务可用性
+    pub async fn check_service_status(&mut self) -> Result<()> {
+        use reqwest::Method;
+
+        if let Some(infrastructure) = &self.infrastructure {
+            let api_base_url = &infrastructure.config().llm.api_base_url;
+            // 拼接完整的 API 地址
+            let check_url = format!("{}/chat/completions", api_base_url.trim_end_matches('/'));
+
+            log::info!("检查服务可用性: {}", check_url);
+
+            let client = reqwest::Client::builder()
+                .timeout(Duration::from_secs(5))
+                .build()
+                .context("无法创建 HTTP 客户端")?;
+
+            match client
+                .request(Method::OPTIONS, &check_url)
+                .send()
+                .await
+            {
+                Ok(response) => {
+                    if response.status().is_success() || response.status().as_u16() == 405 {
+                        // 200 OK 或 405 Method Not Allowed 都表示服务可用
+                        log::info!("服务可用，状态码: {}", response.status());
+                        self.ui.service_status = crate::ui::ServiceStatus::Active;
+                    } else {
+                        log::warn!("服务不可用，状态码: {}", response.status());
+                        self.ui.service_status = crate::ui::ServiceStatus::Inactive;
+                    }
+                }
+                Err(e) => {
+                    log::error!("服务检查失败: {}", e);
+                    self.ui.service_status = crate::ui::ServiceStatus::Inactive;
+                }
+            }
+        } else {
+            log::warn!("基础设施未初始化，无法检查服务状态");
+            self.ui.service_status = crate::ui::ServiceStatus::Inactive;
+        }
+
+        Ok(())
+    }
+
     /// 运行应用
     pub async fn run(&mut self) -> Result<()> {
         enable_raw_mode().context("无法启用原始模式")?;
@@ -114,6 +158,7 @@ impl App {
         let mut terminal = ratatui::Terminal::new(backend).context("无法创建终端")?;
 
         let mut last_log_update = Instant::now();
+        let mut last_service_check = Instant::now();
         let tick_rate = Duration::from_millis(100);
 
         loop {
@@ -121,6 +166,13 @@ impl App {
             if last_log_update.elapsed() > Duration::from_secs(1) {
                 self.update_logs();
                 last_log_update = Instant::now();
+            }
+
+            // 定期检查服务状态（每5秒）
+            if last_service_check.elapsed() > Duration::from_secs(5) {
+                // 在后台检查服务状态，不阻塞主循环
+                let _ = self.check_service_status().await;
+                last_service_check = Instant::now();
             }
 
             // 处理流式消息
