@@ -1334,19 +1334,17 @@ impl AppUi {
 
 ## 可用命令
 
-| 命令 | 说明 |
-|------|------|
-| `/quit` | 退出程序 |
-| `/cls` 或 `/clear` | 清空会话区域 |
-| `/help` | 显示此帮助信息 |
-| `/dump-chats` | 复制会话区域的所有内容到剪贴板 |
+  - /quit          退出程序
+  - /cls /clear    清空会话区域
+  - /help          显示此帮助信息
+  - /dump-chats    复制会话区域的所有内容到剪贴板
 
 ## 快捷键
 
-- Enter: 发送消息
-- Shift+Enter: 换行
-- Ctrl+L: 打开/关闭日志面板
-- Esc: 关闭弹窗
+  - Enter          发送消息
+  - Shift+Enter    换行
+  - Ctrl+L         打开/关闭日志面板
+  - Esc            关闭弹窗
 
 ---
 
