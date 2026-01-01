@@ -248,6 +248,16 @@ impl App {
                                     self.show_help();
                                 }
                             }
+                            crate::ui::KeyAction::ShowThemes => {
+                                log::info!("收到 ShowThemes 动作，当前状态: {:?}", self.ui.state);
+                                if self.ui.state == AppState::Chat {
+                                    log::info!("调用 show_themes()");
+                                    self.show_themes();
+                                    log::info!("show_themes() 调用完成，theme_modal_visible: {}", self.ui.theme_modal_visible);
+                                } else {
+                                    log::warn!("不在 Chat 状态，无法显示主题");
+                                }
+                            }
                             crate::ui::KeyAction::DumpChats => {
                                 if self.ui.state == AppState::Chat {
                                     self.dump_chats();
@@ -321,6 +331,9 @@ impl App {
                 }
                 crate::ui::KeyAction::ShowHelp => {
                     self.show_help();
+                }
+                crate::ui::KeyAction::ShowThemes => {
+                    self.show_themes();
                 }
                 crate::ui::KeyAction::DumpChats => {
                     self.dump_chats();
@@ -462,9 +475,15 @@ impl App {
     /// 显示帮助信息
     fn show_help(&mut self) {
         log::info!("显示帮助信息");
-        let help_message = ChatMessage::assistant(AppUi::get_help_message());
-        self.ui.messages.push(help_message);
-        self.ui.auto_scroll = true;
+        self.ui.help_modal_visible = true;
+        self.ui.help_scroll_offset = 0;
+    }
+
+    /// 显示主题选择
+    fn show_themes(&mut self) {
+        log::info!("显示主题选择");
+        self.ui.theme_modal_visible = true;
+        log::info!("主题弹窗可见性已设置为: {}", self.ui.theme_modal_visible);
     }
 
     /// 导出会话到剪贴板
