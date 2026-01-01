@@ -139,6 +139,8 @@ impl App {
                             // 如果没有消息，创建新的助手消息
                             self.ui.messages.push(ChatMessage::assistant(chunk));
                         }
+                        // 确保自动滚动启用
+                        self.ui.auto_scroll = true;
                     }
                     AppMessage::StreamingComplete { user: _, full_response } => {
                         // 流式完成，确保完整响应已保存
@@ -151,6 +153,8 @@ impl App {
                         } else {
                             self.ui.messages.push(ChatMessage::assistant(full_response));
                         }
+                        // 确保自动滚动启用
+                        self.ui.auto_scroll = true;
                     }
                     AppMessage::Log(_) => {
                         // 日志消息暂时忽略
@@ -316,6 +320,9 @@ impl App {
         self.ui.messages.push(user_message.clone());
         self.ui.clear_input();
 
+        // 用户发送新消息，重新启用自动滚动
+        self.ui.auto_scroll = true;
+
         log::info!("用户发送消息: {}", input_text);
         log::debug!("当前消息总数: {}", self.ui.messages.len());
 
@@ -412,7 +419,7 @@ impl App {
         }
 
         // 滚动到底部 - 将在渲染时自动计算
-        self.ui.scroll_offset = usize::MAX;
+        self.ui.auto_scroll = true;
 
         Ok(())
     }
@@ -422,6 +429,7 @@ impl App {
         log::info!("清空会话");
         self.ui.messages.clear();
         self.ui.scroll_offset = 0;
+        self.ui.auto_scroll = true;
     }
 
     /// 显示帮助信息
@@ -429,7 +437,7 @@ impl App {
         log::info!("显示帮助信息");
         let help_message = ChatMessage::assistant(AppUi::get_help_message());
         self.ui.messages.push(help_message);
-        self.ui.scroll_offset = usize::MAX;
+        self.ui.auto_scroll = true;
     }
 
     /// 导出会话到剪贴板
@@ -446,7 +454,7 @@ impl App {
                 self.ui.messages.push(error_message);
             }
         }
-        self.ui.scroll_offset = usize::MAX;
+        self.ui.auto_scroll = true;
     }
 
     /// 退出时保存对话到记忆系统

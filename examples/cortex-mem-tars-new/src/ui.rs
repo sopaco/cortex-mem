@@ -36,6 +36,7 @@ pub struct AppUi {
     pub messages: Vec<ChatMessage>,
     pub input_textarea: TextArea<'static>,
     pub scroll_offset: usize,
+    pub auto_scroll: bool,  // 是否自动滚动到底部
     pub log_panel_visible: bool,
     pub log_lines: Vec<String>,
     pub log_scroll_offset: usize,
@@ -80,6 +81,7 @@ impl AppUi {
             messages: vec![],
             input_textarea,
             scroll_offset: 0,
+            auto_scroll: true,
             log_panel_visible: false,
             log_lines: vec![],
             log_scroll_offset: 0,
@@ -602,6 +604,8 @@ impl AppUi {
                     }
                 } else if self.scroll_offset > 0 {
                     self.scroll_offset = self.scroll_offset.saturating_sub(3);
+                    // 用户手动滚动，禁用自动滚动
+                    self.auto_scroll = false;
                 }
                 true
             }
@@ -610,6 +614,8 @@ impl AppUi {
                     self.log_scroll_offset = self.log_scroll_offset.saturating_add(3);
                 } else {
                     self.scroll_offset = self.scroll_offset.saturating_add(3);
+                    // 用户手动滚动，禁用自动滚动
+                    self.auto_scroll = false;
                 }
                 true
             }
@@ -949,14 +955,14 @@ impl AppUi {
         let visible_lines = area.height.saturating_sub(2) as usize; // 减去边框
         let max_scroll = total_lines.saturating_sub(visible_lines);
 
-        // 如果 scroll_offset 为 usize::MAX，表示需要滚动到底部
-        if self.scroll_offset == usize::MAX {
+        // 如果启用了自动滚动，始终滚动到底部
+        if self.auto_scroll {
             self.scroll_offset = max_scroll;
-        }
-
-        // 限制 scroll_offset 在有效范围内
-        if self.scroll_offset > max_scroll {
-            self.scroll_offset = max_scroll;
+        } else {
+            // 限制 scroll_offset 在有效范围内
+            if self.scroll_offset > max_scroll {
+                self.scroll_offset = max_scroll;
+            }
         }
 
         // 应用选择高亮
