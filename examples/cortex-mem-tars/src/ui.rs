@@ -1212,10 +1212,10 @@ impl AppUi {
 
         let modal_area = Rect::new(x, y, modal_width, modal_height);
 
-        // 创建半透明背景遮罩
+        // 创建半透明背景遮罩（使用深灰色）
         let overlay_area = area;
         let overlay_block = Block::default()
-            .style(Style::default().bg(Color::Rgb(0, 0, 0)));
+            .style(Style::default().bg(Color::Rgb(20, 20, 20)));
 
         frame.render_widget(overlay_block, overlay_area);
 
@@ -1240,6 +1240,7 @@ impl AppUi {
                     .border_type(ratatui::widgets::BorderType::Double)
                     .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
                     .title(" 帮助信息 (Esc 关闭) ")
+                    .style(Style::default().bg(Color::Rgb(30, 30, 40)))
             )
             .wrap(Wrap { trim: false })
             .alignment(Alignment::Left);
