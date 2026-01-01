@@ -7,18 +7,29 @@ mod ui;
 
 use anyhow::{Context, Result};
 use app::{create_default_bots, App};
+use clap::Parser;
 use config::ConfigManager;
 use infrastructure::Infrastructure;
 use logger::init_logger;
 use std::sync::Arc;
 
+#[derive(Parser, Debug)]
+#[command(name = "cortex-mem-tars")]
+#[command(about = "TARS, An Interactive Demonstration Program Based on Cortex Memory")]
+#[command(author = "Sopaco")]
+#[command(version)]
+struct Args {
+    /// 启用增强记忆保存功能，退出时自动保存对话到记忆系统
+    #[arg(long, action)]
+    enhance_memory_saver: bool,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // 解析命令行参数
-    let args: Vec<String> = std::env::args().collect();
-    let enhance_memory_saver = args.contains(&"--enhance-memory-saver".to_string());
+    let args = Args::parse();
 
-    if enhance_memory_saver {
+    if args.enhance_memory_saver {
         log::info!("已启用增强记忆保存功能");
     }
 
@@ -63,7 +74,7 @@ async fn main() -> Result<()> {
     app.run().await.context("应用运行失败")?;
 
     // 退出时保存对话到记忆系统（仅在启用增强记忆保存功能时）
-    if enhance_memory_saver {
+    if args.enhance_memory_saver {
         if let Some(_inf) = infrastructure {
             println!("\n╔══════════════════════════════════════════════════════════════════════════════╗");
             println!("║                            🧠 Cortex Memory - 退出流程                       ║");

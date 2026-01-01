@@ -53,3 +53,6 @@ reqwest = { version = "0.12", features = ["json"] }
 # Utilities
 uuid = { version = "1.10", features = ["v4"] }
 clipboard = "0.5"
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }

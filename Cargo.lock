@@ -701,6 +701,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "chrono",
+ "clap",
  "clipboard",
  "cortex-mem-config",
  "cortex-mem-core",
