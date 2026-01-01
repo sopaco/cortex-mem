@@ -540,6 +540,29 @@ impl App {
         }
         Ok(())
     }
+
+    /// 获取所有对话
+    pub fn get_conversations(&self) -> Vec<(String, String)> {
+        self.ui.messages
+            .iter()
+            .filter_map(|msg| match msg.role {
+                crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
+                crate::agent::MessageRole::Assistant => {
+                    if let Some(last) = self.ui.messages.iter().rev().find(|m| m.role == crate::agent::MessageRole::User) {
+                        Some((last.content.clone(), msg.content.clone()))
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            })
+            .collect()
+    }
+
+    /// 获取用户ID
+    pub fn get_user_id(&self) -> String {
+        self.user_id.clone()
+    }
 }
 
 /// 创建默认机器人

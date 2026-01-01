@@ -65,12 +65,58 @@ async fn main() -> Result<()> {
     // 退出时保存对话到记忆系统（仅在启用增强记忆保存功能时）
     if enhance_memory_saver {
         if let Some(_inf) = infrastructure {
-            log::info!("正在保存对话到记忆系统...");
-            app.save_conversations_to_memory().await.context("保存对话失败")?;
-            log::info!("对话保存完成");
+            println!("\n╔══════════════════════════════════════════════════════════════════════════════╗");
+            println!("║                            🧠 Cortex Memory - 退出流程                       ║");
+            println!("╚══════════════════════════════════════════════════════════════════════════════╝");
+
+            log::info!("🚀 开始退出流程，准备保存对话到记忆系统...");
+
+            let conversations = app.get_conversations();
+            let user_id = app.get_user_id();
+
+            println!("📋 会话摘要:");
+            println!("   • 对话轮次: {} 轮", conversations.len());
+            println!("   • 用户ID: {}", user_id);
+
+            if conversations.is_empty() {
+                println!("⚠️ 没有需要存储的内容");
+                println!("\n╔══════════════════════════════════════════════════════════════════════════════╗");
+                println!("║                                    ✅ 退出流程完成                           ║");
+                println!("╚══════════════════════════════════════════════════════════════════════════════╝");
+                println!("👋 Cortex TARS powering down. Goodbye!");
+                return Ok(());
+            }
+
+            println!("\n🧠 开始执行记忆化存储...");
+            println!("📝 正在保存 {} 条对话记录到记忆库...", conversations.len());
+            println!("🚀 开始存储对话到记忆系统...");
+
+            match app.save_conversations_to_memory().await {
+                Ok(_) => {
+                    println!("✨ 记忆化完成！");
+                    println!("✅ 所有对话已成功存储到记忆系统");
+                    println!("🔍 存储详情:");
+                    println!("   • 对话轮次: {} 轮", conversations.len());
+                    println!("   • 用户消息: {} 条", conversations.len());
+                    println!("   • 助手消息: {} 条", conversations.len());
+                }
+                Err(e) => {
+                    println!("❌ 记忆存储失败: {}", e);
+                    println!("⚠️ 虽然记忆化失败，但仍正常退出");
+                }
+            }
+
+            println!("\n╔══════════════════════════════════════════════════════════════════════════════╗");
+            println!("║                                  🎉 退出流程完成                             ║");
+            println!("╚══════════════════════════════════════════════════════════════════════════════╝");
+            println!("👋 Cortex TARS powering down. Goodbye!");
+        } else {
+            println!("\n⚠️ 基础设施未初始化，无法保存对话到记忆系统");
+            println!("👋 Cortex TARS powering down. Goodbye!");
         }
     } else {
         log::info!("未启用增强记忆保存功能，跳过对话保存");
+        println!("\n👋 Cortex TARS powering down. Goodbye!");
     }
 
     Ok(())
