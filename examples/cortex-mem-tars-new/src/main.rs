@@ -14,6 +14,14 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // 解析命令行参数
+    let args: Vec<String> = std::env::args().collect();
+    let enhance_memory_saver = args.contains(&"--enhance-memory-saver".to_string());
+
+    if enhance_memory_saver {
+        log::info!("已启用增强记忆保存功能");
+    }
+
     // 初始化配置管理器
     let config_manager = ConfigManager::new().context("无法初始化配置管理器")?;
     log::info!("配置管理器初始化成功");
@@ -54,11 +62,15 @@ async fn main() -> Result<()> {
     // 运行应用
     app.run().await.context("应用运行失败")?;
 
-    // 退出时保存对话到记忆系统
-    if let Some(inf) = infrastructure {
-        log::info!("正在保存对话到记忆系统...");
-        app.save_conversations_to_memory().await.context("保存对话失败")?;
-        log::info!("对话保存完成");
+    // 退出时保存对话到记忆系统（仅在启用增强记忆保存功能时）
+    if enhance_memory_saver {
+        if let Some(_inf) = infrastructure {
+            log::info!("正在保存对话到记忆系统...");
+            app.save_conversations_to_memory().await.context("保存对话失败")?;
+            log::info!("对话保存完成");
+        }
+    } else {
+        log::info!("未启用增强记忆保存功能，跳过对话保存");
     }
 
     Ok(())
