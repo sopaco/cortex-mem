@@ -1024,10 +1024,10 @@ impl AppUi {
         // 可见区域的行范围是 [scroll_offset, scroll_offset + visible_lines)
         let visible_start = scroll_offset;
         let visible_end = scroll_offset + visible_lines;
-        
+
         // 如果选择区域和可见区域没有重叠，直接返回
         if end_line < visible_start || start_line >= visible_end {
-            log::debug!("选择区域和可见区域没有重叠，直接返回");
+            // log::debug!("选择区域和可见区域没有重叠，直接返回");
             return lines.into_iter().skip(scroll_offset).take(visible_lines).collect();
         }
 
@@ -1054,7 +1054,7 @@ impl AppUi {
                 // skip(scroll_offset) 后，visible_idx 从 0 开始
                 let visible_idx = original_idx - scroll_offset;
                 let in_range = original_idx >= start_line && original_idx <= end_line;
-                
+
                 if in_range {
                     // 这一行在选择范围内
                     highlighted_count += 1;
@@ -1267,7 +1267,7 @@ impl AppUi {
 
     /// 获取帮助信息
     pub fn get_help_message() -> String {
-        "# TARS AI Program - 帮助信息\n\n## 版本\n\nv0.1.0\n\n## 可用命令\n\n| 命令 | 说明 |\n|------|------|\n| `/quit` | 退出程序 |\n| `/cls` 或 `/clear` | 清空会话区域 |\n| `/help` | 显示此帮助信息 |\n| `/dump-chats` | 复制会话区域的所有内容到剪贴板 |\n\n## 快捷键\n\n- **Enter**: 发送消息\n- **Shift+Enter**: 换行\n- **Ctrl+L**: 打开/关闭日志面板\n- **Esc**: 关闭日志面板\n- **q**: 退出程序\n\n## 使用说明\n\n在输入框中输入命令并按 Enter 即可执行。\n\n---\n\n*Powered by TARS AI*".to_string()
+        "# TARS AI Program - 帮助信息\n\n欢迎使用TARS演示程序，我是由Cortex Memory技术驱动的人工智能程序，作为你的第二大脑，我能够作为你的外脑与你的记忆深度链接。\n\n## 可用命令\n\n| 命令 | 说明 |\n|------|------|\n| `/quit` | 退出程序 |\n| `/cls` 或 `/clear` | 清空会话区域 |\n| `/help` | 显示此帮助信息 |\n| `/dump-chats` | 复制会话区域的所有内容到剪贴板 |\n\n## 快捷键\n\n- **Enter**: 发送消息\n- **Shift+Enter**: 换行\n- **Ctrl+L**: 打开/关闭日志面板\n- **Esc**: 关闭日志面板\n\n---\n\n*Powered by TARS AI*".to_string()
     }
 
     /// 导出所有会话内容到剪贴板
