@@ -1,5 +1,6 @@
-use crate::agent::{Agent, AgentFactory, ChatMessage};
+use crate::agent::{Agent, AgentFactory, ChatMessage, create_memory_agent, extract_user_basic_info, store_conversations_batch, agent_reply_with_memory_retrieval_streaming};
 use crate::config::{BotConfig, ConfigManager};
+use crate::infrastructure::Infrastructure;
 use crate::logger::LogManager;
 use crate::ui::{AppState, AppUi};
 use anyhow::{Context, Result};
@@ -10,9 +11,12 @@ use crossterm::{
 };
 use ratatui::backend::CrosstermBackend;
 use ratatui::layout::Rect;
+use rig::agent::Agent as RigAgent;
+use rig::providers::openai::CompletionModel;
 use std::io;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tokio::sync::mpsc;
 
 /// 应用程序
 pub struct App {
@@ -21,17 +25,40 @@ pub struct App {
     ui: AppUi,
     current_bot: Option<BotConfig>,
     agent: Option<Box<dyn Agent>>,
+    rig_agent: Option<RigAgent<CompletionModel>>,
+    infrastructure: Option<Arc<Infrastructure>>,
+    user_id: String,
+    user_info: Option<String>,
     should_quit: bool,
+    message_sender: mpsc::UnboundedSender<AppMessage>,
+    message_receiver: mpsc::UnboundedReceiver<AppMessage>,
+}
+
+/// 应用消息类型
+#[derive(Debug, Clone)]
+pub enum AppMessage {
+    Log(String),
+    StreamingChunk {
+        user: String,
+        chunk: String,
+    },
+    StreamingComplete {
+        user: String,
+        full_response: String,
+    },
 }
 
 impl App {
     /// 创建新的应用
-    pub fn new(config_manager: ConfigManager, log_manager: Arc<LogManager>) -> Result<Self> {
+    pub fn new(config_manager: ConfigManager, log_manager: Arc<LogManager>, infrastructure: Option<Arc<Infrastructure>>) -> Result<Self> {
         let mut ui = AppUi::new();
 
         // 加载机器人列表
         let bots = config_manager.get_bots()?;
         ui.set_bot_list(bots);
+
+        // 创建消息通道
+        let (msg_tx, msg_rx) = mpsc::unbounded_channel::<AppMessage>();
 
         log::info!("应用程序初始化完成");
 
@@ -41,8 +68,33 @@ impl App {
             ui,
             current_bot: None,
             agent: None,
+            rig_agent: None,
+            infrastructure,
+            user_id: "demo_user".to_string(),
+            user_info: None,
             should_quit: false,
+            message_sender: msg_tx,
+            message_receiver: msg_rx,
         })
+    }
+
+    /// 设置用户信息
+    pub async fn load_user_info(&mut self) -> Result<()> {
+        if let Some(infrastructure) = &self.infrastructure {
+            let user_info = extract_user_basic_info(
+                infrastructure.config(),
+                infrastructure.memory_manager().clone(),
+                &self.user_id,
+            ).await.map_err(|e| anyhow::anyhow!("加载用户信息失败: {}", e))?;
+
+            if let Some(info) = user_info {
+                log::info!("已加载用户基本信息");
+                self.user_info = Some(info);
+            } else {
+                log::info!("未找到用户基本信息");
+            }
+        }
+        Ok(())
     }
 
     /// 运行应用
@@ -69,6 +121,41 @@ impl App {
             if last_log_update.elapsed() > Duration::from_secs(1) {
                 self.update_logs();
                 last_log_update = Instant::now();
+            }
+
+            // 处理流式消息
+            if let Ok(msg) = self.message_receiver.try_recv() {
+                match msg {
+                    AppMessage::StreamingChunk { user: _, chunk } => {
+                        // 添加流式内容到当前正在生成的消息
+                        if let Some(last_msg) = self.ui.messages.last_mut() {
+                            if last_msg.role == crate::agent::MessageRole::Assistant {
+                                last_msg.content.push_str(&chunk);
+                            } else {
+                                // 如果最后一条不是助手消息，创建新的助手消息
+                                self.ui.messages.push(ChatMessage::assistant(chunk));
+                            }
+                        } else {
+                            // 如果没有消息，创建新的助手消息
+                            self.ui.messages.push(ChatMessage::assistant(chunk));
+                        }
+                    }
+                    AppMessage::StreamingComplete { user: _, full_response } => {
+                        // 流式完成，确保完整响应已保存
+                        if let Some(last_msg) = self.ui.messages.last_mut() {
+                            if last_msg.role == crate::agent::MessageRole::Assistant {
+                                last_msg.content = full_response;
+                            } else {
+                                self.ui.messages.push(ChatMessage::assistant(full_response));
+                            }
+                        } else {
+                            self.ui.messages.push(ChatMessage::assistant(full_response));
+                        }
+                    }
+                    AppMessage::Log(_) => {
+                        // 日志消息暂时忽略
+                    }
+                }
             }
 
             // 渲染 UI
@@ -194,6 +281,29 @@ impl App {
                     &bot.name,
                     &bot.system_prompt,
                 ));
+
+                // 如果有基础设施，创建真实的带记忆的 Agent
+                if let Some(infrastructure) = &self.infrastructure {
+                    let memory_tool_config = cortex_mem_rig::tool::MemoryToolConfig {
+                        default_user_id: Some(self.user_id.clone()),
+                        ..Default::default()
+                    };
+
+                    match create_memory_agent(
+                        infrastructure.memory_manager().clone(),
+                        memory_tool_config,
+                        infrastructure.config(),
+                    ).await {
+                        Ok(rig_agent) => {
+                            self.rig_agent = Some(rig_agent);
+                            log::info!("已创建带记忆功能的真实 Agent");
+                        }
+                        Err(e) => {
+                            log::error!("创建真实 Agent 失败，使用 Mock Agent: {}", e);
+                        }
+                    }
+                }
+
                 log::info!("选择机器人: {}", bot.name);
             } else {
                 log::warn!("没有选中的机器人");
@@ -209,8 +319,74 @@ impl App {
         log::info!("用户发送消息: {}", input_text);
         log::debug!("当前消息总数: {}", self.ui.messages.len());
 
-        // 获取 AI 响应
-        if let Some(agent) = &self.agent {
+        // 使用真实的带记忆的 Agent 或 Mock Agent
+        if let Some(rig_agent) = &self.rig_agent {
+            // 使用真实 Agent 进行流式响应
+            let current_conversations: Vec<(String, String)> = self.ui.messages
+                .iter()
+                .filter_map(|msg| match msg.role {
+                    crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
+                    crate::agent::MessageRole::Assistant => {
+                        if let Some(last) = self.ui.messages.iter().rev().find(|m| m.role == crate::agent::MessageRole::User) {
+                            Some((last.content.clone(), msg.content.clone()))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                })
+                .collect();
+
+            let user_info_clone = self.user_info.clone();
+            let infrastructure_clone = self.infrastructure.clone();
+            let rig_agent_clone = rig_agent.clone();
+            let msg_tx = self.message_sender.clone();
+            let user_input = input_text.to_string();
+            let user_id = self.user_id.clone();
+            let user_input_for_stream = user_input.clone();
+
+            tokio::spawn(async move {
+                let (stream_tx, mut stream_rx) = mpsc::unbounded_channel::<String>();
+
+                let generation_task = tokio::spawn(async move {
+                    agent_reply_with_memory_retrieval_streaming(
+                        &rig_agent_clone,
+                        infrastructure_clone.unwrap().memory_manager().clone(),
+                        &user_input,
+                        &user_id,
+                        user_info_clone.as_deref(),
+                        &current_conversations,
+                        stream_tx,
+                    ).await
+                });
+
+                while let Some(chunk) = stream_rx.recv().await {
+                    if let Err(_) = msg_tx.send(AppMessage::StreamingChunk {
+                        user: user_input_for_stream.clone(),
+                        chunk,
+                    }) {
+                        break;
+                    }
+                }
+
+                match generation_task.await {
+                    Ok(Ok(full_response)) => {
+                        let _ = msg_tx.send(AppMessage::StreamingComplete {
+                            user: user_input_for_stream.clone(),
+                            full_response,
+                        });
+                    }
+                    Ok(Err(e)) => {
+                        log::error!("生成回复失败: {}", e);
+                    }
+                    Err(e) => {
+                        log::error!("任务执行失败: {}", e);
+                    }
+                }
+            });
+
+        } else if let Some(agent) = &self.agent {
+            // 使用 Mock Agent
             let mut messages = vec![];
             if let Some(bot) = &self.current_bot {
                 messages.push(ChatMessage::system(&bot.system_prompt));
@@ -271,6 +447,38 @@ impl App {
             }
         }
         self.ui.scroll_offset = usize::MAX;
+    }
+
+    /// 退出时保存对话到记忆系统
+    pub async fn save_conversations_to_memory(&self) -> Result<()> {
+        if let Some(infrastructure) = &self.infrastructure {
+            let conversations: Vec<(String, String)> = self.ui.messages
+                .iter()
+                .filter_map(|msg| match msg.role {
+                    crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
+                    crate::agent::MessageRole::Assistant => {
+                        if let Some(last) = self.ui.messages.iter().rev().find(|m| m.role == crate::agent::MessageRole::User) {
+                            Some((last.content.clone(), msg.content.clone()))
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                })
+                .filter(|(user, assistant)| !user.is_empty() && !assistant.is_empty())
+                .collect();
+
+            if !conversations.is_empty() {
+                log::info!("正在保存 {} 条对话到记忆系统...", conversations.len());
+                store_conversations_batch(
+                    infrastructure.memory_manager().clone(),
+                    &conversations,
+                    &self.user_id,
+                ).await.map_err(|e| anyhow::anyhow!("保存对话到记忆系统失败: {}", e))?;
+                log::info!("对话保存完成");
+            }
+        }
+        Ok(())
     }
 }
 

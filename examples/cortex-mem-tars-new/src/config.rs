@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
+use cortex_mem_config::Config as CortexConfig;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -30,11 +31,16 @@ impl BotConfig {
 pub struct ConfigManager {
     config_dir: PathBuf,
     bots_file: PathBuf,
+    cortex_config: CortexConfig,
 }
 
 impl ConfigManager {
     /// 创建新的配置管理器
     pub fn new() -> Result<Self> {
+        // 获取当前工作目录
+        let current_dir = std::env::current_dir().context("无法获取当前工作目录")?;
+
+        // 系统配置目录（用于 bots.json）
         let config_dir = directories::ProjectDirs::from("com", "cortex", "mem-tars")
             .context("无法获取项目目录")?
             .config_dir()
@@ -44,9 +50,63 @@ impl ConfigManager {
 
         let bots_file = config_dir.join("bots.json");
 
+        // cortex-mem 配置文件：优先从当前目录读取
+        let local_config_file = current_dir.join("config.toml");
+        let system_config_file = config_dir.join("config.toml");
+
+        // 确定使用哪个配置文件
+        let cortex_config_file = if local_config_file.exists() {
+            log::info!("使用当前目录的配置文件: {:?}", local_config_file);
+            local_config_file
+        } else {
+            log::info!("使用系统配置目录的配置文件: {:?}", system_config_file);
+            system_config_file
+        };
+
+        // 加载或创建 cortex-mem 配置
+        let cortex_config = if cortex_config_file.exists() {
+            CortexConfig::load(&cortex_config_file).context("无法加载 cortex-mem 配置")?
+        } else {
+            // 创建默认配置
+            let default_config = CortexConfig {
+                qdrant: cortex_mem_config::QdrantConfig {
+                    url: "http://localhost:6334".to_string(),
+                    collection_name: "cortex_mem".to_string(),
+                    embedding_dim: Some(1536),
+                    timeout_secs: 30,
+                },
+                llm: cortex_mem_config::LLMConfig {
+                    api_base_url: "https://api.openai.com/v1".to_string(),
+                    api_key: "".to_string(),
+                    model_efficient: "gpt-4o-mini".to_string(),
+                    temperature: 0.7,
+                    max_tokens: 2000,
+                },
+                server: cortex_mem_config::ServerConfig {
+                    host: "127.0.0.1".to_string(),
+                    port: 8080,
+                    cors_origins: vec!["*".to_string()],
+                },
+                embedding: cortex_mem_config::EmbeddingConfig {
+                    api_base_url: "https://api.openai.com/v1".to_string(),
+                    model_name: "text-embedding-3-small".to_string(),
+                    api_key: "".to_string(),
+                    batch_size: 100,
+                    timeout_secs: 30,
+                },
+                memory: cortex_mem_config::MemoryConfig::default(),
+                logging: cortex_mem_config::LoggingConfig::default(),
+            };
+            let content = toml::to_string_pretty(&default_config).context("无法序列化默认配置")?;
+            fs::write(&cortex_config_file, content).context("无法写入默认配置文件")?;
+            log::info!("已创建默认 cortex-mem 配置文件: {:?}", cortex_config_file);
+            default_config
+        };
+
         Ok(Self {
             config_dir,
             bots_file,
+            cortex_config,
         })
     }
 
@@ -118,6 +178,11 @@ impl ConfigManager {
     /// 获取配置目录路径
     pub fn config_dir(&self) -> &Path {
         &self.config_dir
+    }
+
+    /// 获取 cortex-mem 配置
+    pub fn cortex_config(&self) -> &CortexConfig {
+        &self.cortex_config
     }
 }
 
