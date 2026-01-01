@@ -319,7 +319,6 @@ impl AppUi {
                         }
                     } else {
                         // Shift+Enter 换行
-                        log::debug!("Shift+Enter: 换行");
                         self.input_textarea.input(key);
                         KeyAction::Continue
                     }
@@ -329,12 +328,10 @@ impl AppUi {
                     KeyAction::Quit
                 }
                 KeyCode::Char('l') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    log::debug!("Ctrl-L: 切换日志面板");
                     self.log_panel_visible = !self.log_panel_visible;
                     KeyAction::Continue
                 }
                 KeyCode::Esc => {
-                    log::debug!("关闭日志面板");
                     self.log_panel_visible = false;
                     // 清除选择
                     self.selection_active = false;
@@ -912,9 +909,7 @@ impl AppUi {
         }
 
         // 如果主题弹窗可见，渲染弹窗
-        log::debug!("render_chat: 检查主题弹窗可见性: {}", self.theme_modal_visible);
         if self.theme_modal_visible {
-            log::debug!("render_chat: 开始渲染主题弹窗");
             self.render_theme_modal(frame);
         }
     }
@@ -1226,9 +1221,6 @@ impl AppUi {
                             let selected: String = chars[safe_start_col..safe_end_col].iter().collect();
                             let after: String = chars[safe_end_col..].iter().collect();
 
-                            log::debug!("单行高亮: original_idx={}, before_len={}, selected_len={}, after_len={}",
-                                       original_idx, before.len(), selected.len(), after.len());
-
                             Line::from(vec![
                                 Span::raw(before),
                                 Span::styled(selected, highlight_style),
@@ -1410,7 +1402,6 @@ impl AppUi {
 
     /// 渲染主题选择弹窗
     fn render_theme_modal(&mut self, frame: &mut Frame) {
-        log::debug!("渲染主题弹窗，可见性: {}", self.theme_modal_visible);
         // 计算弹窗大小（居中显示）
         let area = frame.area();
         let modal_width = 50;
