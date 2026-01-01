@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 
 /// 日志管理器
 pub struct LogManager {
+    #[allow(dead_code)]
     log_file: PathBuf,
     file: Arc<Mutex<File>>,
     lines: Arc<Mutex<Vec<String>>>,
@@ -70,19 +71,6 @@ impl LogManager {
         } else {
             Ok(lines.clone())
         }
-    }
-
-    /// 获取日志文件路径
-    pub fn log_file_path(&self) -> &Path {
-        &self.log_file
-    }
-
-    /// 清空日志
-    pub fn clear(&self) -> Result<()> {
-        File::create(&self.log_file).context("无法清空日志文件")?;
-        let mut lines = self.lines.lock().map_err(|e| anyhow::anyhow!("无法获取日志行锁: {}", e))?;
-        lines.clear();
-        Ok(())
     }
 }
 

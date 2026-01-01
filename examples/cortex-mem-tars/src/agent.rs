@@ -1,25 +1,66 @@
+use anyhow::Result;
+use chrono::{DateTime, Local};
 use cortex_mem_config::Config;
 use cortex_mem_core::memory::MemoryManager;
 use cortex_mem_rig::{ListMemoriesArgs, create_memory_tools, tool::MemoryToolConfig};
+use futures::StreamExt;
 use rig::{
-    agent::Agent,
+    agent::Agent as RigAgent,
     client::CompletionClient,
     providers::openai::{Client, CompletionModel},
     tool::Tool,
 };
-
-use chrono::Local;
+use rig::agent::MultiTurnStreamItem;
+use rig::completion::Message;
+use rig::streaming::{StreamedAssistantContent, StreamingChat};
 use std::sync::Arc;
+use tokio::sync::mpsc;
 
-// 导入日志重定向函数
-use crate::app::redirect_log_to_ui;
+/// 消息角色
+#[derive(Debug, Clone, PartialEq)]
+pub enum MessageRole {
+    System,
+    User,
+    Assistant,
+}
+
+/// 聊天消息
+#[derive(Debug, Clone)]
+pub struct ChatMessage {
+    pub role: MessageRole,
+    pub content: String,
+    pub timestamp: DateTime<Local>,
+}
+
+impl ChatMessage {
+    pub fn new(role: MessageRole, content: String) -> Self {
+        Self {
+            role,
+            content,
+            timestamp: Local::now(),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn system(content: impl Into<String>) -> Self {
+        Self::new(MessageRole::System, content.into())
+    }
+
+    pub fn user(content: impl Into<String>) -> Self {
+        Self::new(MessageRole::User, content.into())
+    }
+
+    pub fn assistant(content: impl Into<String>) -> Self {
+        Self::new(MessageRole::Assistant, content.into())
+    }
+}
 
 /// 创建带记忆功能的Agent
 pub async fn create_memory_agent(
     memory_manager: Arc<MemoryManager>,
     memory_tool_config: MemoryToolConfig,
     config: &Config,
-) -> Result<Agent<CompletionModel>, Box<dyn std::error::Error>> {
+) -> Result<RigAgent<CompletionModel>, Box<dyn std::error::Error>> {
     // 创建记忆工具
     let memory_tools =
         create_memory_tools(memory_manager.clone(), &config, Some(memory_tool_config));
@@ -41,13 +82,6 @@ pub async fn create_memory_agent(
         .preamble(&format!(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
 
 此会话发生的初始时间：{current_time}
-
-你的工具:
-- CortexMemoryTool: 可以存储、搜索和检索记忆。支持以下操作:
-  * store_memory: 存储新记忆
-  * query_memory: 搜索相关记忆
-  * list_memories: 获取一系列的记忆集合
-  * get_memory: 获取特定记忆
 
 重要指令:
 - 对话历史将作为上下文提供，请使用这些信息来理解当前的对话流程
@@ -138,15 +172,9 @@ pub async fn extract_user_basic_info(
     }
 }
 
-use futures::StreamExt;
-use rig::agent::MultiTurnStreamItem;
-use rig::completion::Message;
-use rig::streaming::{StreamedAssistantContent, StreamingChat};
-use tokio::sync::mpsc;
-
 /// Agent回复函数 - 基于tool call的记忆引擎使用（真实流式版本）
 pub async fn agent_reply_with_memory_retrieval_streaming(
-    agent: &Agent<CompletionModel>,
+    agent: &RigAgent<CompletionModel>,
     _memory_manager: Arc<MemoryManager>,
     user_input: &str,
     _user_id: &str,
@@ -154,9 +182,6 @@ pub async fn agent_reply_with_memory_retrieval_streaming(
     conversations: &[(String, String)],
     stream_sender: mpsc::UnboundedSender<String>,
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
-    // 记录开始处理
-    redirect_log_to_ui("DEBUG", &format!("开始处理用户请求: {}", user_input));
-
     // 构建对话历史 - 转换为rig的Message格式
     let mut chat_history = Vec::new();
     for (user_msg, assistant_msg) in conversations {
@@ -180,17 +205,15 @@ pub async fn agent_reply_with_memory_retrieval_streaming(
 
     // 构建完整的prompt
     let prompt_content = if let Some(info) = user_info {
-        redirect_log_to_ui("DEBUG", "已添加用户基本信息和对话历史到上下文");
         format!(
             "{}\n\n用户基本信息:\n{}\n\n当前用户输入: {}",
             system_prompt, info, user_input
         )
     } else {
-        redirect_log_to_ui("DEBUG", "已添加对话历史到上下文");
         format!("{}\n\n当前用户输入: {}", system_prompt, user_input)
     };
 
-    redirect_log_to_ui("DEBUG", "正在生成AI回复（真实流式模式）...");
+    log::debug!("正在生成AI回复（真实流式模式）...");
 
     // 使用rig的真实流式API
     let prompt_message = Message::user(&prompt_content);
@@ -223,45 +246,42 @@ pub async fn agent_reply_with_memory_retrieval_streaming(
                             }
                             StreamedAssistantContent::ToolCall(_) => {
                                 // 处理工具调用（如果需要）
-                                redirect_log_to_ui("DEBUG", "收到工具调用");
+                                log::debug!("收到工具调用");
                             }
                             StreamedAssistantContent::Reasoning(_) => {
                                 // 处理推理过程（如果需要）
-                                redirect_log_to_ui("DEBUG", "收到推理过程");
+                                log::debug!("收到推理过程");
                             }
                             StreamedAssistantContent::Final(_) => {
                                 // 处理最终响应
-                                redirect_log_to_ui("DEBUG", "收到最终响应");
+                                log::debug!("收到最终响应");
                             }
                             StreamedAssistantContent::ToolCallDelta { .. } => {
                                 // 处理工具调用增量
-                                redirect_log_to_ui("DEBUG", "收到工具调用增量");
+                                log::debug!("收到工具调用增量");
                             }
                         }
                     }
                     MultiTurnStreamItem::FinalResponse(final_response) => {
                         // 处理最终响应
-                        redirect_log_to_ui(
-                            "DEBUG",
-                            &format!("收到最终响应: {}", final_response.response()),
-                        );
+                        log::debug!("收到最终响应: {}", final_response.response());
                         full_response = final_response.response().to_string();
                         break;
                     }
                     _ => {
                         // 处理其他未知的流式项目类型
-                        redirect_log_to_ui("DEBUG", "收到未知的流式项目类型");
+                        log::debug!("收到未知的流式项目类型");
                     }
                 }
             }
             Err(e) => {
-                redirect_log_to_ui("ERROR", &format!("流式处理错误: {}", e));
+                log::error!("流式处理错误: {}", e);
                 return Err(format!("Streaming error: {}", e).into());
             }
         }
     }
 
-    redirect_log_to_ui("DEBUG", "AI回复生成完成");
+    log::debug!("AI回复生成完成");
     Ok(full_response.trim().to_string())
 }
 

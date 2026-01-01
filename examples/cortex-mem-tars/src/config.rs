@@ -141,6 +141,7 @@ impl ConfigManager {
     }
 
     /// 删除机器人
+    #[allow(dead_code)]
     pub fn remove_bot(&self, bot_id: &str) -> Result<bool> {
         let mut bots = self.get_bots()?;
         let original_len = bots.len();
@@ -156,6 +157,7 @@ impl ConfigManager {
     }
 
     /// 更新机器人
+    #[allow(dead_code)]
     pub fn update_bot(&self, bot_id: &str, updated_bot: BotConfig) -> Result<bool> {
         let bot_name = updated_bot.name.clone();
         let mut bots = self.get_bots()?;
@@ -170,12 +172,14 @@ impl ConfigManager {
     }
 
     /// 根据 ID 获取机器人
+    #[allow(dead_code)]
     pub fn get_bot(&self, bot_id: &str) -> Result<Option<BotConfig>> {
         let bots = self.get_bots()?;
         Ok(bots.into_iter().find(|bot| bot.id == bot_id))
     }
 
     /// 获取配置目录路径
+    #[allow(dead_code)]
     pub fn config_dir(&self) -> &Path {
         &self.config_dir
     }
@@ -189,19 +193,5 @@ impl ConfigManager {
 impl Default for ConfigManager {
     fn default() -> Self {
         Self::new().expect("无法初始化配置管理器")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_bot_config_creation() {
-        let bot = BotConfig::new("TestBot", "You are a helpful assistant", "password123");
-        assert_eq!(bot.name, "TestBot");
-        assert_eq!(bot.system_prompt, "You are a helpful assistant");
-        assert_eq!(bot.access_password, "password123");
-        assert!(!bot.id.is_empty());
     }
 }

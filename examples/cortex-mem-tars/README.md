@@ -1,4 +1,4 @@
-# Cortex Memory TARS New
+# Cortex Memory TARS
 
 这是一个基于 Cortex Memory 的 TUI（终端用户界面）聊天应用，具有记忆功能。它能够记住用户的对话历史和个人信息，提供更智能的对话体验。
 
