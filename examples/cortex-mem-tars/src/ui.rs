@@ -37,6 +37,75 @@ pub enum ChatState {
     Selection,
 }
 
+/// 主题定义
+#[derive(Debug, Clone, Copy)]
+pub struct Theme {
+    pub name: &'static str,
+    pub primary_color: Color,
+    pub secondary_color: Color,
+    pub accent_color: Color,
+    pub background_color: Color,
+    pub text_color: Color,
+    pub border_color: Color,
+}
+
+/// 预设主题
+impl Theme {
+    pub const DEFAULT: Theme = Theme {
+        name: "默认",
+        primary_color: Color::Cyan,
+        secondary_color: Color::Blue,
+        accent_color: Color::Green,
+        background_color: Color::Rgb(20, 30, 40),
+        text_color: Color::White,
+        border_color: Color::Cyan,
+    };
+
+    pub const DARK: Theme = Theme {
+        name: "暗黑",
+        primary_color: Color::Gray,
+        secondary_color: Color::DarkGray,
+        accent_color: Color::LightCyan,
+        background_color: Color::Rgb(10, 10, 15),
+        text_color: Color::Rgb(220, 220, 220),
+        border_color: Color::Gray,
+    };
+
+    pub const FOREST: Theme = Theme {
+        name: "森林",
+        primary_color: Color::Green,
+        secondary_color: Color::Rgb(0, 100, 0),
+        accent_color: Color::LightGreen,
+        background_color: Color::Rgb(20, 40, 20),
+        text_color: Color::Rgb(200, 255, 200),
+        border_color: Color::Green,
+    };
+
+    pub const OCEAN: Theme = Theme {
+        name: "海洋",
+        primary_color: Color::Blue,
+        secondary_color: Color::Rgb(0, 0, 100),
+        accent_color: Color::LightBlue,
+        background_color: Color::Rgb(20, 30, 50),
+        text_color: Color::Rgb(200, 220, 255),
+        border_color: Color::Blue,
+    };
+
+    pub const SUNSET: Theme = Theme {
+        name: "日落",
+        primary_color: Color::Rgb(255, 165, 0),
+        secondary_color: Color::Rgb(200, 100, 0),
+        accent_color: Color::Rgb(255, 200, 100),
+        background_color: Color::Rgb(40, 20, 10),
+        text_color: Color::Rgb(255, 240, 200),
+        border_color: Color::Rgb(255, 165, 0),
+    };
+
+    pub fn all() -> &'static [Theme; 5] {
+        &[Self::DEFAULT, Self::DARK, Self::FOREST, Self::OCEAN, Self::SUNSET]
+    }
+}
+
 /// 应用 UI 状态
 pub struct AppUi {
     pub state: AppState,
@@ -66,6 +135,10 @@ pub struct AppUi {
     pub help_modal_visible: bool,
     pub help_content: Vec<Line<'static>>,
     pub help_scroll_offset: usize,
+    // 主题相关字段
+    pub current_theme: Theme,
+    pub theme_modal_visible: bool,
+    pub theme_list_state: ListState,
 }
 
 /// 键盘事件处理结果
@@ -76,6 +149,7 @@ pub enum KeyAction {
     SendMessage, // 发送消息
     ClearChat,   // 清空会话
     ShowHelp,    // 显示帮助
+    ShowThemes,  // 显示主题选择
     DumpChats,   // 导出会话到剪贴板
 }
 
@@ -87,10 +161,14 @@ impl AppUi {
         let mut input_textarea = TextArea::default();
         let _ = input_textarea.set_block(Block::default()
             .borders(Borders::ALL)
+            .border_style(Style::default().fg(Theme::DEFAULT.border_color))
             .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"));
         let _ = input_textarea.set_cursor_line_style(Style::default());
 
         let help_content = Self::parse_help_content();
+
+        let mut theme_list_state = ListState::default();
+        theme_list_state.select(Some(0));
 
         Self {
             state: AppState::BotSelection,
@@ -115,6 +193,9 @@ impl AppUi {
             help_modal_visible: false,
             help_content,
             help_scroll_offset: 0,
+            current_theme: Theme::DEFAULT,
+            theme_modal_visible: false,
+            theme_list_state,
         }
     }
 
@@ -210,6 +291,11 @@ impl AppUi {
         // 如果帮助弹窗打开，只处理弹窗相关的按键
         if self.help_modal_visible {
             return self.handle_help_modal_key(key);
+        }
+
+        // 如果主题弹窗打开，只处理主题弹窗相关的按键
+        if self.theme_modal_visible {
+            return self.handle_theme_modal_key(key);
         }
 
         if self.log_panel_visible {
@@ -475,6 +561,52 @@ impl AppUi {
             KeyCode::End => {
                 let visible_lines = 20; // 弹窗可见行数
                 self.help_scroll_offset = self.help_content.len().saturating_sub(visible_lines);
+                KeyAction::Continue
+            }
+            _ => KeyAction::Continue,
+        }
+    }
+
+    /// 处理主题弹窗的键盘事件
+    fn handle_theme_modal_key(&mut self, key: KeyEvent) -> KeyAction {
+        use ratatui::crossterm::event::KeyCode;
+        match key.code {
+            KeyCode::Esc => {
+                log::debug!("关闭主题弹窗");
+                self.theme_modal_visible = false;
+                KeyAction::Continue
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                if let Some(selected) = self.theme_list_state.selected() {
+                    if selected > 0 {
+                        self.theme_list_state.select(Some(selected - 1));
+                    }
+                }
+                KeyAction::Continue
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if let Some(selected) = self.theme_list_state.selected() {
+                    if selected < Theme::all().len().saturating_sub(1) {
+                        self.theme_list_state.select(Some(selected + 1));
+                    }
+                }
+                KeyAction::Continue
+            }
+            KeyCode::Enter => {
+                if let Some(index) = self.theme_list_state.selected() {
+                    if let Some(theme) = Theme::all().get(index) {
+                        self.current_theme = *theme;
+                        log::info!("切换主题: {}", theme.name);
+
+                        // 更新输入框样式
+                        let _ = self.input_textarea.set_block(Block::default()
+                            .borders(Borders::ALL)
+                            .border_style(Style::default().fg(self.current_theme.border_color))
+                            .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"));
+
+                        self.theme_modal_visible = false;
+                    }
+                }
                 KeyAction::Continue
             }
             _ => KeyAction::Continue,
@@ -778,6 +910,13 @@ impl AppUi {
         if self.help_modal_visible {
             self.render_help_modal(frame);
         }
+
+        // 如果主题弹窗可见，渲染弹窗
+        log::debug!("render_chat: 检查主题弹窗可见性: {}", self.theme_modal_visible);
+        if self.theme_modal_visible {
+            log::debug!("render_chat: 开始渲染主题弹窗");
+            self.render_theme_modal(frame);
+        }
     }
 
     /// 渲染普通聊天界面
@@ -797,7 +936,7 @@ impl AppUi {
             Span::styled(
                 "Cortex TARS AI Program",
                 Style::default()
-                    .fg(Color::Cyan)
+                    .fg(self.current_theme.primary_color)
                     .add_modifier(Modifier::BOLD),
             ),
         ]);
@@ -808,7 +947,7 @@ impl AppUi {
                     .borders(Borders::ALL)
                     .border_style(
                         Style::default()
-                            .fg(Color::Cyan)
+                            .fg(self.current_theme.primary_color)
                             .add_modifier(Modifier::BOLD)
                     )
                     .border_type(ratatui::widgets::BorderType::Double)
@@ -830,8 +969,8 @@ impl AppUi {
             .alignment(Alignment::Center)
             .style(
                 Style::default()
-                    .fg(Color::White)
-                    .bg(Color::Rgb(20, 30, 40))
+                    .fg(self.current_theme.text_color)
+                    .bg(self.current_theme.background_color)
             );
 
         frame.render_widget(title, chunks[0]);
@@ -862,7 +1001,7 @@ impl AppUi {
             Span::styled(
                 "Cortex TARS AI Program",
                 Style::default()
-                    .fg(Color::Cyan)
+                    .fg(self.current_theme.primary_color)
                     .add_modifier(Modifier::BOLD),
             ),
         ]);
@@ -873,7 +1012,7 @@ impl AppUi {
                     .borders(Borders::ALL)
                     .border_style(
                         Style::default()
-                            .fg(Color::Cyan)
+                            .fg(self.current_theme.primary_color)
                             .add_modifier(Modifier::BOLD)
                     )
                     .border_type(ratatui::widgets::BorderType::Double)
@@ -895,8 +1034,8 @@ impl AppUi {
             .alignment(Alignment::Center)
             .style(
                 Style::default()
-                    .fg(Color::White)
-                    .bg(Color::Rgb(20, 30, 40))
+                    .fg(self.current_theme.text_color)
+                    .bg(self.current_theme.background_color)
             );
 
         frame.render_widget(title, chunks[0]);
@@ -930,8 +1069,8 @@ impl AppUi {
 
             let role_color = match message.role {
                 crate::agent::MessageRole::System => Color::Yellow,
-                crate::agent::MessageRole::User => Color::Green,
-                crate::agent::MessageRole::Assistant => Color::Cyan,
+                crate::agent::MessageRole::User => self.current_theme.accent_color,
+                crate::agent::MessageRole::Assistant => self.current_theme.primary_color,
             };
 
             // 格式化时间戳
@@ -1236,11 +1375,11 @@ impl AppUi {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Cyan))
+                    .border_style(Style::default().fg(self.current_theme.border_color))
                     .border_type(ratatui::widgets::BorderType::Double)
-                    .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+                    .title_style(Style::default().fg(self.current_theme.primary_color).add_modifier(Modifier::BOLD))
                     .title(" 帮助信息 (Esc 关闭) ")
-                    .style(Style::default().bg(Color::Rgb(30, 30, 40)))
+                    .style(Style::default().bg(self.current_theme.background_color))
             )
             .wrap(Wrap { trim: false })
             .alignment(Alignment::Left);
@@ -1267,6 +1406,69 @@ impl AppUi {
                 &mut scrollbar_state,
             );
         }
+    }
+
+    /// 渲染主题选择弹窗
+    fn render_theme_modal(&mut self, frame: &mut Frame) {
+        log::debug!("渲染主题弹窗，可见性: {}", self.theme_modal_visible);
+        // 计算弹窗大小（居中显示）
+        let area = frame.area();
+        let modal_width = 50;
+        let modal_height = 15;
+
+        let x = (area.width - modal_width) / 2;
+        let y = (area.height - modal_height) / 2;
+
+        let modal_area = Rect::new(x, y, modal_width, modal_height);
+
+        // 创建半透明背景遮罩（使用深灰色）
+        let overlay_area = area;
+        let overlay_block = Block::default()
+            .style(Style::default().bg(Color::Rgb(20, 20, 20)));
+
+        frame.render_widget(overlay_block, overlay_area);
+
+        // 创建主题列表项
+        let items: Vec<ListItem> = Theme::all()
+            .iter()
+            .map(|theme| {
+                ListItem::new(Line::from(vec![
+                    Span::styled(
+                        theme.name,
+                        Style::default()
+                            .fg(theme.primary_color)
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                    Span::raw(" - "),
+                    Span::styled(
+                        "●",
+                        Style::default().fg(theme.accent_color),
+                    ),
+                ]))
+            })
+            .collect();
+
+        let list = List::new(items)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(self.current_theme.primary_color))
+                    .border_type(ratatui::widgets::BorderType::Double)
+                    .title_style(
+                        Style::default()
+                            .fg(self.current_theme.primary_color)
+                            .add_modifier(Modifier::BOLD)
+                    )
+                    .title(" 选择主题 (Esc 关闭, Enter 确认) ")
+                    .style(Style::default().bg(self.current_theme.background_color))
+            )
+            .highlight_style(
+                Style::default()
+                    .bg(self.current_theme.secondary_color)
+                    .add_modifier(Modifier::REVERSED)
+            );
+
+        frame.render_stateful_widget(list, modal_area, &mut self.theme_list_state);
     }
 
     /// Get input text, filtering out auto-wrap newlines
@@ -1310,6 +1512,7 @@ impl AppUi {
         self.input_textarea = TextArea::default();
         let _ = self.input_textarea.set_block(Block::default()
             .borders(Borders::ALL)
+            .border_style(Style::default().fg(self.current_theme.border_color))
             .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"));
         let _ = self.input_textarea.set_cursor_line_style(Style::default());
     }
@@ -1339,6 +1542,10 @@ impl AppUi {
                 log::info!("执行命令: /help");
                 Some(KeyAction::ShowHelp)
             }
+            "/themes" => {
+                log::info!("执行命令: /themes");
+                Some(KeyAction::ShowThemes)
+            }
             "/dump-chats" => {
                 log::info!("执行命令: /dump-chats");
                 Some(KeyAction::DumpChats)
@@ -1361,6 +1568,7 @@ impl AppUi {
   - /quit          退出程序
   - /cls /clear    清空会话区域
   - /help          显示此帮助信息
+  - /themes        切换主题
   - /dump-chats    复制会话区域的所有内容到剪贴板
 
 ## 快捷键
