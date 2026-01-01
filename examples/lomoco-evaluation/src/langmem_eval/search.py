@@ -2,19 +2,21 @@ import json
 import os
 import time
 import logging
+import toml
 from collections import defaultdict
 from pathlib import Path
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Optional
 
 from jinja2 import Template
 from openai import OpenAI
 from tqdm import tqdm
 
 try:
-    from langgraph.store.memory import InMemoryStore
+    from qdrant_client import QdrantClient
+    from qdrant_client.models import Filter, FieldCondition, MatchValue
 except ImportError:
     raise ImportError(
-        "langgraph is not installed. Please install it using: pip install langgraph"
+        "qdrant-client is not installed. Please install it using: pip install qdrant-client"
     )
 
 from .config_utils import check_openai_config, get_config_value, validate_config
@@ -24,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class LangMemSearch:
-    """Class to search memories in LangMem for evaluation"""
+    """Class to search memories in LangMem for evaluation using Qdrant vector database"""
     
     def __init__(self, output_path="results.json", top_k=10, config_path=None):
         self.top_k = top_k
@@ -92,54 +94,67 @@ Answer:
                 f"OpenAI configuration not properly set in {self.config_path}"
             )
         
-        # Initialize OpenAI client from config.toml
-        api_key = get_config_value(self.config_path, "llm", "api_key")
-        api_base = get_config_value(self.config_path, "llm", "api_base_url")
-        self.llm_model = get_config_value(self.config_path, "llm", "model_efficient", "gpt-3.5-turbo")
-        
-        # Create HTTP client with SSL verification disabled for internal APIs
-        import httpx
-        http_client = httpx.Client(verify=False)
-        
-        self.openai_client = OpenAI(
-            api_key=api_key,
-            base_url=api_base,
-            http_client=http_client
-        )
-        
-        # Initialize LangMem store
-        # Note: This will be a new store. For persistence, we need to use the same store instance
-        # or use a persistent store. For now, we'll assume memories are added in the same session.
-        self.store = InMemoryStore()
-        
-        # Try to load previously stored memories from a file if exists
-        self._load_memories_from_file()
+        # Initialize components
+        self._initialize_components()
     
-    def _load_memories_from_file(self):
-        """Load memories from a JSON file if it exists"""
-        import json
-        memory_file = "results/langmem_store.json"
+    def _initialize_components(self):
+        """Initialize Qdrant client, embedding client, and LLM client"""
         try:
-            if os.path.exists(memory_file):
-                print(f"📂 Found memory file: {memory_file}")
-                with open(memory_file, 'r') as f:
-                    memories_dict = json.load(f)
-                
-                print(f"✅ Loaded JSON with {len(memories_dict)} namespaces")
-                
-                # Restore memories to store
-                total_items = 0
-                for namespace_str, items in memories_dict.items():
-                    namespace_tuple = tuple(namespace_str.split('/'))
-                    for key, item_data in items.items():
-                        self.store.put(namespace_tuple, key, item_data["value"])
-                        total_items += 1
-                
-                print(f"✅ Successfully loaded {total_items} memories from {memory_file}")
+            # Load config
+            config_data = toml.load(self.config_path)
+            
+            # Get Qdrant configuration
+            qdrant_config = config_data.get("qdrant", {})
+            self.qdrant_url = qdrant_config.get("url", "http://localhost:6334")
+            self.collection_name = qdrant_config.get("collection_name", "memo-rs")
+            
+            # Get embedding configuration
+            embedding_config = config_data.get("embedding", {})
+            self.embedding_api_base_url = embedding_config.get("api_base_url", "")
+            self.embedding_api_key = embedding_config.get("api_key", "")
+            self.embedding_model_name = embedding_config.get("model_name", "")
+            
+            # Get LLM configuration
+            api_key = get_config_value(self.config_path, "llm", "api_key")
+            api_base = get_config_value(self.config_path, "llm", "api_base_url")
+            self.llm_model = get_config_value(self.config_path, "llm", "model_efficient", "gpt-3.5-turbo")
+            
+            # Initialize Qdrant client
+            self.qdrant_client = QdrantClient(url=self.qdrant_url)
+            
+            # Initialize embedding client
+            import httpx
+            self.embedding_client = OpenAI(
+                api_key=self.embedding_api_key,
+                base_url=self.embedding_api_base_url,
+                http_client=httpx.Client(verify=False)
+            )
+            
+            # Initialize LLM client
+            self.openai_client = OpenAI(
+                api_key=api_key,
+                base_url=api_base,
+                http_client=httpx.Client(verify=False)
+            )
+            
+            logger.info(f"✅ LangMemSearch initialized successfully with Qdrant at {self.qdrant_url}")
+            logger.info(f"✅ Collection: {self.collection_name}")
+            
         except Exception as e:
-            print(f"⚠️  Could not load memories from file: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"❌ Failed to initialize LangMemSearch: {e}")
+            raise
+    
+    def _get_embedding(self, text: str) -> List[float]:
+        """Get embedding for text"""
+        try:
+            response = self.embedding_client.embeddings.create(
+                model=self.embedding_model_name,
+                input=text
+            )
+            return response.data[0].embedding
+        except Exception as e:
+            logger.error(f"Error getting embedding: {e}")
+            return []
     
     def _find_config_file(self):
         """Find config.toml file in standard locations"""
@@ -170,69 +185,53 @@ Answer:
         raise FileNotFoundError("Could not find config.toml file")
     
     def search_memory(self, user_id: str, query: str, max_retries: int = 3, retry_delay: float = 1) -> Tuple[List[Dict], float]:
-        """Search for memories using LangMem store"""
+        """Search for memories using Qdrant vector database with semantic search"""
         start_time = time.time()
         retries = 0
         
         while retries < max_retries:
             try:
-                # Create namespace for this user
-                namespace = ("memories", user_id)
+                # Generate embedding for the query
+                query_embedding = self._get_embedding(query)
                 
-                # Search memories in the store
-                # LangMem store supports semantic search through the search method
+                if not query_embedding:
+                    logger.error(f"❌ Failed to generate embedding for query: {query}")
+                    return [], time.time() - start_time
+                
+                # Search in Qdrant with filter for user_id
+                search_filter = Filter(
+                    must=[
+                        FieldCondition(
+                            key="user_id",
+                            match=MatchValue(value=user_id)
+                        )
+                    ]
+                )
+                
+                # Use query_points instead of search (newer Qdrant API)
+                search_results = self.qdrant_client.query_points(
+                    collection_name=self.collection_name,
+                    query=query_embedding,
+                    query_filter=search_filter,
+                    limit=self.top_k,
+                    with_payload=True
+                ).points
+                
+                # Convert Qdrant results to memory format
                 memories = []
-                
-                # Get all memories for this user
-                all_memories = list(self.store.search(namespace))
-                
-                # Debug: print what we found
-                if len(all_memories) == 0:
-                    # Try to search with empty namespace to see all memories
-                    all_items = list(self.store.search(()))
-                    logger.debug(f"Total items in store: {len(all_items)}")
-                    if len(all_items) > 0:
-                        # Print first few items to see structure
-                        for i, item in enumerate(all_items[:3]):
-                            logger.debug(f"Item {i}: namespace={item.namespace}, key={item.key}")
-                
-                # Simple relevance scoring based on query matching
-                # In a real implementation, you would use embedding-based similarity
-                query_lower = query.lower()
-                scored_memories = []
-                
-                for memory_item in all_memories:
-                    memory_value = memory_item.value
-                    
-                    # Convert memory to string if it's not
-                    if isinstance(memory_value, dict):
-                        memory_content = str(memory_value)
-                    else:
-                        memory_content = str(memory_value)
-                    
-                    # Simple keyword matching score
-                    score = 0.0
-                    query_words = query_lower.split()
-                    for word in query_words:
-                        if word in memory_content.lower():
-                            score += 1.0
-                    
-                    if score > 0:
-                        scored_memories.append({
-                            "memory": memory_content,
-                            "timestamp": "",  # LangMem doesn't store timestamp by default
-                            "score": score,
-                        })
-                
-                # Sort by score and take top_k
-                scored_memories.sort(key=lambda x: x["score"], reverse=True)
-                memories = scored_memories[:self.top_k]
+                for result in search_results:
+                    payload = result.payload
+                    memories.append({
+                        "memory": payload.get("content", ""),
+                        "timestamp": payload.get("timestamp", ""),
+                        "score": result.score,
+                    })
                 
                 end_time = time.time()
                 return memories, end_time - start_time
             
             except Exception as e:
-                print(f"Search error: {e}, retrying...")
+                logger.error(f"Search error: {e}, retrying...")
                 retries += 1
                 if retries >= max_retries:
                     raise e
