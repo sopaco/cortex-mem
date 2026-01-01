@@ -585,6 +585,29 @@ impl AppUi {
             return true;
         }
 
+        // 如果帮助弹窗打开，处理帮助弹窗的滚轮事件
+        if self.help_modal_visible {
+            // 动态计算弹窗高度和可见行数（与 render_help_modal 保持一致）
+            let modal_height = _area.height.saturating_sub(10).min(25);
+            let visible_lines = modal_height.saturating_sub(4) as usize;
+            let max_scroll = self.help_content.len().saturating_sub(visible_lines);
+
+            match event.kind {
+                MouseEventKind::ScrollUp => {
+                    if self.help_scroll_offset > 0 {
+                        self.help_scroll_offset = self.help_scroll_offset.saturating_sub(3);
+                    }
+                }
+                MouseEventKind::ScrollDown => {
+                    if self.help_scroll_offset < max_scroll {
+                        self.help_scroll_offset = self.help_scroll_offset.saturating_add(3).min(max_scroll);
+                    }
+                }
+                _ => {}
+            }
+            return true;
+        }
+
         // 使用保存的消息区域
         let messages_area = match self.messages_area {
             Some(area) => area,
