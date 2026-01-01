@@ -462,9 +462,8 @@ impl App {
     /// 显示帮助信息
     fn show_help(&mut self) {
         log::info!("显示帮助信息");
-        let help_message = ChatMessage::assistant(AppUi::get_help_message());
-        self.ui.messages.push(help_message);
-        self.ui.auto_scroll = true;
+        self.ui.help_modal_visible = true;
+        self.ui.help_scroll_offset = 0;
     }
 
     /// 导出会话到剪贴板

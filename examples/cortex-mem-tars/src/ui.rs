@@ -62,6 +62,10 @@ pub struct AppUi {
     pub cursor_position: (usize, usize),         // 当前光标位置 (line_index, char_index)
     // 消息显示区域位置
     pub messages_area: Option<Rect>,
+    // 帮助弹窗相关字段
+    pub help_modal_visible: bool,
+    pub help_content: Vec<Line<'static>>,
+    pub help_scroll_offset: usize,
 }
 
 /// 键盘事件处理结果
@@ -86,6 +90,8 @@ impl AppUi {
             .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"));
         let _ = input_textarea.set_cursor_line_style(Style::default());
 
+        let help_content = Self::parse_help_content();
+
         Self {
             state: AppState::BotSelection,
             service_status: ServiceStatus::Initing,
@@ -106,6 +112,9 @@ impl AppUi {
             selection_end: None,
             cursor_position: (0, 0),
             messages_area: None,
+            help_modal_visible: false,
+            help_content,
+            help_scroll_offset: 0,
         }
     }
 
@@ -197,6 +206,11 @@ impl AppUi {
     /// 处理聊天界面的键盘事件
     fn handle_chat_key(&mut self, key: KeyEvent) -> KeyAction {
         use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+        // 如果帮助弹窗打开，只处理弹窗相关的按键
+        if self.help_modal_visible {
+            return self.handle_help_modal_key(key);
+        }
 
         if self.log_panel_visible {
             log::debug!("日志面板打开，处理日志面板键盘事件");
@@ -418,6 +432,52 @@ impl AppUi {
                 true
             }
             _ => true,
+        }
+    }
+
+    /// 处理帮助弹窗的键盘事件
+    fn handle_help_modal_key(&mut self, key: KeyEvent) -> KeyAction {
+        use ratatui::crossterm::event::KeyCode;
+        match key.code {
+            KeyCode::Esc => {
+                log::debug!("关闭帮助弹窗");
+                self.help_modal_visible = false;
+                KeyAction::Continue
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                if self.help_scroll_offset > 0 {
+                    self.help_scroll_offset -= 1;
+                }
+                KeyAction::Continue
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                let visible_lines = 20; // 弹窗可见行数
+                if self.help_scroll_offset < self.help_content.len().saturating_sub(visible_lines) {
+                    self.help_scroll_offset += 1;
+                }
+                KeyAction::Continue
+            }
+            KeyCode::PageUp => {
+                self.help_scroll_offset = self.help_scroll_offset.saturating_sub(10);
+                KeyAction::Continue
+            }
+            KeyCode::PageDown => {
+                let visible_lines = 20; // 弹窗可见行数
+                self.help_scroll_offset = self.help_scroll_offset
+                    .saturating_add(10)
+                    .min(self.help_content.len().saturating_sub(visible_lines));
+                KeyAction::Continue
+            }
+            KeyCode::Home => {
+                self.help_scroll_offset = 0;
+                KeyAction::Continue
+            }
+            KeyCode::End => {
+                let visible_lines = 20; // 弹窗可见行数
+                self.help_scroll_offset = self.help_content.len().saturating_sub(visible_lines);
+                KeyAction::Continue
+            }
+            _ => KeyAction::Continue,
         }
     }
 
@@ -689,6 +749,11 @@ impl AppUi {
             self.render_chat_with_log_panel(frame, area);
         } else {
             self.render_chat_normal(frame, area);
+        }
+
+        // 如果帮助弹窗可见，渲染弹窗
+        if self.help_modal_visible {
+            self.render_help_modal(frame);
         }
     }
 
@@ -1112,6 +1177,74 @@ impl AppUi {
         );
     }
 
+    /// 渲染帮助弹窗
+    fn render_help_modal(&mut self, frame: &mut Frame) {
+        // 计算弹窗大小（居中显示）
+        let area = frame.area();
+        let modal_width = area.width.saturating_sub(20).min(80);
+        let modal_height = area.height.saturating_sub(10).min(25);
+
+        let x = (area.width - modal_width) / 2;
+        let y = (area.height - modal_height) / 2;
+
+        let modal_area = Rect::new(x, y, modal_width, modal_height);
+
+        // 创建半透明背景遮罩
+        let overlay_area = area;
+        let overlay_block = Block::default()
+            .style(Style::default().bg(Color::Rgb(0, 0, 0)));
+
+        frame.render_widget(overlay_block, overlay_area);
+
+        // 渲染弹窗内容
+        let visible_lines = modal_height.saturating_sub(4) as usize; // 减去边框和标题
+        let max_scroll = self.help_content.len().saturating_sub(visible_lines);
+        self.help_scroll_offset = self.help_scroll_offset.min(max_scroll);
+
+        let display_lines: Vec<Line> = self
+            .help_content
+            .iter()
+            .skip(self.help_scroll_offset)
+            .take(visible_lines)
+            .cloned()
+            .collect();
+
+        let paragraph = Paragraph::new(display_lines)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Cyan))
+                    .border_type(ratatui::widgets::BorderType::Double)
+                    .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+                    .title(" 帮助信息 (Esc 关闭) ")
+            )
+            .wrap(Wrap { trim: false })
+            .alignment(Alignment::Left);
+
+        frame.render_widget(paragraph, modal_area);
+
+        // 渲染滚动条
+        if self.help_content.len() > visible_lines {
+            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(Some("↑"))
+                .end_symbol(Some("↓"));
+
+            let mut scrollbar_state = ScrollbarState::new(self.help_content.len())
+                .position(self.help_scroll_offset);
+
+            let scrollbar_area = modal_area.inner(Margin {
+                vertical: 1,
+                horizontal: 0,
+            });
+
+            frame.render_stateful_widget(
+                scrollbar,
+                scrollbar_area,
+                &mut scrollbar_state,
+            );
+        }
+    }
+
     /// Get input text, filtering out auto-wrap newlines
     /// Heuristic: next line starts with whitespace = user newline (Shift+Enter)
     ///           next line starts without whitespace = auto-wrap continuation
@@ -1193,9 +1326,41 @@ impl AppUi {
         }
     }
 
-    /// 获取帮助信息
-    pub fn get_help_message() -> String {
-        "# Cortex TARS AI Program - 帮助信息\n\n欢迎使用TARS演示程序，我是由Cortex Memory技术驱动的人工智能程序，作为你的第二大脑，我能够作为你的外脑与你的记忆深度链接。\n\n## 可用命令\n\n| 命令 | 说明 |\n|------|------|\n| `/quit` | 退出程序 |\n| `/cls` 或 `/clear` | 清空会话区域 |\n| `/help` | 显示此帮助信息 |\n| `/dump-chats` | 复制会话区域的所有内容到剪贴板 |\n\n## 快捷键\n\n- **Enter**: 发送消息\n- **Shift+Enter**: 换行\n- **Ctrl+L**: 打开/关闭日志面板\n- **Esc**: 关闭日志面板\n\n---\n\n*Powered by TARS AI*".to_string()
+    /// 解析帮助内容为 Line 列表
+    fn parse_help_content() -> Vec<Line<'static>> {
+        let help_text = "# Cortex TARS AI Program - 帮助信息
+
+欢迎使用TARS演示程序，我是由Cortex Memory技术驱动的人工智能程序，作为你的第二大脑，我能够作为你的外脑与你的记忆深度链接。
+
+## 可用命令
+
+| 命令 | 说明 |
+|------|------|
+| `/quit` | 退出程序 |
+| `/cls` 或 `/clear` | 清空会话区域 |
+| `/help` | 显示此帮助信息 |
+| `/dump-chats` | 复制会话区域的所有内容到剪贴板 |
+
+## 快捷键
+
+- Enter: 发送消息
+- Shift+Enter: 换行
+- Ctrl+L: 打开/关闭日志面板
+- Esc: 关闭弹窗
+
+---
+
+Powered by Cortex Memory";
+
+        // 使用 tui-markdown 渲染帮助文本
+        let markdown_text = from_str(help_text);
+
+        // 转换为 Line 列表
+        markdown_text.lines.into_iter().map(|line| {
+            Line::from(line.spans.iter().map(|s| {
+                Span::raw(s.content.clone())
+            }).collect::<Vec<Span>>())
+        }).collect()
     }
 
     /// 导出所有会话内容到剪贴板
