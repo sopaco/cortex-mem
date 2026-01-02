@@ -350,6 +350,22 @@ impl App {
 
                 // 如果有基础设施，创建真实的带记忆的 Agent
                 if let Some(infrastructure) = &self.infrastructure {
+                    // 先提取用户基本信息
+                    let user_info = match extract_user_basic_info(
+                        infrastructure.config(),
+                        infrastructure.memory_manager().clone(),
+                        &self.user_id,
+                    ).await {
+                        Ok(info) => {
+                            self.user_info = info.clone();
+                            info
+                        }
+                        Err(e) => {
+                            log::error!("提取用户基本信息失败: {}", e);
+                            None
+                        }
+                    };
+
                     let memory_tool_config = cortex_mem_rig::tool::MemoryToolConfig {
                         default_user_id: Some(self.user_id.clone()),
                         ..Default::default()
@@ -359,6 +375,7 @@ impl App {
                         infrastructure.memory_manager().clone(),
                         memory_tool_config,
                         infrastructure.config(),
+                        user_info.as_deref(),
                     ).await {
                         Ok(rig_agent) => {
                             self.rig_agent = Some(rig_agent);
@@ -391,22 +408,45 @@ impl App {
         // 使用真实的带记忆的 Agent 或 Mock Agent
         if let Some(rig_agent) = &self.rig_agent {
             // 使用真实 Agent 进行流式响应
-            let current_conversations: Vec<(String, String)> = self.ui.messages
-                .iter()
-                .filter_map(|msg| match msg.role {
-                    crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
-                    crate::agent::MessageRole::Assistant => {
-                        if let Some(last) = self.ui.messages.iter().rev().find(|m| m.role == crate::agent::MessageRole::User) {
-                            Some((last.content.clone(), msg.content.clone()))
-                        } else {
-                            None
-                        }
-                    }
-                    _ => None
-                })
-                .collect();
+            // 构建历史对话（排除当前用户输入）
+            let current_conversations: Vec<(String, String)> = {
+                let mut conversations = Vec::new();
+                let mut last_user_msg: Option<String> = None;
 
-            let user_info_clone = self.user_info.clone();
+                // 遍历所有消息，但排除最后一条（当前用户输入）
+                let messages_to_include = if self.ui.messages.len() > 1 {
+                    &self.ui.messages[..self.ui.messages.len() - 1]
+                } else {
+                    &[]
+                };
+
+                for msg in messages_to_include {
+                    match msg.role {
+                        crate::agent::MessageRole::User => {
+                            // 如果有未配对的 User 消息，先保存它（单独的 User 消息）
+                            if let Some(user_msg) = last_user_msg.take() {
+                                conversations.push((user_msg, String::new()));
+                            }
+                            last_user_msg = Some(msg.content.clone());
+                        }
+                        crate::agent::MessageRole::Assistant => {
+                            // 将 Assistant 消息与最近的 User 消息配对
+                            if let Some(user_msg) = last_user_msg.take() {
+                                conversations.push((user_msg, msg.content.clone()));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                // 如果最后一个消息是 User 消息，也加入对话历史
+                if let Some(user_msg) = last_user_msg {
+                    conversations.push((user_msg, String::new()));
+                }
+
+                conversations
+            };
+
             let infrastructure_clone = self.infrastructure.clone();
             let rig_agent_clone = rig_agent.clone();
             let msg_tx = self.message_sender.clone();
@@ -423,7 +463,6 @@ impl App {
                         infrastructure_clone.unwrap().memory_manager().clone(),
                         &user_input,
                         &user_id,
-                        user_info_clone.as_deref(),
                         &current_conversations,
                         stream_tx,
                     ).await
@@ -506,19 +545,40 @@ impl App {
     /// 退出时保存对话到记忆系统
     pub async fn save_conversations_to_memory(&self) -> Result<()> {
         if let Some(infrastructure) = &self.infrastructure {
-            let conversations: Vec<(String, String)> = self.ui.messages
-                .iter()
-                .filter_map(|msg| match msg.role {
-                    crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
-                    crate::agent::MessageRole::Assistant => {
-                        if let Some(last) = self.ui.messages.iter().rev().find(|m| m.role == crate::agent::MessageRole::User) {
-                            Some((last.content.clone(), msg.content.clone()))
-                        } else {
-                            None
+            let conversations: Vec<(String, String)> = {
+                let mut conversations = Vec::new();
+                let mut last_user_msg: Option<String> = None;
+
+                for msg in &self.ui.messages {
+                    match msg.role {
+                        crate::agent::MessageRole::User => {
+                            // 如果有未配对的 User 消息，先保存它（单独的 User 消息）
+                            if let Some(user_msg) = last_user_msg.take() {
+                                conversations.push((user_msg, String::new()));
+                            }
+                            last_user_msg = Some(msg.content.clone());
                         }
-                    },
-                    _ => None
-                })
+                        crate::agent::MessageRole::Assistant => {
+                            // 将 Assistant 消息与最近的 User 消息配对
+                            if let Some(user_msg) = last_user_msg.take() {
+                                conversations.push((user_msg, msg.content.clone()));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                // 如果最后一个消息是 User 消息，也加入对话历史
+                if let Some(user_msg) = last_user_msg {
+                    conversations.push((user_msg, String::new()));
+                }
+
+                conversations
+            };
+
+            // 只保存完整的对话对（用户和助手都有内容）
+            let conversations: Vec<(String, String)> = conversations
+                .into_iter()
                 .filter(|(user, assistant)| !user.is_empty() && !assistant.is_empty())
                 .collect();
 

@@ -60,6 +60,7 @@ pub async fn create_memory_agent(
     memory_manager: Arc<MemoryManager>,
     memory_tool_config: MemoryToolConfig,
     config: &Config,
+    user_info: Option<&str>,
 ) -> Result<RigAgent<CompletionModel>, Box<dyn std::error::Error>> {
     // 创建记忆工具
     let memory_tools =
@@ -68,6 +69,41 @@ pub async fn create_memory_agent(
     let llm_client = Client::builder(&config.llm.api_key)
         .base_url(&config.llm.api_base_url)
         .build();
+
+    // 构建 system prompt，包含用户基本信息
+    let system_prompt = if let Some(info) = user_info {
+        format!(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
+
+此会话发生的初始时间：{current_time}
+
+用户基本信息:
+{info}
+
+重要指令:
+- 对话历史将作为上下文提供，请使用这些信息来理解当前的对话流程
+- 用户基本信息已在上方提供，请不要再使用memory工具来创建或更新用户基本信息
+- 在需要时可以自主使用memory工具搜索其他相关记忆
+- 当用户提供新的重要信息时，可以主动使用memory工具存储
+- 保持对话的连贯性和一致性
+- 自然地融入记忆信息，避免刻意复述此前的记忆信息，关注当前的会话内容，记忆主要用于做隐式的逻辑与事实支撑
+- 专注于用户的需求和想要了解的信息，以及想要你做的事情
+
+记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#, current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"), info = info)
+    } else {
+        format!(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
+
+此会话发生的初始时间：{current_time}
+
+重要指令:
+- 对话历史将作为上下文提供，请使用这些信息来理解当前的对话流程
+- 在需要时可以自主使用memory工具搜索其他相关记忆
+- 当用户提供新的重要信息时，可以主动使用memory工具存储
+- 保持对话的连贯性和一致性
+- 自然地融入记忆信息，避免刻意复述此前的记忆信息，关注当前的会话内容，记忆主要用于做隐式的逻辑与事实支撑
+- 专注于用户的需求和想要了解的信息，以及想要你做的事情
+
+记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#, current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"))
+    };
 
     // 构建带有记忆工具的agent，让agent能够自主决定何时调用记忆功能
     let completion_model = llm_client
@@ -79,20 +115,7 @@ pub async fn create_memory_agent(
         .tool(memory_tools.query_memory())
         .tool(memory_tools.list_memories())
         .tool(memory_tools.get_memory())
-        .preamble(&format!(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
-
-此会话发生的初始时间：{current_time}
-
-重要指令:
-- 对话历史将作为上下文提供，请使用这些信息来理解当前的对话流程
-- 用户基本信息将在上下文中提供一次，请不要再使用memory工具来创建或更新用户基本信息
-- 在需要时可以自主使用memory工具搜索其他相关记忆
-- 当用户提供新的重要信息时，可以主动使用memory工具存储
-- 保持对话的连贯性和一致性
-- 自然地融入记忆信息，避免刻意复述此前的记忆信息，关注当前的会话内容，记忆主要用于做隐式的逻辑与事实支撑
-- 专注于用户的需求和想要了解的信息，以及想要你做的事情
-
-记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#, current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S")))
+        .preamble(&system_prompt)
         .build();
 
     Ok(completion_model)
@@ -178,42 +201,32 @@ pub async fn agent_reply_with_memory_retrieval_streaming(
     _memory_manager: Arc<MemoryManager>,
     user_input: &str,
     _user_id: &str,
-    user_info: Option<&str>,
     conversations: &[(String, String)],
     stream_sender: mpsc::UnboundedSender<String>,
 ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
     // 构建对话历史 - 转换为rig的Message格式
     let mut chat_history = Vec::new();
+
+    // 添加历史对话
     for (user_msg, assistant_msg) in conversations {
         chat_history.push(Message::user(user_msg));
-        chat_history.push(Message::assistant(assistant_msg));
+        if !assistant_msg.is_empty() {
+            chat_history.push(Message::assistant(assistant_msg));
+        }
     }
 
-    // 构建system prompt，包含明确的指令
-    let system_prompt = r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
-
-重要指令:
-- 对话历史已提供在上下文中，请使用这些信息来理解当前的对话上下文
-- 用户基本信息已在下方提供一次，请不要再使用memory工具来创建或更新用户基本信息
-- 在需要时可以自主使用memory工具搜索其他相关记忆
-- 当用户提供新的重要信息时，可以主动使用memory工具存储
-- 保持对话的连贯性和一致性
-- 自然地融入记忆信息，避免显得刻意
-- 专注于用户的需求和想要了解的信息，以及想要你做的事情
-
-记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#;
-
-    // 构建完整的prompt
-    let prompt_content = if let Some(info) = user_info {
-        format!(
-            "{}\n\n用户基本信息:\n{}\n\n当前用户输入: {}",
-            system_prompt, info, user_input
-        )
-    } else {
-        format!("{}\n\n当前用户输入: {}", system_prompt, user_input)
-    };
+    // 构建当前用户输入消息
+    let prompt_content = user_input.to_string();
 
     log::debug!("正在生成AI回复（真实流式模式）...");
+    log::debug!("当前用户输入: {}", user_input);
+    log::debug!("对话历史长度: {}", chat_history.len());
+    for (i, msg) in chat_history.iter().enumerate() {
+        match msg {
+            Message::User { .. } => log::debug!("  [{}] User message", i),
+            Message::Assistant { .. } => log::debug!("  [{}] Assistant message", i),
+        }
+    }
 
     // 使用rig的真实流式API
     let prompt_message = Message::user(&prompt_content);
