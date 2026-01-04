@@ -197,7 +197,7 @@ The system uses TOML (Tom's Obvious, Minimal Language) as the configuration file
 # Main configuration for the cortex-mem system
 
 [qdrant]
-url = "http://localhost:6334"
+url = "http://localhost:6333"
 collection_name = "cortex-mem-hewlett_drawn"
 # embedding_dim = 1024 # Optional, will be auto-detected if not specified
 timeout_secs = 30

@@ -1,21 +1,30 @@
 import json
+import logging
 import os
 import time
-import logging
-import toml
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
+import toml
 from tqdm import tqdm
 
 try:
     from qdrant_client import QdrantClient
-    from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
+    from qdrant_client.models import (
+        Distance,
+        FieldCondition,
+        Filter,
+        MatchValue,
+        PointStruct,
+        VectorParams,
+    )
 except ImportError:
     raise ImportError(
         "qdrant-client is not installed. Please install it using: pip install qdrant-client"
     )
 
 from .config_utils import check_openai_config, get_config_value, validate_config
+from .rate_limiter import RateLimiter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,12 +32,16 @@ logger = logging.getLogger(__name__)
 
 class LangMemAdd:
     """Class to add memories to LangMem for evaluation using Qdrant vector database"""
-    
+
     def __init__(self, data_path=None, batch_size=2, config_path=None):
         self.batch_size = batch_size
         self.data_path = data_path
         self.data = None
         self.config_path = config_path or self._find_config_file()
+
+        # Initialize rate limiters (30 calls per minute for each service)
+        self.embedding_rate_limiter = RateLimiter(max_calls_per_minute=30)
+        self.llm_rate_limiter = RateLimiter(max_calls_per_minute=30)
 
         # Track statistics
         self.stats = {
@@ -37,7 +50,7 @@ class LangMemAdd:
             "failed_conversations": 0,
             "total_memories": 0,
             "successful_memories": 0,
-            "failed_memories": 0
+            "failed_memories": 0,
         }
 
         # Validate config file
@@ -89,41 +102,57 @@ class LangMemAdd:
         try:
             # Load config
             config_data = toml.load(self.config_path)
-            
+
             # Get Qdrant configuration
             qdrant_config = config_data.get("qdrant", {})
-            self.qdrant_url = qdrant_config.get("url", "http://localhost:6334")
+            qdrant_url = qdrant_config.get("url", "http://localhost:6334")
             self.collection_name = qdrant_config.get("collection_name", "memo-rs")
-            
+
+            # Parse URL to extract host and port for gRPC
+            from urllib.parse import urlparse
+            parsed_url = urlparse(qdrant_url)
+            host = parsed_url.hostname or "localhost"
+            port = parsed_url.port or 6334
+
             # Get embedding configuration
             embedding_config = config_data.get("embedding", {})
             self.embedding_api_base_url = embedding_config.get("api_base_url", "")
             self.embedding_api_key = embedding_config.get("api_key", "")
             self.embedding_model_name = embedding_config.get("model_name", "")
             self.embedding_batch_size = embedding_config.get("batch_size", 10)
-            
-            # Initialize Qdrant client
-            self.qdrant_client = QdrantClient(url=self.qdrant_url)
-            
+
+            # Initialize Qdrant client with gRPC
+            # Use prefer_grpc=True to force gRPC protocol
+            self.qdrant_client = QdrantClient(
+                host=host,
+                grpc_port=port,
+                prefer_grpc=True,
+                timeout=qdrant_config.get("timeout_secs", 30)
+            )
+
             # Create collection if it doesn't exist
             self._ensure_collection_exists()
-            
+
             # Initialize embedding client
             import httpx
             from openai import OpenAI
-            
+
             self.embedding_client = OpenAI(
                 api_key=self.embedding_api_key,
                 base_url=self.embedding_api_base_url,
-                http_client=httpx.Client(verify=False)
+                http_client=httpx.Client(verify=False),
             )
-            
+
             # Get embedding dimension
             self.embedding_dim = self._get_embedding_dimension()
-            
-            logger.info(f"✅ LangMem initialized successfully with Qdrant at {self.qdrant_url}")
-            logger.info(f"✅ Collection: {self.collection_name}, Embedding dim: {self.embedding_dim}")
-            
+
+            logger.info(
+                f"✅ LangMem initialized successfully with Qdrant at {host}:{port} (gRPC)"
+            )
+            logger.info(
+                f"✅ Collection: {self.collection_name}, Embedding dim: {self.embedding_dim}"
+            )
+
         except Exception as e:
             logger.error(f"❌ Failed to initialize LangMem: {e}")
             raise
@@ -133,14 +162,18 @@ class LangMemAdd:
         try:
             collections = self.qdrant_client.get_collections().collections
             collection_names = [c.name for c in collections]
-            
+
             if self.collection_name not in collection_names:
                 # Get embedding dimension first
                 embedding_dim = self._get_embedding_dimension()
-                logger.info(f"Creating collection: {self.collection_name} with dim={embedding_dim}")
+                logger.info(
+                    f"Creating collection: {self.collection_name} with dim={embedding_dim}"
+                )
                 self.qdrant_client.create_collection(
                     collection_name=self.collection_name,
-                    vectors_config=VectorParams(size=embedding_dim, distance=Distance.COSINE)
+                    vectors_config=VectorParams(
+                        size=embedding_dim, distance=Distance.COSINE
+                    ),
                 )
         except Exception as e:
             logger.warning(f"Could not ensure collection exists: {e}")
@@ -148,22 +181,24 @@ class LangMemAdd:
     def _get_embedding_dimension(self) -> int:
         """Get embedding dimension by making a test call"""
         try:
-            response = self.embedding_client.embeddings.create(
-                model=self.embedding_model_name,
-                input=["test"]
-            )
+            with self.embedding_rate_limiter:
+                response = self.embedding_client.embeddings.create(
+                    model=self.embedding_model_name, input=["test"]
+                )
             return len(response.data[0].embedding)
         except Exception as e:
-            logger.warning(f"Could not get embedding dimension, using default 1024: {e}")
+            logger.warning(
+                f"Could not get embedding dimension, using default 1024: {e}"
+            )
             return 1024
 
     def _get_embedding(self, text: str) -> List[float]:
         """Get embedding for text"""
         try:
-            response = self.embedding_client.embeddings.create(
-                model=self.embedding_model_name,
-                input=text
-            )
+            with self.embedding_rate_limiter:
+                response = self.embedding_client.embeddings.create(
+                    model=self.embedding_model_name, input=text
+                )
             return response.data[0].embedding
         except Exception as e:
             logger.error(f"Error getting embedding: {e}")
@@ -181,16 +216,17 @@ class LangMemAdd:
         try:
             # Generate embedding for the content
             embedding = self._get_embedding(content)
-            
+
             if not embedding:
                 logger.error(f"❌ Failed to generate embedding for user {user_id}")
                 self.stats["failed_memories"] += 1
                 return False
-            
+
             # Generate a unique ID for this memory
             import uuid
+
             memory_id = str(uuid.uuid4())
-            
+
             # Create point for Qdrant
             point = PointStruct(
                 id=memory_id,
@@ -199,30 +235,31 @@ class LangMemAdd:
                     "user_id": user_id,
                     "content": content,
                     "timestamp": timestamp,
-                    "created_at": time.time()
-                }
+                    "created_at": time.time(),
+                },
             )
-            
+
             # Insert into Qdrant
             self.qdrant_client.upsert(
-                collection_name=self.collection_name,
-                points=[point]
+                collection_name=self.collection_name, points=[point]
             )
-            
+
             self.stats["successful_memories"] += 1
             logger.debug(f"✅ Successfully added memory for user {user_id}")
             return True
-            
+
         except Exception as e:
             logger.error(f"❌ Failed to add memory for user {user_id}: {e}")
             self.stats["failed_memories"] += 1
             return False
 
-    def add_memories_for_speaker(self, speaker: str, messages: List[Dict], timestamp: str, desc: str):
+    def add_memories_for_speaker(
+        self, speaker: str, messages: List[Dict], timestamp: str, desc: str
+    ):
         """Add memories for a speaker with error tracking"""
         total_batches = (len(messages) + self.batch_size - 1) // self.batch_size
         failed_batches = 0
-        
+
         for i in tqdm(range(0, len(messages), self.batch_size), desc=desc):
             batch_messages = messages[i : i + self.batch_size]
 
@@ -241,12 +278,13 @@ class LangMemAdd:
             )
 
             self.stats["total_memories"] += 1
-            
-            # Small delay between batches to avoid rate limiting
-            time.sleep(0.3)
-        
+
+            # No additional delay needed - rate limiter handles it
+
         if failed_batches > 0:
-            logger.warning(f"{failed_batches}/{total_batches} batches failed for {speaker}")
+            logger.warning(
+                f"{failed_batches}/{total_batches} batches failed for {speaker}"
+            )
 
     def process_conversation(self, item: Dict[str, Any], idx: int):
         """Process a single conversation with error handling"""
@@ -259,7 +297,11 @@ class LangMemAdd:
             speaker_b_user_id = f"{speaker_b}_{idx}"
 
             for key in conversation.keys():
-                if key in ["speaker_a", "speaker_b"] or "date" in key or "timestamp" in key:
+                if (
+                    key in ["speaker_a", "speaker_b"]
+                    or "date" in key
+                    or "timestamp" in key
+                ):
                     continue
 
                 date_time_key = key + "_date_time"
@@ -271,7 +313,7 @@ class LangMemAdd:
                 for chat in chats:
                     speaker = chat.get("speaker", "")
                     text = chat.get("text", "")
-                    
+
                     if speaker == speaker_a:
                         messages.append(
                             {"role": "user", "content": f"{speaker_a}: {text}"}
@@ -296,9 +338,9 @@ class LangMemAdd:
                     timestamp,
                     f"Adding Memories for {speaker_a}",
                 )
-                
-                time.sleep(0.3)  # Small delay between speakers
-                
+
+                # No additional delay needed - rate limiter handles it
+
                 self.add_memories_for_speaker(
                     speaker_b_user_id,
                     messages_reverse,
@@ -324,17 +366,16 @@ class LangMemAdd:
             )
 
         logger.info(f"Starting to process {len(self.data)} conversations...")
-        
+
         # Process conversations sequentially for stability
         for idx, item in enumerate(self.data):
             self.process_conversation(item, idx)
-            
-            # Small delay between conversations to avoid overwhelming the system
-            time.sleep(0.5)
-        
+
+            # No additional delay needed - rate limiter handles it
+
         # Print summary
         self.print_summary()
-    
+
     def print_summary(self):
         """Print processing summary"""
         print("\n" + "=" * 60)
@@ -343,11 +384,15 @@ class LangMemAdd:
         print(f"Total Conversations:      {self.stats['total_conversations']}")
         print(f"Successful:               {self.stats['successful_conversations']}")
         print(f"Failed:                   {self.stats['failed_conversations']}")
-        if self.stats['total_conversations'] > 0:
-            print(f"Success Rate:             {self.stats['successful_conversations']/self.stats['total_conversations']*100:.1f}%")
+        if self.stats["total_conversations"] > 0:
+            print(
+                f"Success Rate:             {self.stats['successful_conversations'] / self.stats['total_conversations'] * 100:.1f}%"
+            )
         print(f"\nTotal Memories:           {self.stats['total_memories']}")
         print(f"Successful:               {self.stats['successful_memories']}")
         print(f"Failed:                   {self.stats['failed_memories']}")
-        if self.stats['total_memories'] > 0:
-            print(f"Success Rate:             {self.stats['successful_memories']/self.stats['total_memories']*100:.1f}%")
+        if self.stats["total_memories"] > 0:
+            print(
+                f"Success Rate:             {self.stats['successful_memories'] / self.stats['total_memories'] * 100:.1f}%"
+            )
         print("=" * 60 + "\n")
