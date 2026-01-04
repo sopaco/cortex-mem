@@ -1,4 +1,7 @@
-use crate::agent::{ChatMessage, create_memory_agent, extract_user_basic_info, store_conversations_batch, agent_reply_with_memory_retrieval_streaming};
+use crate::agent::{
+    ChatMessage, agent_reply_with_memory_retrieval_streaming, create_memory_agent,
+    extract_user_basic_info, store_conversations_batch,
+};
 use crate::config::{BotConfig, ConfigManager};
 use crate::infrastructure::Infrastructure;
 use crate::logger::LogManager;
@@ -53,7 +56,11 @@ pub enum AppMessage {
 
 impl App {
     /// 创建新的应用
-    pub fn new(config_manager: ConfigManager, log_manager: Arc<LogManager>, infrastructure: Option<Arc<Infrastructure>>) -> Result<Self> {
+    pub fn new(
+        config_manager: ConfigManager,
+        log_manager: Arc<LogManager>,
+        infrastructure: Option<Arc<Infrastructure>>,
+    ) -> Result<Self> {
         let mut ui = AppUi::new();
 
         // 加载机器人列表
@@ -87,7 +94,9 @@ impl App {
                 infrastructure.config(),
                 infrastructure.memory_manager().clone(),
                 &self.user_id,
-            ).await.map_err(|e| anyhow::anyhow!("加载用户信息失败: {}", e))?;
+            )
+            .await
+            .map_err(|e| anyhow::anyhow!("加载用户信息失败: {}", e))?;
 
             if let Some(info) = user_info {
                 log::info!("已加载用户基本信息");
@@ -108,18 +117,14 @@ impl App {
             // 拼接完整的 API 地址
             let check_url = format!("{}/chat/completions", api_base_url.trim_end_matches('/'));
 
-            log::info!("检查服务可用性: {}", check_url);
+            // log::info!("检查服务可用性: {}", check_url);
 
             let client = reqwest::Client::builder()
                 .timeout(Duration::from_secs(5))
                 .build()
                 .context("无法创建 HTTP 客户端")?;
 
-            match client
-                .request(Method::OPTIONS, &check_url)
-                .send()
-                .await
-            {
+            match client.request(Method::OPTIONS, &check_url).send().await {
                 Ok(response) => {
                     if response.status().is_success() || response.status().as_u16() == 405 {
                         // 200 OK 或 405 Method Not Allowed 都表示服务可用
@@ -196,7 +201,10 @@ impl App {
                         // 确保自动滚动启用
                         self.ui.auto_scroll = true;
                     }
-                    AppMessage::StreamingComplete { user: _, full_response } => {
+                    AppMessage::StreamingComplete {
+                        user: _,
+                        full_response,
+                    } => {
                         // 流式完成，确保完整响应已保存
                         if let Some(last_msg) = self.ui.messages.last_mut() {
                             if last_msg.role == crate::agent::MessageRole::Assistant {
@@ -253,7 +261,10 @@ impl App {
                                 if self.ui.state == AppState::Chat {
                                     log::info!("调用 show_themes()");
                                     self.show_themes();
-                                    log::info!("show_themes() 调用完成，theme_modal_visible: {}", self.ui.theme_modal_visible);
+                                    log::info!(
+                                        "show_themes() 调用完成，theme_modal_visible: {}",
+                                        self.ui.theme_modal_visible
+                                    );
                                 } else {
                                     log::warn!("不在 Chat 状态，无法显示主题");
                                 }
@@ -355,7 +366,9 @@ impl App {
                         infrastructure.config(),
                         infrastructure.memory_manager().clone(),
                         &self.user_id,
-                    ).await {
+                    )
+                    .await
+                    {
                         Ok(info) => {
                             self.user_info = info.clone();
                             info
@@ -376,7 +389,9 @@ impl App {
                         memory_tool_config,
                         infrastructure.config(),
                         user_info.as_deref(),
-                    ).await {
+                    )
+                    .await
+                    {
                         Ok(rig_agent) => {
                             self.rig_agent = Some(rig_agent);
                             log::info!("已创建带记忆功能的真实 Agent");
@@ -465,7 +480,8 @@ impl App {
                         &user_id,
                         &current_conversations,
                         stream_tx,
-                    ).await
+                    )
+                    .await
                 });
 
                 while let Some(chunk) = stream_rx.recv().await {
@@ -492,7 +508,6 @@ impl App {
                     }
                 }
             });
-
         } else {
             log::warn!("Agent 未初始化");
         }
@@ -588,7 +603,9 @@ impl App {
                     infrastructure.memory_manager().clone(),
                     &conversations,
                     &self.user_id,
-                ).await.map_err(|e| anyhow::anyhow!("保存对话到记忆系统失败: {}", e))?;
+                )
+                .await
+                .map_err(|e| anyhow::anyhow!("保存对话到记忆系统失败: {}", e))?;
                 log::info!("对话保存完成");
             }
         }
@@ -597,17 +614,24 @@ impl App {
 
     /// 获取所有对话
     pub fn get_conversations(&self) -> Vec<(String, String)> {
-        self.ui.messages
+        self.ui
+            .messages
             .iter()
             .filter_map(|msg| match msg.role {
                 crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
                 crate::agent::MessageRole::Assistant => {
-                    if let Some(last) = self.ui.messages.iter().rev().find(|m| m.role == crate::agent::MessageRole::User) {
+                    if let Some(last) = self
+                        .ui
+                        .messages
+                        .iter()
+                        .rev()
+                        .find(|m| m.role == crate::agent::MessageRole::User)
+                    {
                         Some((last.content.clone(), msg.content.clone()))
                     } else {
                         None
                     }
-                },
+                }
                 _ => None,
             })
             .collect()
