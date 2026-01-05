@@ -40,6 +40,9 @@ impl ConfigManager {
         // 获取当前工作目录
         let current_dir = std::env::current_dir().context("无法获取当前工作目录")?;
 
+        // 优先使用当前目录保存 bots.json
+        let local_bots_file = current_dir.join("bots.json");
+
         // 系统配置目录（用于 bots.json）
         let config_dir = directories::ProjectDirs::from("com", "cortex", "mem-tars")
             .context("无法获取项目目录")?
@@ -48,7 +51,16 @@ impl ConfigManager {
 
         fs::create_dir_all(&config_dir).context("无法创建配置目录")?;
 
-        let bots_file = config_dir.join("bots.json");
+        let system_bots_file = config_dir.join("bots.json");
+
+        // 确定使用哪个 bots.json 文件：优先当前目录
+        let _bots_file = if local_bots_file.exists() {
+            log::info!("使用当前目录的机器人配置文件: {:?}", local_bots_file);
+            local_bots_file.clone()
+        } else {
+            log::info!("使用系统配置目录的机器人配置文件: {:?}", system_bots_file);
+            system_bots_file
+        };
 
         // cortex-mem 配置文件：优先从当前目录读取
         let local_config_file = current_dir.join("config.toml");
@@ -105,7 +117,7 @@ impl ConfigManager {
 
         Ok(Self {
             config_dir,
-            bots_file,
+            bots_file: local_bots_file, // 始终使用当前目录的 bots.json
             cortex_config,
         })
     }

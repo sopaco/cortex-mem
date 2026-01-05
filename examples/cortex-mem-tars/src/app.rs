@@ -274,6 +274,24 @@ impl App {
                                     self.dump_chats();
                                 }
                             }
+                            crate::ui::KeyAction::ShowBotManagement => {
+                                // 机器人管理弹窗的显示由 UI 处理
+                            }
+                            crate::ui::KeyAction::CreateBot => {
+                                // 创建机器人的逻辑在 UI 中处理
+                            }
+                            crate::ui::KeyAction::EditBot => {
+                                // 编辑机器人的逻辑在 UI 中处理
+                            }
+                            crate::ui::KeyAction::DeleteBot => {
+                                self.delete_bot().await?;
+                            }
+                            crate::ui::KeyAction::SaveBot => {
+                                self.save_bot().await?;
+                            }
+                            crate::ui::KeyAction::CancelBot => {
+                                // 取消操作由 UI 处理
+                            }
                             crate::ui::KeyAction::Continue => {}
                         }
                     }
@@ -640,6 +658,94 @@ impl App {
     /// 获取用户ID
     pub fn get_user_id(&self) -> String {
         self.user_id.clone()
+    }
+
+    /// 保存机器人（创建或更新）
+    async fn save_bot(&mut self) -> Result<()> {
+        let (name, prompt, password) = self.ui.get_bot_input_data();
+
+        if name.trim().is_empty() {
+            log::warn!("机器人名称不能为空");
+            return Ok(());
+        }
+
+        if prompt.trim().is_empty() {
+            log::warn!("系统提示词不能为空");
+            return Ok(());
+        }
+
+        match self.ui.bot_management_state {
+            crate::ui::BotManagementState::Creating => {
+                // 创建新机器人
+                let bot_name = name.clone();
+                let new_bot = crate::config::BotConfig::new(name, prompt, password);
+                self.config_manager.add_bot(new_bot)?;
+                log::info!("成功创建机器人: {}", bot_name);
+
+                // 刷新机器人列表
+                self.refresh_bot_list()?;
+            }
+            crate::ui::BotManagementState::Editing => {
+                // 更新现有机器人
+                if let Some(index) = self.ui.get_selected_bot_index() {
+                    if let Some(existing_bot) = self.config_manager.get_bots()?.get(index) {
+                        let bot_name = name.clone();
+                        let updated_bot = crate::config::BotConfig {
+                            id: existing_bot.id.clone(),
+                            name: name.clone(),
+                            system_prompt: prompt,
+                            access_password: password,
+                            created_at: existing_bot.created_at,
+                        };
+                        self.config_manager.update_bot(&existing_bot.id, updated_bot)?;
+                        log::info!("成功更新机器人: {}", bot_name);
+
+                        // 刷新机器人列表
+                        self.refresh_bot_list()?;
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        // 返回列表状态
+        self.ui.bot_management_state = crate::ui::BotManagementState::List;
+        Ok(())
+    }
+
+    /// 删除机器人
+    async fn delete_bot(&mut self) -> Result<()> {
+        if let Some(index) = self.ui.get_selected_bot_index() {
+            if let Some(bot) = self.config_manager.get_bots()?.get(index) {
+                let bot_id = bot.id.clone();
+                let bot_name = bot.name.clone();
+
+                if self.config_manager.remove_bot(&bot_id)? {
+                    log::info!("成功删除机器人: {}", bot_name);
+
+                    // 刷新机器人列表
+                    self.refresh_bot_list()?;
+
+                    // 如果删除的是当前选中的机器人，重置选择
+                    if let Some(selected) = self.ui.bot_list_state.selected() {
+                        if selected >= self.ui.bot_list.len() && !self.ui.bot_list.is_empty() {
+                            self.ui.bot_list_state.select(Some(self.ui.bot_list.len() - 1));
+                        }
+                    }
+                }
+            }
+        }
+
+        // 返回列表状态
+        self.ui.bot_management_state = crate::ui::BotManagementState::List;
+        Ok(())
+    }
+
+    /// 刷新机器人列表
+    fn refresh_bot_list(&mut self) -> Result<()> {
+        let bots = self.config_manager.get_bots()?;
+        self.ui.set_bot_list(bots);
+        Ok(())
     }
 }
 
