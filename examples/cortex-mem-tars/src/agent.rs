@@ -61,6 +61,7 @@ pub async fn create_memory_agent(
     memory_tool_config: MemoryToolConfig,
     config: &Config,
     user_info: Option<&str>,
+    bot_system_prompt: Option<&str>,
 ) -> Result<RigAgent<CompletionModel>, Box<dyn std::error::Error>> {
     // 创建记忆工具
     let memory_tools =
@@ -70,8 +71,8 @@ pub async fn create_memory_agent(
         .base_url(&config.llm.api_base_url)
         .build();
 
-    // 构建 system prompt，包含用户基本信息
-    let system_prompt = if let Some(info) = user_info {
+    // 构建 base system prompt，包含用户基本信息
+    let base_system_prompt = if let Some(info) = user_info {
         format!(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
 
 此会话发生的初始时间：{current_time}
@@ -103,6 +104,13 @@ pub async fn create_memory_agent(
 - 专注于用户的需求和想要了解的信息，以及想要你做的事情
 
 记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#, current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"))
+    };
+
+    // 追加机器人系统提示词
+    let system_prompt = if let Some(bot_prompt) = bot_system_prompt {
+        format!("{}\n\n你的角色设定：\n{}", base_system_prompt, bot_prompt)
+    } else {
+        base_system_prompt
     };
 
     // 构建带有记忆工具的agent，让agent能够自主决定何时调用记忆功能

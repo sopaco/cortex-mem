@@ -407,6 +407,7 @@ impl App {
                         memory_tool_config,
                         infrastructure.config(),
                         user_info.as_deref(),
+                        Some(bot.system_prompt.as_str()),
                     )
                     .await
                     {
