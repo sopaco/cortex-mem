@@ -89,9 +89,6 @@ async fn main() -> Result<()> {
         .await
         .context("无法检查服务状态")?;
 
-    // 加载用户基本信息
-    app.load_user_info().await.context("无法加载用户信息")?;
-
     // 运行应用
     app.run().await.context("应用运行失败")?;
 

@@ -87,27 +87,6 @@ impl App {
         })
     }
 
-    /// 设置用户信息
-    pub async fn load_user_info(&mut self) -> Result<()> {
-        if let Some(infrastructure) = &self.infrastructure {
-            let user_info = extract_user_basic_info(
-                infrastructure.config(),
-                infrastructure.memory_manager().clone(),
-                &self.user_id,
-            )
-            .await
-            .map_err(|e| anyhow::anyhow!("加载用户信息失败: {}", e))?;
-
-            if let Some(info) = user_info {
-                log::info!("已加载用户基本信息");
-                self.user_info = Some(info);
-            } else {
-                log::info!("未找到用户基本信息");
-            }
-        }
-        Ok(())
-    }
-
     /// 检查服务可用性
     pub async fn check_service_status(&mut self) -> Result<()> {
         use reqwest::Method;
@@ -379,11 +358,12 @@ impl App {
 
                 // 如果有基础设施，创建真实的带记忆的 Agent
                 if let Some(infrastructure) = &self.infrastructure {
-                    // 先提取用户基本信息
+                    // 先提取用户基本信息（使用 bot.id 作为 agent_id）
                     let user_info = match extract_user_basic_info(
                         infrastructure.config(),
                         infrastructure.memory_manager().clone(),
                         &self.user_id,
+                        &bot.id,
                     )
                     .await
                     {
@@ -399,6 +379,7 @@ impl App {
 
                     let memory_tool_config = cortex_mem_rig::tool::MemoryToolConfig {
                         default_user_id: Some(self.user_id.clone()),
+                        default_agent_id: Some(bot.id.clone()),
                         ..Default::default()
                     };
 
@@ -408,6 +389,7 @@ impl App {
                         infrastructure.config(),
                         user_info.as_deref(),
                         Some(bot.system_prompt.as_str()),
+                        &bot.id,
                     )
                     .await
                     {
@@ -416,7 +398,7 @@ impl App {
                             log::info!("已创建带记忆功能的真实 Agent");
                         }
                         Err(e) => {
-                            log::error!("创建真实 Agent 失败，使用 Mock Agent: {}", e);
+                            log::error!("创建真实 Agent 失败 {}", e);
                         }
                     }
                 }
@@ -698,7 +680,8 @@ impl App {
                             access_password: password,
                             created_at: existing_bot.created_at,
                         };
-                        self.config_manager.update_bot(&existing_bot.id, updated_bot)?;
+                        self.config_manager
+                            .update_bot(&existing_bot.id, updated_bot)?;
                         log::info!("成功更新机器人: {}", bot_name);
 
                         // 刷新机器人列表
@@ -730,7 +713,9 @@ impl App {
                     // 如果删除的是当前选中的机器人，重置选择
                     if let Some(selected) = self.ui.bot_list_state.selected() {
                         if selected >= self.ui.bot_list.len() && !self.ui.bot_list.is_empty() {
-                            self.ui.bot_list_state.select(Some(self.ui.bot_list.len() - 1));
+                            self.ui
+                                .bot_list_state
+                                .select(Some(self.ui.bot_list.len() - 1));
                         }
                     }
                 }

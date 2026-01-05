@@ -62,7 +62,11 @@ pub async fn create_memory_agent(
     config: &Config,
     user_info: Option<&str>,
     bot_system_prompt: Option<&str>,
+    agent_id: &str,
 ) -> Result<RigAgent<CompletionModel>, Box<dyn std::error::Error>> {
+    // 提前获取 user_id，避免所有权问题
+    let user_id_str = memory_tool_config.default_user_id.clone().unwrap_or_else(|| "unknown".to_string());
+
     // 创建记忆工具
     let memory_tools =
         create_memory_tools(memory_manager.clone(), &config, Some(memory_tool_config));
@@ -71,11 +75,17 @@ pub async fn create_memory_agent(
         .base_url(&config.llm.api_base_url)
         .build();
 
-    // 构建 base system prompt，包含用户基本信息
+    // 构建 base system prompt，包含用户基本信息和 agent_id 说明
     let base_system_prompt = if let Some(info) = user_info {
         format!(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
 
 此会话发生的初始时间：{current_time}
+
+重要说明：
+- 你的身份标识（agent_id）：{agent_id}
+- 你服务的用户标识（user_id）：{user_id}
+- 当你调用记忆工具时，必须明确传入 user_id="{user_id}" 和 agent_id="{agent_id}" 参数
+- 你的记忆是独立的，只属于你这个 agent，不会与其他 agent 混淆
 
 用户基本信息:
 {info}
@@ -83,27 +93,40 @@ pub async fn create_memory_agent(
 重要指令:
 - 对话历史将作为上下文提供，请使用这些信息来理解当前的对话流程
 - 用户基本信息已在上方提供，请不要再使用memory工具来创建或更新用户基本信息
-- 在需要时可以自主使用memory工具搜索其他相关记忆
-- 当用户提供新的重要信息时，可以主动使用memory工具存储
+- 在需要时可以自主使用memory工具搜索其他相关记忆，但必须传入正确的 user_id 和 agent_id
+- 当用户提供新的重要信息时，可以主动使用memory工具存储，确保使用正确的 user_id 和 agent_id
 - 保持对话的连贯性和一致性
 - 自然地融入记忆信息，避免刻意复述此前的记忆信息，关注当前的会话内容，记忆主要用于做隐式的逻辑与事实支撑
 - 专注于用户的需求和想要了解的信息，以及想要你做的事情
 
-记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#, current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"), info = info)
+记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#,
+            current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"),
+            agent_id = agent_id,
+            user_id = user_id_str,
+            info = info)
     } else {
         format!(r#"你是一个拥有记忆功能的智能AI助手。你可以访问和使用记忆工具来检索、存储和管理用户信息。
 
 此会话发生的初始时间：{current_time}
 
+重要说明：
+- 你的身份标识（agent_id）：{agent_id}
+- 你服务的用户标识（user_id）：{user_id}
+- 当你调用记忆工具时，必须明确传入 user_id="{user_id}" 和 agent_id="{agent_id}" 参数
+- 你的记忆是独立的，只属于你这个 agent，不会与其他 agent 混淆
+
 重要指令:
 - 对话历史将作为上下文提供，请使用这些信息来理解当前的对话流程
-- 在需要时可以自主使用memory工具搜索其他相关记忆
-- 当用户提供新的重要信息时，可以主动使用memory工具存储
+- 在需要时可以自主使用memory工具搜索其他相关记忆，但必须传入正确的 user_id 和 agent_id
+- 当用户提供新的重要信息时，可以主动使用memory工具存储，确保使用正确的 user_id 和 agent_id
 - 保持对话的连贯性和一致性
 - 自然地融入记忆信息，避免刻意复述此前的记忆信息，关注当前的会话内容，记忆主要用于做隐式的逻辑与事实支撑
 - 专注于用户的需求和想要了解的信息，以及想要你做的事情
 
-记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#, current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"))
+记住：你正在与一个了解的用户进行连续对话，对话过程中不需要刻意表达你的记忆能力。"#,
+            current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"),
+            agent_id = agent_id,
+            user_id = user_id_str)
     };
 
     // 追加机器人系统提示词
@@ -134,12 +157,14 @@ pub async fn extract_user_basic_info(
     config: &Config,
     memory_manager: Arc<MemoryManager>,
     user_id: &str,
+    agent_id: &str,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
     let memory_tools = create_memory_tools(
         memory_manager,
         config,
         Some(MemoryToolConfig {
             default_user_id: Some(user_id.to_string()),
+            default_agent_id: Some(agent_id.to_string()),
             ..Default::default()
         }),
     );
@@ -150,14 +175,14 @@ pub async fn extract_user_basic_info(
         limit: Some(20),
         memory_type: Some("personal".to_string()), // 使用小写以匹配新API
         user_id: Some(user_id.to_string()),
-        agent_id: None,
+        agent_id: Some(agent_id.to_string()),
     };
 
     let search_args_factual = ListMemoriesArgs {
         limit: Some(20),
         memory_type: Some("factual".to_string()), // 使用小写以匹配新API
         user_id: Some(user_id.to_string()),
-        agent_id: None,
+        agent_id: Some(agent_id.to_string()),
     };
 
     if let Ok(search_result) = memory_tools
