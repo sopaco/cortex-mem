@@ -1850,15 +1850,22 @@ impl AppUi {
             } else {
                 Style::default().fg(Color::Gray)
             });
-        let mut name_input = self.bot_name_input.clone();
-        let _ = name_input.set_block(name_block);
-        // 只为活动的输入框设置光标样式
+
         if self.active_input_field == BotInputField::Name {
+            // 活动的输入框：使用 TextArea 渲染（带光标）
+            let mut name_input = self.bot_name_input.clone();
+            let _ = name_input.set_block(name_block);
             let _ = name_input.set_cursor_style(Style::default());
+            let _ = name_input.set_cursor_line_style(Style::default());
+            frame.render_widget(&name_input, chunks[1]);
         } else {
-            let _ = name_input.set_cursor_style(Style::default().add_modifier(Modifier::HIDDEN));
+            // 非活动的输入框：使用 Paragraph 渲染（无光标）
+            let name_text = self.bot_name_input.lines().first().map(|s| s.as_str()).unwrap_or("");
+            let name_para = Paragraph::new(name_text)
+                .block(name_block)
+                .style(Style::default().bg(self.current_theme.background_color));
+            frame.render_widget(name_para, chunks[1]);
         }
-        frame.render_widget(&name_input, chunks[1]);
 
         // 系统提示词输入
         let prompt_block = Block::default()
@@ -1869,14 +1876,23 @@ impl AppUi {
             } else {
                 Style::default().fg(Color::Gray)
             });
-        let mut prompt_input = self.bot_prompt_input.clone();
-        let _ = prompt_input.set_block(prompt_block);
+
         if self.active_input_field == BotInputField::Prompt {
+            // 活动的输入框：使用 TextArea 渲染（带光标）
+            let mut prompt_input = self.bot_prompt_input.clone();
+            let _ = prompt_input.set_block(prompt_block);
             let _ = prompt_input.set_cursor_style(Style::default());
+            let _ = prompt_input.set_cursor_line_style(Style::default());
+            frame.render_widget(&prompt_input, chunks[2]);
         } else {
-            let _ = prompt_input.set_cursor_style(Style::default().add_modifier(Modifier::HIDDEN));
+            // 非活动的输入框：使用 Paragraph 渲染（无光标）
+            let prompt_text = self.bot_prompt_input.lines().first().map(|s| s.as_str()).unwrap_or("");
+            let prompt_para = Paragraph::new(prompt_text)
+                .block(prompt_block)
+                .wrap(Wrap { trim: false })
+                .style(Style::default().bg(self.current_theme.background_color));
+            frame.render_widget(prompt_para, chunks[2]);
         }
-        frame.render_widget(&prompt_input, chunks[2]);
 
         // 访问密码输入
         let password_block = Block::default()
@@ -1887,14 +1903,22 @@ impl AppUi {
             } else {
                 Style::default().fg(Color::Gray)
             });
-        let mut password_input = self.bot_password_input.clone();
-        let _ = password_input.set_block(password_block);
+
         if self.active_input_field == BotInputField::Password {
+            // 活动的输入框：使用 TextArea 渲染（带光标）
+            let mut password_input = self.bot_password_input.clone();
+            let _ = password_input.set_block(password_block);
             let _ = password_input.set_cursor_style(Style::default());
+            let _ = password_input.set_cursor_line_style(Style::default());
+            frame.render_widget(&password_input, chunks[3]);
         } else {
-            let _ = password_input.set_cursor_style(Style::default().add_modifier(Modifier::HIDDEN));
+            // 非活动的输入框：使用 Paragraph 渲染（无光标）
+            let password_text = self.bot_password_input.lines().first().map(|s| s.as_str()).unwrap_or("");
+            let password_para = Paragraph::new(password_text)
+                .block(password_block)
+                .style(Style::default().bg(self.current_theme.background_color));
+            frame.render_widget(password_para, chunks[3]);
         }
-        frame.render_widget(&password_input, chunks[3]);
 
         // 帮助提示
         let help = Paragraph::new("Tab: 切换输入框 | Ctrl+S: 保存 | Esc: 取消")
