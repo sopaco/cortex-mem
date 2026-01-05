@@ -170,8 +170,8 @@ async fn store_memory(
 
     let timestamp_str = format!(
         "{}_{}",
-        timestamp.format("%Y%m%d"),
-        timestamp.format("%H%M%S")
+        timestamp.format("%Y-%m-%d"),
+        timestamp.format("%H:%M:%S")
     );
     // 生成记忆 ID
     let memory_id = format!(
@@ -188,7 +188,7 @@ async fn store_memory(
     let messages = vec![Message {
         role: "user".to_string(),
         content: format!(
-            "当前我所处的环境中，在{}，能听到这样的声音：{}",
+            "当前我所处的办公与会议环境中，时间是{}，能听到这样的声音：{}",
             timestamp_str,
             request.content.clone()
         ),
