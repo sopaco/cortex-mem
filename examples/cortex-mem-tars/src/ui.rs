@@ -1960,12 +1960,11 @@ impl AppUi {
             });
 
         if self.active_input_field == BotInputField::Name {
-            // 活动的输入框：使用 TextArea 渲染（带光标）
-            let mut name_input = self.bot_name_input.clone();
-            let _ = name_input.set_block(name_block);
-            let _ = name_input.set_cursor_style(Style::default());
-            let _ = name_input.set_cursor_line_style(Style::default());
-            frame.render_widget(&name_input, chunks[1]);
+            // 活动的输入框：直接使用原始输入框渲染（带光标）
+            let _ = self.bot_name_input.set_block(name_block);
+            let _ = self.bot_name_input.set_cursor_style(Style::default());
+            let _ = self.bot_name_input.set_cursor_line_style(Style::default());
+            frame.render_widget(&self.bot_name_input, chunks[1]);
         } else {
             // 非活动的输入框：使用 Paragraph 渲染（无光标），支持多行
             let name_text = self.bot_name_input.lines().join("\n");
@@ -1987,12 +1986,11 @@ impl AppUi {
             });
 
         if self.active_input_field == BotInputField::Prompt {
-            // 活动的输入框：使用 TextArea 渲染（带光标）
-            let mut prompt_input = self.bot_prompt_input.clone();
-            let _ = prompt_input.set_block(prompt_block);
-            let _ = prompt_input.set_cursor_style(Style::default());
-            let _ = prompt_input.set_cursor_line_style(Style::default());
-            frame.render_widget(&prompt_input, chunks[2]);
+            // 活动的输入框：直接使用原始输入框渲染（带光标）
+            let _ = self.bot_prompt_input.set_block(prompt_block);
+            let _ = self.bot_prompt_input.set_cursor_style(Style::default());
+            let _ = self.bot_prompt_input.set_cursor_line_style(Style::default());
+            frame.render_widget(&self.bot_prompt_input, chunks[2]);
         } else {
             // 非活动的输入框：使用 Paragraph 渲染（无光标），支持多行
             let prompt_text = self.bot_prompt_input.lines().join("\n");
@@ -2014,12 +2012,11 @@ impl AppUi {
             });
 
         if self.active_input_field == BotInputField::Password {
-            // 活动的输入框：使用 TextArea 渲染（带光标）
-            let mut password_input = self.bot_password_input.clone();
-            let _ = password_input.set_block(password_block);
-            let _ = password_input.set_cursor_style(Style::default());
-            let _ = password_input.set_cursor_line_style(Style::default());
-            frame.render_widget(&password_input, chunks[3]);
+            // 活动的输入框：直接使用原始输入框渲染（带光标）
+            let _ = self.bot_password_input.set_block(password_block);
+            let _ = self.bot_password_input.set_cursor_style(Style::default());
+            let _ = self.bot_password_input.set_cursor_line_style(Style::default());
+            frame.render_widget(&self.bot_password_input, chunks[3]);
         } else {
             // 非活动的输入框：使用 Paragraph 渲染（无光标），支持多行
             let password_text = self.bot_password_input.lines().join("\n");
