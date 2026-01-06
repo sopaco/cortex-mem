@@ -24,6 +24,10 @@ struct Args {
     /// 启用增强记忆保存功能，退出时自动保存对话到记忆系统
     #[arg(long, action)]
     enhance_memory_saver: bool,
+
+    /// 启用音频连接功能，启动 API 服务器监听语音识别信息传入
+    #[arg(long, action)]
+    enable_audio_connect: bool,
 }
 
 #[tokio::main]
@@ -33,6 +37,10 @@ async fn main() -> Result<()> {
 
     if args.enhance_memory_saver {
         log::info!("已启用增强记忆保存功能");
+    }
+
+    if args.enable_audio_connect {
+        log::info!("已启用音频连接功能");
     }
 
     // 初始化配置管理器
@@ -58,25 +66,31 @@ async fn main() -> Result<()> {
         }
     };
 
-    // 启动 API 服务器（如果基础设施已初始化）
-    if let Some(inf) = infrastructure.clone() {
-        let api_port = std::env::var("TARS_API_PORT")
-            .unwrap_or_else(|_| "18199".to_string())
-            .parse::<u16>()
-            .unwrap_or(8080);
+    // 启动 API 服务器（如果基础设施已初始化且启用了音频连接）
+    if args.enable_audio_connect {
+        if let Some(inf) = infrastructure.clone() {
+            let api_port = std::env::var("TARS_API_PORT")
+                .unwrap_or_else(|_| "18199".to_string())
+                .parse::<u16>()
+                .unwrap_or(8080);
 
-        let api_state = api_server::ApiServerState {
-            memory_manager: inf.memory_manager().clone(),
-        };
+            let api_state = api_server::ApiServerState {
+                memory_manager: inf.memory_manager().clone(),
+            };
 
-        // 在后台启动 API 服务器
-        tokio::spawn(async move {
-            if let Err(e) = api_server::start_api_server(api_state, api_port).await {
-                log::error!("API 服务器错误: {}", e);
-            }
-        });
+            // 在后台启动 API 服务器
+            tokio::spawn(async move {
+                if let Err(e) = api_server::start_api_server(api_state, api_port).await {
+                    log::error!("API 服务器错误: {}", e);
+                }
+            });
 
-        log::info!("✅ API 服务器已在后台启动，监听端口 {}", api_port);
+            log::info!("✅ API 服务器已在后台启动，监听端口 {}", api_port);
+        } else {
+            log::warn!("未启用音频连接：基础设施未初始化");
+        }
+    } else {
+        log::info!("音频连接功能未启用（使用 --enable-audio-connect 参数启用）");
     }
 
     // 创建并运行应用
