@@ -1118,11 +1118,18 @@ impl AppUi {
             .split(area);
 
         // 创建简洁的标题文字
+        let bot_name = self.selected_bot().map(|b| b.name.as_str()).unwrap_or("未知");
         let title_line = Line::from(vec![
             Span::styled(
                 "Cortex TARS AI Program",
                 Style::default()
                     .fg(self.current_theme.primary_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                format!(" (当前角色: {})", bot_name),
+                Style::default()
+                    .fg(self.current_theme.accent_color)
                     .add_modifier(Modifier::BOLD),
             ),
         ]);
@@ -1183,11 +1190,18 @@ impl AppUi {
             .split(area);
 
         // 创建简洁的标题文字
+        let bot_name = self.selected_bot().map(|b| b.name.as_str()).unwrap_or("未知");
         let title_line = Line::from(vec![
             Span::styled(
                 "Cortex TARS AI Program",
                 Style::default()
                     .fg(self.current_theme.primary_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                format!(" (当前角色: {})", bot_name),
+                Style::default()
+                    .fg(self.current_theme.accent_color)
                     .add_modifier(Modifier::BOLD),
             ),
         ]);
