@@ -1838,11 +1838,12 @@ impl AppUi {
 
         let modal_area = Rect::new(x, y, modal_width, modal_height);
 
-        // 创建半透明背景遮罩
-        let overlay_area = area;
-        let overlay_block = Block::default()
-            .style(Style::default().bg(Color::Rgb(20, 20, 20)));
-        frame.render_widget(overlay_block, overlay_area);
+        // 创建纯黑色背景遮罩，完全遮挡主界面
+        frame.render_widget(
+            Block::default()
+                .style(Style::default().bg(Color::Black)),
+            area
+        );
 
         match self.bot_management_state {
             BotManagementState::List => {
@@ -1910,6 +1911,7 @@ impl AppUi {
 
         let list = List::new(items)
             .block(Block::default().borders(Borders::ALL))
+            .style(Style::default().bg(self.current_theme.background_color))
             .highlight_style(
                 Style::default()
                     .bg(self.current_theme.secondary_color)
