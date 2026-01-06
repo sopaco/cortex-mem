@@ -740,18 +740,18 @@ pub fn create_default_bots(config_manager: &ConfigManager) -> Result<()> {
     let bots = config_manager.get_bots()?;
 
     if bots.is_empty() {
-        // 创建默认机器人
+        // 创建默认机器人（密码为空，不需要验证）
         let default_bot = BotConfig::new(
             "助手",
             "你是一个有用的 AI 助手，能够回答各种问题并提供帮助。",
-            "password",
+            "",
         );
         config_manager.add_bot(default_bot)?;
 
         let coder_bot = BotConfig::new(
             "程序员",
             "你是一个经验丰富的程序员，精通多种编程语言，能够帮助解决编程问题。",
-            "password",
+            "",
         );
         config_manager.add_bot(coder_bot)?;
 

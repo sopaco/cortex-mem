@@ -16,6 +16,7 @@ use tui_textarea::TextArea;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppState {
     BotSelection,
+    PasswordInput,  // 密码输入状态
     Chat,
 }
 
@@ -147,6 +148,9 @@ pub struct AppUi {
     pub bot_password_input: TextArea<'static>,
     pub bot_management_list_state: ListState,
     pub active_input_field: BotInputField, // 当前活动的输入框
+    // 密码验证相关字段
+    pub password_input: TextArea<'static>,
+    pub pending_bot: Option<BotConfig>, // 等待密码验证的机器人
 }
 
 /// 机器人管理弹窗状态
@@ -220,6 +224,12 @@ impl AppUi {
         let mut bot_management_list_state = ListState::default();
         bot_management_list_state.select(Some(0));
 
+        // 初始化密码输入框
+        let mut password_input = TextArea::default();
+        let _ = password_input.set_block(Block::default()
+            .borders(Borders::ALL)
+            .title("请输入密码"));
+
         Self {
             state: AppState::BotSelection,
             service_status: ServiceStatus::Initing,
@@ -253,6 +263,8 @@ impl AppUi {
             bot_password_input,
             bot_management_list_state,
             active_input_field: BotInputField::Name,
+            password_input,
+            pending_bot: None,
         }
     }
 
@@ -288,7 +300,11 @@ impl AppUi {
 
         self.last_key_event = Some(key);
 
-        // 优先处理机器人管理弹窗
+        // 优先级：密码输入 > 机器人管理弹窗 > 正常状态
+        if self.state == AppState::PasswordInput {
+            return self.handle_password_input_key(key);
+        }
+
         if self.bot_management_modal_visible {
             return self.handle_bot_management_key(key);
         }
@@ -302,6 +318,7 @@ impl AppUi {
                 }
             }
             AppState::Chat => self.handle_chat_key(key),
+            _ => KeyAction::Continue,
         }
     }
 
@@ -330,7 +347,19 @@ impl AppUi {
             KeyCode::Enter => {
                 if let Some(bot) = self.selected_bot() {
                     log::info!("选择机器人: {}", bot.name);
-                    self.state = AppState::Chat;
+                    // 检查是否需要密码验证
+                    if bot.access_password.trim().is_empty() {
+                        // 密码为空，直接进入聊天
+                        self.state = AppState::Chat;
+                    } else {
+                        // 需要密码验证
+                        self.pending_bot = Some(bot.clone());
+                        self.password_input = TextArea::default();
+                        let _ = self.password_input.set_block(Block::default()
+                            .borders(Borders::ALL)
+                            .title("请输入密码"));
+                        self.state = AppState::PasswordInput;
+                    }
                 }
                 true
             }
@@ -351,6 +380,51 @@ impl AppUi {
                 false
             }
             _ => true,
+        }
+    }
+
+    /// 处理密码输入界面的键盘事件
+    fn handle_password_input_key(&mut self, key: KeyEvent) -> KeyAction {
+        use ratatui::crossterm::event::KeyCode;
+
+        match key.code {
+            KeyCode::Esc => {
+                // 取消密码输入，返回机器人选择界面
+                self.state = AppState::BotSelection;
+                self.pending_bot = None;
+                self.password_input = TextArea::default();
+                KeyAction::Continue
+            }
+            KeyCode::Enter => {
+                // 验证密码
+                let input_password = self.password_input.lines().first().map(|s| s.trim()).unwrap_or("");
+                if let Some(bot) = &self.pending_bot {
+                    if input_password == bot.access_password.trim() {
+                        // 密码正确，进入聊天
+                        log::info!("密码验证成功");
+                        self.state = AppState::Chat;
+                        self.pending_bot = None;
+                        self.password_input = TextArea::default();
+                        KeyAction::Continue
+                    } else {
+                        // 密码错误
+                        log::warn!("密码错误");
+                        self.password_input = TextArea::default();
+                        let _ = self.password_input.set_block(Block::default()
+                            .borders(Borders::ALL)
+                            .title("密码错误，请重新输入"));
+                        KeyAction::Continue
+                    }
+                } else {
+                    self.state = AppState::BotSelection;
+                    KeyAction::Continue
+                }
+            }
+            _ => {
+                // 让密码输入框处理按键
+                self.password_input.input(key);
+                KeyAction::Continue
+            }
         }
     }
 
@@ -905,6 +979,7 @@ impl AppUi {
     pub fn render(&mut self, frame: &mut Frame) {
         match self.state {
             AppState::BotSelection => self.render_bot_selection(frame),
+            AppState::PasswordInput => self.render_password_input(frame),
             AppState::Chat => self.render_chat(frame),
         }
 
@@ -963,6 +1038,39 @@ impl AppUi {
 
         // 帮助提示
         let help = Paragraph::new("↑/↓ 或 j/k: 选择 | Enter: 进入 | m: 管理机器人 | q 或 Ctrl-C: 退出")
+            .alignment(Alignment::Center);
+
+        frame.render_widget(help, chunks[2]);
+    }
+
+    /// 渲染密码输入界面
+    fn render_password_input(&mut self, frame: &mut Frame) {
+        let area = frame.area();
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Min(0),
+                Constraint::Length(3),
+            ])
+            .split(area);
+
+        // 标题
+        let bot_name = self.pending_bot.as_ref().map(|b| b.name.as_str()).unwrap_or("未知");
+        let title = Paragraph::new(format!("访问机器人: {}", bot_name))
+            .block(Block::default().borders(Borders::ALL))
+            .alignment(Alignment::Center)
+            .style(Style::default().add_modifier(Modifier::BOLD));
+
+        frame.render_widget(title, chunks[0]);
+
+        // 密码输入框
+        frame.render_widget(&self.password_input, chunks[1]);
+
+        // 帮助提示
+        let help = Paragraph::new("Enter: 确认 | Esc: 取消")
             .alignment(Alignment::Center);
 
         frame.render_widget(help, chunks[2]);
@@ -1859,10 +1967,11 @@ impl AppUi {
             let _ = name_input.set_cursor_line_style(Style::default());
             frame.render_widget(&name_input, chunks[1]);
         } else {
-            // 非活动的输入框：使用 Paragraph 渲染（无光标）
-            let name_text = self.bot_name_input.lines().first().map(|s| s.as_str()).unwrap_or("");
+            // 非活动的输入框：使用 Paragraph 渲染（无光标），支持多行
+            let name_text = self.bot_name_input.lines().join("\n");
             let name_para = Paragraph::new(name_text)
                 .block(name_block)
+                .wrap(Wrap { trim: false })
                 .style(Style::default().bg(self.current_theme.background_color));
             frame.render_widget(name_para, chunks[1]);
         }
@@ -1885,8 +1994,8 @@ impl AppUi {
             let _ = prompt_input.set_cursor_line_style(Style::default());
             frame.render_widget(&prompt_input, chunks[2]);
         } else {
-            // 非活动的输入框：使用 Paragraph 渲染（无光标）
-            let prompt_text = self.bot_prompt_input.lines().first().map(|s| s.as_str()).unwrap_or("");
+            // 非活动的输入框：使用 Paragraph 渲染（无光标），支持多行
+            let prompt_text = self.bot_prompt_input.lines().join("\n");
             let prompt_para = Paragraph::new(prompt_text)
                 .block(prompt_block)
                 .wrap(Wrap { trim: false })
@@ -1912,10 +2021,11 @@ impl AppUi {
             let _ = password_input.set_cursor_line_style(Style::default());
             frame.render_widget(&password_input, chunks[3]);
         } else {
-            // 非活动的输入框：使用 Paragraph 渲染（无光标）
-            let password_text = self.bot_password_input.lines().first().map(|s| s.as_str()).unwrap_or("");
+            // 非活动的输入框：使用 Paragraph 渲染（无光标），支持多行
+            let password_text = self.bot_password_input.lines().join("\n");
             let password_para = Paragraph::new(password_text)
                 .block(password_block)
+                .wrap(Wrap { trim: false })
                 .style(Style::default().bg(self.current_theme.background_color));
             frame.render_widget(password_para, chunks[3]);
         }
@@ -2072,7 +2182,7 @@ impl AppUi {
                 KeyAction::Continue
             }
             _ => {
-                // 只让当前活动的输入框处理按键
+                // 所有其他按键都让当前活动的输入框处理（包括 Enter 键换行）
                 match self.active_input_field {
                     BotInputField::Name => {
                         self.bot_name_input.input(key);
@@ -2129,9 +2239,9 @@ impl AppUi {
 
     /// 获取机器人输入框的内容
     pub fn get_bot_input_data(&self) -> (String, String, String) {
-        let name = self.bot_name_input.lines().first().map(|s| s.clone()).unwrap_or_default();
-        let prompt = self.bot_prompt_input.lines().first().map(|s| s.clone()).unwrap_or_default();
-        let password = self.bot_password_input.lines().first().map(|s| s.clone()).unwrap_or_default();
+        let name = self.bot_name_input.lines().join("\n");
+        let prompt = self.bot_prompt_input.lines().join("\n");
+        let password = self.bot_password_input.lines().join("\n");
         (name, prompt, password)
     }
 
