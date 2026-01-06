@@ -2035,29 +2035,41 @@ impl AppUi {
             horizontal: 1,
         });
 
-        // 计算光标列位置（考虑 Unicode 字符宽度）
         let lines = input_lines.lines();
         if cursor_row < lines.len() {
             let line = &lines[cursor_row];
-            let mut col_offset = 0;
-            for (i, c) in line.chars().enumerate() {
+
+            // 计算光标列位置（考虑 Unicode 字符宽度）
+            let mut col_offset = 0usize;
+            let chars: Vec<char> = line.chars().collect();
+            for (i, c) in chars.iter().enumerate() {
                 if i >= cursor_col {
                     break;
                 }
-                col_offset += unicode_width::UnicodeWidthChar::width(c).unwrap_or(0);
+                col_offset += unicode_width::UnicodeWidthChar::width(*c).unwrap_or(0);
             }
 
-            // 计算光标在屏幕上的位置
-            let cursor_x = content_area.x + col_offset as u16;
-            let cursor_y = content_area.y + cursor_row as u16;
+            // 获取内容区域的宽度
+            let content_width = content_area.width as usize;
 
-            // 绘制光标（使用反色块）
-            let cursor_area = Rect::new(cursor_x, cursor_y, 1, 1);
-            let cursor_block = Block::default()
-                .style(Style::default()
-                    .fg(self.current_theme.background_color)
-                    .bg(self.current_theme.text_color));
-            frame.render_widget(cursor_block, cursor_area);
+            // 计算换行后的光标位置
+            let display_row = cursor_row + (col_offset / content_width);
+            let display_col = col_offset % content_width;
+
+            // 确保光标在内容区域内
+            if display_row < content_area.height as usize {
+                // 计算光标在屏幕上的位置
+                let cursor_x = content_area.x + display_col as u16;
+                let cursor_y = content_area.y + display_row as u16;
+
+                // 绘制光标（使用反色块）
+                let cursor_area = Rect::new(cursor_x, cursor_y, 1, 1);
+                let cursor_block = Block::default()
+                    .style(Style::default()
+                        .fg(self.current_theme.background_color)
+                        .bg(self.current_theme.text_color));
+                frame.render_widget(cursor_block, cursor_area);
+            }
         }
     }
 
