@@ -984,15 +984,16 @@ impl AppUi {
 
     /// 渲染 UI
     pub fn render(&mut self, frame: &mut Frame) {
+        // 如果机器人管理弹窗可见，只渲染弹窗，不渲染主界面
+        if self.bot_management_modal_visible {
+            self.render_bot_management_modal(frame);
+            return;
+        }
+
         match self.state {
             AppState::BotSelection => self.render_bot_selection(frame),
             AppState::PasswordInput => self.render_password_input(frame),
             AppState::Chat => self.render_chat(frame),
-        }
-
-        // 如果机器人管理弹窗可见，渲染弹窗
-        if self.bot_management_modal_visible {
-            self.render_bot_management_modal(frame);
         }
     }
 
@@ -1843,6 +1844,14 @@ impl AppUi {
             Block::default()
                 .style(Style::default().bg(Color::Black)),
             area
+        );
+
+        // 在弹窗区域绘制实心背景块，确保完全遮挡
+        frame.render_widget(
+            Paragraph::new("")
+                .block(Block::default())
+                .style(Style::default().bg(self.current_theme.background_color)),
+            modal_area
         );
 
         match self.bot_management_state {
