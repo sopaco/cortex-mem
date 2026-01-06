@@ -148,6 +148,10 @@ pub struct AppUi {
     pub bot_password_input: TextArea<'static>,
     pub bot_management_list_state: ListState,
     pub active_input_field: BotInputField, // 当前活动的输入框
+    // 光标位置（用于显示光标）
+    pub cursor_visible: bool,
+    pub cursor_row: usize,
+    pub cursor_col: usize,
     // 密码验证相关字段
     pub password_input: TextArea<'static>,
     pub pending_bot: Option<BotConfig>, // 等待密码验证的机器人
@@ -265,6 +269,9 @@ impl AppUi {
             active_input_field: BotInputField::Name,
             password_input,
             pending_bot: None,
+            cursor_visible: false,
+            cursor_row: 0,
+            cursor_col: 0,
         }
     }
 
@@ -1949,7 +1956,7 @@ impl AppUi {
 
         frame.render_widget(title, chunks[0]);
 
-        // 机器人名称输入
+        // 机器人名称输入 - 使用 Paragraph 渲染以支持多行显示
         let name_block = Block::default()
             .borders(Borders::ALL)
             .title("机器人名称")
@@ -1959,23 +1966,14 @@ impl AppUi {
                 Style::default().fg(Color::Gray)
             });
 
-        if self.active_input_field == BotInputField::Name {
-            // 活动的输入框：直接使用原始输入框渲染（带光标）
-            let _ = self.bot_name_input.set_block(name_block);
-            let _ = self.bot_name_input.set_cursor_style(Style::default());
-            let _ = self.bot_name_input.set_cursor_line_style(Style::default());
-            frame.render_widget(&self.bot_name_input, chunks[1]);
-        } else {
-            // 非活动的输入框：使用 Paragraph 渲染（无光标），支持多行
-            let name_text = self.bot_name_input.lines().join("\n");
-            let name_para = Paragraph::new(name_text)
-                .block(name_block)
-                .wrap(Wrap { trim: false })
-                .style(Style::default().bg(self.current_theme.background_color));
-            frame.render_widget(name_para, chunks[1]);
-        }
+        let name_text = self.bot_name_input.lines().join("\n");
+        let name_para = Paragraph::new(name_text)
+            .block(name_block)
+            .wrap(Wrap { trim: false })
+            .style(Style::default().bg(self.current_theme.background_color));
+        frame.render_widget(name_para, chunks[1]);
 
-        // 系统提示词输入
+        // 系统提示词输入 - 使用 Paragraph 渲染以支持多行显示
         let prompt_block = Block::default()
             .borders(Borders::ALL)
             .title("系统提示词")
@@ -1985,23 +1983,14 @@ impl AppUi {
                 Style::default().fg(Color::Gray)
             });
 
-        if self.active_input_field == BotInputField::Prompt {
-            // 活动的输入框：直接使用原始输入框渲染（带光标）
-            let _ = self.bot_prompt_input.set_block(prompt_block);
-            let _ = self.bot_prompt_input.set_cursor_style(Style::default());
-            let _ = self.bot_prompt_input.set_cursor_line_style(Style::default());
-            frame.render_widget(&self.bot_prompt_input, chunks[2]);
-        } else {
-            // 非活动的输入框：使用 Paragraph 渲染（无光标），支持多行
-            let prompt_text = self.bot_prompt_input.lines().join("\n");
-            let prompt_para = Paragraph::new(prompt_text)
-                .block(prompt_block)
-                .wrap(Wrap { trim: false })
-                .style(Style::default().bg(self.current_theme.background_color));
-            frame.render_widget(prompt_para, chunks[2]);
-        }
+        let prompt_text = self.bot_prompt_input.lines().join("\n");
+        let prompt_para = Paragraph::new(prompt_text)
+            .block(prompt_block)
+            .wrap(Wrap { trim: false })
+            .style(Style::default().bg(self.current_theme.background_color));
+        frame.render_widget(prompt_para, chunks[2]);
 
-        // 访问密码输入
+        // 访问密码输入 - 使用 Paragraph 渲染以支持多行显示
         let password_block = Block::default()
             .borders(Borders::ALL)
             .title("访问密码")
@@ -2011,21 +2000,12 @@ impl AppUi {
                 Style::default().fg(Color::Gray)
             });
 
-        if self.active_input_field == BotInputField::Password {
-            // 活动的输入框：直接使用原始输入框渲染（带光标）
-            let _ = self.bot_password_input.set_block(password_block);
-            let _ = self.bot_password_input.set_cursor_style(Style::default());
-            let _ = self.bot_password_input.set_cursor_line_style(Style::default());
-            frame.render_widget(&self.bot_password_input, chunks[3]);
-        } else {
-            // 非活动的输入框：使用 Paragraph 渲染（无光标），支持多行
-            let password_text = self.bot_password_input.lines().join("\n");
-            let password_para = Paragraph::new(password_text)
-                .block(password_block)
-                .wrap(Wrap { trim: false })
-                .style(Style::default().bg(self.current_theme.background_color));
-            frame.render_widget(password_para, chunks[3]);
-        }
+        let password_text = self.bot_password_input.lines().join("\n");
+        let password_para = Paragraph::new(password_text)
+            .block(password_block)
+            .wrap(Wrap { trim: false })
+            .style(Style::default().bg(self.current_theme.background_color));
+        frame.render_widget(password_para, chunks[3]);
 
         // 帮助提示
         let help = Paragraph::new("Tab: 切换输入框 | Ctrl+S: 保存 | Esc: 取消")
