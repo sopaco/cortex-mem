@@ -2007,12 +2007,58 @@ impl AppUi {
             .style(Style::default().bg(self.current_theme.background_color));
         frame.render_widget(password_para, chunks[3]);
 
+        // 在活动输入框位置绘制光标
+        self.render_cursor_in_active_input(frame, chunks.to_vec());
+
         // 帮助提示
         let help = Paragraph::new("Tab: 切换输入框 | Ctrl+S: 保存 | Esc: 取消")
             .alignment(Alignment::Center)
             .style(Style::default().bg(self.current_theme.background_color));
 
         frame.render_widget(help, chunks[4]);
+    }
+
+    /// 在活动输入框中绘制光标
+    fn render_cursor_in_active_input(&mut self, frame: &mut Frame, chunks: Vec<Rect>) {
+        let (input_area, input_lines) = match self.active_input_field {
+            BotInputField::Name => (chunks[1], &self.bot_name_input),
+            BotInputField::Prompt => (chunks[2], &self.bot_prompt_input),
+            BotInputField::Password => (chunks[3], &self.bot_password_input),
+        };
+
+        // 获取光标位置
+        let (cursor_row, cursor_col) = input_lines.cursor();
+
+        // 计算光标在屏幕上的绝对位置
+        let content_area = input_area.inner(Margin {
+            vertical: 1,
+            horizontal: 1,
+        });
+
+        // 计算光标列位置（考虑 Unicode 字符宽度）
+        let lines = input_lines.lines();
+        if cursor_row < lines.len() {
+            let line = &lines[cursor_row];
+            let mut col_offset = 0;
+            for (i, c) in line.chars().enumerate() {
+                if i >= cursor_col {
+                    break;
+                }
+                col_offset += unicode_width::UnicodeWidthChar::width(c).unwrap_or(0);
+            }
+
+            // 计算光标在屏幕上的位置
+            let cursor_x = content_area.x + col_offset as u16;
+            let cursor_y = content_area.y + cursor_row as u16;
+
+            // 绘制光标（使用反色块）
+            let cursor_area = Rect::new(cursor_x, cursor_y, 1, 1);
+            let cursor_block = Block::default()
+                .style(Style::default()
+                    .fg(self.current_theme.background_color)
+                    .bg(self.current_theme.text_color));
+            frame.render_widget(cursor_block, cursor_area);
+        }
     }
 
     /// 渲染确认删除界面
