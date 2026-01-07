@@ -35,6 +35,10 @@ pub struct App {
     should_quit: bool,
     message_sender: mpsc::UnboundedSender<AppMessage>,
     message_receiver: mpsc::UnboundedReceiver<AppMessage>,
+    pub current_bot_id: Arc<std::sync::RwLock<Option<String>>>,
+    enable_audio_connect: bool,
+    api_server_started: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    previous_state: Option<crate::ui::AppState>,
 }
 
 /// 应用消息类型
@@ -60,6 +64,7 @@ impl App {
         config_manager: ConfigManager,
         log_manager: Arc<LogManager>,
         infrastructure: Option<Arc<Infrastructure>>,
+        enable_audio_connect: bool,
     ) -> Result<Self> {
         let mut ui = AppUi::new();
 
@@ -71,6 +76,8 @@ impl App {
         let (msg_tx, msg_rx) = mpsc::unbounded_channel::<AppMessage>();
 
         log::info!("应用程序初始化完成");
+
+        let initial_state = ui.state;
 
         Ok(Self {
             config_manager,
@@ -84,6 +91,10 @@ impl App {
             should_quit: false,
             message_sender: msg_tx,
             message_receiver: msg_rx,
+            current_bot_id: Arc::new(std::sync::RwLock::new(None)),
+            enable_audio_connect,
+            api_server_started: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            previous_state: Some(initial_state),
         })
     }
 
@@ -215,6 +226,8 @@ impl App {
                     Event::Key(key) => {
                         let action = self.ui.handle_key_event(key);
 
+                        log::debug!("事件处理完成，当前状态: {:?}", self.ui.state);
+
                         match action {
                             crate::ui::KeyAction::Quit => {
                                 self.should_quit = true;
@@ -282,6 +295,64 @@ impl App {
                     _ => {}
                 }
             }
+
+            // 检测状态变化（在事件处理之后）
+
+                        log::trace!("状态检查: previous_state={:?}, current_state={:?}", self.previous_state, self.ui.state);
+
+            
+
+                        if self.previous_state != Some(self.ui.state) {
+
+                            log::info!("🔄 状态变化: {:?} -> {:?}", self.previous_state, self.ui.state);
+
+            
+
+                            // 如果从 BotSelection 切换到 Chat，启动 API 服务器
+
+                            log::info!("检查条件: previous_state == BotSelection: {}",
+
+                                self.previous_state == Some(crate::ui::AppState::BotSelection));
+
+                            log::info!("检查条件: current_state == Chat: {}",
+
+                                self.ui.state == crate::ui::AppState::Chat);
+
+            
+
+                            if self.previous_state == Some(crate::ui::AppState::BotSelection)
+
+                                && self.ui.state == crate::ui::AppState::Chat
+
+                            {
+
+                                log::info!("✨ 检测到从机器人选择切换到聊天模式");
+
+                                if let Some(bot) = self.ui.selected_bot().cloned() {
+
+                                    log::info!("🤖 选中的机器人: {} (ID: {})", bot.name, bot.id);
+
+                                    log::info!("即将调用 on_enter_chat_mode...");
+
+                                    self.on_enter_chat_mode(&bot);
+
+                                    log::info!("on_enter_chat_mode 调用完成");
+
+                                } else {
+
+                                    log::warn!("⚠️  没有选中的机器人");
+
+                                }
+
+                            } else {
+
+                                log::info!("⏭️  状态变化不符合启动 API 服务器的条件");
+
+                            }
+
+                            self.previous_state = Some(self.ui.state);
+
+                        }
 
             if self.should_quit {
                 break;
@@ -355,6 +426,12 @@ impl App {
         if self.current_bot.is_none() {
             if let Some(bot) = self.ui.selected_bot() {
                 self.current_bot = Some(bot.clone());
+
+                // 更新 current_bot_id
+                if let Ok(mut bot_id) = self.current_bot_id.write() {
+                    *bot_id = Some(bot.id.clone());
+                    log::info!("已更新当前机器人 ID: {}", bot.id);
+                }
 
                 // 如果有基础设施，创建真实的带记忆的 Agent
                 if let Some(infrastructure) = &self.infrastructure {
@@ -732,6 +809,120 @@ impl App {
         let bots = self.config_manager.get_bots()?;
         self.ui.set_bot_list(bots);
         Ok(())
+    }
+
+    /// 启动 API 服务器
+    fn start_api_server(&self) {
+        log::info!("🚀 尝试启动 API 服务器...");
+        log::info!("   - enable_audio_connect: {}", self.enable_audio_connect);
+        log::info!("   - api_server_started: {}",
+            self.api_server_started.load(std::sync::atomic::Ordering::Relaxed));
+        log::info!("   - infrastructure: {}", self.infrastructure.is_some());
+
+        if !self.enable_audio_connect {
+            log::warn!("❌ 音频连接功能未启用，跳过 API 服务器启动");
+            log::warn!("   提示：请使用 --enable-audio-connect 参数启动应用");
+            return;
+        }
+
+        // 检查是否已经启动
+        if self
+            .api_server_started
+            .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            log::debug!("API 服务器已经启动，跳过");
+            return;
+        }
+
+        if let Some(infrastructure) = &self.infrastructure {
+            let api_port = std::env::var("TARS_API_PORT")
+                .unwrap_or_else(|_| "18199".to_string())
+                .parse::<u16>()
+                .unwrap_or(8080);
+
+            log::info!("   - API 端口: {}", api_port);
+
+            // 获取当前机器人 ID
+            let current_bot_id = if let Ok(bot_id) = self.current_bot_id.read() {
+                bot_id.clone()
+            } else {
+                None
+            };
+            log::info!("   - 当前机器人 ID: {:?}", current_bot_id);
+
+            let api_state = crate::api_server::ApiServerState {
+                memory_manager: infrastructure.memory_manager().clone(),
+                current_bot_id: self.current_bot_id.clone(),
+            };
+
+            let api_server_started = self.api_server_started.clone();
+
+            // 在后台启动 API 服务器
+            let handle = tokio::spawn(async move {
+                log::info!("🔄 正在启动 API 服务器任务...");
+                match crate::api_server::start_api_server(api_state, api_port).await {
+                    Ok(_) => {
+                        log::info!("✅ API 服务器任务完成");
+                    }
+                    Err(e) => {
+                        log::error!("❌ API 服务器错误: {}", e);
+                        log::error!("   错误详情: {:?}", e);
+                    }
+                }
+            });
+
+            // 立即检查任务是否启动成功
+            log::info!("📋 API 服务器任务句柄: {:?}", handle.id());
+
+            // 标记为已启动
+            api_server_started.store(true, std::sync::atomic::Ordering::Relaxed);
+
+            log::info!("✅ API 服务器已在后台启动，监听端口 {}", api_port);
+            log::info!("💡 请稍等几秒钟，让服务器完全启动...");
+
+            // 添加一个异步任务来验证服务器是否真正启动
+            let api_server_started_clone = api_server_started.clone();
+            tokio::spawn(async move {
+                // 等待 2 秒让服务器启动
+                tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
+                // 尝试连接服务器
+                let health_url = format!("http://localhost:{}/api/memory/health", api_port);
+                match reqwest::get(&health_url).await {
+                    Ok(response) => {
+                        if response.status().is_success() {
+                            log::info!("✅ API 服务器健康检查成功！服务器已就绪");
+                        } else {
+                            log::warn!("⚠️  API 服务器健康检查失败，状态码: {}", response.status());
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("❌ 无法连接到 API 服务器: {}", e);
+                        // 如果连接失败，重置启动标志
+                        api_server_started_clone.store(false, std::sync::atomic::Ordering::Relaxed);
+                    }
+                }
+            });
+        } else {
+            log::warn!("❌ 未启用音频连接：基础设施未初始化");
+        }
+    }
+
+    /// 当切换到聊天状态时调用此方法
+    pub fn on_enter_chat_mode(&mut self, bot: &BotConfig) {
+        log::info!("🎯 进入聊天模式，机器人: {} (ID: {})", bot.name, bot.id);
+
+        // 更新 current_bot_id
+        if let Ok(mut bot_id) = self.current_bot_id.write() {
+            *bot_id = Some(bot.id.clone());
+            log::info!("✅ 已更新当前机器人 ID: {}", bot.id);
+        } else {
+            log::error!("❌ 无法更新 current_bot_id");
+        }
+
+        // 启动 API 服务器（如果启用了音频连接）
+        log::info!("📡 准备启动 API 服务器...");
+        self.start_api_server();
     }
 }
 

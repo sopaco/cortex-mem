@@ -16,7 +16,11 @@ pub struct BotConfig {
 }
 
 impl BotConfig {
-    pub fn new(name: impl Into<String>, system_prompt: impl Into<String>, access_password: impl Into<String>) -> Self {
+    pub fn new(
+        name: impl Into<String>,
+        system_prompt: impl Into<String>,
+        access_password: impl Into<String>,
+    ) -> Self {
         Self {
             id: uuid::Uuid::new_v4().to_string(),
             name: name.into(),
@@ -95,7 +99,7 @@ impl ConfigManager {
                     max_tokens: 2000,
                 },
                 server: cortex_mem_config::ServerConfig {
-                    host: "127.0.0.1".to_string(),
+                    host: "localhost".to_string(),
                     port: 8080,
                     cors_origins: vec!["*".to_string()],
                 },

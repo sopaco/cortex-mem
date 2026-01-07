@@ -25,7 +25,7 @@ max_tokens = 2000
 
 [server]
 # 服务器主机
-host = "127.0.0.1"
+host = "localhost"
 # 服务器端口
 port = 8080
 # CORS 允许的来源

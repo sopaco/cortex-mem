@@ -69,6 +69,7 @@ fn validate_speaker_confidence(confidence: f32) -> Result<()> {
 #[derive(Clone)]
 pub struct ApiServerState {
     pub memory_manager: Arc<MemoryManager>,
+    pub current_bot_id: Arc<std::sync::RwLock<Option<String>>>,
 }
 
 /// 创建 API 路由器
@@ -208,9 +209,30 @@ async fn store_memory(
         custom_metadata.insert("speaker_confidence".to_string(), json!(confidence));
     }
 
+    // 获取当前选中的机器人 ID
+    let current_bot_id = state
+        .current_bot_id
+        .read()
+        .map(|bot_id| bot_id.clone())
+        .unwrap_or(None);
+
+    let agent_id = match current_bot_id {
+        Some(id) => id,
+        None => {
+            return Err((
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse {
+                    success: false,
+                    error_type: Some("no_bot_selected".to_string()),
+                    error: "No bot selected. Please select a bot before storing memory.".to_string(),
+                }),
+            ));
+        }
+    };
+
     let metadata = MemoryMetadata {
         user_id: Some("tars_user".to_string()),
-        agent_id: Some("tars_via_ally".to_string()),
+        agent_id: Some(agent_id),
         run_id: None,
         actor_id: None,
         role: Some("user".to_string()),
@@ -441,13 +463,24 @@ pub async fn start_api_server(state: ApiServerState, port: u16) -> Result<()> {
 
     log::info!("🚀 Starting TARS API server on http://{}", addr);
 
-    let listener = tokio::net::TcpListener::bind(&addr)
-        .await
-        .context(format!("Failed to bind to address: {}", addr))?;
+    match tokio::net::TcpListener::bind(&addr).await {
+        Ok(listener) => {
+            log::info!("✅ Successfully bound to address: {}", addr);
 
-    axum::serve(listener, app)
-        .await
-        .context("API server failed")?;
-
-    Ok(())
+            match axum::serve(listener, app).await {
+                Ok(_) => {
+                    log::info!("✅ API server stopped gracefully");
+                    Ok(())
+                }
+                Err(e) => {
+                    log::error!("❌ API server error: {}", e);
+                    Err(anyhow::anyhow!("API server error: {}", e))
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("❌ Failed to bind to address {}: {}", addr, e);
+            Err(anyhow::anyhow!("Failed to bind to address {}: {}", addr, e))
+        }
+    }
 }

@@ -66,36 +66,14 @@ async fn main() -> Result<()> {
         }
     };
 
-    // 启动 API 服务器（如果基础设施已初始化且启用了音频连接）
-    if args.enable_audio_connect {
-        if let Some(inf) = infrastructure.clone() {
-            let api_port = std::env::var("TARS_API_PORT")
-                .unwrap_or_else(|_| "18199".to_string())
-                .parse::<u16>()
-                .unwrap_or(8080);
-
-            let api_state = api_server::ApiServerState {
-                memory_manager: inf.memory_manager().clone(),
-            };
-
-            // 在后台启动 API 服务器
-            tokio::spawn(async move {
-                if let Err(e) = api_server::start_api_server(api_state, api_port).await {
-                    log::error!("API 服务器错误: {}", e);
-                }
-            });
-
-            log::info!("✅ API 服务器已在后台启动，监听端口 {}", api_port);
-        } else {
-            log::warn!("未启用音频连接：基础设施未初始化");
-        }
-    } else {
-        log::info!("音频连接功能未启用（使用 --enable-audio-connect 参数启用）");
-    }
-
     // 创建并运行应用
-    let mut app =
-        App::new(config_manager, log_manager, infrastructure.clone()).context("无法创建应用")?;
+    let mut app = App::new(
+        config_manager,
+        log_manager,
+        infrastructure.clone(),
+        args.enable_audio_connect,
+    )
+    .context("无法创建应用")?;
     log::info!("应用创建成功");
 
     // 检查服务可用性
