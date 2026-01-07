@@ -1,184 +1,365 @@
-# Cortex Memory TARS
+# Cortex TARS
 
-这是一个基于 Cortex Memory 的 TUI（终端用户界面）聊天应用，具有记忆功能。它能够记住用户的对话历史和个人信息，提供更智能的对话体验。
+<p align="center">
+  <strong>🎧 Share Your Auditory Presence with AI — A Next-Gen Personal Agent Powered by Cortex Memory</strong>
+</p>
 
-## 功能特性
+Cortex TARS is a production-ready TUI (Terminal User Interface) application that brings **auditory presence** to your AI experience. Built on **Cortex Memory**, it's not just a chatbot — it's an intelligent AI assistant platform that can truly hear and remember your voice in the real world. Cortex TARS maintains deep links with your memory, capturing and preserving your auditory experiences through its extensible API capabilities.
 
-- 🧠 **记忆功能**：自动记忆用户的对话历史和个人信息
-- 🤖 **智能 AI 助手**：支持多个机器人配置，每个机器人可以有不同的系统提示词
-- 📝 **Markdown 渲染**：支持 Markdown 格式的消息显示
-- 💾 **对话导出**：可以将对话导出到剪贴板
-- 🔧 **灵活配置**：支持自定义 LLM API、向量存储等配置
-- 🎨 **现代化 TUI**：基于 ratatui 的美观终端界面
+## ✨ Key Features
 
-## 安装
+### 🎭 Multi-Agent Management
+Create and manage multiple AI personas, each with distinct personalities, system prompts, and specialized knowledge areas. Whether you need a coding assistant, a creative writing partner, or a productivity coach, Cortex TARS lets you run them all simultaneously.
 
-### 前置要求
+### 💾 Persistent Role Memory
+Every agent maintains its own long-term memory, learning from interactions over time. Your coding assistant remembers your coding style and preferences; your writing coach adapts to your voice and goals. Powered by Cortex Memory's intelligent memory management.
 
-- Rust 1.70 或更高版本
-- Qdrant 向量数据库（可选，用于记忆功能）
-- OpenAI API 密钥或其他兼容的 LLM API
+### 🔒 Memory Isolation
+Advanced memory architecture ensures complete isolation between agents and users. Each agent's knowledge base is separate, preventing cross-contamination while enabling personalized experiences across different contexts.
 
-### 构建项目
+### 🎨 Modern TUI Experience
+- **Beautiful Interface**: Built with ratatui for a polished, responsive terminal experience
+- **Multiple Themes**: Choose from 5 pre-built themes (Default, Dark, Forest, Ocean, Sunset)
+- **Markdown Support**: Rich text rendering with full Markdown syntax
+- **Stream Responses**: Real-time streaming AI responses for smooth conversations
+- **Message Export**: Export conversations to clipboard with a single command
+
+### 🔌 Extensible API Integration
+Cortex TARS provides a REST API server that enables external services to interact with the memory system:
+
+- **Store Mode**: External services can store information directly to the memory system
+- **Chat Mode**: External messages can be injected as user input for AI processing
+- **Health Check**: Monitor API service status
+- **Memory Retrieval**: Query and list stored memories programmatically
+
+## 📋 Prerequisites
+
+- **Rust** 1.70 or later
+- **Qdrant** vector database (for memory functionality)
+- **OpenAI-compatible** LLM API endpoint
+
+## 🚀 Installation
+
+### Clone and Build
 
 ```bash
-cd examples/cortex-mem-tars-new
+cd examples/cortex-mem-tars
 cargo build --release
 ```
 
-## 配置
+The compiled binary will be available at `target/release/cortex-mem-tars`.
 
-### 1. 创建配置文件
+## ⚙️ Configuration
 
-将 `config.example.toml` 复制为 `config.toml` 并修改相应的配置：
+### 1. Create Configuration File
+
+Copy the example configuration:
 
 ```bash
 cp config.example.toml config.toml
 ```
 
-### 2. 修改配置
+### 2. Edit Configuration
 
-编辑 `config.toml` 文件，至少需要配置以下内容：
+Edit `config.toml` with your settings:
 
 ```toml
+[qdrant]
+url = "http://localhost:6334"
+collection_name = "cortex_mem"
+timeout_secs = 30
+
 [llm]
 api_base_url = "https://api.openai.com/v1"
-api_key = "your-actual-api-key"
+api_key = "your-api-key-here"
 model_efficient = "gpt-4o-mini"
+temperature = 0.7
+max_tokens = 2000
 
 [embedding]
 api_base_url = "https://api.openai.com/v1"
-api_key = "your-actual-api-key"
+api_key = "your-api-key-here"
 model_name = "text-embedding-3-small"
+batch_size = 100
 
-[qdrant]
-url = "http://localhost:6334"
+[memory]
+max_memories = 10000
+similarity_threshold = 0.65
+max_search_results = 50
+auto_enhance = true
+deduplicate = true
+
+[api]
+port = 8080
+api_key = "ANYTHING_YOU_LIKE"
+enable_cors = true
 ```
 
-### 3. 启动 Qdrant（可选，用于记忆功能）
-
-如果你使用记忆功能，需要启动 Qdrant 向量数据库：
+### 3. Start Qdrant
 
 ```bash
-# 使用 Docker
+# Using Docker
 docker run -p 6334:6334 qdrant/qdrant
 
-# 或使用本地安装
+# Or use local installation
 qdrant
 ```
 
-## 使用方法
+## 🎮 Usage
 
-### 运行应用
+### Basic Commands
 
 ```bash
-cargo run --release
+# Run with enhanced memory saving (saves conversations on exit)
+cortex-mem-tars --enhance-memory-saver
+
+# Run with API server enabled for external integrations
+cortex-mem-tars --enable-audio-connect --audio-connect-mode store
+
+# Chat mode: external messages are treated as user input
+cortex-mem-tars --enable-audio-connect --audio-connect-mode chat
 ```
 
-### 基本操作
+### Keyboard Shortcuts
 
-- **Enter**：发送消息
-- **Shift+Enter**：换行
-- **Ctrl+L**：打开/关闭日志面板
-- **Esc**：关闭日志面板
-- **Ctrl+H**：显示帮助信息
-- **Ctrl+C**：清空会话
-- **Ctrl+D**：导出对话到剪贴板
-- **q**：退出程序
+| Key | Action |
+|-----|--------|
+| `Enter` | Send message |
+| `Shift+Enter` | New line in input |
+| `Ctrl+C` | Clear current session |
+| `Ctrl+D` | Export conversation to clipboard |
+| `Ctrl+H` | Show help modal |
+| `Ctrl+T` | Open theme selector |
+| `Ctrl+B` | Open bot management |
+| `q` | Quit application (in bot selection) |
+| `Esc` | Close modal / Return to previous state |
 
-### 命令
+### Bot Management
 
-在输入框中输入以下命令：
+Cortex TARS supports multiple AI bots with different personalities:
 
-- `/quit`：退出程序
-- `/clear`：清空会话
-- `/help`：显示帮助信息
-- `/dump`：导出对话到剪贴板
+1. **Create a New Bot**: Press `Ctrl+B` → Select "Create Bot"
+2. **Set Bot Properties**:
+   - **Name**: Display name for the bot
+   - **System Prompt**: The bot's personality and behavior instructions
+   - **Password**: Optional access password for security
+3. **Edit/Delete Bots**: Manage existing bots through the bot management interface
 
-## 项目结构
+Each bot maintains its own independent memory, ensuring complete separation of knowledge and context.
+
+## 🔌 API Integration
+
+Cortex TARS provides a REST API for external services to interact with the memory system.
+
+### API Endpoints
+
+#### Health Check
+```bash
+GET http://localhost:8080/api/memory/health
+```
+
+#### Store Memory (Store Mode)
+```bash
+POST http://localhost:8080/api/memory/store
+Content-Type: application/json
+
+{
+  "content": "The user mentioned they prefer Rust over Python",
+  "source": "audio_listener",
+  "timestamp": "2024-01-07T10:30:00Z",
+  "speaker_type": "user",
+  "speaker_confidence": 0.95
+}
+```
+
+#### Retrieve Memories
+```bash
+GET http://localhost:8080/api/memory/retrieve?query=user%20preferences&limit=5
+```
+
+#### List Memories
+```bash
+GET http://localhost:8080/api/memory/list?speaker_type=user&limit=10
+```
+
+### Request/Response Models
+
+**StoreMemoryRequest**:
+- `content` (string): Text content to store
+- `source` (string): Source identifier (e.g., "audio_listener")
+- `timestamp` (string): ISO 8601 timestamp
+- `speaker_type` (string): "user" or "other"
+- `speaker_confidence` (float): 0-1 confidence score
+
+**MemoryItem**:
+- `id` (string): Unique memory ID
+- `content` (string): Stored content
+- `timestamp` (string): When it was stored
+- `speaker_type` (string): Speaker identifier
+- `relevance` (float): Search relevance score
+
+## 🏗️ Architecture
 
 ```
-cortex-mem-tars-new/
+cortex-mem-tars/
 ├── src/
-│   ├── main.rs           # 主程序入口
-│   ├── app.rs            # 应用程序主逻辑
-│   ├── agent.rs          # Agent 实现（包括记忆功能）
-│   ├── config.rs         # 配置管理
-│   ├── infrastructure.rs # 基础设施（LLM、向量存储、记忆管理器）
-│   ├── logger.rs         # 日志系统
-│   └── ui.rs             # TUI 界面
-├── config.example.toml   # 配置文件示例
-└── README.md            # 本文件
+│   ├── main.rs          # Application entry point
+│   ├── app.rs           # Core application logic
+│   ├── agent.rs         # AI agent with Cortex Memory integration
+│   ├── config.rs        # Configuration management
+│   ├── infrastructure.rs # LLM, vector store, memory manager setup
+│   ├── api_server.rs    # REST API server
+│   ├── api_models.rs    # API request/response models
+│   ├── logger.rs        # Logging system
+│   ├── ui.rs            # TUI interface and rendering
+│   └── lib.rs           # Library exports
+├── config.example.toml  # Configuration template
+└── README.md           # This file
 ```
 
-## 核心功能
+## 🧠 How Memory Works
 
-### 1. 记忆功能
+Cortex TARS leverages Cortex Memory's intelligent memory system:
 
-应用会自动：
+1. **Automatic Extraction**: The system automatically extracts key facts and insights from conversations
+2. **Semantic Storage**: Memories are stored as vectors for intelligent retrieval
+3. **Context Awareness**: The agent retrieves relevant memories before generating responses
+4. **Memory Optimization**: Periodic optimization consolidates and refines memories
+5. **Agent Isolation**: Each agent's memory is completely separate from others
 
-- 在启动时加载用户的基本信息（个人特征、事实信息等）
-- 在对话过程中使用记忆工具检索相关信息
-- 在退出时将对话历史保存到记忆系统
+### Memory Flow
 
-### 2. 多机器人支持
+```mermaid
+sequenceDiagram
+    participant User
+    participant TARS as Cortex TARS
+    participant Memory as Cortex Memory
+    participant LLM as LLM Service
 
-可以在配置目录中创建多个机器人配置，每个机器人可以有：
+    User->>TARS: Send message
+    TARS->>Memory: Retrieve relevant memories
+    Memory-->>TARS: Return context
+    TARS->>LLM: Generate response with context
+    LLM-->>TARS: Stream response
+    TARS->>User: Display response
+    TARS->>Memory: Store conversation (if enabled)
+```
 
-- 不同的名称
-- 不同的系统提示词
-- 不同的访问密码
+## 🔍 Advanced Features
 
-### 3. 流式响应
+### Memory Enhancement
 
-支持实时的流式 AI 响应，提供更流畅的对话体验。
-
-## 故障排除
-
-### 1. 无法连接到 Qdrant
-
-确保 Qdrant 正在运行并且 URL 配置正确：
+Enable enhanced memory saving to automatically store conversations:
 
 ```bash
-curl http://localhost:6334/health
+cortex-mem-tars --enhance-memory-saver
 ```
 
-### 2. API 密钥错误
+This feature:
+- Saves entire conversation history to memory on exit
+- Preserves context across sessions
+- Enables long-term learning and personalization
 
-检查 `config.toml` 中的 API 密钥是否正确。
+### External Integration
 
-### 3. 记忆功能不工作
+The API server enables external services to:
 
-- 确保 Qdrant 正在运行
-- 检查 API 密钥是否正确
-- 查看日志面板获取详细错误信息
+1. **Store Information**: External services can push data to memory
+2. **Inject Messages**: Send messages as if typed by the user
+3. **Query Memory**: Retrieve stored information programmatically
 
-## 开发
+Example use cases:
+- Voice recognition services storing transcribed conversations
+- Meeting assistants capturing action items
+- Automation tools logging system events
+- IoT devices storing sensor data with context
 
-### 运行测试
+### Service Status Monitoring
+
+Cortex TARS continuously monitors LLM service availability and displays status in the UI:
+- 🟢 **Active**: Service is responding normally
+- 🔴 **Inactive**: Service is unavailable
+- 🟡 **Initing**: Service is initializing
+
+## 🛠️ Development
+
+### Run Tests
 
 ```bash
 cargo test
 ```
 
-### 检查代码
+### Check Code
 
 ```bash
 cargo check
 ```
 
-### 格式化代码
+### Format Code
 
 ```bash
 cargo fmt
 ```
 
-## 许可证
+### Build with Optimizations
 
-MIT
+```bash
+cargo build --release
+```
 
-## 致谢
+## 🐛 Troubleshooting
 
-- [Cortex Memory](https://github.com/sopaco/cortex-mem) - 记忆管理系统
-- [RatATUI](https://github.com/ratatui-org/ratatui) - TUI 框架
-- [Rig](https://github.com/0xPlaygrounds/rig) - LLM Agent 框架
+### Qdrant Connection Issues
+
+Verify Qdrant is running:
+
+```bash
+curl http://localhost:6334/health
+```
+
+Check your `config.toml` Qdrant URL configuration.
+
+### LLM API Errors
+
+- Verify API key is correct in `config.toml`
+- Check API endpoint URL
+- Ensure you have sufficient API credits
+- Review logs for detailed error messages
+
+### Memory Not Working
+
+- Ensure Qdrant is running and accessible
+- Verify API keys for both LLM and embedding services
+- Check memory configuration thresholds
+- Enable logging for detailed diagnostics
+
+### Bot Configuration Issues
+
+Bot configurations are stored in:
+- Current directory: `./bots.json`
+- System config: `~/.config/cortex/mem-tars/bots.json`
+
+Check file permissions and JSON syntax if bots don't load.
+
+## 📚 Resources
+
+- [Cortex Memory Documentation](https://github.com/sopaco/cortex-mem/tree/main/litho.docs)
+- [Cortex Memory Core](../../cortex-mem-core)
+- [Cortex Memory Rig Integration](../../cortex-mem-rig)
+- [RatATUI Framework](https://github.com/ratatui-org/ratatui)
+- [Rig Agent Framework](https://github.com/0xPlaygrounds/rig)
+
+## 📄 License
+
+MIT License - see [LICENSE](../../LICENSE) for details.
+
+## 🙏 Acknowledgments
+
+- **Cortex Memory**: The intelligent memory framework powering persistent AI memory
+- **RatATUI**: Beautiful terminal UI framework
+- **Rig**: LLM agent framework for building intelligent systems
+- **Qdrant**: High-performance vector database for semantic search
+
+---
+
+**Cortex TARS** - Where AI meets persistent memory in the terminal. 🚀

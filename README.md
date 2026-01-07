@@ -171,7 +171,7 @@ These visual tools help you understand how Cortex Memory is performing and how y
 
 # 🌟 Community Showcase: Cortex TARS
 
-Meet **Cortex TARS** — a production-ready AI-native TUI (Terminal User Interface) application that demonstrates the true power of Cortex Memory. Built as a "second brain" companion, Cortex TARS showcases how persistent memory transforms AI interactions from fleeting chats into lasting, intelligent partnerships.
+Meet **Cortex TARS** — a production-ready AI-native TUI (Terminal User Interface) application that demonstrates the true power of Cortex Memory. Built as a "second brain" companion, Cortex TARS brings **auditory presence** to your AI experience and can truly hear and remember your voice in the real world, showcases how persistent memory transforms AI interactions from fleeting chats into lasting, intelligent partnerships.
 
 ## What Makes Cortex TARS Special?
 
