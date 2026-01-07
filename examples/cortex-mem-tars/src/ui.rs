@@ -16,6 +16,7 @@ use tui_textarea::TextArea;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppState {
     BotSelection,
+    PasswordInput,  // 密码输入状态
     Chat,
 }
 
@@ -139,6 +140,38 @@ pub struct AppUi {
     pub current_theme: Theme,
     pub theme_modal_visible: bool,
     pub theme_list_state: ListState,
+    // 机器人管理弹窗相关字段
+    pub bot_management_modal_visible: bool,
+    pub bot_management_state: BotManagementState,
+    pub bot_name_input: TextArea<'static>,
+    pub bot_prompt_input: TextArea<'static>,
+    pub bot_password_input: TextArea<'static>,
+    pub bot_management_list_state: ListState,
+    pub active_input_field: BotInputField, // 当前活动的输入框
+    // 光标位置（用于显示光标）
+    pub cursor_visible: bool,
+    pub cursor_row: usize,
+    pub cursor_col: usize,
+    // 密码验证相关字段
+    pub password_input: TextArea<'static>,
+    pub pending_bot: Option<BotConfig>, // 等待密码验证的机器人
+}
+
+/// 机器人管理弹窗状态
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BotManagementState {
+    List,      // 机器人列表
+    Creating,  // 创建机器人
+    Editing,   // 编辑机器人
+    ConfirmDelete, // 确认删除
+}
+
+/// 机器人输入框类型
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BotInputField {
+    Name,     // 机器人名称
+    Prompt,   // 系统提示词
+    Password, // 访问密码
 }
 
 /// 键盘事件处理结果
@@ -151,6 +184,12 @@ pub enum KeyAction {
     ShowHelp,    // 显示帮助
     ShowThemes,  // 显示主题选择
     DumpChats,   // 导出会话到剪贴板
+    ShowBotManagement, // 显示机器人管理
+    CreateBot,   // 创建机器人
+    EditBot,     // 编辑机器人
+    DeleteBot,   // 删除机器人
+    SaveBot,     // 保存机器人
+    CancelBot,   // 取消机器人操作
 }
 
 impl AppUi {
@@ -169,6 +208,31 @@ impl AppUi {
 
         let mut theme_list_state = ListState::default();
         theme_list_state.select(Some(0));
+
+        // 初始化机器人管理输入框
+        let mut bot_name_input = TextArea::default();
+        let _ = bot_name_input.set_block(Block::default()
+            .borders(Borders::ALL)
+            .title("机器人名称"));
+
+        let mut bot_prompt_input = TextArea::default();
+        let _ = bot_prompt_input.set_block(Block::default()
+            .borders(Borders::ALL)
+            .title("系统提示词"));
+
+        let mut bot_password_input = TextArea::default();
+        let _ = bot_password_input.set_block(Block::default()
+            .borders(Borders::ALL)
+            .title("访问密码"));
+
+        let mut bot_management_list_state = ListState::default();
+        bot_management_list_state.select(Some(0));
+
+        // 初始化密码输入框
+        let mut password_input = TextArea::default();
+        let _ = password_input.set_block(Block::default()
+            .borders(Borders::ALL)
+            .title("请输入密码"));
 
         Self {
             state: AppState::BotSelection,
@@ -196,6 +260,18 @@ impl AppUi {
             current_theme: Theme::DEFAULT,
             theme_modal_visible: false,
             theme_list_state,
+            bot_management_modal_visible: false,
+            bot_management_state: BotManagementState::List,
+            bot_name_input,
+            bot_prompt_input,
+            bot_password_input,
+            bot_management_list_state,
+            active_input_field: BotInputField::Name,
+            password_input,
+            pending_bot: None,
+            cursor_visible: false,
+            cursor_row: 0,
+            cursor_col: 0,
         }
     }
 
@@ -231,6 +307,15 @@ impl AppUi {
 
         self.last_key_event = Some(key);
 
+        // 优先级：密码输入 > 机器人管理弹窗 > 正常状态
+        if self.state == AppState::PasswordInput {
+            return self.handle_password_input_key(key);
+        }
+
+        if self.bot_management_modal_visible {
+            return self.handle_bot_management_key(key);
+        }
+
         match self.state {
             AppState::BotSelection => {
                 if self.handle_bot_selection_key(key) {
@@ -240,6 +325,7 @@ impl AppUi {
                 }
             }
             AppState::Chat => self.handle_chat_key(key),
+            _ => KeyAction::Continue,
         }
     }
 
@@ -268,8 +354,28 @@ impl AppUi {
             KeyCode::Enter => {
                 if let Some(bot) = self.selected_bot() {
                     log::info!("选择机器人: {}", bot.name);
-                    self.state = AppState::Chat;
+                    // 检查是否需要密码验证
+                    if bot.access_password.trim().is_empty() {
+                        // 密码为空，直接进入聊天
+                        self.state = AppState::Chat;
+                    } else {
+                        // 需要密码验证
+                        self.pending_bot = Some(bot.clone());
+                        self.password_input = TextArea::default();
+                        let _ = self.password_input.set_block(Block::default()
+                            .borders(Borders::ALL)
+                            .title("请输入密码"));
+                        self.state = AppState::PasswordInput;
+                    }
                 }
+                true
+            }
+            KeyCode::Char('m') => {
+                // 打开机器人管理
+                log::info!("打开机器人管理");
+                self.bot_management_modal_visible = true;
+                self.bot_management_state = BotManagementState::List;
+                self.bot_management_list_state.select(Some(0));
                 true
             }
             KeyCode::Char('q') => {
@@ -281,6 +387,51 @@ impl AppUi {
                 false
             }
             _ => true,
+        }
+    }
+
+    /// 处理密码输入界面的键盘事件
+    fn handle_password_input_key(&mut self, key: KeyEvent) -> KeyAction {
+        use ratatui::crossterm::event::KeyCode;
+
+        match key.code {
+            KeyCode::Esc => {
+                // 取消密码输入，返回机器人选择界面
+                self.state = AppState::BotSelection;
+                self.pending_bot = None;
+                self.password_input = TextArea::default();
+                KeyAction::Continue
+            }
+            KeyCode::Enter => {
+                // 验证密码
+                let input_password = self.password_input.lines().first().map(|s| s.trim()).unwrap_or("");
+                if let Some(bot) = &self.pending_bot {
+                    if input_password == bot.access_password.trim() {
+                        // 密码正确，进入聊天
+                        log::info!("密码验证成功");
+                        self.state = AppState::Chat;
+                        self.pending_bot = None;
+                        self.password_input = TextArea::default();
+                        KeyAction::Continue
+                    } else {
+                        // 密码错误
+                        log::warn!("密码错误");
+                        self.password_input = TextArea::default();
+                        let _ = self.password_input.set_block(Block::default()
+                            .borders(Borders::ALL)
+                            .title("密码错误，请重新输入"));
+                        KeyAction::Continue
+                    }
+                } else {
+                    self.state = AppState::BotSelection;
+                    KeyAction::Continue
+                }
+            }
+            _ => {
+                // 让密码输入框处理按键
+                self.password_input.input(key);
+                KeyAction::Continue
+            }
         }
     }
 
@@ -833,8 +984,15 @@ impl AppUi {
 
     /// 渲染 UI
     pub fn render(&mut self, frame: &mut Frame) {
+        // 如果机器人管理弹窗可见，只渲染弹窗，不渲染主界面
+        if self.bot_management_modal_visible {
+            self.render_bot_management_modal(frame);
+            return;
+        }
+
         match self.state {
             AppState::BotSelection => self.render_bot_selection(frame),
+            AppState::PasswordInput => self.render_password_input(frame),
             AppState::Chat => self.render_chat(frame),
         }
     }
@@ -887,7 +1045,40 @@ impl AppUi {
         frame.render_stateful_widget(list, chunks[1], &mut self.bot_list_state);
 
         // 帮助提示
-        let help = Paragraph::new("↑/↓ 或 j/k: 选择 | Enter: 进入 | q 或 Ctrl-C: 退出")
+        let help = Paragraph::new("↑/↓ 或 j/k: 选择 | Enter: 进入 | m: 管理机器人 | q 或 Ctrl-C: 退出")
+            .alignment(Alignment::Center);
+
+        frame.render_widget(help, chunks[2]);
+    }
+
+    /// 渲染密码输入界面
+    fn render_password_input(&mut self, frame: &mut Frame) {
+        let area = frame.area();
+
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Min(0),
+                Constraint::Length(3),
+            ])
+            .split(area);
+
+        // 标题
+        let bot_name = self.pending_bot.as_ref().map(|b| b.name.as_str()).unwrap_or("未知");
+        let title = Paragraph::new(format!("访问机器人: {}", bot_name))
+            .block(Block::default().borders(Borders::ALL))
+            .alignment(Alignment::Center)
+            .style(Style::default().add_modifier(Modifier::BOLD));
+
+        frame.render_widget(title, chunks[0]);
+
+        // 密码输入框
+        frame.render_widget(&self.password_input, chunks[1]);
+
+        // 帮助提示
+        let help = Paragraph::new("Enter: 确认 | Esc: 取消")
             .alignment(Alignment::Center);
 
         frame.render_widget(help, chunks[2]);
@@ -927,11 +1118,18 @@ impl AppUi {
             .split(area);
 
         // 创建简洁的标题文字
+        let bot_name = self.selected_bot().map(|b| b.name.as_str()).unwrap_or("未知");
         let title_line = Line::from(vec![
             Span::styled(
                 "Cortex TARS AI Program",
                 Style::default()
                     .fg(self.current_theme.primary_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                format!(" (当前角色: {})", bot_name),
+                Style::default()
+                    .fg(self.current_theme.accent_color)
                     .add_modifier(Modifier::BOLD),
             ),
         ]);
@@ -992,11 +1190,18 @@ impl AppUi {
             .split(area);
 
         // 创建简洁的标题文字
+        let bot_name = self.selected_bot().map(|b| b.name.as_str()).unwrap_or("未知");
         let title_line = Line::from(vec![
             Span::styled(
                 "Cortex TARS AI Program",
                 Style::default()
                     .fg(self.current_theme.primary_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                format!(" (当前角色: {})", bot_name),
+                Style::default()
+                    .fg(self.current_theme.accent_color)
                     .add_modifier(Modifier::BOLD),
             ),
         ]);
@@ -1631,5 +1836,477 @@ Powered by Cortex Memory";
 impl Default for AppUi {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl AppUi {
+    /// 渲染机器人管理弹窗
+    fn render_bot_management_modal(&mut self, frame: &mut Frame) {
+        let area = frame.area();
+
+        // 计算弹窗大小（居中显示）
+        let modal_width = area.width.saturating_sub(20).min(80);
+        let modal_height = area.height.saturating_sub(10).min(30);
+
+        let x = (area.width - modal_width) / 2;
+        let y = (area.height - modal_height) / 2;
+
+        let modal_area = Rect::new(x, y, modal_width, modal_height);
+
+        // 创建纯黑色背景遮罩，完全遮挡主界面
+        frame.render_widget(
+            Block::default()
+                .style(Style::default().bg(Color::Black)),
+            area
+        );
+
+        // 在弹窗区域绘制实心背景块，确保完全遮挡
+        frame.render_widget(
+            Paragraph::new("")
+                .block(Block::default())
+                .style(Style::default().bg(self.current_theme.background_color)),
+            modal_area
+        );
+
+        match self.bot_management_state {
+            BotManagementState::List => {
+                self.render_bot_management_list(frame, modal_area);
+            }
+            BotManagementState::Creating => {
+                self.render_bot_create_edit(frame, modal_area, true);
+            }
+            BotManagementState::Editing => {
+                self.render_bot_create_edit(frame, modal_area, false);
+            }
+            BotManagementState::ConfirmDelete => {
+                self.render_bot_confirm_delete(frame, modal_area);
+            }
+        }
+    }
+
+    /// 渲染机器人管理列表
+    fn render_bot_management_list(&mut self, frame: &mut Frame, area: Rect) {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Min(0),
+                Constraint::Length(3),
+            ])
+            .split(area);
+
+        // 标题
+        let title = Paragraph::new("机器人管理")
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(self.current_theme.primary_color))
+                    .border_type(ratatui::widgets::BorderType::Double)
+                    .title_style(Style::default().fg(self.current_theme.primary_color).add_modifier(Modifier::BOLD))
+                    .title(" Esc 关闭 ")
+            )
+            .alignment(Alignment::Center)
+            .style(Style::default().bg(self.current_theme.background_color));
+
+        frame.render_widget(title, chunks[0]);
+
+        // 机器人列表
+        let items: Vec<ListItem> = self
+            .bot_list
+            .iter()
+            .map(|bot| {
+                ListItem::new(Line::from(vec![
+                    Span::styled(
+                        bot.name.clone(),
+                        Style::default()
+                            .fg(self.current_theme.primary_color)
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                    Span::raw(" - "),
+                    Span::styled(
+                        format!("{}...", &bot.system_prompt.chars().take(30).collect::<String>()),
+                        Style::default().fg(Color::Gray),
+                    ),
+                ]))
+            })
+            .collect();
+
+        let list = List::new(items)
+            .block(Block::default().borders(Borders::ALL))
+            .style(Style::default().bg(self.current_theme.background_color))
+            .highlight_style(
+                Style::default()
+                    .bg(self.current_theme.secondary_color)
+                    .add_modifier(Modifier::REVERSED),
+            );
+
+        frame.render_stateful_widget(list, chunks[1], &mut self.bot_management_list_state);
+
+        // 帮助提示
+        let help = Paragraph::new("↑/↓: 选择 | c: 创建 | e: 编辑 | d: 删除 | Esc: 关闭")
+            .alignment(Alignment::Center)
+            .style(Style::default().bg(self.current_theme.background_color));
+
+        frame.render_widget(help, chunks[2]);
+    }
+
+    /// 渲染创建/编辑机器人界面
+    fn render_bot_create_edit(&mut self, frame: &mut Frame, area: Rect, is_create: bool) {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Length(3),
+                Constraint::Length(5),
+                Constraint::Length(3),
+                Constraint::Length(3),
+            ])
+            .split(area);
+
+        // 标题
+        let title_text = if is_create { "创建机器人" } else { "编辑机器人" };
+        let title = Paragraph::new(title_text)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(self.current_theme.primary_color))
+                    .border_type(ratatui::widgets::BorderType::Double)
+                    .title_style(Style::default().fg(self.current_theme.primary_color).add_modifier(Modifier::BOLD))
+                    .title(" Esc: 取消 | Ctrl+S: 保存 ")
+            )
+            .alignment(Alignment::Center)
+            .style(Style::default().bg(self.current_theme.background_color));
+
+        frame.render_widget(title, chunks[0]);
+
+        // 机器人名称输入 - 使用 Paragraph 渲染以支持多行显示
+        let name_block = Block::default()
+            .borders(Borders::ALL)
+            .title("机器人名称")
+            .border_style(if self.active_input_field == BotInputField::Name {
+                Style::default().fg(self.current_theme.primary_color)
+            } else {
+                Style::default().fg(Color::Gray)
+            });
+
+        let name_text = self.bot_name_input.lines().join("\n");
+        let name_para = Paragraph::new(name_text)
+            .block(name_block)
+            .wrap(Wrap { trim: false })
+            .style(Style::default().bg(self.current_theme.background_color));
+        frame.render_widget(name_para, chunks[1]);
+
+        // 系统提示词输入 - 使用 Paragraph 渲染以支持多行显示
+        let prompt_block = Block::default()
+            .borders(Borders::ALL)
+            .title("系统提示词")
+            .border_style(if self.active_input_field == BotInputField::Prompt {
+                Style::default().fg(self.current_theme.primary_color)
+            } else {
+                Style::default().fg(Color::Gray)
+            });
+
+        let prompt_text = self.bot_prompt_input.lines().join("\n");
+        let prompt_para = Paragraph::new(prompt_text)
+            .block(prompt_block)
+            .wrap(Wrap { trim: false })
+            .style(Style::default().bg(self.current_theme.background_color));
+        frame.render_widget(prompt_para, chunks[2]);
+
+        // 访问密码输入 - 使用 Paragraph 渲染以支持多行显示
+        let password_block = Block::default()
+            .borders(Borders::ALL)
+            .title("访问密码")
+            .border_style(if self.active_input_field == BotInputField::Password {
+                Style::default().fg(self.current_theme.primary_color)
+            } else {
+                Style::default().fg(Color::Gray)
+            });
+
+        let password_text = self.bot_password_input.lines().join("\n");
+        let password_para = Paragraph::new(password_text)
+            .block(password_block)
+            .wrap(Wrap { trim: false })
+            .style(Style::default().bg(self.current_theme.background_color));
+        frame.render_widget(password_para, chunks[3]);
+
+        // 在活动输入框位置绘制光标
+        self.render_cursor_in_active_input(frame, chunks.to_vec());
+
+        // 帮助提示
+        let help = Paragraph::new("Tab: 切换输入框 | Ctrl+S: 保存 | Esc: 取消")
+            .alignment(Alignment::Center)
+            .style(Style::default().bg(self.current_theme.background_color));
+
+        frame.render_widget(help, chunks[4]);
+    }
+
+    /// 在活动输入框中绘制光标
+    fn render_cursor_in_active_input(&mut self, frame: &mut Frame, chunks: Vec<Rect>) {
+        let (input_area, input_lines) = match self.active_input_field {
+            BotInputField::Name => (chunks[1], &self.bot_name_input),
+            BotInputField::Prompt => (chunks[2], &self.bot_prompt_input),
+            BotInputField::Password => (chunks[3], &self.bot_password_input),
+        };
+
+        // 获取光标位置
+        let (cursor_row, cursor_col) = input_lines.cursor();
+
+        // 计算光标在屏幕上的绝对位置
+        let content_area = input_area.inner(Margin {
+            vertical: 1,
+            horizontal: 1,
+        });
+
+        let lines = input_lines.lines();
+        if cursor_row < lines.len() {
+            let line = &lines[cursor_row];
+
+            // 计算光标列位置（考虑 Unicode 字符宽度）
+            let mut col_offset = 0usize;
+            let chars: Vec<char> = line.chars().collect();
+            for (i, c) in chars.iter().enumerate() {
+                if i >= cursor_col {
+                    break;
+                }
+                col_offset += unicode_width::UnicodeWidthChar::width(*c).unwrap_or(0);
+            }
+
+            // 获取内容区域的宽度
+            let content_width = content_area.width as usize;
+
+            // 计算换行后的光标位置
+            let display_row = cursor_row + (col_offset / content_width);
+            let display_col = col_offset % content_width;
+
+            // 确保光标在内容区域内
+            if display_row < content_area.height as usize {
+                // 计算光标在屏幕上的位置
+                let cursor_x = content_area.x + display_col as u16;
+                let cursor_y = content_area.y + display_row as u16;
+
+                // 绘制光标（使用反色块）
+                let cursor_area = Rect::new(cursor_x, cursor_y, 1, 1);
+                let cursor_block = Block::default()
+                    .style(Style::default()
+                        .fg(self.current_theme.background_color)
+                        .bg(self.current_theme.text_color));
+                frame.render_widget(cursor_block, cursor_area);
+            }
+        }
+    }
+
+    /// 渲染确认删除界面
+    fn render_bot_confirm_delete(&mut self, frame: &mut Frame, area: Rect) {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .margin(1)
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Length(3),
+                Constraint::Length(3),
+            ])
+            .split(area);
+
+        // 标题
+        let title = Paragraph::new("确认删除")
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Red))
+                    .border_type(ratatui::widgets::BorderType::Double)
+                    .title_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
+                    .title(" Esc: 取消 ")
+            )
+            .alignment(Alignment::Center)
+            .style(Style::default().bg(self.current_theme.background_color));
+
+        frame.render_widget(title, chunks[0]);
+
+        // 获取选中的机器人
+        let bot_name = if let Some(index) = self.bot_management_list_state.selected() {
+            self.bot_list.get(index).map(|b| b.name.clone()).unwrap_or_else(|| "未知".to_string())
+        } else {
+            "未知".to_string()
+        };
+
+        // 确认消息
+        let confirm_msg = Paragraph::new(format!("确定要删除机器人 '{}' 吗？", bot_name))
+            .alignment(Alignment::Center)
+            .style(Style::default().fg(self.current_theme.text_color).bg(self.current_theme.background_color));
+
+        frame.render_widget(confirm_msg, chunks[1]);
+
+        // 帮助提示
+        let help = Paragraph::new("y: 确认删除 | Esc: 取消")
+            .alignment(Alignment::Center)
+            .style(Style::default().bg(self.current_theme.background_color));
+
+        frame.render_widget(help, chunks[2]);
+    }
+
+    /// 处理机器人管理弹窗的键盘事件
+    pub fn handle_bot_management_key(&mut self, key: KeyEvent) -> KeyAction {
+        use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+        match self.bot_management_state {
+            BotManagementState::List => {
+                self.handle_bot_management_list_key(key)
+            }
+            BotManagementState::Creating | BotManagementState::Editing => {
+                self.handle_bot_create_edit_key(key)
+            }
+            BotManagementState::ConfirmDelete => {
+                self.handle_bot_confirm_delete_key(key)
+            }
+        }
+    }
+
+    /// 处理机器人管理列表的键盘事件
+    fn handle_bot_management_list_key(&mut self, key: KeyEvent) -> KeyAction {
+        use ratatui::crossterm::event::KeyCode;
+
+        match key.code {
+            KeyCode::Esc => {
+                self.bot_management_modal_visible = false;
+                KeyAction::Continue
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                if let Some(selected) = self.bot_management_list_state.selected() {
+                    if selected > 0 {
+                        self.bot_management_list_state.select(Some(selected - 1));
+                    }
+                }
+                KeyAction::Continue
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if let Some(selected) = self.bot_management_list_state.selected() {
+                    if selected < self.bot_list.len().saturating_sub(1) {
+                        self.bot_management_list_state.select(Some(selected + 1));
+                    }
+                }
+                KeyAction::Continue
+            }
+            KeyCode::Char('c') => {
+                // 创建机器人
+                self.bot_management_state = BotManagementState::Creating;
+                self.clear_bot_inputs();
+                KeyAction::CreateBot
+            }
+            KeyCode::Char('e') => {
+                // 编辑机器人
+                if let Some(index) = self.bot_management_list_state.selected() {
+                    if let Some(bot) = self.bot_list.get(index) {
+                        self.bot_management_state = BotManagementState::Editing;
+                        self.bot_name_input = TextArea::from(vec![bot.name.clone()]);
+                        self.bot_prompt_input = TextArea::from(vec![bot.system_prompt.clone()]);
+                        self.bot_password_input = TextArea::from(vec![bot.access_password.clone()]);
+                        return KeyAction::EditBot;
+                    }
+                }
+                KeyAction::Continue
+            }
+            KeyCode::Char('d') => {
+                // 删除机器人
+                if !self.bot_list.is_empty() {
+                    self.bot_management_state = BotManagementState::ConfirmDelete;
+                }
+                KeyAction::Continue
+            }
+            _ => KeyAction::Continue,
+        }
+    }
+
+    /// 处理创建/编辑机器人的键盘事件
+    fn handle_bot_create_edit_key(&mut self, key: KeyEvent) -> KeyAction {
+        use ratatui::crossterm::event::{KeyCode, KeyModifiers};
+
+        match key.code {
+            KeyCode::Esc => {
+                self.bot_management_state = BotManagementState::List;
+                KeyAction::CancelBot
+            }
+            KeyCode::Char('s') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                // 保存机器人
+                KeyAction::SaveBot
+            }
+            KeyCode::Tab => {
+                // 切换输入框
+                self.active_input_field = match self.active_input_field {
+                    BotInputField::Name => BotInputField::Prompt,
+                    BotInputField::Prompt => BotInputField::Password,
+                    BotInputField::Password => BotInputField::Name,
+                };
+                KeyAction::Continue
+            }
+            _ => {
+                // 所有其他按键都让当前活动的输入框处理（包括 Enter 键换行）
+                match self.active_input_field {
+                    BotInputField::Name => {
+                        self.bot_name_input.input(key);
+                    }
+                    BotInputField::Prompt => {
+                        self.bot_prompt_input.input(key);
+                    }
+                    BotInputField::Password => {
+                        self.bot_password_input.input(key);
+                    }
+                }
+                KeyAction::Continue
+            }
+        }
+    }
+
+    /// 处理确认删除的键盘事件
+    fn handle_bot_confirm_delete_key(&mut self, key: KeyEvent) -> KeyAction {
+        use ratatui::crossterm::event::KeyCode;
+
+        match key.code {
+            KeyCode::Esc => {
+                self.bot_management_state = BotManagementState::List;
+                KeyAction::CancelBot
+            }
+            KeyCode::Char('y') => {
+                // 确认删除
+                KeyAction::DeleteBot
+            }
+            _ => KeyAction::Continue,
+        }
+    }
+
+    /// 清空机器人输入框
+    fn clear_bot_inputs(&mut self) {
+        self.bot_name_input = TextArea::default();
+        let _ = self.bot_name_input.set_block(Block::default()
+            .borders(Borders::ALL)
+            .title("机器人名称"));
+
+        self.bot_prompt_input = TextArea::default();
+        let _ = self.bot_prompt_input.set_block(Block::default()
+            .borders(Borders::ALL)
+            .title("系统提示词"));
+
+        self.bot_password_input = TextArea::default();
+        let _ = self.bot_password_input.set_block(Block::default()
+            .borders(Borders::ALL)
+            .title("访问密码"));
+
+        // 重置活动输入框
+        self.active_input_field = BotInputField::Name;
+    }
+
+    /// 获取机器人输入框的内容
+    pub fn get_bot_input_data(&self) -> (String, String, String) {
+        let name = self.bot_name_input.lines().join("\n");
+        let prompt = self.bot_prompt_input.lines().join("\n");
+        let password = self.bot_password_input.lines().join("\n");
+        (name, prompt, password)
+    }
+
+    /// 获取当前选中的机器人索引（用于编辑和删除）
+    pub fn get_selected_bot_index(&self) -> Option<usize> {
+        self.bot_management_list_state.selected()
     }
 }

@@ -25,7 +25,7 @@ max_tokens = 2000
 
 [server]
 # 服务器主机
-host = "127.0.0.1"
+host = "localhost"
 # 服务器端口
 port = 8080
 # CORS 允许的来源
@@ -70,3 +70,11 @@ enabled = false
 log_directory = "logs"
 # 日志级别
 level = "info"
+
+[api]
+# TARS API 服务器端口
+port = 8080
+# API 密钥（可选，如果启用认证）
+api_key = "ANYTHING_YOU_LIKE"
+# 是否启用 CORS
+enable_cors = true
