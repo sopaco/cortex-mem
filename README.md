@@ -169,6 +169,49 @@ Cortex Memory includes a powerful web-based dashboard (`cortex-mem-insights`) th
 
 These visual tools help you understand how Cortex Memory is performing and how your AI agent's memory is evolving over time.
 
+# 🌟 Community Showcase: Cortex TARS
+
+Meet **Cortex TARS** — a production-ready AI-native TUI (Terminal User Interface) application that demonstrates the true power of Cortex Memory. Built as a "second brain" companion, Cortex TARS showcases how persistent memory transforms AI interactions from fleeting chats into lasting, intelligent partnerships.
+
+## What Makes Cortex TARS Special?
+
+Cortex TARS is more than just a chatbot — it's a comprehensive AI assistant platform that leverages Cortex Memory's advanced capabilities:
+
+### 🎭 Multi-Agent Management
+Create and manage multiple AI personas, each with distinct personalities, system prompts, and specialized knowledge areas. Whether you need a coding assistant, a creative writing partner, or a productivity coach, Cortex TARS lets you run them all simultaneously with complete separation.
+
+### 💾 Persistent Role Memory
+Every agent maintains its own long-term memory, learning from interactions over time. Your coding assistant remembers your coding style and preferences; your writing coach adapts to your voice and goals. No more repeating yourself — each agent grows smarter with every conversation.
+
+### 🔒 Memory Isolation
+Advanced memory architecture ensures complete isolation between agents and users. Each agent's knowledge base is separate, preventing cross-contamination while enabling personalized experiences across different contexts and use cases.
+
+### 🎤 Real-Time Audio-to-Memory (The Game Changer)
+**This is where Cortex TARS truly shines.** With real-time device audio capture, Cortex TARS can listen to your conversations, meetings, or lectures and automatically convert them into structured, searchable memories. Imagine attending a meeting while Cortex TARS silently captures key insights, decisions, and action items — all stored and ready for instant retrieval later. No more frantic note-taking or forgotten details!
+
+## Why Cortex TARS Matters
+
+Cortex TARS isn't just an example — it's a fully functional application that demonstrates:
+
+- **Real-world production readiness**: Built with Rust, it's fast, reliable, and memory-safe
+- **Seamless Cortex Memory integration**: Shows best practices for leveraging the memory framework
+- **Practical AI workflows**: From multi-agent conversations to audio capture and memory extraction
+- **User-centric design**: Beautiful TUI interface with intuitive controls and rich features
+
+## Explore Cortex TARS
+
+Ready to see Cortex Memory in action? Dive into the Cortex TARS project:
+
+```bash
+cd examples/cortex-mem-tars
+cargo build --release
+cargo run --release
+```
+
+Check out the [Cortex TARS README](examples/cortex-mem-tars/README.md) for detailed setup instructions, configuration guides, and usage examples.
+
+**Cortex TARS proves that Cortex Memory isn't just a framework — it's the foundation for building intelligent, memory-aware applications that truly understand and remember.**
+
 # 🏆 Benchmark
 
 Cortex Memory has been rigorously evaluated against LangMem using the **LOCOMO dataset** (50 conversations, 150 questions) through a standardized memory system evaluation framework. The results demonstrate Cortex Memory's superior performance across multiple dimensions.
