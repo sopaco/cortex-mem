@@ -308,11 +308,15 @@ impl App {
 
             
 
-                            // 如果从 BotSelection 切换到 Chat，启动 API 服务器
+                            // 如果从 BotSelection 或 PasswordInput 切换到 Chat，启动 API 服务器
 
                             log::info!("检查条件: previous_state == BotSelection: {}",
 
                                 self.previous_state == Some(crate::ui::AppState::BotSelection));
+
+                            log::info!("检查条件: previous_state == PasswordInput: {}",
+
+                                self.previous_state == Some(crate::ui::AppState::PasswordInput));
 
                             log::info!("检查条件: current_state == Chat: {}",
 
@@ -320,13 +324,15 @@ impl App {
 
             
 
-                            if self.previous_state == Some(crate::ui::AppState::BotSelection)
+                            if (self.previous_state == Some(crate::ui::AppState::BotSelection)
+
+                                || self.previous_state == Some(crate::ui::AppState::PasswordInput))
 
                                 && self.ui.state == crate::ui::AppState::Chat
 
                             {
 
-                                log::info!("✨ 检测到从机器人选择切换到聊天模式");
+                                log::info!("✨ 检测到进入聊天模式");
 
                                 if let Some(bot) = self.ui.selected_bot().cloned() {
 
