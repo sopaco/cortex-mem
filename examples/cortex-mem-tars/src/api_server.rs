@@ -13,6 +13,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::mpsc;
 use tower_http::cors::{Any, CorsLayer};
 use uuid::Uuid;
 
@@ -70,6 +71,8 @@ fn validate_speaker_confidence(confidence: f32) -> Result<()> {
 pub struct ApiServerState {
     pub memory_manager: Arc<MemoryManager>,
     pub current_bot_id: Arc<std::sync::RwLock<Option<String>>>,
+    pub audio_connect_mode: String,
+    pub external_message_sender: Option<mpsc::UnboundedSender<String>>,
 }
 
 /// 创建 API 路由器
@@ -103,6 +106,47 @@ async fn store_memory(
     State(state): State<ApiServerState>,
     Json(request): Json<StoreMemoryRequest>,
 ) -> Result<Json<StoreMemoryResponse>, (StatusCode, Json<ErrorResponse>)> {
+    // 检查模式：如果是 chat 模式，返回特殊响应
+    if state.audio_connect_mode == "chat" {
+        log::info!("Chat 模式：收到消息，将模拟用户输入: {}", request.content);
+
+        // 将消息发送到外部消息通道，由 App 处理
+        if let Some(ref sender) = state.external_message_sender {
+            if let Err(e) = sender.send(request.content.clone()) {
+                log::error!("发送外部消息失败: {}", e);
+                return Err((
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse {
+                        success: false,
+                        error_type: Some("channel_error".to_string()),
+                        error: format!("Failed to send message to channel: {}", e),
+                    }),
+                ));
+            }
+            log::info!("✅ 消息已发送到外部消息通道");
+        } else {
+            log::error!("❌ external_message_sender 未初始化");
+            return Err((
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ErrorResponse {
+                    success: false,
+                    error_type: Some("service_unavailable".to_string()),
+                    error: "External message channel not initialized".to_string(),
+                }),
+            ));
+        }
+
+        return Ok(Json(StoreMemoryResponse {
+            success: true,
+            memory_id: None,
+            message: Some(format!(
+                "Chat mode: Message received and queued - {}",
+                request.content
+            )),
+        }));
+    }
+
+    // 以下是 store 模式的原有逻辑
     // 验证必填字段
     if request.content.trim().is_empty() {
         return Err((

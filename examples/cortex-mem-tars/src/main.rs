@@ -28,6 +28,10 @@ struct Args {
     /// 启用音频连接功能，启动 API 服务器监听语音识别信息传入
     #[arg(long, action)]
     enable_audio_connect: bool,
+
+    /// 音频连接模式：store（存储到记忆系统）或 chat（模拟用户输入发送消息）
+    #[arg(long, default_value = "store")]
+    audio_connect_mode: String,
 }
 
 #[tokio::main]
@@ -41,6 +45,10 @@ async fn main() -> Result<()> {
 
     if args.enable_audio_connect {
         log::info!("已启用音频连接功能");
+        if args.audio_connect_mode != "store" && args.audio_connect_mode != "chat" {
+            log::warn!("无效的 audio_connect_mode 值: {}，将使用默认值 'store'", args.audio_connect_mode);
+        }
+        log::info!("音频连接模式: {}", args.audio_connect_mode);
     }
 
     // 初始化配置管理器
@@ -72,6 +80,7 @@ async fn main() -> Result<()> {
         log_manager,
         infrastructure.clone(),
         args.enable_audio_connect,
+        args.audio_connect_mode.clone(),
     )
     .context("无法创建应用")?;
     log::info!("应用创建成功");
