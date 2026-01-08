@@ -162,6 +162,15 @@ impl App {
         let backend = CrosstermBackend::new(stdout);
         let mut terminal = ratatui::Terminal::new(backend).context("无法创建终端")?;
 
+        // 添加短暂的延迟，确保任何自动发送的事件都被处理掉
+        // 特别是在 Windows 上，某些终端可能会在启动时自动发送 Enter 键事件
+        tokio::time::sleep(Duration::from_millis(100)).await;
+
+        // 清空事件队列，忽略启动时的任何自动事件
+        while event::poll(Duration::from_millis(10)).unwrap_or(false) {
+            let _ = event::read();
+        }
+
         let mut last_log_update = Instant::now();
         let mut last_service_check = Instant::now();
         let tick_rate = Duration::from_millis(100);
