@@ -105,6 +105,15 @@ impl MemoryOperations {
             filters.topics = Some(topics);
         }
 
+        // Apply time range filters
+        if let Some(created_after) = params.created_after {
+            filters.created_after = Some(created_after);
+        }
+
+        if let Some(created_before) = params.created_before {
+            filters.created_before = Some(created_before);
+        }
+
         match self.memory_manager.search(
             &params.query,
             &filters,
@@ -157,6 +166,15 @@ impl MemoryOperations {
             if let Ok(mt) = cortex_mem_core::types::MemoryType::parse_with_result(&memory_type) {
                 filters.memory_type = Some(mt);
             }
+        }
+
+        // Apply time range filters
+        if let Some(created_after) = params.created_after {
+            filters.created_after = Some(created_after);
+        }
+
+        if let Some(created_before) = params.created_before {
+            filters.created_before = Some(created_before);
         }
 
         match self.memory_manager.list(&filters, Some(params.limit)).await {

@@ -535,13 +535,19 @@ impl MemoryManager {
             .search_with_threshold(&query_embedding, filters, limit, threshold)
             .await?;
 
-        // Sort by combined score: similarity + importance
+        // Sort by combined score: similarity + importance + time freshness
         results.sort_by(|a, b| {
             let score_a = a.score * 0.7 + a.memory.metadata.importance_score * 0.3;
             let score_b = b.score * 0.7 + b.memory.metadata.importance_score * 0.3;
-            score_b
-                .partial_cmp(&score_a)
-                .unwrap_or(std::cmp::Ordering::Equal)
+
+            // First, sort by combined score
+            match score_b.partial_cmp(&score_a) {
+                Some(std::cmp::Ordering::Equal) | None => {
+                    // When scores are equal, prefer newer memories
+                    b.memory.created_at.cmp(&a.memory.created_at)
+                }
+                Some(ordering) => ordering,
+            }
         });
 
         debug!(
