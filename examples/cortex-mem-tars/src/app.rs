@@ -176,8 +176,8 @@ impl App {
         let tick_rate = Duration::from_millis(100);
 
         loop {
-            // 更新日志
-            if last_log_update.elapsed() > Duration::from_secs(1) {
+            // 更新日志（降低频率到每3秒一次，减少不必要的UI刷新）
+            if last_log_update.elapsed() > Duration::from_secs(3) {
                 self.update_logs();
                 last_log_update = Instant::now();
             }
@@ -197,13 +197,19 @@ impl App {
                         if let Some(last_msg) = self.ui.messages.last_mut() {
                             if last_msg.role == crate::agent::MessageRole::Assistant {
                                 last_msg.content.push_str(&chunk);
+                                // 只清除当前正在更新的消息的缓存
+                                let last_idx = self.ui.messages.len() - 1;
+                                self.ui.invalidate_render_cache(Some(last_idx));
                             } else {
                                 // 如果最后一条不是助手消息，创建新的助手消息
                                 self.ui.messages.push(ChatMessage::assistant(chunk));
+                                // 新消息，清除所有缓存（因为索引会变化）
+                                self.ui.invalidate_render_cache(None);
                             }
                         } else {
                             // 如果没有消息，创建新的助手消息
                             self.ui.messages.push(ChatMessage::assistant(chunk));
+                            self.ui.invalidate_render_cache(None);
                         }
                         // 确保自动滚动启用
                         self.ui.auto_scroll = true;
@@ -216,11 +222,16 @@ impl App {
                         if let Some(last_msg) = self.ui.messages.last_mut() {
                             if last_msg.role == crate::agent::MessageRole::Assistant {
                                 last_msg.content = full_response;
+                                // 只清除当前正在更新的消息的缓存
+                                let last_idx = self.ui.messages.len() - 1;
+                                self.ui.invalidate_render_cache(Some(last_idx));
                             } else {
                                 self.ui.messages.push(ChatMessage::assistant(full_response));
+                                self.ui.invalidate_render_cache(None);
                             }
                         } else {
                             self.ui.messages.push(ChatMessage::assistant(full_response));
+                            self.ui.invalidate_render_cache(None);
                         }
                         // 确保自动滚动启用
                         self.ui.auto_scroll = true;
@@ -522,6 +533,7 @@ impl App {
         // 添加用户消息
         let user_message = ChatMessage::user(input_text);
         self.ui.messages.push(user_message.clone());
+        self.ui.invalidate_render_cache(None);
         self.ui.clear_input();
 
         // 用户发送新消息，重新启用自动滚动
@@ -632,6 +644,7 @@ impl App {
     fn clear_chat(&mut self) {
         log::info!("清空会话");
         self.ui.messages.clear();
+        self.ui.invalidate_render_cache(None);
         self.ui.scroll_offset = 0;
         self.ui.auto_scroll = true;
     }
@@ -657,11 +670,13 @@ impl App {
                 log::info!("{}", msg);
                 let success_message = ChatMessage::assistant(msg);
                 self.ui.messages.push(success_message);
+                self.ui.invalidate_render_cache(None);
             }
             Err(e) => {
                 log::error!("{}", e);
                 let error_message = ChatMessage::assistant(format!("❌ {}", e));
                 self.ui.messages.push(error_message);
+                self.ui.invalidate_render_cache(None);
             }
         }
         self.ui.auto_scroll = true;
@@ -824,6 +839,7 @@ impl App {
         // 添加用户消息到 UI
         let user_message = ChatMessage::user(content.clone());
         self.ui.messages.push(user_message.clone());
+        self.ui.invalidate_render_cache(None);
 
         // 用户发送新消息，重新启用自动滚动
         self.ui.auto_scroll = true;
