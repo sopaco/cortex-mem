@@ -39,6 +39,8 @@ pub struct QueryMemoryArgs {
     pub topics: Option<Vec<String>>,
     pub user_id: Option<String>,
     pub agent_id: Option<String>,
+    pub created_after: Option<String>,
+    pub created_before: Option<String>,
 }
 
 /// List Memories tool arguments
@@ -48,6 +50,8 @@ pub struct ListMemoriesArgs {
     pub memory_type: Option<String>,
     pub user_id: Option<String>,
     pub agent_id: Option<String>,
+    pub created_after: Option<String>,
+    pub created_before: Option<String>,
 }
 
 /// Get Memory tool arguments

@@ -39,6 +39,12 @@ pub struct MemoryOperationPayload {
 
     /// Additional metadata
     pub metadata: Option<HashMap<String, serde_json::Value>>,
+
+    /// Time range filter: find memories created after this ISO 8601 datetime
+    pub created_after: Option<String>,
+
+    /// Time range filter: find memories created before this ISO 8601 datetime
+    pub created_before: Option<String>,
 }
 
 impl Default for MemoryOperationPayload {
@@ -56,6 +62,8 @@ impl Default for MemoryOperationPayload {
             min_salience: None,
             k: None,
             metadata: None,
+            created_after: None,
+            created_before: None,
         }
     }
 }
@@ -127,6 +135,8 @@ pub struct QueryParams {
     pub topics: Option<Vec<String>>,
     pub user_id: Option<String>,
     pub agent_id: Option<String>,
+    pub created_after: Option<chrono::DateTime<chrono::Utc>>,
+    pub created_before: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl QueryParams {
@@ -139,6 +149,15 @@ impl QueryParams {
             .or(payload.k)
             .unwrap_or(default_limit);
 
+        // Parse time range parameters
+        let created_after = payload.created_after.as_ref()
+            .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+            .map(|dt| dt.with_timezone(&chrono::Utc));
+
+        let created_before = payload.created_before.as_ref()
+            .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+            .map(|dt| dt.with_timezone(&chrono::Utc));
+
         Ok(Self {
             query,
             limit,
@@ -147,6 +166,8 @@ impl QueryParams {
             topics: payload.topics.clone(),
             user_id: payload.user_id.clone(),
             agent_id: payload.agent_id.clone(),
+            created_after,
+            created_before,
         })
     }
 }
@@ -193,17 +214,30 @@ pub struct FilterParams {
     pub agent_id: Option<String>,
     pub memory_type: Option<String>,
     pub limit: usize,
+    pub created_after: Option<chrono::DateTime<chrono::Utc>>,
+    pub created_before: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl FilterParams {
     pub fn from_payload(payload: &MemoryOperationPayload, default_limit: usize) -> crate::errors::MemoryToolsResult<Self> {
         let limit = payload.limit.or(payload.k).unwrap_or(default_limit);
 
+        // Parse time range parameters
+        let created_after = payload.created_after.as_ref()
+            .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+            .map(|dt| dt.with_timezone(&chrono::Utc));
+
+        let created_before = payload.created_before.as_ref()
+            .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+            .map(|dt| dt.with_timezone(&chrono::Utc));
+
         Ok(Self {
             user_id: payload.user_id.clone(),
             agent_id: payload.agent_id.clone(),
             memory_type: payload.memory_type.clone(),
             limit,
+            created_after,
+            created_before,
         })
     }
 }

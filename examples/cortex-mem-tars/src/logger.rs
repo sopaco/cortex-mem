@@ -108,7 +108,7 @@ pub fn init_logger(log_dir: &Path) -> Result<Arc<LogManager>> {
     // 设置全局 logger
     log::set_logger(Box::leak(Box::new(logger)))
         .map_err(|e| anyhow::anyhow!("无法设置 logger: {}", e))?;
-    log::set_max_level(LevelFilter::Debug);
+    log::set_max_level(LevelFilter::Info);
 
     log::info!("日志系统初始化完成");
     log::info!("日志文件路径: {}", log_dir.display());

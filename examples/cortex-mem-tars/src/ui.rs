@@ -132,6 +132,9 @@ pub struct AppUi {
     pub cursor_position: (usize, usize),         // 当前光标位置 (line_index, char_index)
     // 消息显示区域位置
     pub messages_area: Option<Rect>,
+    // Markdown 渲染缓存：存储每条消息的渲染行，避免重复解析
+    // Vec 的索引对应 messages 的索引
+    pub message_render_cache: Vec<Option<Vec<String>>>,
     // 帮助弹窗相关字段
     pub help_modal_visible: bool,
     pub help_content: Vec<Line<'static>>,
@@ -148,10 +151,6 @@ pub struct AppUi {
     pub bot_password_input: TextArea<'static>,
     pub bot_management_list_state: ListState,
     pub active_input_field: BotInputField, // 当前活动的输入框
-    // 光标位置（用于显示光标）
-    pub cursor_visible: bool,
-    pub cursor_row: usize,
-    pub cursor_col: usize,
     // 密码验证相关字段
     pub password_input: TextArea<'static>,
     pub pending_bot: Option<BotConfig>, // 等待密码验证的机器人
@@ -184,7 +183,6 @@ pub enum KeyAction {
     ShowHelp,    // 显示帮助
     ShowThemes,  // 显示主题选择
     DumpChats,   // 导出会话到剪贴板
-    ShowBotManagement, // 显示机器人管理
     CreateBot,   // 创建机器人
     EditBot,     // 编辑机器人
     DeleteBot,   // 删除机器人
@@ -254,6 +252,7 @@ impl AppUi {
             selection_end: None,
             cursor_position: (0, 0),
             messages_area: None,
+            message_render_cache: vec![],
             help_modal_visible: false,
             help_content,
             help_scroll_offset: 0,
@@ -269,9 +268,6 @@ impl AppUi {
             active_input_field: BotInputField::Name,
             password_input,
             pending_bot: None,
-            cursor_visible: false,
-            cursor_row: 0,
-            cursor_col: 0,
         }
     }
 
@@ -282,6 +278,18 @@ impl AppUi {
             self.bot_list_state.select(Some(0));
         } else {
             self.bot_list_state.select(None);
+        }
+    }
+
+    /// 使渲染缓存失效（在消息变化时调用）
+    /// 如果指定了 index，只清除该条消息的缓存；否则清除所有缓存
+    pub fn invalidate_render_cache(&mut self, index: Option<usize>) {
+        if let Some(idx) = index {
+            if idx < self.message_render_cache.len() {
+                self.message_render_cache[idx] = None;
+            }
+        } else {
+            self.message_render_cache.clear();
         }
     }
 
@@ -1257,10 +1265,18 @@ impl AppUi {
             horizontal: 1,
         });
 
+        // 确保缓存大小与消息数量一致
+        while self.message_render_cache.len() < self.messages.len() {
+            self.message_render_cache.push(None);
+        }
+        if self.message_render_cache.len() > self.messages.len() {
+            self.message_render_cache.truncate(self.messages.len());
+        }
+
         // 收集所有消息的渲染行
         let mut all_lines: Vec<Line> = vec![];
 
-        for message in &self.messages {
+        for (idx, message) in self.messages.iter().enumerate() {
             let role_label = match message.role {
                 crate::agent::MessageRole::System => "System",
                 crate::agent::MessageRole::User => "You",
@@ -1293,13 +1309,21 @@ impl AppUi {
                 ),
             ]));
 
-            // 渲染 Markdown 内容
-            let markdown_text = from_str(&message.content);
-            // 将 tui_markdown 的 Text 转换为 ratatui 的 Text
-            for line in markdown_text.lines {
-                all_lines.push(Line::from(line.spans.iter().map(|s| {
-                    Span::raw(s.content.clone())
-                }).collect::<Vec<Span>>()));
+            // 渲染 Markdown 内容（使用缓存）
+            let content_lines = if let Some(cached) = &self.message_render_cache[idx] {
+                cached.clone()
+            } else {
+                // 解析 Markdown 并缓存
+                let markdown_text = from_str(&message.content);
+                let lines: Vec<String> = markdown_text.lines.iter()
+                    .map(|line| line.spans.iter().map(|s| s.content.clone()).collect::<String>())
+                    .collect();
+                self.message_render_cache[idx] = Some(lines.clone());
+                lines
+            };
+
+            for line in content_lines {
+                all_lines.push(Line::from(vec![Span::raw(line)]));
             }
 
             // 添加空行分隔
@@ -2149,8 +2173,6 @@ impl AppUi {
 
     /// 处理机器人管理弹窗的键盘事件
     pub fn handle_bot_management_key(&mut self, key: KeyEvent) -> KeyAction {
-        use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-
         match self.bot_management_state {
             BotManagementState::List => {
                 self.handle_bot_management_list_key(key)
