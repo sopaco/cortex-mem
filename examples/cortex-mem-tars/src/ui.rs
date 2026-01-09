@@ -151,10 +151,6 @@ pub struct AppUi {
     pub bot_password_input: TextArea<'static>,
     pub bot_management_list_state: ListState,
     pub active_input_field: BotInputField, // 当前活动的输入框
-    // 光标位置（用于显示光标）
-    pub cursor_visible: bool,
-    pub cursor_row: usize,
-    pub cursor_col: usize,
     // 密码验证相关字段
     pub password_input: TextArea<'static>,
     pub pending_bot: Option<BotConfig>, // 等待密码验证的机器人
@@ -187,7 +183,6 @@ pub enum KeyAction {
     ShowHelp,    // 显示帮助
     ShowThemes,  // 显示主题选择
     DumpChats,   // 导出会话到剪贴板
-    ShowBotManagement, // 显示机器人管理
     CreateBot,   // 创建机器人
     EditBot,     // 编辑机器人
     DeleteBot,   // 删除机器人
@@ -273,9 +268,6 @@ impl AppUi {
             active_input_field: BotInputField::Name,
             password_input,
             pending_bot: None,
-            cursor_visible: false,
-            cursor_row: 0,
-            cursor_col: 0,
         }
     }
 
@@ -2181,8 +2173,6 @@ impl AppUi {
 
     /// 处理机器人管理弹窗的键盘事件
     pub fn handle_bot_management_key(&mut self, key: KeyEvent) -> KeyAction {
-        use ratatui::crossterm::event::{KeyCode, KeyModifiers};
-
         match self.bot_management_state {
             BotManagementState::List => {
                 self.handle_bot_management_list_key(key)

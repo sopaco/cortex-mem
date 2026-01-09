@@ -126,7 +126,7 @@ impl App {
                 Ok(response) => {
                     if response.status().is_success() || response.status().as_u16() == 405 {
                         // 200 OK 或 405 Method Not Allowed 都表示服务可用
-                        log::info!("服务可用，状态码: {}", response.status());
+                        log::debug!("服务可用，状态码: {}", response.status());
                         self.ui.service_status = crate::ui::ServiceStatus::Active;
                     } else {
                         log::warn!("服务不可用，状态码: {}", response.status());
@@ -303,9 +303,6 @@ impl App {
                                     self.dump_chats();
                                 }
                             }
-                            crate::ui::KeyAction::ShowBotManagement => {
-                                // 机器人管理弹窗的显示由 UI 处理
-                            }
                             crate::ui::KeyAction::CreateBot => {
                                 // 创建机器人的逻辑在 UI 中处理
                             }
@@ -337,13 +334,13 @@ impl App {
 
                         log::trace!("状态检查: previous_state={:?}, current_state={:?}", self.previous_state, self.ui.state);
 
-            
+
 
                         if self.previous_state != Some(self.ui.state) {
 
                             log::info!("🔄 状态变化: {:?} -> {:?}", self.previous_state, self.ui.state);
 
-            
+
 
                             // 如果从 BotSelection 或 PasswordInput 切换到 Chat，启动 API 服务器
 
@@ -359,7 +356,7 @@ impl App {
 
                                 self.ui.state == crate::ui::AppState::Chat);
 
-            
+
 
                             if (self.previous_state == Some(crate::ui::AppState::BotSelection)
 
@@ -942,11 +939,6 @@ impl App {
         self.ui.auto_scroll = true;
 
         Ok(())
-    }
-
-    /// 获取外部消息发送器的克隆（用于 API server 发送消息）
-    pub fn get_external_message_sender(&self) -> mpsc::UnboundedSender<String> {
-        self.external_message_sender.clone()
     }
 
     /// 保存机器人（创建或更新）
