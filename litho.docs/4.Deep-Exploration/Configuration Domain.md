@@ -45,6 +45,7 @@ pub struct Config {
     pub embedding: EmbeddingConfig,
     pub memory: MemoryConfig,
     pub logging: LoggingConfig,
+    pub api: TarsApiConfig,  // Cortex TARS specific configuration
 }
 ```
 
@@ -58,6 +59,61 @@ Each nested struct corresponds to a subsystem:
 | `EmbeddingConfig` | Embedding model endpoint, batch size, request timeout |
 | `MemoryConfig` | Memory retention rules, deduplication thresholds, search limits |
 | `LoggingConfig` | Log output directory, verbosity level, enable/disable flag |
+| `TarsApiConfig` | Cortex TARS API server settings including port, API key, and CORS configuration |
+
+#### Cortex TARS Configuration Example
+
+Cortex TARS uses an extended configuration structure that includes all Cortex-Mem settings plus TARS-specific options:
+
+```toml
+# Cortex TARS configuration file example (config.toml)
+
+[qdrant]
+url = "http://localhost:6334"
+collection_name = "cortex_mem"
+embedding_dim = 1536
+timeout_secs = 30
+
+[llm]
+api_base_url = "https://api.openai.com/v1"
+api_key = "your-api-key-here"
+model_efficient = "gpt-4o-mini"
+temperature = 0.7
+max_tokens = 2000
+
+[embedding]
+api_base_url = "https://api.openai.com/v1"
+api_key = "your-api-key-here"
+model_name = "text-embedding-3-small"
+batch_size = 100
+timeout_secs = 30
+
+[memory]
+max_memories = 10000
+similarity_threshold = 0.65
+max_search_results = 50
+auto_summary_threshold = 32768
+auto_enhance = true
+deduplicate = true
+merge_threshold = 0.75
+search_similarity_threshold = 0.70
+
+[server]
+host = "localhost"
+port = 8080
+cors_origins = ["*"]
+
+[api]
+# Cortex TARS API server configuration
+port = 8080
+api_key = "ANYTHING_YOU_LIKE"
+enable_cors = true
+
+[logging]
+enabled = true
+log_directory = "logs"
+level = "info"
+```
 
 #### Default Implementations:
 To simplify deployment, two structs implement `Default`:
