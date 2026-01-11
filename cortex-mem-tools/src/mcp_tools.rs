@@ -95,6 +95,14 @@ pub fn get_mcp_tool_definitions() -> Vec<McpToolDefinition> {
                     "agent_id": {
                         "type": "string",
                         "description": "Agent ID to filter memories (optional, defaults to configured agent)"
+                    },
+                    "created_after": {
+                        "type": "string",
+                        "description": "Find memories created after this ISO 8601 datetime (e.g., '2025-01-01' or '2025-01-01T10:00:00Z')"
+                    },
+                    "created_before": {
+                        "type": "string",
+                        "description": "Find memories created before this ISO 8601 datetime"
                     }
                 },
                 "required": ["query"]
@@ -134,6 +142,14 @@ pub fn get_mcp_tool_definitions() -> Vec<McpToolDefinition> {
                     "agent_id": {
                         "type": "string",
                         "description": "Agent ID to filter memories (optional, defaults to configured agent)"
+                    },
+                    "created_after": {
+                        "type": "string",
+                        "description": "Find memories created after this ISO 8601 datetime (e.g., '2025-01-01' or '2025-01-01T10:00:00Z')"
+                    },
+                    "created_before": {
+                        "type": "string",
+                        "description": "Find memories created before this ISO 8601 datetime"
                     }
                 }
             }),
@@ -242,6 +258,15 @@ pub fn map_mcp_arguments_to_payload(
 
     if let Some(min_salience) = arguments.get("min_salience").and_then(|v| v.as_f64()) {
         payload.min_salience = Some(min_salience);
+    }
+
+    // Map time range parameters
+    if let Some(created_after) = arguments.get("created_after").and_then(|v| v.as_str()) {
+        payload.created_after = Some(created_after.to_string());
+    }
+
+    if let Some(created_before) = arguments.get("created_before").and_then(|v| v.as_str()) {
+        payload.created_before = Some(created_before.to_string());
     }
 
     payload

@@ -176,6 +176,8 @@ pub async fn extract_user_basic_info(
         memory_type: Some("personal".to_string()), // 使用小写以匹配新API
         user_id: Some(user_id.to_string()),
         agent_id: Some(agent_id.to_string()),
+        created_after: None,
+        created_before: None,
     };
 
     let search_args_factual = ListMemoriesArgs {
@@ -183,6 +185,8 @@ pub async fn extract_user_basic_info(
         memory_type: Some("factual".to_string()), // 使用小写以匹配新API
         user_id: Some(user_id.to_string()),
         agent_id: Some(agent_id.to_string()),
+        created_after: None,
+        created_before: None,
     };
 
     if let Ok(search_result) = memory_tools

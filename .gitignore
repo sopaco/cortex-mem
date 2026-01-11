@@ -6,3 +6,5 @@ logs/
 config.toml
 /misc_summaries
 bots.json
+__Litho_Summary_Brief__.md
+__Litho_Summary_Detail__.md
