@@ -174,6 +174,16 @@ impl QdrantVectorStore {
             memory.updated_at.to_rfc3339().into(),
         );
 
+        // Numeric timestamps for efficient range filtering
+        payload.insert(
+            "created_at_ts".to_string(),
+            (memory.created_at.timestamp_millis() as i64).into(),
+        );
+        payload.insert(
+            "updated_at_ts".to_string(),
+            (memory.updated_at.timestamp_millis() as i64).into(),
+        );
+
         // Metadata fields
         if let Some(user_id) = &memory.metadata.user_id {
             payload.insert("user_id".to_string(), user_id.clone().into());
@@ -284,6 +294,68 @@ impl QdrantVectorStore {
                             "{:?}",
                             memory_type
                         ))),
+                    }),
+                    ..Default::default()
+                })),
+            });
+        }
+
+        // Time range filters
+        // NOTE: Qdrant Range filters require numeric fields, so we filter on *_ts (milliseconds since epoch)
+        if let Some(created_after) = filters.created_after {
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "created_at_ts".to_string(),
+                    range: Some(Range {
+                        gt: None,
+                        gte: Some(created_after.timestamp_millis() as f64),
+                        lt: None,
+                        lte: None,
+                    }),
+                    ..Default::default()
+                })),
+            });
+        }
+
+        if let Some(created_before) = filters.created_before {
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "created_at_ts".to_string(),
+                    range: Some(Range {
+                        gt: None,
+                        gte: None,
+                        lt: None,
+                        lte: Some(created_before.timestamp_millis() as f64),
+                    }),
+                    ..Default::default()
+                })),
+            });
+        }
+
+        if let Some(updated_after) = filters.updated_after {
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "updated_at_ts".to_string(),
+                    range: Some(Range {
+                        gt: None,
+                        gte: Some(updated_after.timestamp_millis() as f64),
+                        lt: None,
+                        lte: None,
+                    }),
+                    ..Default::default()
+                })),
+            });
+        }
+
+        if let Some(updated_before) = filters.updated_before {
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "updated_at_ts".to_string(),
+                    range: Some(Range {
+                        gt: None,
+                        gte: None,
+                        lt: None,
+                        lte: Some(updated_before.timestamp_millis() as f64),
                     }),
                     ..Default::default()
                 })),
