@@ -2,7 +2,7 @@ use thiserror::Error;
 
 /// Common error types for memory tools
 #[derive(Debug, Error)]
-pub enum MemoryToolsError {
+pub enum ToolsError {
     /// Invalid input provided
     #[error("Invalid input: {0}")]
     InvalidInput(String),
@@ -13,22 +13,20 @@ pub enum MemoryToolsError {
 
     /// Memory not found
     #[error("Memory not found: {0}")]
-    MemoryNotFound(String),
+    NotFound(String),
 
     /// Serialization/deserialization error
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
-    /// Core memory error
-    #[error("Core memory error: {0}")]
-    Core(#[from] anyhow::Error),
-}
+    /// Core error
+    #[error("Core error: {0}")]
+    Core(#[from] cortex_mem_core::Error),
 
-impl From<cortex_mem_core::error::MemoryError> for MemoryToolsError {
-    fn from(err: cortex_mem_core::error::MemoryError) -> Self {
-        MemoryToolsError::Core(anyhow::anyhow!("Core error: {}", err))
-    }
+    /// IO error
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 /// Result type for memory tools operations
-pub type MemoryToolsResult<T> = Result<T, MemoryToolsError>;
+pub type Result<T> = std::result::Result<T, ToolsError>;

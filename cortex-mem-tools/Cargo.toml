@@ -1,11 +1,15 @@
 [package]
 name = "cortex-mem-tools"
-version = "1.0.0"
-edition = "2021"
-license = "MIT"
-description = "A crate for integrating Cortex Memory core capabilities"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "High-level tools and utilities for Cortex-Mem V2"
 
 [dependencies]
+# Local dependencies
+cortex-mem-core = { path = "../cortex-mem-core" }
+
 # Workspace dependencies
 tokio = { workspace = true }
 serde = { workspace = true }
@@ -15,14 +19,8 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
-
-# Local dependencies
-cortex-mem-core = { path = "../cortex-mem-core" }
-cortex-mem-config = { path = "../cortex-mem-config" }
-
-# Additional dependencies
-schemars = { version = "1.0", features = ["derive"] }
 async-trait = { workspace = true }
 
 [features]
 default = []
+vector-search = ["cortex-mem-core/vector-search"]

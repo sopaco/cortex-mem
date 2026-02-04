@@ -1,30 +1,36 @@
 [package]
 name = "cortex-mem-service"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2021"
-description = "HTTP API service for Rust agent memory system"
-license = "MIT"
+authors.workspace = true
+license.workspace = true
+description = "HTTP REST API service for Cortex-Mem V2"
 
 [[bin]]
 name = "cortex-mem-service"
 path = "src/main.rs"
 
 [dependencies]
-cortex-mem-config = { path = "../cortex-mem-config" }
 # Workspace dependencies
+cortex-mem-core = { path = "../cortex-mem-core", features = ["vector-search"] }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
-uuid = { workspace = true }
-chrono = { workspace = true }
-axum = { workspace = true }
-tower = { workspace = true }
-tower-http = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-clap = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
 
-# Local dependencies
-cortex-mem-core = { path = "../cortex-mem-core" }
+# Web framework
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true, features = ["cors", "trace"] }
+
+# CLI
+clap = { workspace = true, features = ["derive"] }
+
+[features]
+default = []
+vector-search = ["cortex-mem-core/vector-search"]

@@ -25,18 +25,25 @@ Model Context Protocol (MCP) server for Cortex-Mem memory management system.
 ```
 
 ### 2. `query_memory`
-智能搜索记忆。
+智能搜索记忆，支持多种搜索模式。
 
 **参数**:
 - `query` (required): 搜索查询
+- `mode` (optional): 搜索模式 - "filesystem" (默认), "vector", "hybrid"
 - `thread_id` (optional): 限定搜索范围
 - `limit` (optional): 最大结果数，默认10
 - `min_score` (optional): 最小相关性分数(0-1)，默认0.3
+
+**搜索模式说明**:
+- `filesystem`: 全文关键词搜索（总是可用）
+- `vector`: 语义相似度搜索（需要编译时启用`vector-search` feature）
+- `hybrid`: 结合两种搜索（需要编译时启用`vector-search` feature）
 
 **示例**:
 ```json
 {
   "query": "Rust OAuth实现",
+  "mode": "filesystem",
   "limit": 5
 }
 ```
@@ -71,10 +78,16 @@ Model Context Protocol (MCP) server for Cortex-Mem memory management system.
 
 ## 安装
 
-### 构建
+### 基础构建（仅文件系统搜索）
 
 ```bash
 cargo build --release --bin cortex-mem-mcp
+```
+
+### 完整构建（包含向量搜索）
+
+```bash
+cargo build --release --bin cortex-mem-mcp --features vector-search
 ```
 
 ### 配置Claude Desktop

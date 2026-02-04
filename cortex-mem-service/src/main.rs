@@ -1,124 +1,86 @@
 use axum::{
     Router,
-    routing::{get, post},
+    routing::get,
 };
 use clap::Parser;
-use cortex_mem_core::{
-    config::Config, llm::create_llm_client, memory::MemoryManager,
-    vector_store::qdrant::QdrantVectorStore,
-};
-use std::{path::PathBuf, sync::Arc};
-use tokio::net::TcpListener;
-use tower::ServiceBuilder;
+use std::net::SocketAddr;
+use std::sync::Arc;
 use tower_http::cors::CorsLayer;
-use tracing::info;
-use tracing_subscriber;
+use tower_http::trace::TraceLayer;
+use tracing::{info, level_filters::LevelFilter};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod state;
+mod routes;
 mod handlers;
 mod models;
-mod optimization_handlers;
+mod error;
 
-use handlers::{
+use state::AppState;
 
-    batch_delete_memories, batch_update_memories, create_memory, delete_memory, get_memory, health_check, list_memories, search_memories, update_memory, get_llm_status, llm_health_check,
-
-};
-use optimization_handlers::{
-    analyze_optimization, cancel_optimization, cleanup_history, get_optimization_history,
-    get_optimization_statistics, get_optimization_status, start_optimization,
-    OptimizationJobState,
-};
-
-/// Application state shared across handlers
-#[derive(Clone)]
-pub struct AppState {
-    pub memory_manager: Arc<MemoryManager>,
-    pub optimization_jobs: Arc<tokio::sync::RwLock<std::collections::HashMap<String, OptimizationJobState>>>,
-}
-
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[command(name = "cortex-mem-service")]
-#[command(about = "Cortex Memory HTTP Service")]
-#[command(author = "Sopaco")]
+#[command(about = "Cortex-Mem V2 HTTP REST API Service", long_about = None)]
 #[command(version)]
 struct Cli {
-    /// Path to the configuration file
-    #[arg(short, long, default_value = "config.toml")]
-    config: PathBuf,
+    /// Data directory for cortex filesystem
+    #[arg(short, long, default_value = "./cortex-data")]
+    data_dir: String,
+
+    /// Server host
+    #[arg(long, default_value = "127.0.0.1")]
+    host: String,
+
+    /// Server port
+    #[arg(short, long, default_value_t = 8080)]
+    port: u16,
+
+    /// Enable verbose logging
+    #[arg(short, long)]
+    verbose: bool,
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize tracing
-    tracing_subscriber::fmt::init();
-
+async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    // Load configuration
-    let config = Config::load(&cli.config)?;
-
-    // Create memory manager
-    let memory_manager = create_memory_manager(&config).await?;
-
-    // Create application state
-    let app_state = AppState {
-        memory_manager: Arc::new(memory_manager),
-        optimization_jobs: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+    // Initialize tracing
+    let log_level = if cli.verbose {
+        LevelFilter::DEBUG
+    } else {
+        LevelFilter::INFO
     };
 
-    // Build the application router
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_target(false)
+                .with_level(true)
+        )
+        .with(log_level)
+        .init();
+
+    info!("Starting Cortex-Mem Service V2");
+    info!("Data directory: {}", cli.data_dir);
+
+    // Initialize application state
+    let state = AppState::new(&cli.data_dir).await?;
+    let state = Arc::new(state);
+
+    // Build router
     let app = Router::new()
-        .route("/health", get(health_check))
-        .route("/memories", post(create_memory).get(list_memories))
-        .route("/memories/search", post(search_memories))
-        .route(
-            "/memories/{id}",
-            get(get_memory).put(update_memory).delete(delete_memory),
-        )
-        .route("/memories/batch/delete", post(batch_delete_memories))
-        .route("/memories/batch/update", post(batch_update_memories))
-        // Optimization routes
-        .route("/optimization", post(start_optimization))
-        .route("/optimization/{job_id}", get(get_optimization_status))
-        .route("/optimization/{job_id}/cancel", post(cancel_optimization))
-        .route("/optimization/history", get(get_optimization_history))
-        .route("/optimization/analyze", post(analyze_optimization))
-        .route("/optimization/statistics", get(get_optimization_statistics))
-        .route("/optimization/cleanup", post(cleanup_history))
-        // LLM service status routes
-        .route("/llm/status", get(get_llm_status))
-        .route("/llm/health-check", get(llm_health_check))
-        .layer(
-            ServiceBuilder::new()
-                .layer(CorsLayer::permissive())
-                .into_inner(),
-        )
-        .with_state(app_state);
+        .route("/health", get(handlers::health::health_check))
+        .nest("/api/v2", routes::api_routes())
+        .layer(CorsLayer::permissive())
+        .layer(TraceLayer::new_for_http())
+        .with_state(state);
 
-    // Start the server
-    let addr = format!("{}:{}", config.server.host, config.server.port);
+    // Start server
+    let addr = SocketAddr::from(([127, 0, 0, 1], cli.port));
+    info!("Server listening on http://{}", addr);
 
-    info!("Starting cortex-mem-service on {}", addr);
-
-    let listener = TcpListener::bind(&addr).await?;
+    let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
 
     Ok(())
-}
-
-async fn create_memory_manager(
-    config: &Config,
-) -> Result<MemoryManager, Box<dyn std::error::Error>> {
-    // Create vector store
-    let vector_store = QdrantVectorStore::new(&config.qdrant).await?;
-
-    // Create LLM client
-    let llm_client = create_llm_client(&config.llm, &config.embedding)?;
-
-    // Create memory manager
-    let memory_manager =
-        MemoryManager::new(Box::new(vector_store), llm_client, config.memory.clone());
-
-    info!("Memory manager initialized successfully");
-    Ok(memory_manager)
 }

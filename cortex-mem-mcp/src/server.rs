@@ -95,6 +95,12 @@ impl MCPServer {
                             "type": "string",
                             "description": "Search query"
                         },
+                        "mode": {
+                            "type": "string",
+                            "description": "Search mode: 'filesystem' (default), 'vector', or 'hybrid'",
+                            "enum": ["filesystem", "vector", "hybrid"],
+                            "default": "filesystem"
+                        },
                         "thread_id": {
                             "type": "string",
                             "description": "Optional thread ID to limit search scope"
@@ -273,13 +279,40 @@ impl MCPServer {
         #[derive(Deserialize)]
         struct QueryMemoryArgs {
             query: String,
+            #[serde(default)]
+            mode: SearchMode,
             thread_id: Option<String>,
             limit: Option<usize>,
             min_score: Option<f32>,
         }
 
+        #[derive(Deserialize)]
+        #[serde(rename_all = "lowercase")]
+        enum SearchMode {
+            Filesystem,
+            #[cfg(feature = "vector-search")]
+            Vector,
+            #[cfg(feature = "vector-search")]
+            Hybrid,
+        }
+
+        impl Default for SearchMode {
+            fn default() -> Self {
+                SearchMode::Filesystem
+            }
+        }
+
         let args: QueryMemoryArgs = serde_json::from_value(args)
             .map_err(|e| format!("Invalid arguments: {}", e))?;
+
+        // Log the mode being used
+        match args.mode {
+            SearchMode::Filesystem => tracing::info!("Using filesystem search mode"),
+            #[cfg(feature = "vector-search")]
+            SearchMode::Vector => tracing::info!("Using vector search mode"),
+            #[cfg(feature = "vector-search")]
+            SearchMode::Hybrid => tracing::info!("Using hybrid search mode"),
+        }
 
         let layer_manager = Arc::new(LayerManager::new(self.filesystem.clone()));
         let engine = RetrievalEngine::new(self.filesystem.clone(), layer_manager);

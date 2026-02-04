@@ -1,299 +1,217 @@
-use crate::errors::{MemoryToolsError, MemoryToolsResult};
-use crate::types::{
-    MemoryOperationPayload, MemoryOperationResponse, QueryParams,
-    StoreParams, FilterParams
-};
+use crate::{errors::*, types::*};
 use cortex_mem_core::{
-    memory::MemoryManager, Memory, MemoryType, MemoryMetadata
+    CortexFilesystem, SessionManager, SessionConfig, FilesystemOperations,
 };
-use serde_json::{json, Value};
-use tracing::{error, info};
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use tracing::{info, warn};
 
-/// Core operations handler for memory tools
+/// High-level memory operations
+/// 
+/// Provides convenient wrappers around cortex-mem-core functionality
 pub struct MemoryOperations {
-    memory_manager: std::sync::Arc<MemoryManager>,
-    default_user_id: Option<String>,
-    default_agent_id: Option<String>,
-    default_limit: usize,
+    filesystem: Arc<CortexFilesystem>,
+    session_manager: Arc<RwLock<SessionManager>>,
 }
 
 impl MemoryOperations {
-    /// Create a new MemoryOperations instance
+    /// Create new memory operations
     pub fn new(
-        memory_manager: std::sync::Arc<MemoryManager>,
-        default_user_id: Option<String>,
-        default_agent_id: Option<String>,
-        default_limit: usize,
+        filesystem: Arc<CortexFilesystem>,
+        session_manager: Arc<RwLock<SessionManager>>,
     ) -> Self {
         Self {
-            memory_manager,
-            default_user_id,
-            default_agent_id,
-            default_limit,
+            filesystem,
+            session_manager,
         }
     }
 
-    /// Store a new memory
-    pub async fn store_memory(&self, payload: MemoryOperationPayload) -> MemoryToolsResult<MemoryOperationResponse> {
-        let params = StoreParams::from_payload(
-            &payload,
-            self.default_user_id.clone(),
-            self.default_agent_id.clone(),
-        )?;
+    /// Create from data directory
+    pub async fn from_data_dir(data_dir: &str) -> Result<Self> {
+        let filesystem = Arc::new(CortexFilesystem::new(data_dir));
+        filesystem.initialize().await?;
 
-        info!("Storing memory for user: {}", params.user_id);
+        let config = SessionConfig::default();
+        let session_manager = SessionManager::new(filesystem.clone(), config);
+        let session_manager = Arc::new(RwLock::new(session_manager));
 
-        let memory_type = MemoryType::parse_with_result(&params.memory_type)
-            .map_err(|e| MemoryToolsError::InvalidInput(format!("Invalid memory_type: {}", e)))?;
-
-        let mut metadata = MemoryMetadata::new(memory_type);
-        metadata.user_id = Some(params.user_id.clone());
-        metadata.agent_id = params.agent_id.clone();
-
-        if let Some(topics) = params.topics {
-            metadata.topics = topics;
-        }
-
-        match self.memory_manager.store(params.content, metadata).await {
-            Ok(memory_id) => {
-                info!("Memory stored successfully with ID: {}", memory_id);
-                let data = json!({
-                    "memory_id": memory_id,
-                    "user_id": params.user_id,
-                    "agent_id": params.agent_id
-                });
-
-                Ok(MemoryOperationResponse::success_with_data(
-                    "Memory stored successfully",
-                    data,
-                ))
-            }
-            Err(e) => {
-                error!("Failed to store memory: {}", e);
-                Err(MemoryToolsError::Runtime(format!("Failed to store memory: {}", e)))
-            }
-        }
+        Ok(Self {
+            filesystem,
+            session_manager,
+        })
     }
 
-    /// Query memories based on semantic similarity
-    pub async fn query_memory(&self, payload: MemoryOperationPayload) -> MemoryToolsResult<MemoryOperationResponse> {
-        let params = QueryParams::from_payload(&payload, self.default_limit)?;
-
-        info!("Querying memories with query: {}", params.query);
-
-        let memory_type = params.memory_type
-            .map(|t| MemoryType::parse_with_result(&t))
-            .transpose()
-            .map_err(|e| MemoryToolsError::InvalidInput(format!("Invalid memory_type: {}", e)))?;
-
-        // Convert parameters to Filters
-        let mut filters = cortex_mem_core::types::Filters::default();
-
-        if let Some(user_id) = params.user_id {
-            filters.user_id = Some(user_id);
+    /// Add a message to a session
+    pub async fn add_message(
+        &self,
+        thread_id: &str,
+        role: &str,
+        content: &str,
+    ) -> Result<String> {
+        let sm = self.session_manager.read().await;
+        
+        // Ensure session exists
+        if !sm.session_exists(thread_id).await? {
+            drop(sm);
+            let mut sm = self.session_manager.write().await;
+            sm.create_session(thread_id).await?;
+            drop(sm);
         }
-
-        if let Some(agent_id) = params.agent_id {
-            filters.agent_id = Some(agent_id);
-        }
-
-        if let Some(memory_type) = memory_type {
-            filters.memory_type = Some(memory_type);
-        }
-
-        if let Some(topics) = params.topics {
-            filters.topics = Some(topics);
-        }
-
-        // Apply time range filters
-        if let Some(created_after) = params.created_after {
-            filters.created_after = Some(created_after);
-        }
-
-        if let Some(created_before) = params.created_before {
-            filters.created_before = Some(created_before);
-        }
-
-        match self.memory_manager.search(
-            &params.query,
-            &filters,
-            params.limit,
-        ).await {
-            Ok(memories) => {
-                let count = memories.len();
-                info!("Found {} memories", count);
-
-                let memories_json: Vec<Value> = memories
-                    .into_iter()
-                    .map(|scored_memory| memory_to_json(&scored_memory.memory))
-                    .collect();
-
-                let data = json!({
-                    "count": count,
-                    "memories": memories_json
-                });
-
-                Ok(MemoryOperationResponse::success_with_data(
-                    "Query completed successfully",
-                    data,
-                ))
-            }
-            Err(e) => {
-                error!("Failed to query memories: {}", e);
-                Err(MemoryToolsError::Runtime(format!("Failed to query memories: {}", e)))
-            }
-        }
+        
+        // Add message using MessageStorage
+        let sm = self.session_manager.read().await;
+        
+        // Create message
+        let message = cortex_mem_core::Message::new(
+            match role {
+                "user" => cortex_mem_core::MessageRole::User,
+                "assistant" => cortex_mem_core::MessageRole::Assistant,
+                "system" => cortex_mem_core::MessageRole::System,
+                _ => cortex_mem_core::MessageRole::User,
+            },
+            content
+        );
+        
+        let message_uri = sm.message_storage().save_message(thread_id, &message).await?;
+        
+        // Extract message ID from URI
+        let message_id = message_uri.rsplit('/').next()
+            .unwrap_or("unknown")
+            .to_string();
+        
+        info!("Added message {} to session {}", message_id, thread_id);
+        Ok(message_id)
     }
 
-    /// List memories with filtering
-    pub async fn list_memories(&self, payload: MemoryOperationPayload) -> MemoryToolsResult<MemoryOperationResponse> {
-        let params = FilterParams::from_payload(&payload, self.default_limit)?;
+    /// Search memories
+    pub async fn search(
+        &self,
+        query: &str,
+        thread_id: Option<&str>,
+        limit: usize,
+    ) -> Result<Vec<MemoryInfo>> {
+        use cortex_mem_core::retrieval::{RetrievalEngine, RetrievalOptions};
+        
+        let layer_manager = Arc::new(cortex_mem_core::LayerManager::new(self.filesystem.clone()));
+        let engine = RetrievalEngine::new(self.filesystem.clone(), layer_manager);
 
-        info!("Listing memories with filters");
+        let scope = if let Some(thread_id) = thread_id {
+            format!("cortex://threads/{}", thread_id)
+        } else {
+            "cortex://threads".to_string()
+        };
 
-        // Convert parameters to Filters
-        let mut filters = cortex_mem_core::types::Filters::default();
+        let mut options = RetrievalOptions::default();
+        options.top_k = limit;
 
-        if let Some(user_id) = params.user_id {
-            filters.user_id = Some(user_id);
-        }
+        let result = engine.search(query, &scope, options).await?;
 
-        if let Some(agent_id) = params.agent_id {
-            filters.agent_id = Some(agent_id);
-        }
-
-        if let Some(memory_type) = params.memory_type {
-            if let Ok(mt) = cortex_mem_core::types::MemoryType::parse_with_result(&memory_type) {
-                filters.memory_type = Some(mt);
+        let memories: Vec<MemoryInfo> = result.results.into_iter().map(|candidate| {
+            MemoryInfo {
+                uri: candidate.uri.clone(),
+                content: candidate.snippet.clone(),
+                score: Some(candidate.score),
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
             }
-        }
+        }).collect();
 
-        // Apply time range filters
-        if let Some(created_after) = params.created_after {
-            filters.created_after = Some(created_after);
-        }
-
-        if let Some(created_before) = params.created_before {
-            filters.created_before = Some(created_before);
-        }
-
-        match self.memory_manager.list(&filters, Some(params.limit)).await {
-            Ok(memories) => {
-                let count = memories.len();
-                info!("Listed {} memories", count);
-
-                let memories_json: Vec<Value> = memories
-                    .into_iter()
-                    .map(|memory| memory_to_json(&memory))
-                    .collect();
-
-                let data = json!({
-                    "count": count,
-                    "memories": memories_json
-                });
-
-                Ok(MemoryOperationResponse::success_with_data(
-                    "List completed successfully",
-                    data,
-                ))
-            }
-            Err(e) => {
-                error!("Failed to list memories: {}", e);
-                Err(MemoryToolsError::Runtime(format!("Failed to list memories: {}", e)))
-            }
-        }
+        Ok(memories)
     }
 
-    /// Get a specific memory by ID
-    pub async fn get_memory(&self, payload: MemoryOperationPayload) -> MemoryToolsResult<MemoryOperationResponse> {
-        let memory_id = payload.memory_id
-            .ok_or_else(|| MemoryToolsError::InvalidInput("Memory ID is required".to_string()))?;
-
-        info!("Getting memory with ID: {}", memory_id);
-
-        match self.memory_manager.get(&memory_id).await {
-            Ok(Some(memory)) => {
-                let memory_json = memory_to_json(&memory);
-                let data = json!({
-                    "memory": memory_json
-                });
-
-                Ok(MemoryOperationResponse::success_with_data(
-                    "Memory retrieved successfully",
-                    data,
-                ))
-            }
-            Ok(None) => {
-                error!("Memory not found: {}", memory_id);
-                Err(MemoryToolsError::MemoryNotFound(memory_id))
-            }
-            Err(e) => {
-                error!("Failed to get memory: {}", e);
-                Err(MemoryToolsError::Runtime(format!("Failed to get memory: {}", e)))
+    /// List sessions
+    pub async fn list_sessions(&self) -> Result<Vec<SessionInfo>> {
+        // List all thread directories
+        let entries = self.filesystem.list("cortex://threads").await?;
+        
+        let mut session_infos = Vec::new();
+        for entry in entries {
+            if entry.is_directory {
+                let thread_id = entry.name;
+                if let Ok(metadata) = self.session_manager.read().await.load_session(&thread_id).await {
+                    let status_str = match metadata.status {
+                        cortex_mem_core::SessionStatus::Active => "active",
+                        cortex_mem_core::SessionStatus::Closed => "closed",
+                        cortex_mem_core::SessionStatus::Archived => "archived",
+                    };
+                    
+                    session_infos.push(SessionInfo {
+                        thread_id: metadata.thread_id,
+                        status: status_str.to_string(),
+                        message_count: 0,
+                        created_at: metadata.created_at,
+                        updated_at: metadata.updated_at,
+                    });
+                }
             }
         }
+
+        Ok(session_infos)
+    }
+
+    /// Get session by thread_id
+    pub async fn get_session(&self, thread_id: &str) -> Result<SessionInfo> {
+        let sm = self.session_manager.read().await;
+        let metadata = sm.load_session(thread_id).await?;
+
+        let status_str = match metadata.status {
+            cortex_mem_core::SessionStatus::Active => "active",
+            cortex_mem_core::SessionStatus::Closed => "closed",
+            cortex_mem_core::SessionStatus::Archived => "archived",
+        };
+
+        Ok(SessionInfo {
+            thread_id: metadata.thread_id,
+            status: status_str.to_string(),
+            message_count: 0,
+            created_at: metadata.created_at,
+            updated_at: metadata.updated_at,
+        })
+    }
+
+    /// Close session
+    pub async fn close_session(&self, thread_id: &str) -> Result<()> {
+        let mut sm = self.session_manager.write().await;
+        sm.close_session(thread_id).await?;
+        info!("Closed session: {}", thread_id);
+        Ok(())
+    }
+
+    /// Read file from filesystem
+    pub async fn read_file(&self, uri: &str) -> Result<String> {
+        let content = self.filesystem.read(uri).await?;
+        Ok(content)
+    }
+
+    /// List files in directory
+    pub async fn list_files(&self, uri: &str) -> Result<Vec<String>> {
+        let entries = self.filesystem.list(uri).await?;
+        let uris = entries.into_iter().map(|e| e.uri).collect();
+        Ok(uris)
     }
 }
 
-/// Convert a Memory object to JSON
-fn memory_to_json(memory: &Memory) -> Value {
-    let mut metadata_obj = json!({});
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    if let Some(user_id) = &memory.metadata.user_id {
-        metadata_obj["user_id"] = Value::String(user_id.clone());
+    #[tokio::test]
+    async fn test_operations() {
+        let tmpdir = tempfile::tempdir().unwrap();
+        let ops = MemoryOperations::from_data_dir(tmpdir.path().to_str().unwrap())
+            .await
+            .unwrap();
+
+        // Add message
+        let msg_id = ops.add_message("test-session", "user", "Hello").await.unwrap();
+        assert!(!msg_id.is_empty());
+
+        // Search
+        let results = ops.search("Hello", Some("test-session"), 10).await.unwrap();
+        assert!(!results.is_empty());
+
+        // List sessions
+        let sessions = ops.list_sessions().await.unwrap();
+        assert_eq!(sessions.len(), 1);
     }
-
-    if let Some(agent_id) = &memory.metadata.agent_id {
-        metadata_obj["agent_id"] = Value::String(agent_id.clone());
-    }
-
-    if let Some(run_id) = &memory.metadata.run_id {
-        metadata_obj["run_id"] = Value::String(run_id.clone());
-    }
-
-    if let Some(actor_id) = &memory.metadata.actor_id {
-        metadata_obj["actor_id"] = Value::String(actor_id.clone());
-    }
-
-    if let Some(role) = &memory.metadata.role {
-        metadata_obj["role"] = Value::String(role.clone());
-    }
-
-    metadata_obj["memory_type"] = Value::String(format!("{:?}", memory.metadata.memory_type));
-
-    metadata_obj["hash"] = Value::String(memory.metadata.hash.clone());
-
-    metadata_obj["importance_score"] = Value::Number(serde_json::Number::from_f64(memory.metadata.importance_score as f64).unwrap());
-
-    if !memory.metadata.entities.is_empty() {
-        metadata_obj["entities"] = Value::Array(
-            memory.metadata.entities.iter()
-                .map(|e| Value::String(e.clone()))
-                .collect()
-        );
-    }
-
-    if !memory.metadata.topics.is_empty() {
-        metadata_obj["topics"] = Value::Array(
-            memory.metadata.topics.iter()
-                .map(|t| Value::String(t.clone()))
-                .collect()
-        );
-    }
-
-    if !memory.metadata.custom.is_empty() {
-        metadata_obj["custom"] = Value::Object(
-            memory.metadata.custom.iter()
-                .map(|(k, v)| (k.clone(), v.clone()))
-                .collect()
-        );
-    }
-
-    json!({
-        "id": memory.id,
-        "content": memory.content,
-        "created_at": memory.created_at.to_rfc3339(),
-        "updated_at": memory.updated_at.to_rfc3339(),
-        "metadata": metadata_obj
-    })
 }

@@ -1,9 +1,10 @@
 [package]
 name = "cortex-mem-rig"
-version = "1.0.0"
-edition = "2021"
-license = "MIT"
-description = "Rig framework integration for Rust agent memory system"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Rig framework integration for Cortex-Mem V2 (simplified)"
 
 [dependencies]
 # Workspace dependencies
@@ -12,17 +13,13 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
-rig-core = { workspace = true }
 tracing = { workspace = true }
 async-trait = { workspace = true }
 
 # Local dependencies
 cortex-mem-core = { path = "../cortex-mem-core" }
-cortex-mem-config = { path = "../cortex-mem-config" }
-# cortex-mem-tools = { path = "../cortex-mem-tools" }  # 暂时禁用，等V2适配完成
-
-
+cortex-mem-tools = { path = "../cortex-mem-tools" }
 
 [features]
 default = []
-examples = []
+vector-search = ["cortex-mem-core/vector-search", "cortex-mem-tools/vector-search"]
