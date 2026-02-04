@@ -1,8 +1,8 @@
-# Cortex-Mem Service V2
+# Cortex Memory Service V2
 
-**HTTP REST API service for Cortex-Mem V2**
+**HTTP REST API service for Cortex Memory V2**
 
-基于Cortex-Mem V2核心库的HTTP REST API服务，提供完整的Web访问接口。
+基于Cortex Memory V2核心库的HTTP REST API服务，提供完整的Web访问接口。
 
 ---
 

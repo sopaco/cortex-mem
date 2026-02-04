@@ -1,8 +1,8 @@
-# Cortex-Mem-Rig
+# Cortex Memory Rig
 
 **Simplified Memory Tools for External Integrations**
 
-Cortex-Mem V2的简化集成工具，提供基本的记忆操作功能，无需完整的Rig框架依赖。
+Cortex Memory V2的简化集成工具，提供基本的记忆操作功能，无需完整的Rig框架依赖。
 
 > **注意**: 这是V2的简化版本，移除了对`rig-core`的硬依赖。如果需要完整的Rig框架集成，请参考V1版本或自行适配。
 

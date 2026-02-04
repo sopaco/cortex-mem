@@ -1,4 +1,4 @@
-# Cortex-Mem CLI
+# Cortex Memory CLI
 
 一个基于文件系统的AI Agent记忆管理命令行工具。
 

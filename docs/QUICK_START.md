@@ -1,8 +1,8 @@
-# Cortex-Mem V2 快速开始指南
+# Cortex Memory V2 快速开始指南
 
-**5分钟快速上手Cortex-Mem**
+**5分钟快速上手Cortex Memory**
 
-本指南将帮助你快速安装、配置并开始使用Cortex-Mem V2。
+本指南将帮助你快速安装、配置并开始使用Cortex Memory V2。
 
 ---
 

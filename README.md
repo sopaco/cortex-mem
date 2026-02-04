@@ -1,8 +1,8 @@
-# Cortex-Mem V2
+# Cortex Memory V2
 
 **基于文件系统的AI Agent记忆管理系统**
 
-Cortex-Mem是一个高性能、模块化的记忆管理系统，采用`cortex://`虚拟URI协议，实现L0/L1/L2三层抽象架构，为AI Agent提供长期记忆存储和智能检索能力。
+Cortex Memory是一个高性能、模块化的记忆管理系统，采用`cortex://`虚拟URI协议，实现L0/L1/L2三层抽象架构，为AI Agent提供长期记忆存储和智能检索能力。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.92%2B-orange.svg)](https://www.rust-lang.org/)
@@ -416,24 +416,33 @@ cargo bench -p cortex-mem-core -- search
 
 ---
 
-## 📋 Roadmap
+## 📋 项目状态与路线图
 
-### V2.1（进行中）
-- [ ] 完善Web界面（cortex-mem-insights）
-- [ ] 向量搜索优化
-- [ ] 批量操作API
-- [ ] WebSocket实时推送
+### 📊 当前版本: V2.0.0 (2026-02-04)
 
-### V2.2（计划中）
-- [ ] 统计和分析功能
-- [ ] 导出/导入工具
-- [ ] 插件系统
-- [ ] 多用户支持（可选）
+**状态**: ✅ 生产就绪 | 所有核心功能已完成
 
-### V3.0（未来）
-- [ ] 分布式部署
-- [ ] 知识图谱集成
-- [ ] 高级检索算法
+查看详细信息：
+- **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - 完整的项目状态、已完成功能、技术指标
+- **[TODO.md](TODO.md)** - 详细的待办事项和优先级
+- **[docs/](docs/)** - 技术文档和架构设计
+
+### 近期完成 ✅
+
+- ✅ Service向量搜索 - 3种搜索模式
+- ✅ MCP向量搜索 - Claude Desktop集成
+- ✅ Tools库 - V2完整适配
+- ✅ Rig集成 - 简化版本
+- ✅ 完整文档 - 所有项目README
+
+### 优先待办 🔥
+
+- [ ] 实现真正的向量搜索（embedding生成）
+- [ ] 补充集成测试和性能基准
+- [ ] Web管理界面原型
+- [ ] 清理编译警告
+
+**详见**: [TODO.md](TODO.md)
 
 ---
 

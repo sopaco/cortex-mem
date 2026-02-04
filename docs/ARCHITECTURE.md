@@ -1,8 +1,8 @@
-# Cortex-Mem V2 架构设计文档
+# Cortex Memory V2 架构设计文档
 
 **版本**: V2.0.0  
 **更新时间**: 2026-02-04  
-**作者**: Cortex-Mem Development Team
+**作者**: Cortex Memory Development Team
 
 ---
 
@@ -22,7 +22,7 @@
 
 ### 1.1 系统定位
 
-Cortex-Mem V2是一个**基于文件系统的AI Agent记忆管理系统**，采用虚拟URI协议和三层抽象架构，为AI Agent提供长期记忆存储、检索和管理能力。
+Cortex Memory V2是一个**基于文件系统的AI Agent记忆管理系统**，采用虚拟URI协议和三层抽象架构，为AI Agent提供长期记忆存储、检索和管理能力。
 
 ### 1.2 核心目标
 

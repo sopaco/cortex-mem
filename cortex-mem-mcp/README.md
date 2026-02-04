@@ -1,6 +1,6 @@
-# Cortex-Mem MCP Server
+# Cortex Memory MCP Server
 
-Model Context Protocol (MCP) server for Cortex-Mem memory management system.
+Model Context Protocol (MCP) server for Cortex Memory management system.
 
 ## 功能
 

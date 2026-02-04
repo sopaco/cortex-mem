@@ -1,8 +1,8 @@
-# Cortex-Mem-Tools
+# Cortex Memory Tools
 
-**高级工具库 for Cortex-Mem V2**
+**高级工具库 for Cortex Memory V2**
 
-提供高级API封装，简化Cortex-Mem核心功能的集成和使用。
+提供高级API封装，简化Cortex Memory核心功能的集成和使用。
 
 ---
 
