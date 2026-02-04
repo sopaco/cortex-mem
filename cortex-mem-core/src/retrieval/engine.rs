@@ -177,6 +177,10 @@ impl RetrievalEngine {
                 if score > 0.2 {
                     candidates.push((entry.uri.clone(), score));
                 }
+            } else {
+                // If no abstract, still include the directory for exploration
+                // This allows searching in timeline directories without abstracts
+                candidates.push((entry.uri.clone(), 0.5));
             }
         }
         
@@ -188,35 +192,40 @@ impl RetrievalEngine {
     }
     
     /// Explore a directory for matching files
-    async fn explore_directory(&self, dir_uri: &str, intent: &Intent) -> Result<Vec<SearchResult>> {
-        let entries = self.filesystem.list(dir_uri).await?;
-        let mut results = Vec::new();
-        
-        for entry in entries {
-            if entry.is_directory {
-                continue; // Skip subdirectories for now
-            }
+    fn explore_directory<'a>(&'a self, dir_uri: &'a str, intent: &'a Intent) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<SearchResult>>> + Send + 'a>> {
+        Box::pin(async move {
+            let entries = self.filesystem.list(dir_uri).await?;
+            let mut results = Vec::new();
             
-            if entry.name.starts_with('.') {
-                continue; // Skip metadata files
-            }
-            
-            // Load L1 or L2 content
-            if let Ok(content) = self.filesystem.read(&entry.uri).await {
-                let score = self.relevance_calc.calculate(&content, intent);
+            for entry in entries {
+                if entry.is_directory {
+                    // Recursively explore subdirectories (e.g., timeline/2026-02/04)
+                    let sub_results = self.explore_directory(&entry.uri, intent).await?;
+                    results.extend(sub_results);
+                    continue;
+                }
                 
-                if score > 0.3 {
-                    results.push(SearchResult {
-                        uri: entry.uri.clone(),
-                        score,
-                        snippet: Self::create_snippet(&content, &intent.keywords),
-                        layer: ContextLayer::L2Detail,
-                    });
+                if entry.name.starts_with('.') {
+                    continue; // Skip metadata files
+                }
+                
+                // Load L1 or L2 content
+                if let Ok(content) = self.filesystem.read(&entry.uri).await {
+                    let score = self.relevance_calc.calculate(&content, intent);
+                    
+                    if score > 0.3 {
+                        results.push(SearchResult {
+                            uri: entry.uri.clone(),
+                            score,
+                            snippet: Self::create_snippet(&content, &intent.keywords),
+                            layer: ContextLayer::L2Detail,
+                        });
+                    }
                 }
             }
-        }
-        
-        Ok(results)
+            
+            Ok(results)
+        })
     }
     
     /// Create a snippet highlighting keywords
@@ -226,16 +235,21 @@ impl RetrievalEngine {
         
         for keyword in keywords {
             if let Some(pos) = content_lower.find(&keyword.to_lowercase()) {
-                // Extract context around keyword
-                let start = pos.saturating_sub(50);
-                let end = (pos + keyword.len() + 50).min(content.len());
+                // Use char indices to avoid breaking UTF-8 boundaries
+                let chars: Vec<char> = content.chars().collect();
+                let pos_chars = content[..pos].chars().count();
                 
-                let mut snippet = content[start..end].to_string();
+                // Extract context around keyword (in characters, not bytes)
+                let start = pos_chars.saturating_sub(50);
+                let end = (pos_chars + keyword.chars().count() + 50).min(chars.len());
                 
+                let snippet_chars: String = chars[start..end].iter().collect();
+                
+                let mut snippet = snippet_chars;
                 if start > 0 {
                     snippet = format!("...{}", snippet);
                 }
-                if end < content.len() {
+                if end < chars.len() {
                     snippet = format!("{}...", snippet);
                 }
                 
@@ -244,8 +258,10 @@ impl RetrievalEngine {
         }
         
         // Fallback: first 100 chars
-        if content.len() > 100 {
-            format!("{}...", &content[..97])
+        let chars: Vec<char> = content.chars().collect();
+        if chars.len() > 100 {
+            let snippet_chars: String = chars[..97].iter().collect();
+            format!("{}...", snippet_chars)
         } else {
             content.to_string()
         }

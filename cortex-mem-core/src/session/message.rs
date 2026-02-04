@@ -19,17 +19,20 @@ pub struct Message {
     pub role: MessageRole,
     pub content: String,
     pub timestamp: DateTime<Utc>,
+    pub created_at: DateTime<Utc>, // Alias for timestamp, for compatibility
     pub metadata: Option<serde_json::Value>,
 }
 
 impl Message {
     /// Create a new message
     pub fn new(role: MessageRole, content: impl Into<String>) -> Self {
+        let timestamp = Utc::now();
         Self {
             id: uuid::Uuid::new_v4().to_string(),
             role,
             content: content.into(),
-            timestamp: Utc::now(),
+            timestamp,
+            created_at: timestamp,
             metadata: None,
         }
     }
@@ -164,6 +167,7 @@ impl MessageStorage {
             role,
             content: message_content,
             timestamp,
+            created_at: timestamp,
             metadata: None,
         })
     }

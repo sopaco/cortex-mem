@@ -198,8 +198,7 @@ impl FilesystemOperations for CortexFilesystem {
                 .map(|t| t.into())
                 .unwrap_or_else(|_| Utc::now()),
             size: metadata.len(),
-            layer: None,
-            tags: Vec::new(),
+            is_directory: metadata.is_dir(),
         })
     }
 }

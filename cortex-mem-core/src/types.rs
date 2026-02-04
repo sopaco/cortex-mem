@@ -65,7 +65,7 @@ impl ContextLayer {
     }
 }
 
-/// File entry in the virtual filesystem
+/// File entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileEntry {
     pub uri: String,
@@ -81,43 +81,78 @@ pub struct FileMetadata {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub size: u64,
-    pub layer: Option<ContextLayer>,
-    pub tags: Vec<String>,
+    pub is_directory: bool,
 }
 
-/// Memory metadata stored in .metadata.json
+/// Memory metadata (for V1 compatibility)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryMetadata {
-    pub id: String,
-    pub dimension: Dimension,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-    pub tags: Vec<String>,
-    pub summary: Option<String>,
-    #[serde(default)]
+    pub user_id: Option<String>,
+    pub agent_id: Option<String>,
+    pub run_id: Option<String>,
+    pub actor_id: Option<String>,
+    pub role: Option<String>,
+    pub memory_type: MemoryType,
+    pub hash: String,
+    pub importance_score: f32,
+    pub entities: Vec<String>,
+    pub topics: Vec<String>,
     pub custom: HashMap<String, serde_json::Value>,
 }
 
-impl MemoryMetadata {
-    pub fn new(id: String, dimension: Dimension) -> Self {
-        let now = Utc::now();
-        Self {
-            id,
-            dimension,
-            created_at: now,
-            updated_at: now,
-            tags: Vec::new(),
-            summary: None,
-            custom: HashMap::new(),
+/// Memory type (for V1 compatibility)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MemoryType {
+    Conversational,
+    Procedural,
+    Semantic,
+    Episodic,
+}
+
+impl MemoryType {
+    pub fn parse(s: &str) -> Self {
+        match s {
+            "Conversational" => MemoryType::Conversational,
+            "Procedural" => MemoryType::Procedural,
+            "Semantic" => MemoryType::Semantic,
+            "Episodic" => MemoryType::Episodic,
+            _ => MemoryType::Conversational, // Default fallback
         }
     }
 }
 
-/// Memory content
+/// Memory struct (for vector store)
 #[derive(Debug, Clone)]
 pub struct Memory {
-    pub uri: String,
+    pub id: String,
     pub content: String,
-    pub layer: ContextLayer,
-    pub metadata: Option<MemoryMetadata>,
+    pub embedding: Vec<f32>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub metadata: MemoryMetadata,
+}
+
+/// Scored memory (search result)
+#[derive(Debug, Clone)]
+pub struct ScoredMemory {
+    pub memory: Memory,
+    pub score: f32,
+}
+
+/// Filters for memory search
+#[derive(Debug, Clone, Default)]
+pub struct Filters {
+    pub user_id: Option<String>,
+    pub agent_id: Option<String>,
+    pub run_id: Option<String>,
+    pub memory_type: Option<MemoryType>,
+    pub created_after: Option<DateTime<Utc>>,
+    pub created_before: Option<DateTime<Utc>>,
+    pub updated_after: Option<DateTime<Utc>>,
+    pub updated_before: Option<DateTime<Utc>>,
+    pub topics: Option<Vec<String>>,
+    pub entities: Option<Vec<String>>,
+    pub min_importance: Option<f32>,
+    pub max_importance: Option<f32>,
+    pub custom: HashMap<String, serde_json::Value>,
 }

@@ -13,7 +13,7 @@ use tracing::{debug, error, info, warn};
 
 use crate::{
     config::QdrantConfig,
-    error::{MemoryError, Result},
+    error::{Error, Result},
     types::{Filters, Memory, MemoryMetadata, ScoredMemory},
     vector_store::VectorStore,
 };
@@ -30,7 +30,7 @@ impl QdrantVectorStore {
     pub async fn new(config: &QdrantConfig) -> Result<Self> {
         let client = Qdrant::from_url(&config.url)
             .build()
-            .map_err(|e| MemoryError::VectorStore(e))?;
+            .map_err(|e| Error::VectorStore(e))?;
 
         let store = Self {
             client,
@@ -44,11 +44,11 @@ impl QdrantVectorStore {
     /// Create a new Qdrant vector store with auto-detected embedding dimension
     pub async fn new_with_llm_client(
         config: &QdrantConfig,
-        llm_client: &dyn crate::llm::LLMClient,
+        llm_client: &crate::llm::LLMClient,
     ) -> Result<Self> {
         let client = Qdrant::from_url(&config.url)
             .build()
-            .map_err(|e| MemoryError::VectorStore(e))?;
+            .map_err(|e| Error::VectorStore(e))?;
 
         let mut store = Self {
             client,
@@ -59,10 +59,13 @@ impl QdrantVectorStore {
         // Auto-detect embedding dimension if not specified
         if store.embedding_dim.is_none() {
             info!("Auto-detecting embedding dimension...");
-            let test_embedding = llm_client.embed("test").await?;
-            let detected_dim = test_embedding.len();
-            info!("Detected embedding dimension: {}", detected_dim);
-            store.embedding_dim = Some(detected_dim);
+            
+            // Use LLMClient's embed method if available
+            // For now, we'll require embedding_dim to be set in config
+            return Err(Error::Config(
+                "Embedding dimension must be specified in config when using new_with_llm_client. \
+                Auto-detection from LLMClient is not yet implemented.".to_string()
+            ));
         }
 
         // Ensure collection exists with correct dimension
@@ -77,7 +80,7 @@ impl QdrantVectorStore {
             .client
             .list_collections()
             .await
-            .map_err(|e| MemoryError::VectorStore(e))?;
+            .map_err(|e| Error::VectorStore(e))?;
 
         let collection_exists = collections
             .collections
@@ -86,8 +89,8 @@ impl QdrantVectorStore {
 
         if !collection_exists {
             let embedding_dim = self.embedding_dim.ok_or_else(|| {
-                MemoryError::config(
-                    "Embedding dimension not set. Use new_with_llm_client for auto-detection.",
+                Error::Config(
+                    "Embedding dimension not set. Use new_with_llm_client for auto-detection.".to_string()
                 )
             })?;
 
@@ -111,7 +114,7 @@ impl QdrantVectorStore {
                     ..Default::default()
                 })
                 .await
-                .map_err(|e| MemoryError::VectorStore(e))?;
+                .map_err(|e| Error::VectorStore(e))?;
 
             info!("Collection created successfully: {}", self.collection_name);
         } else {
@@ -134,7 +137,7 @@ impl QdrantVectorStore {
             .client
             .collection_info(&self.collection_name)
             .await
-            .map_err(|e| MemoryError::VectorStore(e))?;
+            .map_err(|e| Error::VectorStore(e))?;
 
         if let Some(collection_config) = collection_info.result {
             if let Some(config) = collection_config.config {
@@ -145,7 +148,7 @@ impl QdrantVectorStore {
                         {
                             let actual_dim = vector_params.size as usize;
                             if actual_dim != expected_dim {
-                                return Err(MemoryError::config(format!(
+                                return Err(Error::Config(format!(
                                     "Collection '{}' has dimension {} but expected {}. Please delete the collection or use a compatible embedding model.",
                                     self.collection_name, actual_dim, expected_dim
                                 )));
@@ -488,7 +491,7 @@ impl QdrantVectorStore {
                 point_id::PointIdOptions::Uuid(uuid) => uuid.clone(),
                 point_id::PointIdOptions::Num(num) => num.to_string(),
             },
-            _ => return Err(MemoryError::Parse("Invalid point ID".to_string())),
+            _ => return Err(Error::Other("Invalid point ID".to_string())),
         };
 
         let content = payload
@@ -499,7 +502,7 @@ impl QdrantVectorStore {
                 } => Some(s.as_str()),
                 _ => None,
             })
-            .ok_or_else(|| MemoryError::Parse("Missing content field".to_string()))?
+            .ok_or_else(|| Error::Other("Missing content field".to_string()))?
             .to_string();
 
         // For now, we'll use a dummy embedding since parsing vectors is complex
@@ -516,7 +519,7 @@ impl QdrantVectorStore {
             })
             .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
             .map(|dt| dt.with_timezone(&chrono::Utc))
-            .ok_or_else(|| MemoryError::Parse("Invalid created_at timestamp".to_string()))?;
+            .ok_or_else(|| Error::Other("Invalid created_at timestamp".to_string()))?;
 
         let updated_at = payload
             .get("updated_at")
@@ -528,7 +531,7 @@ impl QdrantVectorStore {
             })
             .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
             .map(|dt| dt.with_timezone(&chrono::Utc))
-            .ok_or_else(|| MemoryError::Parse("Invalid updated_at timestamp".to_string()))?;
+            .ok_or_else(|| Error::Other("Invalid updated_at timestamp".to_string()))?;
 
         let memory_type = payload
             .get("memory_type")
@@ -706,7 +709,7 @@ impl VectorStore for QdrantVectorStore {
         self.client
             .upsert_points(upsert_request)
             .await
-            .map_err(|e| MemoryError::VectorStore(e))?;
+            .map_err(|e| Error::VectorStore(e))?;
 
         debug!("Inserted memory with ID: {}", memory.id);
         Ok(())
@@ -747,7 +750,7 @@ impl VectorStore for QdrantVectorStore {
             .client
             .search_points(search_points)
             .await
-            .map_err(|e| MemoryError::VectorStore(e))?;
+            .map_err(|e| Error::VectorStore(e))?;
 
         let mut results = Vec::new();
         for point in response.result {
@@ -799,7 +802,7 @@ impl VectorStore for QdrantVectorStore {
         self.client
             .delete_points(delete_request)
             .await
-            .map_err(|e| MemoryError::VectorStore(e))?;
+            .map_err(|e| Error::VectorStore(e))?;
 
         debug!("Deleted memory with ID: {}", id);
         Ok(())
@@ -822,7 +825,7 @@ impl VectorStore for QdrantVectorStore {
             .client
             .get_points(get_request)
             .await
-            .map_err(|e| MemoryError::VectorStore(e))?;
+            .map_err(|e| Error::VectorStore(e))?;
 
         if let Some(point) = response.result.first() {
             // Convert RetrievedPoint to ScoredPoint for parsing
@@ -865,7 +868,7 @@ impl VectorStore for QdrantVectorStore {
             .client
             .scroll(scroll_points)
             .await
-            .map_err(|e| MemoryError::VectorStore(e))?;
+            .map_err(|e| Error::VectorStore(e))?;
 
         let mut results = Vec::new();
         for point in response.result {

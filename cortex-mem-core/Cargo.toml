@@ -26,10 +26,11 @@ tantivy = { workspace = true }
 
 # Optional dependencies for features
 qdrant-client = { version = "1.11", optional = true }
+dyn-clone = { version = "1.0", optional = true }
 
 [features]
 default = []
-vector-search = ["qdrant-client"]
+vector-search = ["qdrant-client", "dyn-clone"]
 
 [dev-dependencies]
 tokio-test = { workspace = true }

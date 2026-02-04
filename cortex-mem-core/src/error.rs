@@ -36,8 +36,15 @@ pub enum Error {
     #[error("LLM error: {0}")]
     Llm(String),
     
+    #[error("Embedding error: {0}")]
+    Embedding(String),
+    
     #[error("Configuration error: {0}")]
     Config(String),
+    
+    #[cfg(feature = "vector-search")]
+    #[error("Vector store error: {0}")]
+    VectorStore(#[from] qdrant_client::QdrantError),
     
     #[error("{0}")]
     Other(String),
@@ -45,3 +52,7 @@ pub enum Error {
 
 /// Result type alias
 pub type Result<T> = std::result::Result<T, Error>;
+
+// Legacy alias for backward compatibility
+#[cfg(feature = "vector-search")]
+pub type MemoryError = Error;

@@ -85,6 +85,11 @@ impl LLMClient {
         Ok(Self { client, config })
     }
 
+    /// Create a default LLM config
+    pub fn default_config() -> LLMConfig {
+        LLMConfig::default()
+    }
+
     /// Create an agent with a system prompt
     /// 
     /// This is the recommended way to interact with LLMs in rig-core.

@@ -396,6 +396,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
+ "dyn-clone",
  "qdrant-client",
  "reqwest",
  "rig-core",

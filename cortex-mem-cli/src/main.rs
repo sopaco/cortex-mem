@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 mod commands;
-use commands::{add, delete, get, list, search, session, stats};
+use commands::{add, automation, delete, get, list, search, session, stats};
 
 /// Cortex-Mem CLI - File-based memory management for AI Agents
 #[derive(Parser)]
@@ -87,6 +87,12 @@ enum Commands {
         action: SessionAction,
     },
 
+    /// Automation features
+    Automation {
+        #[command(subcommand)]
+        action: AutomationAction,
+    },
+
     /// Show statistics
     Stats,
 }
@@ -117,6 +123,21 @@ enum SessionAction {
 
     /// List all sessions
     List,
+}
+
+#[derive(Subcommand)]
+enum AutomationAction {
+    /// Build vector index for a session
+    Index {
+        /// Thread ID
+        thread: String,
+    },
+
+    /// Auto-extract memories from a session
+    AutoExtract {
+        /// Thread ID
+        thread: String,
+    },
 }
 
 #[tokio::main]
@@ -174,10 +195,63 @@ async fn main() -> Result<()> {
                 session::list(fs).await?;
             }
         },
+        Commands::Automation { action } => match action {
+            AutomationAction::Index { thread } => {
+                automation::index_session(fs, &thread).await?;
+            }
+            AutomationAction::AutoExtract { thread } => {
+                // Load LLM config
+                let llm_config = if std::path::Path::new("config.toml").exists() {
+                    match load_llm_config_from_toml("config.toml") {
+                        Ok(config) => config,
+                        Err(e) => {
+                            eprintln!("Failed to load config.toml: {}", e);
+                            LLMClient::default_config()
+                        }
+                    }
+                } else {
+                    LLMClient::default_config()
+                };
+                
+                let llm = Arc::new(LLMClient::new(llm_config)?);
+                automation::auto_extract_on_close(fs, &thread, llm).await?;
+            }
+        },
         Commands::Stats => {
             stats::execute(fs).await?;
         }
     }
 
     Ok(())
+}
+
+fn load_llm_config_from_toml(path: &str) -> Result<cortex_mem_core::llm::client::LLMConfig> {
+    let content = std::fs::read_to_string(path)?;
+    let value: toml::Value = toml::from_str(&content)?;
+    
+    let llm_section = value.get("llm")
+        .ok_or_else(|| anyhow::anyhow!("No [llm] section in config.toml"))?;
+    
+    let config = cortex_mem_core::llm::client::LLMConfig {
+        api_base_url: llm_section.get("api_base_url")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("Missing llm.api_base_url"))?
+            .to_string(),
+        api_key: llm_section.get("api_key")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("Missing llm.api_key"))?
+            .to_string(),
+        model_efficient: llm_section.get("model_efficient")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow::anyhow!("Missing llm.model_efficient"))?
+            .to_string(),
+        temperature: llm_section.get("temperature")
+            .and_then(|v| v.as_float())
+            .unwrap_or(0.1) as f32,
+        max_tokens: llm_section.get("max_tokens")
+            .and_then(|v| v.as_integer())
+            .unwrap_or(4096) as usize,
+    };
+    
+    Ok(config)
 }
