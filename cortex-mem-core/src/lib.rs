@@ -1,22 +1,55 @@
-pub mod config;
+//! Cortex-Mem Core Library
+//! 
+//! A file-system based memory management system for AI Agents.
+//! 
+//! # Features
+//! 
+//! - Virtual filesystem with `cortex://` URI protocol
+//! - Three-layer memory architecture (L0/L1/L2)
+//! - Recursive retrieval engine
+//! - Session management with automatic memory extraction
+//! 
+//! # Architecture
+//! 
+//! ```text
+//! cortex://
+//! ├── agents/{agent_id}/
+//! ├── users/{user_id}/
+//! ├── threads/{thread_id}/
+//! └── global/
+//! ```
+
 pub mod error;
-pub mod init;
-pub mod logging;
-pub mod memory;
-pub mod vector_store;
-pub mod llm;
 pub mod types;
+pub mod filesystem;
+pub mod layers;
+pub mod llm;
+pub mod retrieval;
+pub mod index;
+pub mod session;
+pub mod extraction;
 
-pub use config::*;
-pub use error::*;
-pub use init::*;
-pub use logging::*;
-pub use llm::*;
-pub use memory::{MemoryManager, FactExtractor, MemoryUpdater};
+pub use error::{Error, Result};
 pub use types::*;
-pub use vector_store::*;
+pub use filesystem::{CortexUri, CortexFilesystem, FilesystemOperations};
+pub use layers::{LayerManager, AbstractGenerator, OverviewGenerator};
+pub use llm::{LLMClient};
+pub use retrieval::{
+    Intent, IntentAnalyzer, RelevanceCalculator, 
+    RetrievalEngine, RetrievalOptions, RetrievalResult, SearchResult
+};
+pub use index::{SQLiteIndex, IndexEntry, FullTextIndex, FullTextResult};
+pub use session::{
+    SessionManager, SessionConfig, SessionMetadata, SessionStatus,
+    Message, MessageRole, MessageStorage,
+    TimelineGenerator, TimelineEntry, TimelineAggregation,
+    Participant, ParticipantRole, ParticipantManager,
+};
+pub use extraction::{
+    MemoryExtractor, ExtractionConfig,
+    ExtractedMemories, ExtractedFact, ExtractedDecision, ExtractedEntity,
+    MemoryType, MemoryImportance,
+};
 
-// Re-export commonly used types
-pub use chrono::{DateTime, Utc};
-pub use serde::{Deserialize, Serialize};
-pub use uuid::Uuid;
+/// Library version
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

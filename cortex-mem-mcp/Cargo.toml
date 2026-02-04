@@ -1,40 +1,41 @@
 [package]
 name = "cortex-mem-mcp"
-version = "1.0.0"
-edition = "2024"
-description = "MCP server for cortex-mem memory management system"
+version.workspace = true
+edition.workspace = true
+authors = ["Cortex-Mem Contributors"]
+description = "MCP server for Cortex-Mem memory management"
 license = "MIT"
 
+[[bin]]
+name = "cortex-mem-mcp"
+path = "src/main.rs"
+
 [dependencies]
+# Local dependencies
+cortex-mem-core = { path = "../cortex-mem-core" }
+
 # Workspace dependencies
-tokio = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
-async-trait = { workspace = true }
+tracing-subscriber = { workspace = true }
+async-trait = "0.1"
 uuid = { workspace = true }
 chrono = { workspace = true }
 
 # MCP SDK
-rmcp = { version = "0.10", features = ["server", "transport-io"] }
+rmcp = { version = "0.14", features = ["server", "transport-io"] }
 schemars = { version = "1.0", features = ["derive"] }
 
-# Local dependencies
-cortex-mem-core = { path = "../cortex-mem-core" }
-cortex-mem-config = { path = "../cortex-mem-config" }
-cortex-mem-tools = { path = "../cortex-mem-tools" }
-
-# CLI framework
+# CLI framework  
 clap = { workspace = true }
 
 # Directory utilities
 dirs = "5.0"
 
-# Logging
-tracing-subscriber = { workspace = true }
-
-[[bin]]
-name = "cortex-mem-mcp"
-path = "src/main.rs"
+# Environment and config
+dotenv = "0.15"
+toml = "0.9"

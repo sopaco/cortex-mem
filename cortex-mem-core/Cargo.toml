@@ -1,38 +1,36 @@
 [package]
 name = "cortex-mem-core"
-version = "1.0.0"
-edition = "2024"
-description = "Core memory management engine for Rust agent memory system"
-license = "MIT"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
-cortex-mem-config = { path = "../cortex-mem-config" }
 # Workspace dependencies
 tokio = { workspace = true }
-futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
-qdrant-client = { workspace = true }
-rig-core = { workspace = true }
+async-trait = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true, features = ["chrono"] }
+walkdir = { workspace = true }
+rig-core = { workspace = true }
 reqwest = { workspace = true }
+rusqlite = { workspace = true }
+tantivy = { workspace = true }
 
-# Additional dependencies specific to core
-md5 = "0.8"
-sha2 = "0.10"
-base64 = "0.22"
-async-trait = "0.1"
-dyn-clone = "1.0"
-regex = "1.10"
-tracing-appender = "0.2"
-schemars = { version = "1.0", features = ["derive"] }
-
-
+# Optional dependencies for features
+qdrant-client = { version = "1.11", optional = true }
 
 [features]
 default = []
+vector-search = ["qdrant-client"]
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+tempfile = "3.10"

@@ -1,54 +1,47 @@
 use thiserror::Error;
 
+/// Cortex-Mem error types
 #[derive(Error, Debug)]
-pub enum MemoryError {
-    #[error("Vector store error: {0}")]
-    VectorStore(#[from] qdrant_client::QdrantError),
+pub enum Error {
+    #[error("Invalid URI: {0}")]
+    InvalidUri(String),
     
-    #[error("LLM error: {0}")]
-    LLM(String),
+    #[error("Invalid URI scheme, expected 'cortex://'")]
+    InvalidScheme,
+    
+    #[error("Invalid dimension: {0}")]
+    InvalidDimension(String),
+    
+    #[error("Invalid path in URI")]
+    InvalidPath,
+    
+    #[error("Memory not found: {uri}")]
+    NotFound { uri: String },
+    
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
     
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
     
-    #[error("HTTP client error: {0}")]
-    Http(#[from] reqwest::Error),
+    #[error("Database error: {0}")]
+    Database(#[from] rusqlite::Error),
     
-    #[error("Memory not found: {id}")]
-    NotFound { id: String },
+    #[error("Search error: {0}")]
+    Search(#[from] tantivy::TantivyError),
     
-    #[error("Invalid memory action: {action}")]
-    InvalidAction { action: String },
+    #[error("Query parse error: {0}")]
+    QueryParse(#[from] tantivy::query::QueryParserError),
+    
+    #[error("LLM error: {0}")]
+    Llm(String),
     
     #[error("Configuration error: {0}")]
     Config(String),
     
-    #[error("Validation error: {0}")]
-    Validation(String),
-    
-    #[error("Embedding error: {0}")]
-    Embedding(String),
-    
-    #[error("Parse error: {0}")]
-    Parse(String),
+    #[error("{0}")]
+    Other(String),
 }
 
-pub type Result<T> = std::result::Result<T, MemoryError>;
-
-impl MemoryError {
-    pub fn config<S: Into<String>>(msg: S) -> Self {
-        Self::Config(msg.into())
-    }
-    
-    pub fn validation<S: Into<String>>(msg: S) -> Self {
-        Self::Validation(msg.into())
-    }
-    
-    pub fn embedding<S: Into<String>>(msg: S) -> Self {
-        Self::Embedding(msg.into())
-    }
-    
-    pub fn parse<S: Into<String>>(msg: S) -> Self {
-        Self::Parse(msg.into())
-    }
-}
+/// Result type alias
+pub type Result<T> = std::result::Result<T, Error>;

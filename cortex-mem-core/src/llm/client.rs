@@ -1,497 +1,231 @@
-use async_trait::async_trait;
-use rig::providers::openai::CompletionModel;
-use rig::{
-    agent::Agent,
-    client::{CompletionClient, EmbeddingsClient},
-    completion::Prompt,
-    embeddings::EmbeddingsBuilder,
-    providers::openai::{Client, EmbeddingModel as OpenAIEmbeddingModel},
-};
-use tokio::time::sleep;
-use tracing::{debug, error, info};
+use crate::Result;
+use rig::providers::openai::Client;
+use serde::{Deserialize, Serialize};
 
-use crate::{
-    EmbeddingConfig,
-    config::LLMConfig,
-    error::{MemoryError, Result},
-    llm::extractor_types::*,
-};
-
-/// LLM client trait for text generation and embeddings
-#[async_trait]
-pub trait LLMClient: Send + Sync + dyn_clone::DynClone {
-    /// Generate text completion
-    async fn complete(&self, prompt: &str) -> Result<String>;
-
-    /// Generate embeddings for text
-    async fn embed(&self, text: &str) -> Result<Vec<f32>>;
-
-    /// Generate embeddings for multiple texts
-    async fn embed_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>>;
-
-    /// Extract key information from memory content
-    async fn extract_keywords(&self, content: &str) -> Result<Vec<String>>;
-
-    /// Summarize memory content
-    async fn summarize(&self, content: &str, max_length: Option<usize>) -> Result<String>;
-
-    /// Check if the LLM service is available
-    async fn health_check(&self) -> Result<bool>;
-
-    // New extractor-based methods
-
-    /// Extract structured facts from text using rig extractor
-    async fn extract_structured_facts(&self, prompt: &str) -> Result<StructuredFactExtraction>;
-
-    /// Extract detailed facts with metadata using rig extractor
-    async fn extract_detailed_facts(&self, prompt: &str) -> Result<DetailedFactExtraction>;
-
-    /// Extract keywords using rig extractor
-    async fn extract_keywords_structured(&self, prompt: &str) -> Result<KeywordExtraction>;
-
-    /// Classify memory type using rig extractor
-    async fn classify_memory(&self, prompt: &str) -> Result<MemoryClassification>;
-
-    /// Score memory importance using rig extractor
-    async fn score_importance(&self, prompt: &str) -> Result<ImportanceScore>;
-
-    /// Check for duplicates using rig extractor
-    async fn check_duplicates(&self, prompt: &str) -> Result<DeduplicationResult>;
-
-    /// Generate summary using rig extractor
-    async fn generate_summary(&self, prompt: &str) -> Result<SummaryResult>;
-
-    /// Detect language using rig extractor
-    async fn detect_language(&self, prompt: &str) -> Result<LanguageDetection>;
-
-    /// Extract entities using rig extractor
-    async fn extract_entities(&self, prompt: &str) -> Result<EntityExtraction>;
-
-    /// Analyze conversation using rig extractor
-    async fn analyze_conversation(&self, prompt: &str) -> Result<ConversationAnalysis>;
+/// LLM configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LLMConfig {
+    pub api_base_url: String,
+    pub api_key: String,
+    pub model_efficient: String,
+    pub temperature: f32,
+    pub max_tokens: usize,
 }
 
-dyn_clone::clone_trait_object!(LLMClient);
-
-/// OpenAI-based LLM client implementation using rig
-pub struct OpenAILLMClient {
-    completion_model: Agent<CompletionModel>,
-    completion_model_name: String,
-    embedding_model: OpenAIEmbeddingModel,
-    client: Client,
-}
-
-impl OpenAILLMClient {
-    /// Create a new OpenAI LLM client
-    pub fn new(llm_config: &LLMConfig, embedding_config: &EmbeddingConfig) -> Result<Self> {
-        let client = Client::builder(&llm_config.api_key)
-            .base_url(&llm_config.api_base_url)
-            .build();
-
-        let completion_model: Agent<CompletionModel> = client
-            .completion_model(&llm_config.model_efficient)
-            .completions_api()
-            .into_agent_builder()
-            .temperature(llm_config.temperature as f64)
-            .max_tokens(llm_config.max_tokens as u64)
-            .build();
-
-        let embedding_client = Client::builder(&embedding_config.api_key)
-            .base_url(&embedding_config.api_base_url)
-            .build();
-        let embedding_model = embedding_client.embedding_model(&embedding_config.model_name);
-
-        Ok(Self {
-            completion_model,
-            completion_model_name: llm_config.model_efficient.clone(),
-            embedding_model,
-            client,
-        })
-    }
-
-    /// Build a prompt for keyword extraction
-    fn build_keyword_prompt(&self, content: &str) -> String {
-        format!(
-            "Extract the most important keywords and key phrases from the following text. \
-            Return only the keywords separated by commas, without any additional explanation.\n\n\
-            Text: {}\n\n\
-            Keywords:",
-            content
-        )
-    }
-
-    /// Build a prompt for summarization
-    fn build_summary_prompt(&self, content: &str, max_length: Option<usize>) -> String {
-        let length_instruction = match max_length {
-            Some(len) => format!("in approximately {} words", len),
-            None => "concisely".to_string(),
-        };
-
-        format!(
-            "Summarize the following text {}. Focus on the main points and key information.\n\n\
-            Text: {}\n\n\
-            Summary:",
-            length_instruction, content
-        )
-    }
-
-    /// Parse keywords from LLM response
-    fn parse_keywords(&self, response: &str) -> Vec<String> {
-        response
-            .split(',')
-            .map(|s| s.trim().to_string())
-            .filter(|s| !s.is_empty())
-            .collect()
-    }
-}
-
-impl Clone for OpenAILLMClient {
-    fn clone(&self) -> Self {
+impl Default for LLMConfig {
+    fn default() -> Self {
         Self {
-            completion_model: self.completion_model.clone(),
-            completion_model_name: self.completion_model_name.clone(),
-            embedding_model: self.embedding_model.clone(),
-            client: self.client.clone(),
+            api_base_url: std::env::var("LLM_API_BASE_URL")
+                .unwrap_or_else(|_| "https://api.openai.com/v1".to_string()),
+            api_key: std::env::var("LLM_API_KEY")
+                .unwrap_or_else(|_| "".to_string()),
+            model_efficient: std::env::var("LLM_MODEL")
+                .unwrap_or_else(|_| "gpt-3.5-turbo".to_string()),
+            temperature: 0.1,
+            max_tokens: 4096,
         }
     }
 }
 
-#[async_trait]
-impl LLMClient for OpenAILLMClient {
-    async fn complete(&self, prompt: &str) -> Result<String> {
-        let response = self
-            .completion_model
-            .prompt(prompt)
-            .multi_turn(10)
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))?;
+/// Memory extraction response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MemoryExtractionResponse {
+    pub facts: Vec<ExtractedFactRaw>,
+    pub decisions: Vec<ExtractedDecisionRaw>,
+    pub entities: Vec<ExtractedEntityRaw>,
+}
 
-        debug!("Generated completion for prompt length: {}", prompt.len());
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExtractedFactRaw {
+    pub content: String,
+    #[serde(default)]
+    pub subject: Option<String>,
+    pub confidence: f32,
+    #[serde(default)]
+    pub importance: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExtractedDecisionRaw {
+    pub decision: String,
+    pub context: String,
+    pub rationale: Option<String>,
+    pub confidence: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExtractedEntityRaw {
+    pub name: String,
+    pub entity_type: String,
+    pub description: Option<String>,
+    pub confidence: f32,
+}
+
+/// LLM Client wrapper for rig-core
+/// 
+/// This is a lightweight wrapper that creates agents for LLM interactions.
+/// Following the rig pattern: Client -> CompletionModel -> Agent
+pub struct LLMClient {
+    client: Client,
+    config: LLMConfig,
+}
+
+impl LLMClient {
+    /// Create a new LLM client
+    /// 
+    /// Note: For rig-core 0.29+, we use Client::new() and then configure the client
+    /// with custom base URL through environment variables or client methods
+    pub fn new(config: LLMConfig) -> Result<Self> {
+        // Using Client::builder pattern from rig-core 0.23
+        // This matches the pattern used in examples/cortex-mem-tars
+        let client = Client::builder(&config.api_key)
+            .base_url(&config.api_base_url)
+            .build();
+
+        Ok(Self { client, config })
+    }
+
+    /// Create an agent with a system prompt
+    /// 
+    /// This is the recommended way to interact with LLMs in rig-core.
+    /// Returns an Agent that can handle streaming and tool calls.
+    pub async fn create_agent(&self, system_prompt: &str) -> Result<rig::agent::Agent<rig::providers::openai::CompletionModel>> {
+        use rig::client::CompletionClient;
+        
+        let agent = self.client
+            .completion_model(&self.config.model_efficient)
+            .completions_api()
+            .into_agent_builder()
+            .preamble(system_prompt)
+            .build();
+            
+        Ok(agent)
+    }
+
+    /// Simple completion without tools or streaming
+    /// For basic use cases - creates a temporary agent
+    pub async fn complete(&self, prompt: &str) -> Result<String> {
+        use rig::completion::Prompt;
+        
+        let agent = self.create_agent("You are a helpful assistant.").await?;
+        let response = agent
+            .prompt(prompt)
+            .await
+            .map_err(|e| crate::Error::Llm(format!("LLM completion failed: {}", e)))?;
 
         Ok(response)
     }
 
-    async fn embed(&self, text: &str) -> Result<Vec<f32>> {
-        let builder = EmbeddingsBuilder::new(self.embedding_model.clone())
-            .document(text)
-            .map_err(|e| MemoryError::LLM(e.to_string()))?;
-
-        let embeddings = builder
-            .build()
+    /// Generate completion with system message
+    pub async fn complete_with_system(&self, system: &str, prompt: &str) -> Result<String> {
+        use rig::completion::Prompt;
+        
+        let agent = self.create_agent(system).await?;
+        let response = agent
+            .prompt(prompt)
             .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))?;
+            .map_err(|e| crate::Error::Llm(format!("LLM completion failed: {}", e)))?;
+            
+        Ok(response)
+    }
 
-        if let Some((_, embedding)) = embeddings.first() {
-            debug!("Generated embedding for text length: {}", text.len());
-            Ok(embedding.first().vec.iter().map(|&x| x as f32).collect())
-        } else {
-            Err(MemoryError::LLM("No embedding generated".to_string()))
+    /// Extract memories from conversation
+    pub async fn extract_memories(&self, prompt: &str) -> Result<MemoryExtractionResponse> {
+        let response: String = self.complete(prompt).await?;
+        
+        // Debug: print raw LLM response
+        eprintln!("\n[DEBUG] LLM Raw Response:");
+        eprintln!("{}", response);
+        eprintln!("[DEBUG] Response length: {} chars\n", response.len());
+        
+        // Try to parse as structured response first
+        if let Ok(extracted) = serde_json::from_str::<MemoryExtractionResponse>(&response) {
+            eprintln!("[DEBUG] Successfully parsed as MemoryExtractionResponse");
+            return Ok(extracted);
         }
-    }
-
-    async fn embed_batch(&self, texts: &[String]) -> Result<Vec<Vec<f32>>> {
-        let mut results = Vec::new();
-
-        // Process in batches to avoid rate limits
-        for text in texts {
-            let embedding = self.embed(text).await?;
-            sleep(std::time::Duration::from_secs(1)).await;
-            results.push(embedding);
+        
+        // Try to parse as just an array of facts (fallback)
+        if let Ok(facts) = serde_json::from_str::<Vec<ExtractedFactRaw>>(&response) {
+            eprintln!("[DEBUG] Parsed as facts array, found {} facts", facts.len());
+            return Ok(MemoryExtractionResponse {
+                facts,
+                decisions: Vec::new(),
+                entities: Vec::new(),
+            });
         }
-
-        debug!("Generated embeddings for {} texts", texts.len());
-        Ok(results)
-    }
-
-    async fn extract_keywords(&self, content: &str) -> Result<Vec<String>> {
-        let prompt = self.build_keyword_prompt(content);
-
-        // Use rig's structured extractor instead of string parsing
-        match self.extract_keywords_structured(&prompt).await {
-            Ok(keyword_extraction) => {
-                debug!(
-                    "Extracted {} keywords from content using rig extractor",
-                    keyword_extraction.keywords.len()
-                );
-                Ok(keyword_extraction.keywords)
-            }
-            Err(e) => {
-                // Fallback to traditional method if extractor fails
-                debug!(
-                    "Rig extractor failed, falling back to traditional method: {}",
-                    e
-                );
-
-                #[cfg(debug_assertions)]
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-                let response = self.complete(&prompt).await?;
-                let keywords = self.parse_keywords(&response);
-                debug!(
-                    "Extracted {} keywords from content using fallback method",
-                    keywords.len()
-                );
-                Ok(keywords)
-            }
+        
+        // Try to parse as just an array of decisions (fallback)
+        if let Ok(decisions) = serde_json::from_str::<Vec<ExtractedDecisionRaw>>(&response) {
+            eprintln!("[DEBUG] Parsed as decisions array, found {} decisions", decisions.len());
+            return Ok(MemoryExtractionResponse {
+                facts: Vec::new(),
+                decisions,
+                entities: Vec::new(),
+            });
         }
-    }
-
-    async fn summarize(&self, content: &str, max_length: Option<usize>) -> Result<String> {
-        let prompt = self.build_summary_prompt(content, max_length);
-
-        // Use rig's structured extractor instead of string parsing
-        match self.generate_summary(&prompt).await {
-            Ok(summary_result) => {
-                debug!(
-                    "Generated summary of length: {} using rig extractor",
-                    summary_result.summary.len()
-                );
-                Ok(summary_result.summary.trim().to_string())
-            }
-            Err(e) => {
-                // Fallback to traditional method if extractor fails
-                debug!(
-                    "Rig extractor failed, falling back to traditional method: {}",
-                    e
-                );
-                let summary = self.complete(&prompt).await?;
-                debug!(
-                    "Generated summary of length: {} using fallback method",
-                    summary.len()
-                );
-                Ok(summary.trim().to_string())
-            }
+        
+        // Try to parse as just an array of entities (fallback)
+        if let Ok(entities) = serde_json::from_str::<Vec<ExtractedEntityRaw>>(&response) {
+            eprintln!("[DEBUG] Parsed as entities array, found {} entities", entities.len());
+            return Ok(MemoryExtractionResponse {
+                facts: Vec::new(),
+                decisions: Vec::new(),
+                entities,
+            });
         }
-    }
-
-    async fn health_check(&self) -> Result<bool> {
-        // Try a simple embedding request to check if the service is available
-        match self.embed("health check").await {
-            Ok(_) => {
-                info!("LLM service health check passed");
-                Ok(true)
-            }
-            Err(e) => {
-                error!("LLM service health check failed: {}", e);
-                Ok(false)
-            }
-        }
-    }
-
-    async fn extract_structured_facts(&self, prompt: &str) -> Result<StructuredFactExtraction> {
-        let extractor = self
-            .client
-            .extractor_completions_api::<StructuredFactExtraction>(&self.completion_model_name)
-            .preamble(prompt)
-            .build();
-
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-        extractor
-            .extract("")
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))
-    }
-
-    async fn extract_detailed_facts(&self, prompt: &str) -> Result<DetailedFactExtraction> {
-        let extractor = self
-            .client
-            .extractor_completions_api::<DetailedFactExtraction>(&self.completion_model_name)
-            .preamble(prompt)
-            .build();
-
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-        extractor
-            .extract("")
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))
-    }
-
-    async fn extract_keywords_structured(&self, prompt: &str) -> Result<KeywordExtraction> {
-        let extractor = self
-            .client
-            .extractor_completions_api::<KeywordExtraction>(&self.completion_model_name)
-            .preamble(prompt)
-            .max_tokens(500)
-            .build();
-
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-        extractor
-            .extract("")
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))
-    }
-
-    async fn classify_memory(&self, prompt: &str) -> Result<MemoryClassification> {
-        // Instead of using the extractor which requires context, we'll use a simpler approach
-        // with direct completion and parse the result
-
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-        // Use direct completion for more reliable classification
-        let completion = self.complete(prompt).await?;
-
-        // Parse the completion to extract the memory type
-        let response = completion.trim();
-
-        // Extract the memory type from the response
-        let memory_type = if response.to_lowercase().contains("conversational") {
-            "Conversational".to_string()
-        } else if response.to_lowercase().contains("procedural") {
-            "Procedural".to_string()
-        } else if response.to_lowercase().contains("factual") {
-            "Factual".to_string()
-        } else if response.to_lowercase().contains("semantic") {
-            "Semantic".to_string()
-        } else if response.to_lowercase().contains("episodic") {
-            "Episodic".to_string()
-        } else if response.to_lowercase().contains("personal") {
-            "Personal".to_string()
-        } else {
-            // Try to extract the exact word and use MemoryType::parse
-            response
-                .lines()
-                .find_map(|line| {
-                    let line = line.trim();
-                    [
-                        "Conversational",
-                        "Procedural",
-                        "Factual",
-                        "Semantic",
-                        "Episodic",
-                        "Personal",
-                    ]
-                    .iter()
-                    .find(|&typ| line.contains(typ))
-                })
-                .map(|typ| typ.to_string())
-                .unwrap_or_else(|| "Conversational".to_string())
-        };
-
-        Ok(MemoryClassification {
-            memory_type,
-            confidence: 0.8, // Default confidence
-            reasoning: format!("LLM classification response: {}", response),
+        
+        eprintln!("[DEBUG] Failed to parse JSON, returning empty extraction");
+        // If all parsing fails, return empty extraction
+        Ok(MemoryExtractionResponse {
+            facts: Vec::new(),
+            decisions: Vec::new(),
+            entities: Vec::new(),
         })
     }
 
-    async fn score_importance(&self, prompt: &str) -> Result<ImportanceScore> {
-        let extractor = self
-            .client
-            .extractor_completions_api::<ImportanceScore>(&self.completion_model_name)
-            .preamble(prompt)
-            .max_tokens(500)
-            .build();
-
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-        extractor
-            .extract("")
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))
+    /// Get the underlying rig Client
+    pub fn client(&self) -> &Client {
+        &self.client
     }
 
-    async fn check_duplicates(&self, prompt: &str) -> Result<DeduplicationResult> {
-        let extractor = self
-            .client
-            .extractor_completions_api::<DeduplicationResult>(&self.completion_model_name)
-            .preamble(prompt)
-            .max_tokens(500)
-            .build();
-
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-        extractor
-            .extract("")
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))
+    /// Get the model name
+    pub fn model_name(&self) -> &str {
+        &self.config.model_efficient
     }
 
-    async fn generate_summary(&self, prompt: &str) -> Result<SummaryResult> {
-        let extractor = self
-            .client
-            .extractor_completions_api::<SummaryResult>(&self.completion_model_name)
-            .preamble(prompt)
-            .max_tokens(1000)
-            .build();
-
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-        extractor
-            .extract("")
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))
-    }
-
-    async fn detect_language(&self, prompt: &str) -> Result<LanguageDetection> {
-        let extractor = self
-            .client
-            .extractor_completions_api::<LanguageDetection>(&self.completion_model_name)
-            .preamble(prompt)
-            .max_tokens(200)
-            .build();
-
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-        extractor
-            .extract("")
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))
-    }
-
-    async fn extract_entities(&self, prompt: &str) -> Result<EntityExtraction> {
-        let extractor = self
-            .client
-            .extractor_completions_api::<EntityExtraction>(&self.completion_model_name)
-            .preamble(prompt)
-            .max_tokens(1000)
-            .build();
-
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-        extractor
-            .extract("")
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))
-    }
-
-    async fn analyze_conversation(&self, prompt: &str) -> Result<ConversationAnalysis> {
-        let extractor = self
-            .client
-            .extractor_completions_api::<ConversationAnalysis>(&self.completion_model_name)
-            .preamble(prompt)
-            .max_tokens(1500)
-            .build();
-
-        #[cfg(debug_assertions)]
-        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-        extractor
-            .extract("")
-            .await
-            .map_err(|e| MemoryError::LLM(e.to_string()))
+    /// Get the config
+    pub fn config(&self) -> &LLMConfig {
+        &self.config
     }
 }
 
-/// Factory function to create LLM clients based on configuration
-pub fn create_llm_client(
-    llm_config: &LLMConfig,
-    embedding_config: &EmbeddingConfig,
-) -> Result<Box<dyn LLMClient>> {
-    // For now, we only support OpenAI
-    let client = OpenAILLMClient::new(llm_config, embedding_config)?;
-    Ok(Box::new(client))
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_llm_config_default() {
+        let config = LLMConfig::default();
+        assert!(!config.api_base_url.is_empty());
+        assert_eq!(config.temperature, 0.1);
+        assert_eq!(config.max_tokens, 4096);
+    }
+
+    #[test]
+    fn test_llm_client_creation() {
+        let config = LLMConfig {
+            api_base_url: "http://localhost:8000".to_string(),
+            api_key: "test-key".to_string(),
+            model_efficient: "test-model".to_string(),
+            temperature: 0.5,
+            max_tokens: 2048,
+        };
+
+        let client = LLMClient::new(config.clone());
+        assert!(client.is_ok());
+        
+        let client = client.unwrap();
+        assert_eq!(client.model_name(), "test-model");
+        assert_eq!(client.config().temperature, 0.5);
+    }
 }

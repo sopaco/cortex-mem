@@ -1,33 +1,28 @@
-[package]
-name = "cortex-mem"
-version = "1.0.0"
-edition = "2024"
-
 [workspace]
 resolver = "2"
 members = [
     "cortex-mem-core",
-    "cortex-mem-service",
     "cortex-mem-cli",
-    "cortex-mem-rig",
-    "cortex-mem-config",
     "cortex-mem-mcp",
-    "cortex-mem-tools",
-    "examples/cortex-mem-tars"
 ]
 
-[dependencies]
-cortex-mem-core = { path = "cortex-mem-core" }
-tracing = { workspace = true }
+[workspace.package]
+version = "2.0.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["Cortex-Mem Development Team"]
+license = "MIT"
+repository = "https://github.com/sopaco/cortex-mem"
 
 [workspace.dependencies]
-# Async runtime and utilities
+# Async runtime
 tokio = { version = "1.48", features = ["full"] }
 futures = "0.3"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_yaml = "0.9"
 
 # Error handling
 anyhow = "1.0"
@@ -37,32 +32,32 @@ thiserror = "2.0"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 
-# Vector database
-qdrant-client = "1.11"
-
 # LLM framework
 rig-core = "0.23"
 
-# Web framework
-axum = { version = "0.8", features = ["json"] }
-tower = "0.5"
-tower-http = { version = "0.6", features = ["cors", "trace"] }
-
-# CLI framework
-clap = { version = "4.0", features = ["derive"] }
+# HTTP client
+reqwest = { version = "0.12", features = ["json"] }
 
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# HTTP client
-reqwest = { version = "0.12", features = ["json"] }
-
-# Configuration
-config = "0.15"
-
 # Async trait
 async-trait = "0.1"
 
-# Additional dependencies for cloning
-dyn-clone = "1.0"
+# File system
+walkdir = "2.4"
+
+# Indexing
+rusqlite = { version = "0.32", features = ["bundled", "chrono"] }
+tantivy = "0.22"
+
+# Markdown
+pulldown-cmark = "0.11"
+
+# CLI
+clap = { version = "4.5", features = ["derive", "cargo"] }
+colored = "2.1"
+
+# Testing
+tokio-test = "0.4"

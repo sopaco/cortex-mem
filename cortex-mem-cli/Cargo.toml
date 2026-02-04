@@ -1,31 +1,26 @@
 [package]
 name = "cortex-mem-cli"
-version = "1.0.0"
-edition = "2024"
-description = "Command line interface for Rust agent memory system"
-license = "MIT"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [[bin]]
-name = "cortex-mem-cli"
+name = "cortex-mem"
 path = "src/main.rs"
 
 [dependencies]
-cortex-mem-config = { path = "../cortex-mem-config" }
 # Workspace dependencies
+cortex-mem-core = { path = "../cortex-mem-core" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
-thiserror = { workspace = true }
-clap = { workspace = true }
+chrono = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-config = { workspace = true }
-
-# Local dependencies
-cortex-mem-core = { path = "../cortex-mem-core" }
-
-# CLI specific dependencies
-tabled = "0.15"
-colored = "2.0"
-dialoguer = "0.11"
+clap = { workspace = true }
+colored = { workspace = true }
+toml = "0.9"

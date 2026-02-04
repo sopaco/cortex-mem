@@ -1,199 +1,183 @@
+use anyhow::Result;
 use clap::{Parser, Subcommand};
-use cortex_mem_core::{
-    config::Config,
-    initialize_memory_system,
-    memory::MemoryManager,
-};
+use cortex_mem_core::*;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio;
-use tracing::info;
-use tracing_subscriber;
 
 mod commands;
+use commands::{add, delete, get, list, search, session, stats};
 
-use commands::{
-    OptimizeCommand,
-    OptimizationStatusCommand,
-    OptimizationConfigCommand,
-    OptimizeCommandRunner,
-};
-use commands::add::AddCommand;
-use commands::delete::DeleteCommand;
-use commands::list::ListCommand;
-use commands::search::SearchCommand;
-
+/// Cortex-Mem CLI - File-based memory management for AI Agents
 #[derive(Parser)]
-#[command(name = "cortex-mem-cli")]
-#[command(about = "Cortex Memory CLI for Agent Memory Layer")]
-#[command(author = "Sopaco")]
-#[command(version)]
-pub struct Cli {
-    #[command(subcommand)]
-    pub command: Commands,
+#[command(author, version, about, long_about = None)]
+#[command(propagate_version = true)]
+struct Cli {
+    /// Data directory path
+    #[arg(short, long, default_value = "./cortex-data")]
+    data_dir: PathBuf,
 
-    /// Path to the configuration file
-    #[arg(short, long, default_value = "config.toml")]
-    pub config: PathBuf,
+    /// Verbose mode
+    #[arg(short, long)]
+    verbose: bool,
+
+    #[command(subcommand)]
+    command: Commands,
 }
 
 #[derive(Subcommand)]
-pub enum Commands {
-    /// Add a new memory
+enum Commands {
+    /// Add a memory to the system
     Add {
-        /// Content to store as memory
+        /// Thread ID
         #[arg(short, long)]
+        thread: String,
+
+        /// Message role (user/assistant/system)
+        #[arg(short, long, default_value = "user")]
+        role: String,
+
+        /// Message content
         content: String,
-        /// User ID for the memory
-        #[arg(short, long)]
-        user_id: Option<String>,
-        /// Agent ID for the memory
-        #[arg(short, long)]
-        agent_id: Option<String>,
-        /// Memory type (conversational, procedural, factual)
-        #[arg(short = 't', long, default_value = "conversational")]
-        memory_type: String,
     },
+
     /// Search for memories
     Search {
-        /// Search query (optional - if not provided, will use only metadata filters)
+        /// Search query
+        query: String,
+
+        /// Thread ID to search in
         #[arg(short, long)]
-        query: Option<String>,
-        /// User ID filter
-        #[arg(short, long)]
-        user_id: Option<String>,
-        /// Agent ID filter
-        #[arg(short, long)]
-        agent_id: Option<String>,
-        /// Topics filter (comma-separated)
-        #[arg(long, value_delimiter = ',')]
-        topics: Option<Vec<String>>,
-        /// Keywords filter (comma-separated)
-        #[arg(long, value_delimiter = ',')]
-        keywords: Option<Vec<String>>,
-        /// Maximum number of results
-        #[arg(short, long, default_value = "10")]
+        thread: Option<String>,
+
+        /// Maximum results
+        #[arg(short = 'n', long, default_value = "10")]
         limit: usize,
+
+        /// Minimum relevance score (0.0-1.0)
+        #[arg(short = 's', long, default_value = "0.3")]
+        min_score: f32,
     },
+
     /// List memories
     List {
-        /// User ID filter
+        /// Thread ID
         #[arg(short, long)]
-        user_id: Option<String>,
-        /// Agent ID filter
+        thread: Option<String>,
+
+        /// Dimension (agents/users/threads/global)
         #[arg(short, long)]
-        agent_id: Option<String>,
-        /// Memory type filter
-        #[arg(short = 't', long)]
-        memory_type: Option<String>,
-        /// Topics filter (comma-separated)
-        #[arg(long, value_delimiter = ',')]
-        topics: Option<Vec<String>>,
-        /// Keywords filter (comma-separated)
-        #[arg(long, value_delimiter = ',')]
-        keywords: Option<Vec<String>>,
-        /// Maximum number of results
-        #[arg(short, long, default_value = "20")]
-        limit: usize,
+        dimension: Option<String>,
     },
-    /// Delete a memory by ID
+
+    /// Get a specific memory
+    Get {
+        /// Memory URI
+        uri: String,
+    },
+
+    /// Delete a memory
     Delete {
-        /// Memory ID to delete
-        id: String,
+        /// Memory URI
+        uri: String,
     },
-    /// Optimize memory database
-    Optimize {
-        #[command(flatten)]
-        cmd: OptimizeCommand,
+
+    /// Session management
+    Session {
+        #[command(subcommand)]
+        action: SessionAction,
     },
-    /// Show optimization status
-    OptimizeStatus {
-        #[command(flatten)]
-        cmd: OptimizationStatusCommand,
+
+    /// Show statistics
+    Stats,
+}
+
+#[derive(Subcommand)]
+enum SessionAction {
+    /// Create a new session
+    Create {
+        /// Thread ID
+        thread: String,
+
+        /// Session title
+        #[arg(short, long)]
+        title: Option<String>,
     },
-    /// Manage optimization configuration
-    OptimizeConfig {
-        #[command(flatten)]
-        cmd: OptimizationConfigCommand,
+
+    /// Close a session
+    Close {
+        /// Thread ID
+        thread: String,
     },
+
+    /// Extract memories from a session
+    Extract {
+        /// Thread ID
+        thread: String,
+    },
+
+    /// List all sessions
+    List,
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize tracing
-    tracing_subscriber::fmt::init();
-
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Load configuration from file
-    let config = Config::load(&cli.config)?;
+    // Initialize logging
+    if cli.verbose {
+        tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::DEBUG)
+            .init();
+    }
 
-    // Create memory manager
-    let memory_manager = create_memory_manager(&config).await?;
+    // Initialize filesystem
+    let fs = Arc::new(CortexFilesystem::new(&cli.data_dir));
+    fs.initialize().await?;
 
     // Execute command
     match cli.command {
         Commands::Add {
+            thread,
+            role,
             content,
-            user_id,
-            agent_id,
-            memory_type,
         } => {
-            let cmd = AddCommand::new(memory_manager);
-            cmd.execute(content, user_id, agent_id, memory_type).await?;
+            add::execute(fs, &thread, &role, &content).await?;
         }
         Commands::Search {
             query,
-            user_id,
-            agent_id,
-            topics,
-            keywords,
+            thread,
             limit,
+            min_score,
         } => {
-            let cmd = SearchCommand::new(memory_manager);
-            cmd.execute(query, user_id, agent_id, topics, keywords, limit).await?;
+            search::execute(fs, &query, thread.as_deref(), limit, min_score).await?;
         }
-        Commands::List {
-            user_id,
-            agent_id,
-            memory_type,
-            topics,
-            keywords,
-            limit,
-        } => {
-            let cmd = ListCommand::new(memory_manager);
-            cmd.execute(user_id, agent_id, memory_type, topics, keywords, limit).await?;
+        Commands::List { thread, dimension } => {
+            list::execute(fs, thread.as_deref(), dimension.as_deref()).await?;
         }
-        Commands::Delete { id } => {
-            let cmd = DeleteCommand::new(memory_manager);
-            cmd.execute(id).await?;
+        Commands::Get { uri } => {
+            get::execute(fs, &uri).await?;
         }
-        Commands::Optimize { cmd } => {
-            let runner = OptimizeCommandRunner::new(Arc::new(memory_manager), config);
-            runner.run_optimize(&cmd).await?;
+        Commands::Delete { uri } => {
+            delete::execute(fs, &uri).await?;
         }
-        Commands::OptimizeStatus { cmd } => {
-            let runner = OptimizeCommandRunner::new(Arc::new(memory_manager), config);
-            runner.run_status(&cmd).await?;
-        }
-        Commands::OptimizeConfig { cmd } => {
-            let runner = OptimizeCommandRunner::new(Arc::new(memory_manager), config);
-            runner.run_config(&cmd).await?;
+        Commands::Session { action } => match action {
+            SessionAction::Create { thread, title } => {
+                session::create(fs, &thread, title.as_deref()).await?;
+            }
+            SessionAction::Close { thread } => {
+                session::close(fs, &thread).await?;
+            }
+            SessionAction::Extract { thread } => {
+                session::extract(fs, &thread).await?;
+            }
+            SessionAction::List => {
+                session::list(fs).await?;
+            }
+        },
+        Commands::Stats => {
+            stats::execute(fs).await?;
         }
     }
 
     Ok(())
-}
-
-async fn create_memory_manager(
-    config: &Config,
-) -> Result<MemoryManager, Box<dyn std::error::Error>> {
-    // Use the new initialization system with auto-detection
-    let (vector_store, llm_client) = initialize_memory_system(config).await?;
-
-    // Create memory manager
-    let memory_manager = MemoryManager::new(vector_store, llm_client, config.memory.clone());
-
-    info!("Memory manager initialized successfully with auto-detected embedding dimensions");
-    Ok(memory_manager)
 }

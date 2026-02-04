@@ -8,3 +8,7 @@ config.toml
 bots.json
 __Litho_Summary_Brief__.md
 __Litho_Summary_Detail__.md
+cortex-data
+cortex-mem-2-planning
+test-cli-data
+test-cortex-data

@@ -1,525 +1,335 @@
-<p align="center">
-  <img height="200" src="./assets/blend_1_banner_800.jpg">
-</p>
+# Cortex-Mem V2
 
-<h1 align="center">Cortex Memory</h1>
+**基于文件系统的AI Agent记忆管理系统**
 
-<p align="center">
-    <strong>🧠 The AI-native memory framework for building intelligent, context-aware applications 🧠</strong>
-</p>
-<p align="center">Built with Rust, Cortex Memory gives your AI agents a high-performance, persistent, and intelligent long-term memory.</p>
+Cortex-Mem是一个高性能、模块化的记忆管理系统，采用`cortex://`虚拟URI协议，实现L0/L1/L2三层抽象架构，为AI Agent提供长期记忆存储和智能检索能力。
 
-<p align="center">
-  <a href="https://github.com/sopaco/cortex-mem/tree/main/litho.docs"><img alt="Litho Docs" src="https://img.shields.io/badge/Litho-Docs-green?logo=Gitbook&color=%23008a60">
-</a>
-  <a href="https://raw.githubusercontent.com/sopaco/cortex-mem/refs/heads/main/assets/benchmark/cortex_mem_vs_langmem.png"><img alt="Benchmark" src="https://img.shields.io/badge/Benchmark-Perfect-green?logo=speedtest&labelColor=%231150af&color=%2300b89f"></a>
-  <a href="https://github.com/sopaco/cortex-mem/actions/workflows/rust.yml"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/sopaco/cortex-mem/rust.yml?label=Build"></a>
-  <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg?label=LICENSE" /></a>
-</p>
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Rust](https://img.shields.io/badge/rust-1.92%2B-orange.svg)](https://www.rust-lang.org/)
 
-<hr />
+## ✨ 核心特性
 
-# 👋 What is Cortex Memory?
+- 🗂️ **虚拟文件系统**: 使用`cortex://`协议统一内存访问
+- 🏗️ **三层架构**: L0抽象层(~100 tokens) → L1概览层(~2k tokens) → L2完整内容
+- 🔍 **智能检索**: 基于意图分析的递归检索引擎
+- 💬 **会话管理**: 完整的对话生命周期和时间轴组织
+- 🧠 **记忆提取**: 自动从对话中提取facts、decisions和entities  
+- 🤖 **LLM集成**: 基于rig-core的LLM客户端，支持自定义OpenAI兼容API
+- 🛠️ **CLI工具**: 7个核心命令，彩色友好输出
+- 🔌 **MCP服务器**: 基于rmcp实现，与Claude Desktop等AI工具无缝集成
+- 📦 **零依赖存储**: 纯Markdown文件，易迁移、易备份
 
-<strong>Cortex Memory</strong> is a complete, production-ready framework for giving your AI applications a long-term memory. It moves beyond simple chat history, providing an intelligent memory system that automatically extracts, organizes, and optimizes information to make your AI agents smarter and more personalized.
+## 🚀 快速开始
 
-Powered by Rust and LLMs, Cortex Memory analyzes conversations, deduces facts, and stores them in a structured, searchable knowledge base. This allows your agent to remember user preferences, past interactions, and key details, leading to more natural and context-aware conversations.
-
-<p align="center">
-  <strong>Transform your stateless AI into an intelligent, context-aware partner.</strong>
-</p>
-
-<div style="text-align: center; margin: 30px 0;">
-  <table style="width: 100%; border-collapse: collapse; margin: 0 auto;">
-    <tr>
-      <th style="width: 50%; padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; text-align: center; font-weight: bold; color: #495057;">Before Cortex Memory</th>
-      <th style="width: 50%; padding: 15px; background-color: #f8f9fa; border: 1px solid #e9ecef; text-align: center; font-weight: bold; color: #495057;">After Cortex Memory</th>
-    </tr>
-    <tr>
-      <td style="padding: 15px; border: 1px solid #e9ecef; vertical-align: top;">
-        <p style="font-size: 14px; color: #6c757d; margin-bottom: 10px;"><strong>Stateless AI</strong></p>
-        <ul style="font-size: 13px; color: #6c757d; line-height: 1.6;">
-          <li>Forgets user details after every session</li>
-          <li>Lacks personalization and context</li>
-          <li>Repeats questions and suggestions</li>
-          <li>Limited to short-term conversation history</li>
-          <li>Feels robotic and impersonal</li>
-        </ul>
-      </td>
-      <td style="padding: 15px; border: 1px solid #e9ecef; vertical-align: top;">
-        <p style="font-size: 14px; color: #6c757d; margin-bottom: 10px;"><strong>Intelligent AI with Cortex Memory</strong></p>
-        <ul style="font-size: 13px; color: #6c757d; line-height: 1.6;">
-          <li>Remembers user preferences and history</li>
-          <li>Provides deeply personalized interactions</li>
-          <li>Learns and adapts over time</li>
-          <li>Maintains context across multiple conversations</li>
-          <li>Builds rapport and feels like a true assistant</li>
-        </ul>
-      </td>
-    </tr>
-  </table>
-</div>
-
-<hr />
-
-# 😺 Why Use Cortex Memory?
-
-- <strong>Build Smarter Agents:</strong> Give your AI the ability to learn and remember, leading to more intelligent and useful interactions.
-- <strong>Enhance User Experience:</strong> Create personalized, context-aware experiences that delight users and build long-term engagement.
-- <strong>Automated Memory Management:</strong> Let the system handle the complexity of extracting, storing, and optimizing memories. No more manual data management.
-- <strong>High Performance & Scalability:</strong> Built with Rust, Cortex Memory is fast, memory-safe, and ready to scale with your application.
-- <strong>Flexible & Extensible:</strong> Integrate with your existing systems via a REST API, CLI, or direct library usage.
-- <strong>Insightful Analytics:</strong> Use the provided web dashboard to visualize and understand your agent's memory.
-
-🌟 <strong>For:</strong>
-- Developers building LLM-powered chatbots and agents.
-- Teams creating personalized AI assistants.
-- Open source projects that need a memory backbone.
-- Anyone who wants to build truly intelligent AI applications!
-
-❤️ Like <strong>Cortex Memory</strong>? Star it 🌟 or [Sponsor Me](https://github.com/sponsors/sopaco)! ❤️
-
-# 🌠 Features & Capabilities
-
-- <strong>Intelligent Fact Extraction:</strong> Automatically extracts key facts and insights from unstructured text using LLMs.
-- <strong>Memory Classification & Deduplication:</strong> Organizes memories and removes redundant information to keep the knowledge base clean and efficient.
-- <strong>Automated Memory Optimization:</strong> Periodically reviews, consolidates, and refines memories to improve relevance and reduce cost.
-- <strong>Vector-Based Semantic Search:</strong> Finds the most relevant memories using high-performance vector similarity search.
-- <strong>Multi-Modal Access:</strong> Interact with the memory system through a REST API, a command-line interface (CLI), or as a library in your Rust application.
-- <strong>Agent Framework Integration:</strong> Provides tools and adapters to easily plug into popular AI agent frameworks.
-- <strong>Web Dashboard:</strong> A dedicated web UI (`cortex-mem-insights`) for monitoring, analyzing, and visualizing the agent's memory.
-
-# 🌐 The Cortex Memory Ecosystem
-
-Cortex Memory is a modular system composed of several crates, each with a specific purpose. This design provides flexibility and separation of concerns.
-
-```mermaid
-graph TD
-    subgraph "User Interfaces"
-        CLI["cortex-mem-cli"]
-        Insights["cortex-mem-insights"]
-    end
-
-    subgraph "APIs & Integrations"
-        Service["cortex-mem-service"]
-        MCP["cortex-mem-mcp"]
-        Rig["cortex-mem-rig"]
-    end
-    
-    subgraph "Core Engine"
-        Core["cortex-mem-core"]
-    end
-
-    subgraph "External Services"
-        VectorDB[("Vector Database")]
-        LLM[("LLM Provider")]
-    end
-
-    %% Define Dependencies
-    Insights --> Service
-
-    CLI --> Core
-    Service --> Core
-    MCP --> Core
-    Rig --> Core
-    
-    Core --> VectorDB
-    Core --> LLM
-```
-
-- <strong>`cortex-mem-core`</strong>: The heart of the system. It contains all the business logic for memory management, including extraction, optimization, and search.
-- <strong>`cortex-mem-service`</strong>: Exposes the core logic via a high-performance REST API, making it accessible to any programming language or system.
-- <strong>`cortex-mem-cli`</strong>: A command-line tool for developers and administrators to directly interact with the memory store for testing and management.
-- <strong>`cortex-mem-insights`</strong>: A web-based management tool that provides analytics and visualization of the agent's memory by consuming the `cortex-mem-service` API.
-- <strong>`cortex-mem-mcp` / `cortex-mem-rig`</strong>: Specialized adapter crates to integrate Cortex Memory as a "tool" within various AI agent frameworks.
-- <strong>`cortex-mem-config`</strong>: Shared configuration and type definitions used across the ecosystem.
-
-# 🖼️ Observability Tools​ Integration
-
-Cortex Memory includes a powerful web-based dashboard (`cortex-mem-insights`) that provides real-time monitoring, analytics and management capabilities. Here's what you can expect to see:
-
-<p align="center">
-  <img src="./assets/snapshots/insights/snapshot_dashboard.png" alt="Cortex Memory Dashboard" width="800">
-</p>
-
-<p align="center">
-  <em><strong>Interactive Dashboard:</strong> Get an overview of memory usage, system health, and activity statistics</em>
-</p>
-
-<div style="text-align: center;">
-  <table style="width: 100%; margin: 0 auto;">
-    <tr>
-        <th style="width: 50%;"><strong>View and manage individual memory records</strong></th>
-        <th style="width: 50%;"><strong>Analyze and optimize memory quality</strong></th>
-    </tr>
-    <tr>
-      <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_memories.png" alt="snapshot-1" style="width: 100%; height: auto; display: block;"></td>
-      <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_optimization.png" alt="snapshot-2" style="width: 100%; height: auto; display: block;"></td>
-    </tr>
-    <tr>
-        <th style="width: 50%;"><strong>Monitor memory performance and activity</strong></th>
-        <th style="width: 50%;"><strong>Detailed insights and trends over time</strong></th>
-    </tr>
-    <tr>
-        <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_monitor.png" alt="snapshot-1" style="width: 100%; height: auto; display: block;"></td>
-        <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_analytics.png" alt="snapshot-2" style="width: 100%; height: auto; display: block;"></td>
-    </tr>
-  </table>
-</div>
-
-These visual tools help you understand how Cortex Memory is performing and how your AI agent's memory is evolving over time.
-
-# 🌟 Community Showcase: Cortex TARS
-
-Meet **Cortex TARS** — a production-ready AI-native TUI (Terminal User Interface) application that demonstrates the true power of Cortex Memory. Built as a "second brain" companion, Cortex TARS brings **auditory presence** to your AI experience and can truly hear and remember your voice in the real world, showcases how persistent memory transforms AI interactions from fleeting chats into lasting, intelligent partnerships.
-
-## What Makes Cortex TARS Special?
-
-Cortex TARS is more than just a chatbot — it's a comprehensive AI assistant platform that leverages Cortex Memory's advanced capabilities:
-
-### 🎭 Multi-Agent Management
-Create and manage multiple AI personas, each with distinct personalities, system prompts, and specialized knowledge areas. Whether you need a coding assistant, a creative writing partner, or a productivity coach, Cortex TARS lets you run them all simultaneously with complete separation.
-
-### 💾 Persistent Role Memory
-Every agent maintains its own long-term memory, learning from interactions over time. Your coding assistant remembers your coding style and preferences; your writing coach adapts to your voice and goals. No more repeating yourself — each agent grows smarter with every conversation.
-
-### 🔒 Memory Isolation
-Advanced memory architecture ensures complete isolation between agents and users. Each agent's knowledge base is separate, preventing cross-contamination while enabling personalized experiences across different contexts and use cases.
-
-### 🎤 Real-Time Audio-to-Memory (The Game Changer)
-**This is where Cortex TARS truly shines.** With real-time device audio capture, Cortex TARS can listen to your conversations, meetings, or lectures and automatically convert them into structured, searchable memories. Imagine attending a meeting while Cortex TARS silently captures key insights, decisions, and action items — all stored and ready for instant retrieval later. No more frantic note-taking or forgotten details!
-
-## Why Cortex TARS Matters
-
-Cortex TARS isn't just an example — it's a fully functional application that demonstrates:
-
-- **Real-world production readiness**: Built with Rust, it's fast, reliable, and memory-safe
-- **Seamless Cortex Memory integration**: Shows best practices for leveraging the memory framework
-- **Practical AI workflows**: From multi-agent conversations to audio capture and memory extraction
-- **User-centric design**: Beautiful TUI interface with intuitive controls and rich features
-
-## Explore Cortex TARS
-
-Ready to see Cortex Memory in action? Dive into the Cortex TARS project:
+### 安装
 
 ```bash
-cd examples/cortex-mem-tars
+# 克隆仓库
+git clone https://github.com/sopaco/cortex-mem.git
+cd cortex-mem
+
+# 构建所有工具
 cargo build --release
-cargo run --release
+
+# 或单独构建
+cargo build --release --bin cortex-mem      # CLI工具
+cargo build --release --bin cortex-mem-mcp   # MCP服务器
 ```
 
-Check out the [Cortex TARS README](examples/cortex-mem-tars/README.md) for detailed setup instructions, configuration guides, and usage examples.
+### 配置LLM
 
-**Cortex TARS proves that Cortex Memory isn't just a framework — it's the foundation for building intelligent, memory-aware applications that truly understand and remember.**
-
-# 🏆 Benchmark
-
-Cortex Memory has been rigorously evaluated against LangMem using the **LOCOMO dataset** (50 conversations, 150 questions) through a standardized memory system evaluation framework. The results demonstrate Cortex Memory's superior performance across multiple dimensions.
-
-## Performance Comparison
-
-<p align="center">
-  <img src="./assets/benchmark/cortex_mem_vs_langmem.png" alt="Cortex Memory vs LangMem Benchmark" width="800">
-</p>
-
-<p align="center">
-  <em><strong>Overall Performance:</strong> Cortex Memory significantly outperforms LangMem across all key metrics</em>
-</p>
-
-### Key Metrics
-
-| Metric | Cortex Memory | LangMem | Improvement |
-|--------|---------------|---------|-------------|
-| **Recall@1** | 93.33% | 26.32% | **+67.02pp** |
-| **Recall@3** | 94.00% | 50.00% | +44.00pp |
-| **Recall@5** | 94.67% | 55.26% | +39.40pp |
-| **Recall@10** | 94.67% | 63.16% | +31.51pp |
-| **Precision@1** | 93.33% | 26.32% | +67.02pp |
-| **MRR** | 93.72% | 38.83% | **+54.90pp** |
-| **NDCG@5** | 80.73% | 18.72% | **+62.01pp** |
-| **NDCG@10** | 79.41% | 16.83% | **+62.58pp** |
-
-### Detailed Results
-
-<div style="text-align: center;">
-  <table style="width: 100%; margin: 0 auto;">
-    <tr>
-        <th style="width: 50%;"><strong>Cortex Memory Evaluation:</strong> Excellent retrieval performance with 93.33% Recall@1 and 93.72% MRR</td>
-        <th style="width: 50%;"><strong>LangMem Evaluation:</strong> Modest performance with 26.32% Recall@1 and 38.83% MRR</td>
-    </tr>
-    <tr>
-      <td style="width: 50%;"><img src="./assets/benchmark/evaluation_cortex_mem.webp" alt="Cortex Memory Evaluation" style="width: 100%; height: auto; display: block;"></td>
-      <td style="width: 50%;"><img src="./assets/benchmark/evaluation_langmem.webp" alt="LangMem Evaluation" style="width: 100%; height: auto; display: block;"></td>
-    </tr>
-  </table>
-</div>
-
-### Key Findings
-
-1. **Significantly Improved Retrieval Accuracy**: Cortex Memory achieves **93.33% Recall@1**, a **67.02 percentage point improvement** over LangMem's 26.32%. This indicates Cortex is far superior at retrieving relevant memories on the first attempt.
-
-2. **Clear Ranking Quality Advantage**: Cortex Memory's **MRR of 93.72%** vs LangMem's **38.83%** shows it not only retrieves accurately but also ranks relevant memories higher in the result list.
-
-3. **Comprehensive Performance Leadership**: Across all metrics — especially **NDCG@5 (80.73% vs 18.72%)** — Cortex demonstrates consistent, significant advantages in retrieval quality, ranking accuracy, and overall performance.
-
-4. **Technical Advantages**: Cortex Memory's performance is attributed to:
-   - Efficient **Rust-based implementation**
-   - Powerful retrieval capabilities of **Qdrant vector database**
-   - Optimized memory management strategies
-
-### Evaluation Framework
-
-The benchmark uses a professional memory system evaluation framework located in `examples/lomoco-evaluation`, which includes:
-
-- **Professional Metrics**: Recall@K, Precision@K, MRR, NDCG, and answer quality metrics
-- **Enhanced Dataset**: 50 conversations with 150 questions covering various scenarios
-- **Statistical Analysis**: 95% confidence intervals, standard deviation, and category-based statistics
-- **Multi-System Support**: Supports comparison between Cortex Memory, LangMem, and Simple RAG baselines
-
-For more details on running the evaluation, see the [lomoco-evaluation README](examples/lomoco-evaluation/README.md).
-
-# 🧠 How It Works
-
-Cortex Memory uses a sophisticated pipeline to process and manage memories, orchestrated by the `MemoryManager` in `cortex-mem-core`.
-
-
-```mermaid
-sequenceDiagram
-    participant App as Application
-    participant Service as cortex-mem-service
-    participant Manager as MemoryManager (Core)
-    participant Extractor as Fact Extractor (LLM)
-    participant VectorStore as Vector Database
-    participant Optimizer as Optimizer (LLM)
-
-    App->>Service: Add new text (e.g., chat log)
-    Service->>Manager: add_memory(text)
-    Manager->>Extractor: Extract facts from text
-    Extractor-->>Manager: Return structured facts
-    Manager->>VectorStore: Store new facts as vectors
-    
-    loop Periodically
-        Manager->>Optimizer: Start optimization plan
-        Optimizer->>VectorStore: Fetch related memories
-        Optimizer->>Optimizer: Consolidate & refine memories
-        Optimizer->>VectorStore: Update/archive old memories
-    end
-
-    App->>Service: Search for relevant info
-    Service->>Manager: search(query)
-    Manager->>VectorStore: Find similar vectors
-    VectorStore-->>Manager: Return relevant facts
-    Manager-->>Service: Return results
-    Service-->>App: Return relevant memories
-```
-
-# 🖥 Getting Started
-
-### Prerequisites
-- [**Rust**](https://www.rust-lang.org) (version 1.70 or later)
-- [**Qdrant**](https://qdrant.tech/) or another compatible vector database
-- An **OpenAI-compatible** LLM API endpoint
-
-### Installation
-The simplest way to get started is to use the CLI and Service binaries, which can be installed via `cargo`.
-```sh
-# Install the CLI for command-line management
-cargo install cortex-mem-cli
-
-# Install the REST API Service for application integration
-cargo install cortex-mem-service
-
-# Install the MCP server for specific agent framework integrations
-cargo install cortex-mem-mcp
-```
-
-### Configuration
-Cortex Memory applications (`cortex-mem-cli`, `cortex-mem-service`, `cortex-mem-mcp`) are configured via a `config.toml` file. The CLI will look for this file in the current directory by default, or you can pass a path using the `-c` or `--config` flag.
-
-Here is a sample `config.toml` with explanations:
+创建或编辑 `config.toml`:
 
 ```toml
-# -----------------------------------------------------------------------------
-# HTTP Server Configuration (`cortex-mem-service` only)
-# -----------------------------------------------------------------------------
-[server]
-host = "0.0.0.0"       # IP address to bind the server to
-port = 8000            # Port for the HTTP server
-cors_origins = ["*"]   # Allowed origins for CORS (use ["*"] for permissive)
-
-# -----------------------------------------------------------------------------
-# Qdrant Vector Database Configuration
-# -----------------------------------------------------------------------------
-[qdrant]
-url = "http://localhost:6333" # URL of your Qdrant instance
-collection_name = "cortex-memory" # Name of the collection to use for memories
-timeout_secs = 5              # Timeout for Qdrant operations
-# embedding_dim is now auto-detected and no longer required here.
-
-# -----------------------------------------------------------------------------
-# LLM (Large Language Model) Configuration (for reasoning, summarization)
-# -----------------------------------------------------------------------------
 [llm]
-api_base_url = "https://api.openai.com/v1" # Base URL of your LLM provider
-api_key = "sk-your-openai-api-key"        # API key for the LLM provider (sensitive)
-model_efficient = "gpt-5-mini"         # Model for simple tasks like classification
-temperature = 0.7                         # Sampling temperature for LLM responses
-max_tokens = 8192                         # Max tokens for LLM generation
-
-# -----------------------------------------------------------------------------
-# Embedding Service Configuration
-# -----------------------------------------------------------------------------
-[embedding]
-api_base_url = "https://api.openai.com/v1" # Base URL of your embedding provider
-api_key = "sk-your-openai-api-key"        # API key for the embedding provider (sensitive)
-model_name = "text-embedding-3-small"     # Name of the embedding model to use
-batch_size = 16                           # Number of texts to embed in a single batch
-timeout_secs = 10                         # Timeout for embedding requests
-
-# -----------------------------------------------------------------------------
-# Memory Management Configuration
-# -----------------------------------------------------------------------------
-[memory]
-max_memories = 10000              # Max number of memories to keep in the store
-similarity_threshold = 0.65       # Threshold for considering memories similar
-max_search_results = 50           # Default max results for a search query
-auto_summary_threshold = 32768    # Token count threshold to trigger auto-summary
-auto_enhance = true               # Automatically enhance memories with metadata
-deduplicate = true                # Enable or disable memory deduplication
-merge_threshold = 0.75            # Similarity threshold for merging memories during optimization
-search_similarity_threshold = 0.50 # Minimum similarity for a memory to be included in search results
-
-# -----------------------------------------------------------------------------
-# Logging Configuration
-# -----------------------------------------------------------------------------
-[logging]
-enabled = true                     # Enable or disable logging to a file
-log_directory = "logs"             # Directory to store log files
-level = "info"                     # Logging level (e.g., "info", "debug", "warn", "error")
+# 使用自己部署的OpenAI兼容API
+api_base_url = "https://your-api-endpoint.com/v1"
+api_key = "your-api-key"
+model_efficient = "your-model-name"
+temperature = 0.1
+max_tokens = 4096
 ```
 
-# 🚀 Usage
+支持任何OpenAI兼容的LLM服务（自部署、第三方代理等）。
 
-### CLI (`cortex-mem-cli`)
-
-The CLI provides a powerful interface for direct interaction with the memory system. All commands require a `config.toml` file, which can be specified with `--config <path>`.
-
-#### Add a Memory
-Adds a new piece of information to the memory store.
-
-```sh
-cortex-mem-cli add --content "The user is interested in Rust programming." --user-id "user123"
-```
-- `--content <text>`: (Required) The text content of the memory.
-- `--user-id <id>`: An optional user ID to associate with the memory.
-- `--agent-id <id>`: An optional agent ID to associate with the memory.
-
-#### Search for Memories
-Performs a semantic search on the memory store.
-
-```sh
-cortex-mem-cli search --query "what are the user's hobbies?" --user-id "user123" --limit 5
-```
-- `--query <text>`: The natural language query for the search.
-- `--user-id <id>`: Filter memories by user ID.
-- `--agent-id <id>`: Filter memories by agent ID.
-- `--topics <t1,t2>`: Filter by a comma-separated list of topics.
-- `--keywords <k1,k2>`: Filter by a comma-separated list of keywords.
-- `--limit <n>`: The maximum number of results to return.
-
-#### List Memories
-Retrieves a list of memories based on metadata filters, without performing a semantic search.
-
-```sh
-cortex-mem-cli list --user-id "user123" --limit 20
-```
-- Supports the same filters as `search` (`--user-id`, `--agent-id`, etc.), but does not use a `--query`.
-
-#### Delete a Memory
-Removes a memory from the store by its unique ID.
-
-```sh
-cortex-mem-cli delete <memory-id>
-```
-
-#### Manage Optimization
-The CLI provides a full suite of tools to manage the memory optimization process.
-
-```sh
-# Manually trigger a new optimization run
-cortex-mem-cli optimize start
-
-# Check the status of a running or completed optimization job
-cortex-mem-cli optimize-status --job-id <job-id>
-
-# View or update the optimization schedule and parameters
-cortex-mem-cli optimize-config --get
-cortex-mem-cli optimize-config --set --schedule "0 0 * * * *" --enabled
-```
-
-### REST API (`cortex-mem-service`)
-
-The REST API allows you to integrate Cortex Memory into any application, regardless of the programming language.
-
-#### Starting the Service
-```sh
-# Start the API server (will use configuration from config.toml)
-cortex-mem-service
-```
-
-#### API Endpoints
-
-Here are some of the primary endpoints available:
-
-- `GET /health`: Health check for the service.
-- `POST /memories`: Create a new memory.
-- `GET /memories`: List memories with metadata filtering.
-- `POST /memories/search`: Perform a semantic search for memories.
-- `GET /memories/{id}`: Retrieve a single memory by its ID.
-- `PUT /memories/{id}`: Update a memory.
-- `DELETE /memories/{id}`: Delete a memory.
-- `POST /memories/batch/delete`: Delete a batch of memories.
-- `POST /memories/batch/update`: Update a batch of memories.
-- `POST /optimization`: Manually start an optimization job.
-- `GET /optimization/{job_id}`: Get the status of an optimization job.
-
-#### Example: Create a Memory
+### CLI使用示例
 
 ```bash
-curl -X POST http://localhost:8000/memories \
-  -H "Content-Type: application/json" \
-  -d '{
-    "content": "The user just signed up for the premium plan.",
-    "metadata": {
-      "user_id": "user-xyz-789",
-      "agent_id": "billing-bot-01"
+# 创建会话
+cortex-mem session create my-session --title "技术讨论"
+
+# 添加消息
+cortex-mem add --thread my-session "如何实现OAuth 2.0？"
+cortex-mem add --thread my-session --role assistant "建议使用授权码流程"
+
+# 搜索记忆
+cortex-mem search "OAuth" --thread my-session
+
+# 提取记忆（使用LLM）
+cortex-mem session extract my-session
+
+# 查看统计
+cortex-mem stats
+```
+
+更多CLI示例见 [cortex-mem-cli/TESTING_GUIDE.md](cortex-mem-cli/TESTING_GUIDE.md)
+
+### MCP集成（Claude Desktop）
+
+编辑配置文件: `~/Library/Application Support/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "cortex-mem": {
+      "command": "/path/to/cortex-mem/target/release/cortex-mem-mcp",
+      "args": ["--config", "/path/to/config.toml"],
+      "env": {
+        "CORTEX_DATA_DIR": "/path/to/cortex-data"
+      }
     }
-  }'
+  }
+}
 ```
 
-#### Example: Search for Memories
+重启Claude Desktop后，Claude就能使用以下工具：
+- `store_memory`: 存储记忆到cortex系统
+- `query_memory`: 语义搜索记忆（计划中）
+- `list_memories`: 列出指定维度的记忆
+- `get_memory`: 根据URI获取记忆内容
+
+更多MCP配置见 [cortex-mem-mcp/README.md](cortex-mem-mcp/README.md)
+
+## 📚 架构概览
+
+### Cortex URI协议
+
+```
+cortex://{dimension}/{id}/{category}/{subcategory}/{resource}
+
+示例:
+cortex://threads/my-session/timeline/2026-02/03/10_30_45_abc123.md
+cortex://user/user-123/memories/abc123.md
+cortex://repos/my-project/memories/def456.md
+cortex://global/company/policies/security.md
+```
+
+### 三层抽象
+
+**L2 - 完整内容层**
+```markdown
+# 对话记录
+User: 如何实现OAuth 2.0？
+Assistant: OAuth 2.0是一个授权框架...
+[完整对话内容，可能数千tokens]
+```
+
+**L1 - 概览层** (~2k tokens)
+```markdown
+# 概览
+本对话讨论OAuth 2.0实现，涵盖授权码流程、安全最佳实践等...
+
+## 关键主题
+- OAuth 2.0基础
+- 授权码流程
+...
+```
+
+**L0 - 抽象层** (~100 tokens)
+```
+OAuth 2.0技术讨论：授权框架、授权码流程、安全实践。
+涉及技术点：PKCE、token管理、API设计。
+```
+
+### 项目结构
+
+```
+cortex-mem/
+├── cortex-mem-core/         # 核心库
+│   ├── filesystem/          # 文件系统 & URI
+│   ├── layers/              # L0/L1/L2抽象
+│   ├── retrieval/           # 检索引擎
+│   ├── session/             # 会话管理
+│   ├── extraction/          # 记忆提取
+│   ├── llm/                # LLM客户端
+│   └── index/              # 索引（SQLite）
+│
+├── cortex-mem-cli/          # CLI工具
+├── cortex-mem-mcp/          # MCP服务器
+├── examples/                # 示例代码
+└── config.toml             # 配置文件
+```
+
+## 🛠️ 技术栈
+
+### 核心依赖
+
+- **rig-core 0.23** - LLM客户端框架
+  - 支持OpenAI兼容API
+  - Agent模式支持流式输出
+  - 工具调用和多轮对话
+
+- **rmcp 0.14** - Model Context Protocol实现
+  - `#[tool]`宏简化工具定义
+  - JSON Schema自动生成
+  - stdio传输支持
+
+- **tokio** - 异步运行时
+- **serde/serde_json** - 序列化
+- **rusqlite** - 全文索引
+- **chrono** - 时间处理
+
+### 维度系统
+
+Cortex-Mem支持两个维度的记忆组织：
+
+1. **User维度**: `cortex://user/{user_id}/memories/{memory_id}`
+   - 用户个人记忆
+   - 用户偏好设置
+   - 用户特定上下文
+
+2. **Repos维度**: `cortex://repos/{repos_id}/memories/{memory_id}`
+   - 项目知识库
+   - 代码库文档
+   - 团队共享记忆
+
+## 🧪 测试
 
 ```bash
-curl -X POST http://localhost:8000/memories/search \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "What is the user's current plan?",
-    "filters": {
-      "user_id": "user-xyz-789"
-    },
-    "limit": 3
-  }'
+# 运行所有测试
+cargo test
+
+# 运行核心库测试
+cargo test -p cortex-mem-core
+
+# 查看测试覆盖
+cargo test -- --test-threads=1 --nocapture
 ```
 
-# 🤝 Contribute
-We welcome all forms of contributions! Report bugs or submit feature requests through [GitHub Issues](https://github.com/sopaco/cortex-mem/issues).
+当前测试状态: **55个测试全部通过** ✅
 
-### Development Process
-1. Fork this project
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Create a Pull Request
+## 📖 使用场景
 
-# 🪪 License
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+### 1. AI Agent长期记忆
+
+```rust
+use cortex_mem_core::*;
+use std::sync::Arc;
+
+let fs = Arc::new(CortexFilesystem::new("./data")?);
+let layer_manager = Arc::new(LayerManager::new(fs.clone()));
+
+// 存储对话
+let uri = "cortex://threads/session-1/messages/msg-1";
+layer_manager.generate_all_layers(uri, content).await?;
+
+// 检索相关记忆
+let engine = RetrievalEngine::new(fs, layer_manager);
+let results = engine.search("OAuth实现", &options).await?;
+```
+
+### 2. 会话管理
+
+```rust
+let session_mgr = SessionManager::new(fs, config);
+
+// 创建会话
+let session = session_mgr.create_session("thread-1").await?;
+
+// 添加消息
+session_mgr.add_message("thread-1", &message).await?;
+
+// 提取记忆
+let extractor = MemoryExtractor::new(llm_client);
+let memories = extractor.extract_from_session("thread-1").await?;
+```
+
+### 3. LLM集成
+
+```rust
+use cortex_mem_core::llm::*;
+
+// 创建LLM客户端
+let config = LLMConfig {
+    api_base_url: "https://your-api.com/v1".to_string(),
+    api_key: "your-key".to_string(),
+    model_efficient: "gpt-4".to_string(),
+    temperature: 0.1,
+    max_tokens: 4096,
+};
+
+let llm = LLMClient::new(config)?;
+
+// 创建支持流式输出的Agent
+let agent = llm.create_agent("You are a helpful assistant").await?;
+
+// 简单completion
+let response = llm.complete("Explain OAuth 2.0").await?;
+```
+
+## 🔄 版本历史
+
+### V2.0.0 (Current)
+
+**重大重构**：
+- ✅ 从Qdrant迁移到基于文件的存储
+- ✅ 实现L0/L1/L2三层抽象架构
+- ✅ 新增`cortex://` URI协议
+- ✅ 集成LLM（基于rig-core）
+- ✅ 重写MCP服务器（基于rmcp）
+- ✅ 55个测试全部通过
+- ✅ 零编译warning
+
+**Breaking Changes**:
+- 不再依赖Qdrant向量数据库
+- URI格式变更
+- MCP工具签名变更
+
+### V1.x (Legacy)
+
+- 基于Qdrant的向量存储
+- 基础MCP支持
+- 简单的记忆提取
+
+## 🗺️ Roadmap
+
+### 短期计划
+- [ ] 完善query_memory和list_memories功能
+- [ ] 添加向量嵌入支持（可选）
+- [ ] 性能优化和基准测试
+- [ ] 更多示例和文档
+
+### 长期计划
+- [ ] Web UI界面
+- [ ] 多用户支持
+- [ ] 分布式部署
+- [ ] 更多LLM提供商集成
+
+## 🤝 贡献
+
+欢迎贡献代码、报告问题或提出建议！
+
+1. Fork项目
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启Pull Request
+
+## 📄 许可证
+
+本项目采用MIT许可证 - 详见 [LICENSE](LICENSE) 文件
+
+## 🙏 致谢
+
+- [rig](https://github.com/0xPlaygrounds/rig) - Rust LLM框架
+- [rmcp](https://github.com/emwalker/rmcp) - Rust MCP实现
+- [Model Context Protocol](https://modelcontextprotocol.io/) - MCP标准
+
+## 📧 联系方式
+
+- GitHub Issues: [cortex-mem/issues](https://github.com/sopaco/cortex-mem/issues)
+- 项目主页: [cortex-mem](https://github.com/sopaco/cortex-mem)
+
+---
+
+**Built with ❤️ using Rust**

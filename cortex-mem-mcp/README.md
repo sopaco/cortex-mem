@@ -1,326 +1,197 @@
-# Cortex Mem MCP Server
+# Cortex-Mem MCP Server
 
-An MCP (Model Context Protocol) server that exposes the cortex-mem memory management capabilities through the MCP stdio protocol, aligned with OpenMemory MCP API design.
+Model Context Protocol (MCP) server for Cortex-Mem memory management system.
 
-## Overview
+## 功能
 
-This MCP server provides a standardized interface for AI agents to store, query, and retrieve memories. The API design follows the OpenMemory MCP specification for better compatibility and consistency across applications.
+提供4个MCP工具，让AI助手能够读写长期记忆：
 
-This server allows AI agents and applications using the MCP stdio protocol to interact with the Cortex Mem memory system with OpenMemory-aligned tools:
+### 1. `store_memory`
+存储新的记忆到系统中。
 
-- **Storing memories**: Add new memories with content, type, and optional metadata
-- **Querying memories**: Unified search interface with salience filtering and natural language queries
-- **Listing memories**: Get summarized view of recent memories with filtering options
-- **Getting specific memories**: Retrieve memories by their unique ID
+**参数**:
+- `content` (required): 记忆内容
+- `thread_id` (optional): 会话ID，默认为"default"
+- `role` (optional): 消息角色 (user/assistant/system)
+- `tags` (optional): 标签数组
 
-## Features
+**示例**:
+```json
+{
+  "content": "用户喜欢使用Rust编程",
+  "thread_id": "user-prefs",
+  "role": "user"
+}
+```
 
-- Full MCP stdio protocol support
-- OpenMemory-aligned API design for better compatibility
-- Memory management compatible with cortex-mem-core interfaces
-- Support for different memory types (conversational, procedural, factual, semantic, episodic, personal)
-- Topic-based memory organization
-- Natural language search with similarity scoring
-- Salience filtering for importance-based retrieval
-- Advanced semantic search capabilities
-- Configurable memory management parameters
+### 2. `query_memory`
+智能搜索记忆。
 
-## Installation
+**参数**:
+- `query` (required): 搜索查询
+- `thread_id` (optional): 限定搜索范围
+- `limit` (optional): 最大结果数，默认10
+- `min_score` (optional): 最小相关性分数(0-1)，默认0.3
 
-### From Source
+**示例**:
+```json
+{
+  "query": "Rust OAuth实现",
+  "limit": 5
+}
+```
+
+### 3. `list_memories`
+列出指定范围的记忆。
+
+**参数**:
+- `thread_id` (optional): 会话ID
+- `dimension` (optional): 维度(threads/agents/users/global)
+- `include_metadata` (optional): 是否包含元数据
+
+**示例**:
+```json
+{
+  "thread_id": "user-prefs"
+}
+```
+
+### 4. `get_memory`
+获取特定记忆内容。
+
+**参数**:
+- `uri` (required): 记忆URI
+
+**示例**:
+```json
+{
+  "uri": "cortex://threads/my-session/timeline/2026-02/03/10_30_45_abc123.md"
+}
+```
+
+## 安装
+
+### 构建
 
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd cortex-mem/cortex-mem-mcp
-
-# Build and install
-cargo install --path .
+cargo build --release --bin cortex-mem-mcp
 ```
 
-### As a Binary Release
+### 配置Claude Desktop
 
-Download the appropriate binary for your platform and add it to your PATH.
+编辑配置文件:
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 
-## Configuration
-
-The server uses the same configuration system as memo-core. By default, it will look for `config.toml` in the following locations in order:
-
-1. Current working directory
-2. User home directory (`~/.config/memo/config.toml`)
-3. System configuration directory (platform-specific):
-   - macOS: `/usr/local/etc/memo/config.toml`
-   - Linux: `/etc/memo/config.toml`
-   - Windows: `C:\ProgramData\memo\config.toml`
-
-You can also specify a custom configuration file path:
-
-```bash
-# Use default search locations
-cortex-mem-mcp
-
-# Specify a custom configuration file
-cortex-mem-mcp --config /path/to/your/config.toml
-
-# Use a short form
-cortex-mem-mcp -c ~/.memo/config.toml
-
-# Configure agent for automatic agent_id and user_id
-cortex-mem-mcp --config /path/to/your/config.toml --agent "my_agent"
-```
-
-Create a `config.toml` file with the following contents:
-
-```tom
-[llm]
-api_key = "your-openai-api-key"
-model = "gpt-3.5-turbo"
-
-[embedding]
-model = "text-embedding-ada-002"
-
-[qdrant]
-url = "http://localhost:6333"
-collection_name = "memories"
-
-[memory]
-auto_enhance = true
-deduplicate = true
-similarity_threshold = 0.7
-```
-
-See the main Cortex Mem documentation for all configuration options.
-
-## Usage
-
-### With MCP Clients
-
-#### Claude Desktop
-
-Add to your Claude Desktop `claude_desktop_config.json`:
+添加以下配置:
 
 ```json
 {
   "mcpServers": {
     "cortex-mem": {
-      "command": "cortex-mem-mcp",
-      "args": ["--config", "/path/to/your/config.toml", "--agent", "my_agent"]
+      "command": "/path/to/cortex-mem/target/release/cortex-mem-mcp",
+      "env": {
+        "CORTEX_DATA_DIR": "/path/to/your/cortex-data"
+      }
     }
   }
 }
 ```
 
-*Note:* Claude Desktop uses the MCP server's working directory (usually where Claude Desktop is running) to resolve relative paths. It's recommended to use absolute paths for the configuration file.
+### 配置Cline/Roo-Cline
 
-#### Cursor
-
-Add to your `~/.cursor/mcp.json`:
+在 MCP settings 中添加:
 
 ```json
 {
-  "mcpServers": {
-    "cortex-mem": {
-      "command": "cortex-mem-mcp",
-      "args": ["--config", "/path/to/your/config.toml", "--agent", "my_agent"]
+  "cortex-mem": {
+    "command": "/path/to/cortex-mem/target/release/cortex-mem-mcp",
+    "env": {
+      "CORTEX_DATA_DIR": "/path/to/your/cortex-data"
     }
   }
 }
 ```
 
-*Note:* Similar to Claude Desktop, it's recommended to use absolute paths for the configuration file when using Cursor.
+## 环境变量
 
-#### For Development
+- `CORTEX_DATA_DIR`: 数据存储目录（默认: `./cortex-data`）
 
-To run directly from source:
+## 通信协议
+
+MCP server使用JSON-RPC 2.0通过stdio通信。
+
+**请求示例**:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "store_memory",
+    "arguments": {
+      "content": "This is a test memory"
+    }
+  }
+}
+```
+
+**响应示例**:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Memory stored successfully\nURI: cortex://threads/default/timeline/...\nID: abc-123-..."
+      }
+    ]
+  }
+}
+```
+
+## 测试
+
+### 手动测试
 
 ```bash
-cd /path/to/cortex-mem/cortex-mem-mcp
-cargo run
+# 启动服务器（会监听stdin）
+./target/release/cortex-mem-mcp
 
-# Or with custom config
-cargo run -- --config /path/to/config.toml
+# 发送测试请求（另一个终端）
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' | ./target/release/cortex-mem-mcp
 ```
 
-### OpenMemory-aligned API Reference
+### 与Claude Desktop集成测试
 
-#### Query Memory
-Unified interface for searching memories that replaces both *search_memory* and *recall_context*.
+1. 配置claude_desktop_config.json
+2. 重启Claude Desktop
+3. 在对话中要求Claude使用记忆功能
+4. 检查 `~/Library/Logs/Claude/mcp*.log` 查看日志
 
-Parameters:
-- `query` (required, string): Query string for semantic search
-- `k` (optional, integer): Maximum number of results to return (default: 10)
-- `memory_type` (optional, string): Type of memory to filter by (conversational, procedural, factual, semantic, episodic, personal)
-- `min_salience` (optional, number): Minimum salience/importance score threshold (0-1)
-- `topics` (optional, array): Topics to filter memories by
-- `user_id` (optional, string): User ID to filter memories (defaults to configured agent's user)
-- `agent_id` (optional, string): Agent ID to filter memories (defaults to configured agent)
+## 开发
 
-Special Features:
-- **Salience Filtering**: Filter results by importance score to focus on high-value memories
-
-#### Store Memory
-Store a new memory in the system. API remains the same.
-
-Parameters:
-- `content` (required, string): The content of the memory to store
-- `user_id` (optional, string): User ID associated with the memory (required unless --agent was specified on startup)
-- `agent_id` (optional, string): Agent ID associated with the memory (defaults to configured agent)
-- `memory_type` (optional, string): Type of memory (conversational, procedural, factual, semantic, episodic, personal)
-- `topics` (optional, array): Topics to associate with the memory
-
-#### List Memories
-Get a summarized view of recent memories with filtering options. This is a new tool aligned with OpenMemory's list functionality.
-
-Parameters:
-- `limit` (optional, integer): Maximum number of memories to return (default: 20)
-- `memory_type` (optional, string): Type of memory to filter by (conversational, procedural, factual, semantic, episodic, personal)
-- `user_id` (optional, string): User ID to filter memories (defaults to configured agent's user)
-- `agent_id` (optional, string): Agent ID to filter memories (defaults to configured agent)
-
-Returns simplified memory objects with preview text rather than full content.
-
-#### Get Memory
-Retrieve a specific memory by its ID. API remains the same but with improved implementation.
-
-Parameters:
-- `memory_id` (required, string): ID of the memory to retrieve
-
-## Development
-
-### Project Structure
+### 目录结构
 
 ```
-
-## Agent Configuration
-
-The `--agent` parameter allows you to configure a default agent identifier that will be automatically used for all memory operations. When configured:
-
-- **agent_id**: Will be set to the value provided via `--agent`
-- **user_id**: Will be automatically generated as `user_of_<agent_id>`
-
-This simplifies memory operations by eliminating the need to specify these parameters in each tool call. For more details, see [AGENT_CONFIG.md](AGENT_CONFIG.md).
 cortex-mem-mcp/
-├── src/
-│   ├── lib.rs           # Main implementation
-│   └── main.rs          # Server entry point
-├── Cargo.toml           # Dependencies and configuration
-└── README.md            # This file
+├── Cargo.toml
+├── README.md
+└── src/
+    ├── main.rs      # MCP服务器入口和stdio传输
+    └── server.rs    # MCP工具实现
 ```
 
-### Building
+### 添加新工具
 
-```bash
-# Build for development
-cargo build
+在 `server.rs` 中:
 
-# Build for release
-cargo build --release
-
-# Run tests
-cargo test
-```
-
-## Troubleshooting
-
-### Server Fails to Start
-
-1. Check that your `config.toml` is present and valid
-2. Verify that Qdrant is running and accessible at the configured URL
-3. Check that your OpenAI API key is valid
-4. Ensure all required dependencies are installed
-
-### Memory Operations Fail
-
-1. Check that the LLM service is accessible
-2. Verify that the vector store is running
-3. Check the server logs for detailed error messages
-
-### Migration Guide (v0.1.0+)
-
-If you were using the previous API with `search_memory` and `recall_context`, here's how to migrate:
-
-#### Old API → New API
-
-```json
-// Old search_memory call
-{
-  "name": "search_memory",
-  "arguments": {
-    "query": "用户的爱好",
-    "limit": 10,
-    "user_id": "user123"
-  }
-}
-
-// New query_memory call
-{
-  "name": "query_memory",
-  "arguments": {
-    "query": "用户的爱好",
-    "k": 10,
-    "user_id": "user123"
-  }
-}
-```
-
-```json
-// Old recall_context call
-{
-  "name": "recall_context",
-  "arguments": {
-    "query": "最近的对话",
-    "limit": 5,
-    "user_id": "user123"
-  }
-}
-
-// New query_memory call
-{
-  "name": "query_memory",
-  "arguments": {
-    "query": "最近的对话",
-    "k": 5,
-    "user_id": "user123"
-  }
-}
-```
-
-#### Key Changes
-
-1. **Tool Names**: `search_memory` → `query_memory`, `recall_context` → `query_memory` (unified)
-2. **Parameter Names**: `limit` → `k` (for consistency with OpenMemory)
-3. **New Features**: Added `min_salience` parameter for importance filtering
-4. **New Tool**: Added `list_memories` for browsing memory overview
-
-### Example Usage
-
-Query memories with salience filtering:
-
-```json
-{
-  "name": "query_memory",
-  "arguments": {
-    "query": "用户的爱好和偏好",
-    "k": 5,
-    "min_salience": 0.7,
-    "user_id": "user123"
-  }
-}
-```
-
-List memories by type:
-
-```json
-{
-  "name": "list_memories",
-  "arguments": {
-    "memory_type": "episodic",
-    "limit": 20,
-    "user_id": "user123"
-  }
-}
-```
+1. 在 `handle_tools_list` 添加工具定义
+2. 在 `handle_tools_call` 添加工具调用分支
+3. 实现工具函数 `async fn tool_xxx(&self, args) -> std::result::Result<String, String>`
 
 ## License
 
-This project is licensed under the MIT License.
+MIT

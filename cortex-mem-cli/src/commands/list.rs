@@ -1,118 +1,66 @@
-use cortex_mem_core::{
-    memory::MemoryManager,
-    types::{Filters, MemoryType},
-};
-use serde_json::Value;
-use tracing::{error, info};
+use anyhow::Result;
+use colored::Colorize;
+use cortex_mem_core::*;
+use std::sync::Arc;
 
-pub struct ListCommand {
-    memory_manager: MemoryManager,
-}
+pub async fn execute(
+    fs: Arc<CortexFilesystem>,
+    thread: Option<&str>,
+    dimension: Option<&str>,
+) -> Result<()> {
+    // Determine list scope
+    let uri = match (dimension, thread) {
+        (Some(dim), Some(thread_id)) => format!("cortex://{}/{}", dim, thread_id),
+        (Some(dim), None) => format!("cortex://{}", dim),
+        (None, Some(thread_id)) => format!("cortex://threads/{}", thread_id),
+        (None, None) => "cortex://".to_string(),
+    };
 
-impl ListCommand {
-    pub fn new(memory_manager: MemoryManager) -> Self {
-        Self { memory_manager }
+    println!("{} Listing memories from: {}", "📋".bold(), uri.cyan());
+
+    // List entries
+    let entries = fs.list(&uri).await?;
+
+    if entries.is_empty() {
+        println!("\n{} No memories found", "ℹ".yellow().bold());
+        return Ok(());
     }
 
-    pub async fn execute(
-        &self,
-        user_id: Option<String>,
-        agent_id: Option<String>,
-        memory_type: Option<String>,
-        topics: Option<Vec<String>>,
-        keywords: Option<Vec<String>>,
-        limit: usize,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let mut filters = Filters::new();
+    println!("\n{} Found {} items:", "✓".green().bold(), entries.len());
+    println!();
 
-        if let Some(user_id) = user_id {
-            filters.user_id = Some(user_id);
+    // Group by type
+    let mut dirs = Vec::new();
+    let mut files = Vec::new();
+
+    for entry in entries {
+        if entry.name.starts_with('.') {
+            continue; // Skip hidden files
         }
-
-        if let Some(agent_id) = agent_id {
-            filters.agent_id = Some(agent_id);
+        if entry.is_directory {
+            dirs.push(entry);
+        } else {
+            files.push(entry);
         }
-
-        if let Some(memory_type_str) = memory_type {
-            filters.memory_type = Some(MemoryType::parse(&memory_type_str));
-        }
-
-        if let Some(topics) = topics {
-            filters.topics = Some(topics);
-        }
-
-        if let Some(keywords) = keywords {
-            filters.custom.insert(
-                "keywords".to_string(),
-                Value::Array(keywords.into_iter().map(Value::String).collect()),
-            );
-        }
-
-        match self.memory_manager.list(&filters, Some(limit)).await {
-            Ok(memories) => {
-                if memories.is_empty() {
-                    println!("📝 No memories found with the specified filters");
-                } else {
-                    println!("📝 Found {} memories:", memories.len());
-                    println!();
-
-                    for (i, memory) in memories.iter().enumerate() {
-                        println!("{}. ID: {}", i + 1, memory.id);
-                        println!("   Content: {}", memory.content);
-                        println!("   Type: {:?}", memory.metadata.memory_type);
-                        println!(
-                            "   Created: {}",
-                            memory.created_at.format("%Y-%m-%d %H:%M:%S")
-                        );
-                        println!(
-                            "   Updated: {}",
-                            memory.updated_at.format("%Y-%m-%d %H:%M:%S")
-                        );
-
-                        if let Some(user_id) = &memory.metadata.user_id {
-                            println!("   User: {}", user_id);
-                        }
-
-                        if let Some(agent_id) = &memory.metadata.agent_id {
-                            println!("   Agent: {}", agent_id);
-                        }
-
-                        if let Some(role) = &memory.metadata.role {
-                            println!("   Role: {}", role);
-                        }
-
-                        // Display topics
-                        if !memory.metadata.topics.is_empty() {
-                            println!("   Topics: {}", memory.metadata.topics.join(", "));
-                        }
-
-                        // Display keywords from custom metadata
-                        if let Some(keywords) = memory.metadata.custom.get("keywords") {
-                            if let Some(keywords_array) = keywords.as_array() {
-                                let keyword_strings: Vec<String> = keywords_array
-                                    .iter()
-                                    .filter_map(|k| k.as_str())
-                                    .map(|s| s.to_string())
-                                    .collect();
-                                if !keyword_strings.is_empty() {
-                                    println!("   Keywords: {}", keyword_strings.join(", "));
-                                }
-                            }
-                        }
-
-                        println!();
-                    }
-                }
-
-                info!("List completed: {} memories found", memories.len());
-            }
-            Err(e) => {
-                error!("Failed to list memories: {}", e);
-                println!("❌ List failed: {}", e);
-                return Err(e.into());
-            }
-        }
-
-        Ok(())
     }
+
+    // Display directories
+    if !dirs.is_empty() {
+        println!("{} Directories ({}):", "📁".bold(), dirs.len());
+        for dir in dirs {
+            println!("  • {}/", dir.name.bright_blue().bold());
+        }
+        println!();
+    }
+
+    // Display files
+    if !files.is_empty() {
+        println!("{} Files ({}):", "📄".bold(), files.len());
+        for file in files {
+            println!("  • {}", file.name);
+            println!("    {} bytes", file.size.to_string().dimmed());
+        }
+    }
+
+    Ok(())
 }
