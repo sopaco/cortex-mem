@@ -390,6 +390,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "cortex-mem-config"
+version = "1.0.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "thiserror 2.0.17",
+ "toml",
+]
+
+[[package]]
 name = "cortex-mem-core"
 version = "2.0.0"
 dependencies = [

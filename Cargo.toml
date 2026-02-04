@@ -4,6 +4,10 @@ members = [
     "cortex-mem-core",
     "cortex-mem-cli",
     "cortex-mem-mcp",
+    "cortex-mem-config",
+    # "cortex-mem-tools",  # 暂时禁用，等service重做时一起更新
+    # "cortex-mem-rig",    # 暂时禁用，依赖tools
+    # "cortex-mem-service",  # 暂时禁用，需要重做以适配V2
 ]
 
 [workspace.package]
@@ -61,3 +65,8 @@ colored = "2.1"
 
 # Testing
 tokio-test = "0.4"
+
+# Web framework (for cortex-mem-service)
+axum = "0.7"
+tower = "0.4"
+tower-http = "0.5"
