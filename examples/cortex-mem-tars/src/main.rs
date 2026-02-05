@@ -53,7 +53,7 @@ async fn main() -> Result<()> {
     }
 
     // Initialize configuration manager
-    let config_manager = ConfigManager::new().context("Failed to initialize config manager")?;
+    let mut config_manager = ConfigManager::new().context("Failed to initialize config manager")?;
     log::info!("Config manager initialized");
 
     // Initialize logger
@@ -61,7 +61,7 @@ async fn main() -> Result<()> {
     log::info!("Logger initialized");
 
     // Create default bots
-    create_default_bots(&config_manager).context("Failed to create default bots")?;
+    create_default_bots(&mut config_manager).context("Failed to create default bots")?;
 
     // Initialize infrastructure (MemoryOperations)
     let infrastructure = match Infrastructure::new(&args.data_dir).await {

@@ -138,7 +138,7 @@ async fn store_memory(
         ));
     }
 
-    let memory_id = format!("mem_{}", Uuid::new_v4());
+    let _memory_id = format!("mem_{}", Uuid::new_v4());
 
     // Store as a message in the current thread/session
     let thread_id = state

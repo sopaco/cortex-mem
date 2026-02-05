@@ -494,7 +494,6 @@ impl App {
                                 conversations.push((user_msg, msg.content.clone()));
                             }
                         }
-                        _ => {}
                     }
                 }
 
@@ -829,7 +828,7 @@ impl App {
 }
 
 /// Create default bots
-pub fn create_default_bots(config_manager: &ConfigManager) -> Result<()> {
+pub fn create_default_bots(config_manager: &mut ConfigManager) -> Result<()> {
     let bots = config_manager.get_bots()?;
 
     if bots.is_empty() {

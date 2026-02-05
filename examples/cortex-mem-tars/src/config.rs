@@ -97,7 +97,11 @@ impl ConfigManager {
             let content = fs::read_to_string(&config_path)?;
             toml::from_str(&content).unwrap_or_default()
         } else {
-            AppConfig::default()
+            let default_config = AppConfig::default();
+            // Save default config
+            let content = toml::to_string_pretty(&default_config)?;
+            fs::write(&config_path, content)?;
+            default_config
         };
 
         // Load bots configuration
@@ -129,23 +133,20 @@ impl ConfigManager {
         Ok(self.config.bots.values().cloned().collect())
     }
 
-    pub fn add_bot(&self, bot: BotConfig) -> Result<()> {
-        let mut config = self.config.clone();
-        config.bots.insert(bot.id.clone(), bot);
-        self.save_bots(&config.bots)
+    pub fn add_bot(&mut self, bot: BotConfig) -> Result<()> {
+        self.config.bots.insert(bot.id.clone(), bot);
+        self.save_bots(&self.config.bots.clone())
     }
 
-    pub fn update_bot(&self, bot_id: &str, bot: BotConfig) -> Result<()> {
-        let mut config = self.config.clone();
-        config.bots.insert(bot_id.to_string(), bot);
-        self.save_bots(&config.bots)
+    pub fn update_bot(&mut self, bot_id: &str, bot: BotConfig) -> Result<()> {
+        self.config.bots.insert(bot_id.to_string(), bot);
+        self.save_bots(&self.config.bots.clone())
     }
 
-    pub fn remove_bot(&self, bot_id: &str) -> Result<bool> {
-        let mut config = self.config.clone();
-        let removed = config.bots.remove(bot_id).is_some();
+    pub fn remove_bot(&mut self, bot_id: &str) -> Result<bool> {
+        let removed = self.config.bots.remove(bot_id).is_some();
         if removed {
-            self.save_bots(&config.bots)?;
+            self.save_bots(&self.config.bots.clone())?;
         }
         Ok(removed)
     }
