@@ -35,6 +35,7 @@ impl BotConfig {
 pub struct LLMConfig {
     pub api_base_url: String,
     pub api_key: String,
+    #[serde(alias = "model_efficient")]
     pub model: String,
     pub temperature: f32,
     pub max_tokens: u32,
@@ -57,8 +58,16 @@ impl Default for LLMConfig {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub llm: LLMConfig,
+    #[serde(default = "default_data_dir")]
     pub data_dir: PathBuf,
+    #[serde(default)]
     pub bots: HashMap<String, BotConfig>,
+}
+
+fn default_data_dir() -> PathBuf {
+    directories::ProjectDirs::from("com", "cortex-mem", "tars")
+        .map(|dirs| dirs.data_dir().to_path_buf())
+        .unwrap_or_else(|| PathBuf::from("./.cortex"))
 }
 
 impl Default for AppConfig {
@@ -83,24 +92,62 @@ pub struct ConfigManager {
 
 impl ConfigManager {
     pub fn new() -> Result<Self> {
+        // Get current working directory
+        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
+        
+        // System config directory
         let config_dir = directories::ProjectDirs::from("com", "cortex-mem", "tars")
             .map(|dirs| dirs.config_dir().to_path_buf())
             .unwrap_or_else(|| PathBuf::from("./config"));
 
         fs::create_dir_all(&config_dir)?;
 
-        let config_path = config_dir.join("config.toml");
-        let bots_path = config_dir.join("bots.toml");
+        // Check for config.toml: prioritize current directory
+        let local_config_path = current_dir.join("config.toml");
+        let system_config_path = config_dir.join("config.toml");
+        
+        let config_path = if local_config_path.exists() {
+            println!("✓ Using config.toml from current directory: {:?}", local_config_path);
+            local_config_path
+        } else if system_config_path.exists() {
+            println!("✓ Using config.toml from system directory: {:?}", system_config_path);
+            system_config_path
+        } else {
+            println!("✓ No config.toml found, creating default in system directory: {:?}", system_config_path);
+            system_config_path
+        };
+
+        // Check for bots.toml: prioritize current directory
+        let local_bots_path = current_dir.join("bots.toml");
+        let system_bots_path = config_dir.join("bots.toml");
+        
+        let bots_path = if local_bots_path.exists() {
+            println!("✓ Using bots.toml from current directory: {:?}", local_bots_path);
+            local_bots_path
+        } else {
+            println!("✓ Using bots.toml from system directory: {:?}", system_bots_path);
+            system_bots_path
+        };
 
         // Load or create main config
         let mut config = if config_path.exists() {
             let content = fs::read_to_string(&config_path)?;
-            toml::from_str(&content).unwrap_or_default()
+            match toml::from_str(&content) {
+                Ok(c) => {
+                    println!("✓ Successfully loaded config from: {:?}", config_path);
+                    c
+                }
+                Err(e) => {
+                    println!("⚠ Failed to parse config file: {}, using default", e);
+                    AppConfig::default()
+                }
+            }
         } else {
             let default_config = AppConfig::default();
             // Save default config
             let content = toml::to_string_pretty(&default_config)?;
             fs::write(&config_path, content)?;
+            println!("✓ Created default config at: {:?}", config_path);
             default_config
         };
 
@@ -108,7 +155,9 @@ impl ConfigManager {
         if bots_path.exists() {
             let content = fs::read_to_string(&bots_path)?;
             if let Ok(bots) = toml::from_str::<HashMap<String, BotConfig>>(&content) {
+                let bots_count = bots.len();
                 config.bots = bots;
+                println!("✓ Loaded {} bots from: {:?}", bots_count, bots_path);
             }
         }
 
@@ -152,9 +201,19 @@ impl ConfigManager {
     }
 
     fn save_bots(&self, bots: &HashMap<String, BotConfig>) -> Result<()> {
-        let bots_path = self.config_path.parent().unwrap().join("bots.toml");
+        // Try to save in current directory first, fallback to parent of config_path
+        let current_dir = std::env::current_dir()?;
+        let current_bots_path = current_dir.join("bots.toml");
+        
+        let bots_path = if current_bots_path.parent().is_some() {
+            current_bots_path
+        } else {
+            self.config_path.parent().unwrap().join("bots.toml")
+        };
+        
         let content = toml::to_string_pretty(bots)?;
         fs::write(&bots_path, content)?;
+        log::info!("Saved bots to: {:?}", bots_path);
         Ok(())
     }
 }
