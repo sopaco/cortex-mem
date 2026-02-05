@@ -6,8 +6,6 @@ description = "TARS - Personal Assistant Demo based on Cortex Memory V2"
 authors = ["Cortex Memory Team"]
 license = "MIT"
 
-[workspace]
-
 [dependencies]
 # Cortex Memory V2 dependencies
 cortex-mem-core = { path = "../../cortex-mem-core", features = ["vector-search"] }

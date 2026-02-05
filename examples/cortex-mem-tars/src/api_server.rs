@@ -25,7 +25,7 @@ pub struct RetrieveMemoryQuery {
     /// Search query
     pub query: Option<String>,
     /// Speaker type filter
-    pub speaker_type: Option<String>,
+    pub _speaker_type: Option<String>,
     /// Result limit
     pub limit: Option<usize>,
 }
@@ -34,11 +34,11 @@ pub struct RetrieveMemoryQuery {
 #[derive(Debug, Deserialize)]
 pub struct ListMemoryQuery {
     /// Speaker type filter
-    pub speaker_type: Option<String>,
+    pub _speaker_type: Option<String>,
     /// Result limit
     pub limit: Option<usize>,
     /// Offset
-    pub offset: Option<usize>,
+    pub _offset: Option<usize>,
 }
 
 /// API server state

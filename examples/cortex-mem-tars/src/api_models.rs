@@ -11,10 +11,10 @@ pub struct StoreMemoryRequest {
     pub timestamp: String,
     /// Speaker type: "user" or "other"
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub speaker_type: Option<String>,
+    pub _speaker_type: Option<String>,
     /// Speaker confidence (0-1)
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub speaker_confidence: Option<f32>,
+    pub _speaker_confidence: Option<f32>,
 }
 
 /// Store memory response

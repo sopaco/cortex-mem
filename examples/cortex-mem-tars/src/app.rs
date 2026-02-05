@@ -22,7 +22,6 @@ use tokio::sync::mpsc;
 /// Application message types
 #[derive(Debug, Clone)]
 pub enum AppMessage {
-    Log(String),
     AssistantResponse(String),
 }
 
@@ -176,7 +175,6 @@ impl App {
                         self.ui.invalidate_render_cache(None);
                         self.ui.auto_scroll = true;
                     }
-                    AppMessage::Log(_) => {}
                 }
             }
 
@@ -545,7 +543,6 @@ impl App {
                         conversations.push((user_msg, msg.content.clone()));
                     }
                 }
-                _ => {}
             }
         }
 
@@ -763,7 +760,7 @@ impl App {
                 .parse::<u16>()
                 .unwrap_or(18199);
 
-            let current_bot_id = if let Ok(bot_id) = self.current_bot_id.read() {
+            let _current_bot_id = if let Ok(bot_id) = self.current_bot_id.read() {
                 bot_id.clone()
             } else {
                 None

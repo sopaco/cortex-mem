@@ -6,7 +6,6 @@ use std::sync::Arc;
 /// Message role
 #[derive(Debug, Clone, PartialEq)]
 pub enum MessageRole {
-    System,
     User,
     Assistant,
 }
@@ -26,10 +25,6 @@ impl ChatMessage {
             content,
             timestamp: Local::now(),
         }
-    }
-
-    pub fn system(content: impl Into<String>) -> Self {
-        Self::new(MessageRole::System, content.into())
     }
 
     pub fn user(content: impl Into<String>) -> Self {
@@ -156,7 +151,6 @@ pub async fn agent_reply(
         let role = match msg.role {
             MessageRole::User => "user",
             MessageRole::Assistant => "assistant",
-            MessageRole::System => "system",
         };
         messages.push(json!({
             "role": role,

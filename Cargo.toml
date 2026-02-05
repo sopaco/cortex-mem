@@ -5,9 +5,10 @@ members = [
     "cortex-mem-cli",
     "cortex-mem-mcp",
     "cortex-mem-config",
-    "cortex-mem-tools",   # ✅ V2适配完成
-    "cortex-mem-rig",     # ✅ V2适配完成
-    "cortex-mem-service", # ✅ V2重做完成
+    "cortex-mem-tools",
+    "cortex-mem-rig",
+    "cortex-mem-service",
+    "examples/cortex-mem-tars"
 ]
 
 [workspace.package]

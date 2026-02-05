@@ -65,7 +65,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         let data_dir = directories::ProjectDirs::from("com", "cortex-mem", "tars")
             .map(|dirs| dirs.data_dir().to_path_buf())
-            .unwrap_or_else(|| PathBuf::from("./cortex-data"));
+            .unwrap_or_else(|| PathBuf::from("./.cortex"));
 
         Self {
             llm: LLMConfig::default(),
@@ -123,10 +123,6 @@ impl ConfigManager {
             .parent()
             .unwrap_or(&self.config_path)
             .to_path_buf()
-    }
-
-    pub fn data_dir(&self) -> &PathBuf {
-        &self.config.data_dir
     }
 
     pub fn get_bots(&self) -> Result<Vec<BotConfig>> {

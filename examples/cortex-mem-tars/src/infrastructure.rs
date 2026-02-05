@@ -5,7 +5,7 @@ use std::sync::Arc;
 /// Infrastructure for cortex-mem-tars using V2 architecture
 pub struct Infrastructure {
     operations: Arc<MemoryOperations>,
-    data_dir: String,
+    _data_dir: String,
 }
 
 impl Infrastructure {
@@ -22,7 +22,7 @@ impl Infrastructure {
 
         Ok(Self {
             operations: Arc::new(operations),
-            data_dir: data_dir.to_string(),
+            _data_dir: data_dir.to_string(),
         })
     }
 
@@ -32,7 +32,7 @@ impl Infrastructure {
     }
 
     /// Get data directory
-    pub fn data_dir(&self) -> &str {
-        &self.data_dir
+    pub fn _data_dir(&self) -> &str {
+        &self._data_dir
     }
 }
