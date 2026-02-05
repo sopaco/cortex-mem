@@ -4,7 +4,7 @@ use std::fs;
 use std::path::Path;
 use tracing::info;
 use tracing_subscriber::{
-    EnvFilter, Layer, fmt, fmt::time::ChronoLocal, layer::SubscriberExt, util::SubscriberInitExt,
+    EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
 /// 初始化日志系统
@@ -43,7 +43,6 @@ pub fn init_logging(config: &cortex_mem_config::LoggingConfig) -> Result<()> {
         .with_target(false)
         .with_ansi(false)
         .with_writer(std::sync::Mutex::new(file_writer))
-        .with_timer(ChronoLocal::new("%Y-%m-%d %H:%M:%S%.3f".into()))
         .with_filter(file_filter);
 
     // 初始化tracing订阅者，只添加文件层，不添加控制台层

@@ -45,6 +45,9 @@ pub trait VectorStore: Send + Sync + dyn_clone::DynClone {
 
     /// Check if the vector store is healthy
     async fn health_check(&self) -> Result<bool>;
+    
+    /// Scroll through memory IDs (for incremental indexing)
+    async fn scroll_ids(&self, filters: &Filters, limit: usize) -> Result<Vec<String>>;
 }
 
 dyn_clone::clone_trait_object!(VectorStore);

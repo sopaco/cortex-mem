@@ -11,7 +11,7 @@ pub struct LayerManager {
     filesystem: Arc<CortexFilesystem>,
     abstract_gen: AbstractGenerator,
     overview_gen: OverviewGenerator,
-    llm_client: Option<Arc<LLMClient>>,
+    llm_client: Option<Arc<dyn LLMClient>>,
 }
 
 impl LayerManager {
@@ -24,7 +24,7 @@ impl LayerManager {
         }
     }
 
-    pub fn with_llm(filesystem: Arc<CortexFilesystem>, llm_client: Arc<LLMClient>) -> Self {
+    pub fn with_llm(filesystem: Arc<CortexFilesystem>, llm_client: Arc<dyn LLMClient>) -> Self {
         Self {
             filesystem,
             abstract_gen: AbstractGenerator::new(),

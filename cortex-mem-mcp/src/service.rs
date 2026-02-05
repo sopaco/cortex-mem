@@ -11,7 +11,7 @@ use rmcp::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 /// MCP Service for Cortex Memory
 #[derive(Clone)]
@@ -148,16 +148,55 @@ impl MemoryMcpService {
     ) -> Result<Json<QueryMemoryResult>, String> {
         debug!("query_memory called with args: {:?}", params.0);
 
-        let _limit = params.0.limit.unwrap_or(10);
+        let limit = params.0.limit.unwrap_or(10);
+        let query = &params.0.query;
         
-        // Placeholder response
-        Ok(Json(QueryMemoryResult {
-            success: true,
-            query: params.0.query.clone(),
-            results: vec![],
-            total: 0,
-            message: "Query functionality not yet fully implemented".to_string(),
-        }))
+        // Build search scope based on dimensions
+        let scope = if let Some(ref repos) = params.0.repos_dimension {
+            if let Some(ref user) = params.0.user_dimension {
+                format!("cortex://agents/{}/users/{}/threads", repos, user)
+            } else {
+                format!("cortex://agents/{}/threads", repos)
+            }
+        } else if let Some(ref user) = params.0.user_dimension {
+            format!("cortex://users/{}/threads", user)
+        } else {
+            "cortex://threads".to_string()
+        };
+        
+        // Use RetrievalEngine for search
+        let layer_manager = Arc::new(cortex_mem_core::LayerManager::new(self.filesystem.clone()));
+        let engine = cortex_mem_core::RetrievalEngine::new(self.filesystem.clone(), layer_manager);
+        
+        let options = cortex_mem_core::RetrievalOptions {
+            top_k: limit,
+            min_score: 0.3,
+            load_details: true,
+            max_candidates: limit * 2,
+        };
+        
+        match engine.search(query, &scope, options).await {
+            Ok(result) => {
+                let results: Vec<String> = result.results.iter()
+                    .map(|r| format!("{}: {}", r.uri, r.snippet))
+                    .collect();
+                
+                let total = results.len();
+                info!("Query '{}' found {} results in scope {}", query, total, scope);
+                
+                Ok(Json(QueryMemoryResult {
+                    success: true,
+                    query: query.clone(),
+                    results,
+                    total,
+                    message: format!("Found {} memories", total),
+                }))
+            }
+            Err(e) => {
+                error!("Query failed: {}", e);
+                Err(format!("Search failed: {}", e))
+            }
+        }
     }
 
     #[tool(description = "List memories from a specific dimension")]
@@ -167,15 +206,60 @@ impl MemoryMcpService {
     ) -> Result<Json<ListMemoriesResult>, String> {
         debug!("list_memories called with args: {:?}", params.0);
 
-        let _limit = params.0.limit.unwrap_or(50);
-
-        // Placeholder response
-        Ok(Json(ListMemoriesResult {
-            success: true,
-            memories: vec![],
-            total: 0,
-            message: "List functionality not yet fully implemented".to_string(),
-        }))
+        let limit = params.0.limit.unwrap_or(50);
+        
+        // Build scope based on dimensions
+        let scope = if let Some(ref repos) = params.0.repos_dimension {
+            if let Some(ref user) = params.0.user_dimension {
+                format!("cortex://agents/{}/users/{}/threads", repos, user)
+            } else {
+                format!("cortex://agents/{}/threads", repos)
+            }
+        } else if let Some(ref user) = params.0.user_dimension {
+            format!("cortex://users/{}/threads", user)
+        } else {
+            "cortex://threads".to_string()
+        };
+        
+        // List files in the scope
+        match self.filesystem.list(&scope).await {
+            Ok(entries) => {
+                let mut memories = Vec::new();
+                
+                for entry in entries {
+                    // Skip hidden files except .abstract.md and .overview.md
+                    if entry.name.starts_with('.') && 
+                       entry.name != ".abstract.md" && 
+                       entry.name != ".overview.md" {
+                        continue;
+                    }
+                    
+                    if entry.is_directory {
+                        memories.push(format!("📁 {}/", entry.name));
+                    } else {
+                        memories.push(format!("📄 {} ({} bytes)", entry.name, entry.size));
+                    }
+                    
+                    if memories.len() >= limit {
+                        break;
+                    }
+                }
+                
+                let total = memories.len();
+                info!("Listed {} memories in scope {}", total, scope);
+                
+                Ok(Json(ListMemoriesResult {
+                    success: true,
+                    memories,
+                    total,
+                    message: format!("Found {} items", total),
+                }))
+            }
+            Err(e) => {
+                error!("List failed: {}", e);
+                Err(format!("Failed to list memories: {}", e))
+            }
+        }
     }
 
     #[tool(description = "Retrieve a specific memory by its URI")]

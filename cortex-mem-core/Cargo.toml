@@ -18,11 +18,18 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 async-trait = { workspace = true }
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 walkdir = { workspace = true }
 rig-core = { workspace = true }
 reqwest = { workspace = true }
 rusqlite = { workspace = true }
 tantivy = { workspace = true }
+
+# Additional dependencies
+regex = "1.10"
+sha2 = "0.10"
+cortex-mem-config = { path = "../cortex-mem-config" }
+schemars = "0.8"
 
 # Optional dependencies for features
 qdrant-client = { version = "1.11", optional = true }

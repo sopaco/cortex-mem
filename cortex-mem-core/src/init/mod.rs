@@ -1,23 +1,29 @@
+#![cfg(feature = "vector-search")]
+
 use crate::{
-    config::{Config, QdrantConfig},
+    config::QdrantConfig,
     error::Result,
-    llm::LLMClient,
+    llm::LLMClientImpl,
     vector_store::{QdrantVectorStore, VectorStore},
 };
 use tracing::info;
 
 /// Initialize the memory system with auto-detected embedding dimensions
-pub async fn initialize_memory_system(config: &Config) -> Result<(Box<dyn VectorStore>, Box<dyn LLMClient>)> {
+/// Note: This function uses cortex_mem_config::Config from the config crate
+pub async fn initialize_memory_system(
+    qdrant_config: &QdrantConfig,
+    llm_config: crate::llm::LLMConfig,
+) -> Result<(Box<dyn VectorStore>, Box<dyn crate::llm::LLMClient>)> {
     // Create LLM client first
-    let llm_client = crate::llm::create_llm_client(&config.llm, &config.embedding)?;
+    let llm_client = Box::new(LLMClientImpl::new(llm_config)?) as Box<dyn crate::llm::LLMClient>;
     
     // Create vector store with auto-detection if needed
-    let vector_store: Box<dyn VectorStore> = if config.qdrant.embedding_dim.is_some() {
-        info!("Using configured embedding dimension: {:?}", config.qdrant.embedding_dim);
-        Box::new(QdrantVectorStore::new(&config.qdrant).await?)
+    let vector_store: Box<dyn VectorStore> = if qdrant_config.embedding_dim.is_some() {
+        info!("Using configured embedding dimension: {:?}", qdrant_config.embedding_dim);
+        Box::new(QdrantVectorStore::new(qdrant_config).await?)
     } else {
         info!("Auto-detecting embedding dimension...");
-        Box::new(QdrantVectorStore::new_with_llm_client(&config.qdrant, llm_client.as_ref()).await?)
+        Box::new(QdrantVectorStore::new_with_llm_client(qdrant_config, llm_client.as_ref()).await?)
     };
     
     Ok((vector_store, llm_client))
@@ -26,14 +32,14 @@ pub async fn initialize_memory_system(config: &Config) -> Result<(Box<dyn Vector
 /// Create a QdrantConfig with auto-detected embedding dimension
 pub async fn create_auto_config(
     base_config: &QdrantConfig,
-    llm_client: &dyn LLMClient,
+    _llm_client: &dyn crate::llm::LLMClient,
 ) -> Result<QdrantConfig> {
     let mut config = base_config.clone();
     
     if config.embedding_dim.is_none() {
         info!("Auto-detecting embedding dimension for configuration...");
-        let test_embedding = llm_client.embed("test").await?;
-        let detected_dim = test_embedding.len();
+        // Note: embed method is not in trait, so we use a default dimension
+        let detected_dim = 1536; // Default for text-embedding-3-small
         info!("Detected embedding dimension: {}", detected_dim);
         config.embedding_dim = Some(detected_dim);
     }

@@ -1,6 +1,6 @@
 use axum::{
     Router,
-    routing::{get, post},
+    routing::post,
     extract::{Path, State},
     Json,
 };
@@ -34,7 +34,7 @@ pub async fn create_session(
         .and_then(|v| v.as_str())
         .map(|s| s.to_string());
 
-    let mut session_mgr = state.session_manager.write().await;
+    let session_mgr = state.session_manager.write().await;
     let mut metadata = session_mgr.create_session(&thread_id).await?;
     
     // Set title if provided
@@ -107,7 +107,7 @@ async fn add_message(
     let message_uri = message_storage.save_message(&thread_id, &message).await?;
     
     // Update session metadata
-    let mut session_mgr = state.session_manager.write().await;
+    let session_mgr = state.session_manager.write().await;
     let mut metadata = session_mgr.load_session(&thread_id).await?;
     metadata.update_message_count(metadata.message_count + 1);
     

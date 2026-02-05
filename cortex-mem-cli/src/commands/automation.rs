@@ -34,10 +34,8 @@ pub async fn index_session(
         let embedding = Arc::new(EmbeddingClient::new(embedding_config)?);
 
         // Create Qdrant store
-        let llm_config = load_llm_config_from_toml("config.toml")?;
-        let llm_client = LLMClient::new(llm_config)?;
         let qdrant = Arc::new(
-            QdrantVectorStore::new_with_llm_client(&qdrant_config, &llm_client).await?
+            QdrantVectorStore::new(&qdrant_config).await?
         );
 
         // Create indexer
@@ -61,7 +59,7 @@ pub async fn index_session(
 pub async fn auto_extract_on_close(
     fs: Arc<CortexFilesystem>,
     thread: &str,
-    llm: Arc<LLMClient>,
+    llm: Arc<dyn cortex_mem_core::llm::LLMClient>,
 ) -> Result<()> {
     println!("{} Auto-extracting memories on session close: {}", "🧠".bold(), thread.cyan());
 

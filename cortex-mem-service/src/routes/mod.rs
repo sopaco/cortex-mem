@@ -1,6 +1,6 @@
 use axum::{
     Router,
-    routing::{get, post},
+    routing::post,
 };
 use crate::state::AppState;
 
@@ -18,5 +18,5 @@ pub fn api_routes() -> Router<std::sync::Arc<AppState>> {
         // Search routes
         .nest("/search", search::routes())
         // Automation routes
-        .route("/automation/extract/:thread_id", post(crate::handlers::automation::trigger_extraction))
+        .nest("/automation", automation::routes())
 }

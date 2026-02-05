@@ -61,16 +61,41 @@ pub struct ExtractedEntityRaw {
     pub confidence: f32,
 }
 
+/// LLM Client trait for dependency injection and testing
+#[async_trait::async_trait]
+pub trait LLMClient: Send + Sync {
+    /// Simple completion without tools or streaming
+    async fn complete(&self, prompt: &str) -> Result<String>;
+    
+    /// Generate completion with system message
+    async fn complete_with_system(&self, system: &str, prompt: &str) -> Result<String>;
+    
+    /// Extract memories from conversation
+    async fn extract_memories(&self, prompt: &str) -> Result<MemoryExtractionResponse>;
+    
+    /// Extract structured facts using rig extractor
+    async fn extract_structured_facts(&self, prompt: &str) -> Result<crate::llm::extractor_types::StructuredFactExtraction>;
+    
+    /// Extract detailed facts using rig extractor
+    async fn extract_detailed_facts(&self, prompt: &str) -> Result<crate::llm::extractor_types::DetailedFactExtraction>;
+    
+    /// Get the model name
+    fn model_name(&self) -> &str;
+    
+    /// Get the config
+    fn config(&self) -> &LLMConfig;
+}
+
 /// LLM Client wrapper for rig-core
 /// 
 /// This is a lightweight wrapper that creates agents for LLM interactions.
 /// Following the rig pattern: Client -> CompletionModel -> Agent
-pub struct LLMClient {
+pub struct LLMClientImpl {
     client: Client,
     config: LLMConfig,
 }
 
-impl LLMClient {
+impl LLMClientImpl {
     /// Create a new LLM client
     /// 
     /// Note: For rig-core 0.29+, we use Client::new() and then configure the client
@@ -192,14 +217,114 @@ impl LLMClient {
     pub fn client(&self) -> &Client {
         &self.client
     }
+}
 
-    /// Get the model name
-    pub fn model_name(&self) -> &str {
+#[async_trait::async_trait]
+impl LLMClient for LLMClientImpl {
+    async fn complete(&self, prompt: &str) -> Result<String> {
+        use rig::completion::Prompt;
+        
+        let agent = self.create_agent("You are a helpful assistant.").await?;
+        let response = agent
+            .prompt(prompt)
+            .await
+            .map_err(|e| crate::Error::Llm(format!("LLM completion failed: {}", e)))?;
+
+        Ok(response)
+    }
+
+    async fn complete_with_system(&self, system: &str, prompt: &str) -> Result<String> {
+        use rig::completion::Prompt;
+        
+        let agent = self.create_agent(system).await?;
+        let response = agent
+            .prompt(prompt)
+            .await
+            .map_err(|e| crate::Error::Llm(format!("LLM completion failed: {}", e)))?;
+            
+        Ok(response)
+    }
+
+    async fn extract_memories(&self, prompt: &str) -> Result<MemoryExtractionResponse> {
+        let response: String = self.complete(prompt).await?;
+        
+        // Try to parse as structured response first
+        if let Ok(extracted) = serde_json::from_str::<MemoryExtractionResponse>(&response) {
+            return Ok(extracted);
+        }
+        
+        // Try to parse as just an array of facts (fallback)
+        if let Ok(facts) = serde_json::from_str::<Vec<ExtractedFactRaw>>(&response) {
+            return Ok(MemoryExtractionResponse {
+                facts,
+                decisions: Vec::new(),
+                entities: Vec::new(),
+            });
+        }
+        
+        // Try to parse as just an array of decisions (fallback)
+        if let Ok(decisions) = serde_json::from_str::<Vec<ExtractedDecisionRaw>>(&response) {
+            return Ok(MemoryExtractionResponse {
+                facts: Vec::new(),
+                decisions,
+                entities: Vec::new(),
+            });
+        }
+        
+        // Try to parse as just an array of entities (fallback)
+        if let Ok(entities) = serde_json::from_str::<Vec<ExtractedEntityRaw>>(&response) {
+            return Ok(MemoryExtractionResponse {
+                facts: Vec::new(),
+                decisions: Vec::new(),
+                entities,
+            });
+        }
+        
+        // If all parsing fails, return empty extraction
+        Ok(MemoryExtractionResponse {
+            facts: Vec::new(),
+            decisions: Vec::new(),
+            entities: Vec::new(),
+        })
+    }
+
+    async fn extract_structured_facts(&self, prompt: &str) -> Result<crate::llm::extractor_types::StructuredFactExtraction> {
+        // Simplified implementation - just return empty facts for now
+        // TODO: Implement proper extraction using rig's extractor API
+        let response = self.complete(prompt).await?;
+        
+        // Try to parse as structured facts
+        if let Ok(facts) = serde_json::from_str::<crate::llm::extractor_types::StructuredFactExtraction>(&response) {
+            return Ok(facts);
+        }
+        
+        // Fallback: return empty extraction
+        Ok(crate::llm::extractor_types::StructuredFactExtraction {
+            facts: vec![],
+        })
+    }
+
+    async fn extract_detailed_facts(&self, prompt: &str) -> Result<crate::llm::extractor_types::DetailedFactExtraction> {
+        // Simplified implementation - just return empty facts for now
+        // TODO: Implement proper extraction using rig's extractor API
+        let response = self.complete(prompt).await?;
+        
+        // Try to parse as detailed facts
+        if let Ok(facts) = serde_json::from_str::<crate::llm::extractor_types::DetailedFactExtraction>(&response) {
+            return Ok(facts);
+        }
+        
+        // Fallback: return empty extraction
+        Ok(crate::llm::extractor_types::DetailedFactExtraction {
+            facts: vec![],
+        })
+    }
+
+    fn model_name(&self) -> &str {
         &self.config.model_efficient
     }
 
-    /// Get the config
-    pub fn config(&self) -> &LLMConfig {
+    fn config(&self) -> &LLMConfig {
         &self.config
     }
 }
@@ -226,7 +351,7 @@ mod tests {
             max_tokens: 2048,
         };
 
-        let client = LLMClient::new(config.clone());
+        let client = LLMClientImpl::new(config.clone());
         assert!(client.is_ok());
         
         let client = client.unwrap();

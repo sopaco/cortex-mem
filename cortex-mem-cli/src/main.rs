@@ -206,14 +206,14 @@ async fn main() -> Result<()> {
                         Ok(config) => config,
                         Err(e) => {
                             eprintln!("Failed to load config.toml: {}", e);
-                            LLMClient::default_config()
+                            cortex_mem_core::llm::client::LLMConfig::default()
                         }
                     }
                 } else {
-                    LLMClient::default_config()
+                    cortex_mem_core::llm::client::LLMConfig::default()
                 };
                 
-                let llm = Arc::new(LLMClient::new(llm_config)?);
+                let llm = Arc::new(cortex_mem_core::llm::LLMClientImpl::new(llm_config)?);
                 automation::auto_extract_on_close(fs, &thread, llm).await?;
             }
         },

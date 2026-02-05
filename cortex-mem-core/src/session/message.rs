@@ -101,6 +101,9 @@ impl MessageStorage {
     /// Save a message to the timeline
     /// 
     /// URI format: cortex://threads/{thread_id}/timeline/{YYYY-MM}/{DD}/{HH_MM_SS}_{message_id}.md
+    /// 
+    /// Note: L0 and L1 layer generation is handled separately by the LayerManager
+    /// to avoid coupling message storage with LLM operations
     pub async fn save_message(&self, thread_id: &str, message: &Message) -> Result<String> {
         let timestamp = message.timestamp;
         
@@ -123,6 +126,29 @@ impl MessageStorage {
         
         // Write to filesystem
         self.filesystem.write(&uri, &content).await?;
+        
+        Ok(uri)
+    }
+    
+    /// Save a message and trigger layer generation
+    /// 
+    /// This method saves the message and generates L0/L1 layers if llm_client is provided
+    pub async fn save_message_with_layers(
+        &self,
+        thread_id: &str,
+        message: &Message,
+        layer_manager: &crate::layers::LayerManager,
+    ) -> Result<String> {
+        // First save the message
+        let uri = self.save_message(thread_id, message).await?;
+        
+        // Generate L0 and L1 layers for the thread
+        // This is done asynchronously and errors are logged but don't fail the save
+        let thread_uri = format!("cortex://threads/{}", thread_id);
+        let content = message.to_markdown();
+        if let Err(e) = layer_manager.generate_all_layers(&thread_uri, &content).await {
+            tracing::warn!("Failed to generate layers for thread {}: {}", thread_id, e);
+        }
         
         Ok(uri)
     }

@@ -27,7 +27,7 @@ impl Default for ExtractionConfig {
 /// Memory extractor for analyzing conversations
 pub struct MemoryExtractor {
     filesystem: Arc<CortexFilesystem>,
-    llm_client: Arc<LLMClient>,
+    llm_client: Arc<dyn LLMClient>,
     config: ExtractionConfig,
 }
 
@@ -35,7 +35,7 @@ impl MemoryExtractor {
     /// Create a new memory extractor
     pub fn new(
         filesystem: Arc<CortexFilesystem>,
-        llm_client: Arc<LLMClient>,
+        llm_client: Arc<dyn LLMClient>,
         config: ExtractionConfig,
     ) -> Self {
         Self {
@@ -101,7 +101,7 @@ impl MemoryExtractor {
         
         // Build messages from markdown content
         let mut messages = Vec::new();
-        for (uri, content) in &message_contents {
+        for (_uri, content) in &message_contents {
             // Parse markdown to extract message info
             if let Some(message) = self.parse_message_markdown(content) {
                 messages.push(message);
@@ -139,7 +139,7 @@ impl MemoryExtractor {
         // Simple markdown parsing - look for role and content
         let mut role = MessageRole::User;
         let mut message_content = String::new();
-        let mut id = uuid::Uuid::new_v4();
+        let id = uuid::Uuid::new_v4();
         
         for line in content.lines() {
             if line.starts_with("# 👤 User") {
@@ -147,11 +147,10 @@ impl MemoryExtractor {
             } else if line.starts_with("# 🤖 Assistant") {
                 role = MessageRole::Assistant;
             } else if line.starts_with("**ID**: `") {
-                // Extract ID
+                // Extract ID (currently not used, but parsing for future use)
+                #[allow(unused_variables)]
                 if let Some(id_str) = line.strip_prefix("**ID**: `").and_then(|s| s.strip_suffix("`")) {
-                    if let Ok(parsed_id) = uuid::Uuid::parse_str(id_str) {
-                        id = parsed_id;
-                    }
+                    // ID parsing logic here if needed in future
                 }
             } else if line.starts_with("## Content") {
                 // Content starts after this line

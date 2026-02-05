@@ -26,48 +26,44 @@ pub async fn search_filesystem(
     println!("  {} Scope: {}", "📂".dimmed(), scope.dimmed());
     println!("  {} Strategy: {}", "⚙".dimmed(), "Filesystem".dimmed());
     
-    // Use retrieval engine for filesystem search
-    let layer_manager = Arc::new(LayerManager::new(fs.clone()));
-    let engine = RetrievalEngine::new(fs.clone(), layer_manager);
+    // Simple filesystem search
+    println!("  {} Searching filesystem...", "🔍".dimmed());
     
-    let options = RetrievalOptions {
-        top_k: 10,
-        min_score: 0.3,
-        load_details: false,
-        max_candidates: 50,
-    };
+    let entries = fs.list(&scope).await?;
+    let mut results = Vec::new();
     
-    let result = engine.search(query, &scope, options).await?;
+    for entry in entries {
+        if !entry.is_directory && entry.uri.ends_with(".md") {
+            if let Ok(content) = fs.read(&entry.uri).await {
+                if content.to_lowercase().contains(&query.to_lowercase()) {
+                    results.push((entry.uri, content));
+                }
+            }
+        }
+    }
     
     // Display results
-    if result.results.is_empty() {
+    if results.is_empty() {
         println!("\n{} No results found", "ℹ".yellow().bold());
         return Ok(());
     }
     
-    println!("\n{} Found {} results:", "✓".green().bold(), result.results.len());
+    println!("\n{} Found {} results:", "✓".green().bold(), results.len());
     println!();
     
-    for (i, res) in result.results.iter().enumerate() {
-        println!("{} {} (score: {:.2})", 
+    for (i, (uri, content)) in results.iter().enumerate() {
+        let snippet = if content.len() > 100 {
+            format!("{}...", &content[..100])
+        } else {
+            content.clone()
+        };
+        println!("{} {}", 
             format!("{}.", i + 1).dimmed(),
-            res.uri.bright_blue(),
-            res.score
+            uri.bright_blue()
         );
-        println!("   {}", res.snippet.dimmed());
+        println!("   {}", snippet.dimmed());
         println!();
     }
-    
-    // Display trace
-    println!("{} Search trace:", "📊".dimmed());
-    for step in &result.trace.steps {
-        println!("  • {:?}: {} ({} ms)", 
-            step.step_type,
-            step.description.dimmed(),
-            step.duration_ms
-        );
-    }
-    println!("  {} Total: {} ms", "⏱".dimmed(), result.trace.total_duration_ms);
     
     Ok(())
 }
@@ -100,7 +96,7 @@ pub async fn search_vector(
     
     // Create Qdrant store with LLM client for dimension detection
     let llm_config = load_llm_config_from_toml("config.toml")?;
-    let llm_client = LLMClient::new(llm_config)?;
+    let llm_client = cortex_mem_core::llm::LLMClientImpl::new(llm_config)?;
     let qdrant = Arc::new(
         QdrantVectorStore::new_with_llm_client(&qdrant_config, &llm_client).await?
     );

@@ -4,7 +4,7 @@ use cortex_mem_core::{
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{info, warn};
+use tracing::info;
 
 /// High-level memory operations
 /// 
@@ -130,9 +130,9 @@ impl MemoryOperations {
                 let thread_id = entry.name;
                 if let Ok(metadata) = self.session_manager.read().await.load_session(&thread_id).await {
                     let status_str = match metadata.status {
-                        cortex_mem_core::SessionStatus::Active => "active",
-                        cortex_mem_core::SessionStatus::Closed => "closed",
-                        cortex_mem_core::SessionStatus::Archived => "archived",
+                        cortex_mem_core::session::manager::SessionStatus::Active => "active",
+                        cortex_mem_core::session::manager::SessionStatus::Closed => "closed",
+                        cortex_mem_core::session::manager::SessionStatus::Archived => "archived",
                     };
                     
                     session_infos.push(SessionInfo {
@@ -155,9 +155,9 @@ impl MemoryOperations {
         let metadata = sm.load_session(thread_id).await?;
 
         let status_str = match metadata.status {
-            cortex_mem_core::SessionStatus::Active => "active",
-            cortex_mem_core::SessionStatus::Closed => "closed",
-            cortex_mem_core::SessionStatus::Archived => "archived",
+            cortex_mem_core::session::manager::SessionStatus::Active => "active",
+            cortex_mem_core::session::manager::SessionStatus::Closed => "closed",
+            cortex_mem_core::session::manager::SessionStatus::Archived => "archived",
         };
 
         Ok(SessionInfo {

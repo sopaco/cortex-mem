@@ -13,7 +13,7 @@ impl AbstractGenerator {
     }
     
     /// Generate abstract from content using LLM
-    pub async fn generate_with_llm(&self, content: &str, llm: &Arc<LLMClient>) -> Result<String> {
+    pub async fn generate_with_llm(&self, content: &str, llm: &Arc<dyn LLMClient>) -> Result<String> {
         let system = "You are a summarization expert. Generate a concise 1-2 sentence abstract (max 100 tokens) that captures the core essence of the content.";
         let prompt = format!("Summarize this content in 1-2 sentences:\n\n{}", content);
         
@@ -69,7 +69,7 @@ impl OverviewGenerator {
     }
     
     /// Generate overview from content using LLM
-    pub async fn generate_with_llm(&self, content: &str, llm: &Arc<LLMClient>) -> Result<String> {
+    pub async fn generate_with_llm(&self, content: &str, llm: &Arc<dyn LLMClient>) -> Result<String> {
         let system = r#"You are a content analysis expert. Generate a structured overview (500-2000 tokens) with:
 1. Core Topics (3-5 main themes)
 2. Key Points (5-10 important takeaways)  

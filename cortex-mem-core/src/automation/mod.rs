@@ -1,8 +1,17 @@
-mod indexer;
 mod auto_extract;
 
-pub use indexer::{IndexerConfig, IndexStats};
+#[cfg(feature = "vector-search")]
+mod indexer;
+#[cfg(feature = "vector-search")]
+mod watcher;
+
+#[cfg(all(test, feature = "vector-search"))]
+mod indexer_tests;
+
 pub use auto_extract::{AutoExtractConfig, AutoExtractStats, AutoExtractor, AutoSessionManager};
 
 #[cfg(feature = "vector-search")]
-pub use indexer::AutoIndexer;
+pub use indexer::{IndexerConfig, IndexStats, AutoIndexer};
+
+#[cfg(feature = "vector-search")]
+pub use watcher::{FsWatcher, WatcherConfig, FsEvent};

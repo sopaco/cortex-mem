@@ -68,7 +68,7 @@ pub async fn extract(fs: Arc<CortexFilesystem>, thread: &str) -> Result<()> {
     };
 
     // Initialize extractor
-    let llm = Arc::new(LLMClient::new(llm_config)?);
+    let llm = Arc::new(cortex_mem_core::llm::LLMClientImpl::new(llm_config)?);
     let extractor_config = ExtractionConfig::default();
     let extractor = MemoryExtractor::new(fs.clone(), llm, extractor_config);
 
@@ -157,7 +157,7 @@ pub async fn list(fs: Arc<CortexFilesystem>) -> Result<()> {
         let metadata_uri = format!("{}/{}", entry.uri, ".session.json");
         if fs.exists(&metadata_uri).await.unwrap_or(false) {
             if let Ok(metadata_json) = fs.read(&metadata_uri).await {
-                if let Ok(metadata) = serde_json::from_str::<SessionMetadata>(&metadata_json) {
+                if let Ok(metadata) = serde_json::from_str::<cortex_mem_core::session::manager::SessionMetadata>(&metadata_json) {
                     println!("  {}: {:?}", "Status".dimmed(), metadata.status);
                     println!("  {}: {}", "Messages".dimmed(), metadata.message_count);
                     if let Some(ref title) = metadata.title {

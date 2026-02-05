@@ -124,15 +124,16 @@ pub fn detect_language(text: &str) -> LanguageInfo {
 }
 
 /// Parse messages from conversation (similar to mem0's parse_messages)
-pub fn parse_messages(messages: &[crate::types::Message]) -> String {
+pub fn parse_messages(messages: &[crate::session::Message]) -> String {
+    use crate::session::MessageRole;
+    
     let mut response = String::new();
     
     for msg in messages {
-        match msg.role.as_str() {
-            "system" => response.push_str(&format!("system: {}\n", msg.content)),
-            "user" => response.push_str(&format!("user: {}\n", msg.content)),
-            "assistant" => response.push_str(&format!("assistant: {}\n", msg.content)),
-            _ => debug!("Unknown message role: {}", msg.role),
+        match msg.role {
+            MessageRole::System => response.push_str(&format!("system: {}\n", msg.content)),
+            MessageRole::User => response.push_str(&format!("user: {}\n", msg.content)),
+            MessageRole::Assistant => response.push_str(&format!("assistant: {}\n", msg.content)),
         }
     }
     
@@ -197,7 +198,7 @@ pub fn sanitize_for_cypher(text: &str) -> String {
 }
 
 /// Filter message history by roles (for user-only or assistant-only extraction)
-pub fn filter_messages_by_role(messages: &[crate::types::Message], role: &str) -> Vec<crate::types::Message> {
+pub fn filter_messages_by_role(messages: &[crate::session::Message], role: crate::session::MessageRole) -> Vec<crate::session::Message> {
     messages
         .iter()
         .filter(|msg| msg.role == role)
@@ -206,10 +207,10 @@ pub fn filter_messages_by_role(messages: &[crate::types::Message], role: &str) -
 }
 
 /// Filter messages by multiple roles
-pub fn filter_messages_by_roles(messages: &[crate::types::Message], roles: &[&str]) -> Vec<crate::types::Message> {
+pub fn filter_messages_by_roles(messages: &[crate::session::Message], roles: &[crate::session::MessageRole]) -> Vec<crate::session::Message> {
     messages
         .iter()
-        .filter(|msg| roles.contains(&msg.role.as_str()))
+        .filter(|msg| roles.contains(&msg.role))
         .cloned()
         .collect()
 }

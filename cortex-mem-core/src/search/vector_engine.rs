@@ -157,7 +157,7 @@ impl VectorSearchEngine {
     async fn locate_directories(
         &self,
         query: &str,
-        root_uri: &str,
+        _root_uri: &str,
         options: &SearchOptions,
     ) -> Result<Vec<SearchResult>> {
         // For now, use semantic search to find relevant files/dirs
@@ -261,6 +261,7 @@ impl VectorSearchEngine {
 
 /// Query intent
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct QueryIntent {
     query: String,
     keywords: Vec<String>,

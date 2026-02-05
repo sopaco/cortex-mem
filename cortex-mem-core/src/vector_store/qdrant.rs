@@ -44,13 +44,13 @@ impl QdrantVectorStore {
     /// Create a new Qdrant vector store with auto-detected embedding dimension
     pub async fn new_with_llm_client(
         config: &QdrantConfig,
-        llm_client: &crate::llm::LLMClient,
+        _llm_client: &dyn crate::llm::LLMClient,
     ) -> Result<Self> {
         let client = Qdrant::from_url(&config.url)
             .build()
             .map_err(|e| Error::VectorStore(e))?;
 
-        let mut store = Self {
+        let store = Self {
             client,
             collection_name: config.collection_name.clone(),
             embedding_dim: config.embedding_dim,
@@ -903,5 +903,41 @@ impl VectorStore for QdrantVectorStore {
                 Ok(false)
             }
         }
+    }
+    
+    async fn scroll_ids(&self, filters: &Filters, limit: usize) -> Result<Vec<String>> {
+        let filter = self.filters_to_qdrant_filter(filters);
+        let limit = limit as u32;
+
+        let scroll_points = ScrollPoints {
+            collection_name: self.collection_name.clone(),
+            filter,
+            limit: Some(limit),
+            with_payload: Some(false.into()), // We only need IDs
+            with_vectors: Some(false.into()), // No vectors needed
+            ..Default::default()
+        };
+
+        let response = self
+            .client
+            .scroll(scroll_points)
+            .await
+            .map_err(|e| Error::VectorStore(e))?;
+
+        let ids: Vec<String> = response.result
+            .into_iter()
+            .filter_map(|point| {
+                point.id.and_then(|id| {
+                    match id.point_id_options {
+                        Some(point_id::PointIdOptions::Uuid(uuid)) => Some(uuid),
+                        Some(point_id::PointIdOptions::Num(num)) => Some(num.to_string()),
+                        None => None,
+                    }
+                })
+            })
+            .collect();
+
+        debug!("Scrolled {} IDs from vector store", ids.len());
+        Ok(ids)
     }
 }

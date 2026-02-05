@@ -2,7 +2,7 @@ use crate::{
     extraction::{ExtractedMemories, MemoryExtractor},
     filesystem::CortexFilesystem,
     llm::LLMClient,
-    session::{SessionManager, SessionMetadata},
+    session::{SessionManager, manager::SessionMetadata},
     Result,
 };
 use std::sync::Arc;
@@ -50,7 +50,8 @@ pub struct AutoExtractStats {
 /// 3. 支持增量更新
 pub struct AutoExtractor {
     filesystem: Arc<CortexFilesystem>,
-    llm: Arc<LLMClient>,
+    #[allow(dead_code)]
+    llm: Arc<dyn LLMClient>,
     extractor: MemoryExtractor,
     config: AutoExtractConfig,
 }
@@ -59,7 +60,7 @@ impl AutoExtractor {
     /// 创建新的自动提取器
     pub fn new(
         filesystem: Arc<CortexFilesystem>,
-        llm: Arc<LLMClient>,
+        llm: Arc<dyn LLMClient>,
         config: AutoExtractConfig,
     ) -> Self {
         let extraction_config = crate::extraction::ExtractionConfig::default();

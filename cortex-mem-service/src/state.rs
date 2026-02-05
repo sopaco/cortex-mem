@@ -2,16 +2,18 @@ use cortex_mem_core::{CortexFilesystem, LLMClient, SessionManager};
 use std::sync::Arc;
 
 #[cfg(feature = "vector-search")]
-use cortex_mem_core::QdrantVectorStore;
+use cortex_mem_core::{QdrantVectorStore, EmbeddingClient};
 
 /// Application state shared across all handlers
 #[derive(Clone)]
 pub struct AppState {
     pub filesystem: Arc<CortexFilesystem>,
     pub session_manager: Arc<tokio::sync::RwLock<SessionManager>>,
-    pub llm_client: Option<Arc<LLMClient>>,
+    pub llm_client: Option<Arc<dyn LLMClient>>,
     #[cfg(feature = "vector-search")]
     pub vector_store: Option<Arc<QdrantVectorStore>>,
+    #[cfg(feature = "vector-search")]
+    pub embedding_client: Option<Arc<EmbeddingClient>>,
 }
 
 impl AppState {
@@ -29,9 +31,9 @@ impl AppState {
         // Initialize LLM client (optional, based on env or config)
         let llm_client = Self::init_llm_client()?;
 
-        // Initialize vector store (optional, feature-gated)
+        // Initialize vector store and embedding client (optional, feature-gated)
         #[cfg(feature = "vector-search")]
-        let vector_store = Self::init_vector_store().await?;
+        let (vector_store, embedding_client) = Self::init_vector_search().await?;
 
         Ok(Self {
             filesystem,
@@ -39,10 +41,12 @@ impl AppState {
             llm_client,
             #[cfg(feature = "vector-search")]
             vector_store,
+            #[cfg(feature = "vector-search")]
+            embedding_client,
         })
     }
 
-    fn init_llm_client() -> anyhow::Result<Option<Arc<LLMClient>>> {
+    fn init_llm_client() -> anyhow::Result<Option<Arc<dyn LLMClient>>> {
         // Try to initialize from environment variables
         if let (Ok(api_url), Ok(api_key), Ok(model)) = (
             std::env::var("LLM_API_BASE_URL"),
@@ -57,9 +61,9 @@ impl AppState {
                 max_tokens: 4096,
             };
 
-            let client = LLMClient::new(config)?;
+            let client = cortex_mem_core::llm::LLMClientImpl::new(config)?;
             tracing::info!("LLM client initialized");
-            Ok(Some(Arc::new(client)))
+            Ok(Some(Arc::new(client) as Arc<dyn cortex_mem_core::llm::LLMClient>))
         } else {
             tracing::warn!("LLM client not initialized (missing environment variables)");
             Ok(None)
@@ -67,34 +71,113 @@ impl AppState {
     }
 
     #[cfg(feature = "vector-search")]
-    async fn init_vector_store() -> anyhow::Result<Option<Arc<QdrantVectorStore>>> {
-        // Try to initialize from environment variables or config file
-        if let (Ok(url), Ok(collection)) = (
-            std::env::var("QDRANT_URL"),
-            std::env::var("QDRANT_COLLECTION"),
-        ) {
-            let config = cortex_mem_core::QdrantConfig {
-                url,
-                collection_name: collection,
-                embedding_dim: std::env::var("QDRANT_EMBEDDING_DIM")
-                    .ok()
-                    .and_then(|s| s.parse().ok()),
-                timeout_secs: 10,
+    async fn init_vector_search() -> anyhow::Result<(Option<Arc<QdrantVectorStore>>, Option<Arc<EmbeddingClient>>)> {
+        // Try to load config from file first, then fall back to environment variables
+        let config_result = cortex_mem_config::Config::load("config.toml");
+        
+        if let Ok(config) = config_result {
+            tracing::info!("Loaded config from config.toml");
+            
+            // Initialize embedding client
+            let embedding_config = cortex_mem_core::embedding::EmbeddingConfig {
+                api_base_url: config.embedding.api_base_url,
+                api_key: config.embedding.api_key,
+                model_name: config.embedding.model_name,
+                batch_size: config.embedding.batch_size,
+                timeout_secs: config.embedding.timeout_secs,
             };
-
-            match QdrantVectorStore::new(&config).await {
+            
+            let embedding_client = match EmbeddingClient::new(embedding_config) {
+                Ok(client) => {
+                    tracing::info!("Embedding client initialized from config");
+                    Some(Arc::new(client))
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to initialize embedding client: {}", e);
+                    None
+                }
+            };
+            
+            // Initialize vector store
+            let qdrant_config = cortex_mem_core::QdrantConfig {
+                url: config.qdrant.url,
+                collection_name: config.qdrant.collection_name,
+                embedding_dim: config.qdrant.embedding_dim,
+                timeout_secs: config.qdrant.timeout_secs,
+            };
+            
+            let vector_store = match QdrantVectorStore::new(&qdrant_config).await {
                 Ok(store) => {
-                    tracing::info!("Vector store initialized");
-                    Ok(Some(Arc::new(store)))
+                    tracing::info!("Vector store initialized from config");
+                    Some(Arc::new(store))
                 }
                 Err(e) => {
                     tracing::warn!("Vector store initialization failed: {}", e);
-                    Ok(None)
+                    None
                 }
-            }
+            };
+            
+            Ok((vector_store, embedding_client))
         } else {
-            tracing::info!("Vector store not configured (missing environment variables)");
-            Ok(None)
+            // Fallback to environment variables
+            if let (Ok(url), Ok(collection)) = (
+                std::env::var("QDRANT_URL"),
+                std::env::var("QDRANT_COLLECTION"),
+            ) {
+                let qdrant_config = cortex_mem_core::QdrantConfig {
+                    url,
+                    collection_name: collection,
+                    embedding_dim: std::env::var("QDRANT_EMBEDDING_DIM")
+                        .ok()
+                        .and_then(|s| s.parse().ok()),
+                    timeout_secs: 30,
+                };
+
+                let vector_store = match QdrantVectorStore::new(&qdrant_config).await {
+                    Ok(store) => {
+                        tracing::info!("Vector store initialized from env");
+                        Some(Arc::new(store))
+                    }
+                    Err(e) => {
+                        tracing::warn!("Vector store initialization failed: {}", e);
+                        None
+                    }
+                };
+                
+                // Try to initialize embedding client from env
+                let embedding_client = if let (Ok(api_url), Ok(api_key), Ok(model)) = (
+                    std::env::var("EMBEDDING_API_BASE_URL"),
+                    std::env::var("EMBEDDING_API_KEY"),
+                    std::env::var("EMBEDDING_MODEL"),
+                ) {
+                    let embedding_config = cortex_mem_core::embedding::EmbeddingConfig {
+                        api_base_url: api_url,
+                        api_key,
+                        model_name: model,
+                        batch_size: 10,
+                        timeout_secs: 30,
+                    };
+                    
+                    match EmbeddingClient::new(embedding_config) {
+                        Ok(client) => {
+                            tracing::info!("Embedding client initialized from env");
+                            Some(Arc::new(client))
+                        }
+                        Err(e) => {
+                            tracing::warn!("Failed to initialize embedding client: {}", e);
+                            None
+                        }
+                    }
+                } else {
+                    tracing::warn!("Embedding client not configured");
+                    None
+                };
+
+                Ok((vector_store, embedding_client))
+            } else {
+                tracing::info!("Vector search not configured (missing config file or environment variables)");
+                Ok((None, None))
+            }
         }
     }
 }

@@ -1,14 +1,14 @@
+#![cfg(feature = "vector-search")]
+
 use crate::{
     embedding::EmbeddingClient,
     filesystem::{CortexFilesystem, FilesystemOperations},
     session::Message,
+    vector_store::{QdrantVectorStore, VectorStore},
     Result,
 };
 use std::sync::Arc;
 use tracing::{debug, info, warn};
-
-#[cfg(feature = "vector-search")]
-use crate::vector_store::{QdrantVectorStore, VectorStore};
 
 /// 自动索引管理器配置
 #[derive(Debug, Clone)]
@@ -108,16 +108,56 @@ impl AutoIndexer {
 
     /// 批量索引线程中的所有消息
     pub async fn index_thread(&self, thread_id: &str) -> Result<IndexStats> {
+        self.index_thread_with_progress::<fn(usize, usize)>(thread_id, None).await
+    }
+    
+    /// 批量索引线程中的所有消息，带进度回调
+    pub async fn index_thread_with_progress<F>(
+        &self, 
+        thread_id: &str,
+        mut progress_callback: Option<F>,
+    ) -> Result<IndexStats> 
+    where
+        F: FnMut(usize, usize) + Send,
+    {
         info!("Starting batch indexing for thread: {}", thread_id);
 
         let mut stats = IndexStats::default();
 
         // 1. 扫描timeline目录获取所有消息
         let messages = self.collect_messages(thread_id).await?;
-        info!("Found {} messages to index", messages.len());
+        let total_messages = messages.len();
+        info!("Found {} messages to index", total_messages);
 
-        // 2. 分批处理
-        for chunk in messages.chunks(self.config.batch_size) {
+        if total_messages == 0 {
+            return Ok(stats);
+        }
+
+        // 2. 检查哪些消息已经被索引（通过查询向量数据库）
+        let existing_ids = self.get_indexed_message_ids(thread_id).await?;
+        let messages_to_index: Vec<_> = messages
+            .into_iter()
+            .filter(|m| !existing_ids.contains(&m.id))
+            .collect();
+        
+        info!("Skipping {} already indexed messages", total_messages - messages_to_index.len());
+        stats.total_skipped = total_messages - messages_to_index.len();
+        
+        if messages_to_index.is_empty() {
+            info!("All messages already indexed");
+            return Ok(stats);
+        }
+
+        // 3. 分批处理
+        let total_to_index = messages_to_index.len();
+        for (batch_idx, chunk) in messages_to_index.chunks(self.config.batch_size).enumerate() {
+            let batch_start = batch_idx * self.config.batch_size;
+            
+            // 通知进度
+            if let Some(ref mut callback) = progress_callback {
+                callback(batch_start, total_to_index);
+            }
+            
             // 生成所有embedding
             let contents: Vec<String> = chunk.iter().map(|m| m.content.clone()).collect();
             
@@ -149,6 +189,7 @@ impl AutoIndexer {
                         match self.vector_store.as_ref().insert(&memory).await {
                             Ok(_) => {
                                 stats.total_indexed += 1;
+                                debug!("Indexed message {}", message.id);
                             }
                             Err(e) => {
                                 warn!("Failed to index message {}: {}", message.id, e);
@@ -158,18 +199,38 @@ impl AutoIndexer {
                     }
                 }
                 Err(e) => {
-                    warn!("Failed to generate embeddings for batch: {}", e);
+                    warn!("Failed to generate embeddings for batch {}: {}", batch_idx, e);
                     stats.total_errors += chunk.len();
                 }
             }
         }
 
         info!(
-            "Batch indexing complete: {} indexed, {} errors",
-            stats.total_indexed, stats.total_errors
+            "Batch indexing complete: {} indexed, {} skipped, {} errors",
+            stats.total_indexed, stats.total_skipped, stats.total_errors
         );
 
         Ok(stats)
+    }
+    
+    /// 获取已索引的消息ID列表
+    async fn get_indexed_message_ids(&self, thread_id: &str) -> Result<std::collections::HashSet<String>> {
+        use crate::vector_store::VectorStore;
+        
+        // 使用scroll API获取所有已索引的消息ID
+        let filters = crate::types::Filters {
+            run_id: Some(thread_id.to_string()),
+            ..Default::default()
+        };
+        
+        // 滚动查询获取所有ID（不需要embedding）
+        match self.vector_store.as_ref().scroll_ids(&filters, 1000).await {
+            Ok(ids) => Ok(ids.into_iter().collect()),
+            Err(e) => {
+                warn!("Failed to get indexed message IDs: {}, assuming none indexed", e);
+                Ok(std::collections::HashSet::new())
+            }
+        }
     }
 
     /// 收集线程中的所有消息

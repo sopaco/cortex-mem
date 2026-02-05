@@ -9,7 +9,7 @@ use crate::{
         LanguageInfo, detect_language, filter_messages_by_role, filter_messages_by_roles,
         parse_messages, remove_code_blocks,
     },
-    types::Message,
+    session::Message,
 };
 
 /// Extracted fact from conversation
@@ -75,12 +75,12 @@ pub trait FactExtractor: Send + Sync {
 
 /// LLM-based fact extractor implementation
 pub struct LLMFactExtractor {
-    llm_client: Box<dyn LLMClient>,
+    llm_client: Box<dyn crate::llm::LLMClient>,
 }
 
 impl LLMFactExtractor {
     /// Create a new LLM-based fact extractor
-    pub fn new(llm_client: Box<dyn LLMClient>) -> Self {
+    pub fn new(llm_client: Box<dyn crate::llm::LLMClient>) -> Self {
         Self { llm_client }
     }
 
