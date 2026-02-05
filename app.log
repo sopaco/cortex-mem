@@ -1,0 +1,386 @@
+[2026-02-05 20:16:17.957 INFO] Logging system initialized
+[2026-02-05 20:16:17.957 INFO] Log file path: /Users/jiangmeng/workspace/SAW/cortex-mem
+[2026-02-05 20:16:17.957 INFO] Logger initialized
+[2026-02-05 20:16:17.957 INFO] Initializing infrastructure with data directory: ./cortex-data
+[2026-02-05 20:16:17.958 INFO] Infrastructure initialized successfully
+[2026-02-05 20:16:17.958 INFO] Infrastructure initialized successfully
+[2026-02-05 20:16:17.959 INFO] Application initialized
+[2026-02-05 20:16:17.959 INFO] Application created successfully
+[2026-02-05 20:16:17.966 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:16:23.189 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:16:28.265 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:16:30.065 INFO] 选择机器人: SnowInShadow
+[2026-02-05 20:16:30.065 INFO] State change: Some(BotSelection) -> PasswordInput
+[2026-02-05 20:16:32.527 INFO] 密码验证成功
+[2026-02-05 20:16:32.527 INFO] State change: Some(PasswordInput) -> Chat
+[2026-02-05 20:16:32.527 INFO] Entering chat mode
+[2026-02-05 20:16:32.527 INFO] Selected bot: SnowInShadow (ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5)
+[2026-02-05 20:16:32.527 INFO] Entering chat mode, bot: SnowInShadow (ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5)
+[2026-02-05 20:16:32.527 INFO] Updated current bot ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5
+[2026-02-05 20:16:32.527 INFO] Starting API server...
+[2026-02-05 20:16:32.527 WARN] Audio connect not enabled
+[2026-02-05 20:16:33.299 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:16:38.373 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:16:40.467 INFO] Updated current bot ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5
+[2026-02-05 20:16:40.470 INFO] Created system prompt
+[2026-02-05 20:16:40.470 INFO] Selected bot: SnowInShadow
+[2026-02-05 20:16:40.470 INFO] User message: 你是谁
+[2026-02-05 20:16:40.470 INFO] Added message 12_16_40_06494ee0.md to session tars_thread
+[2026-02-05 20:16:40.472 ERROR] Failed to generate response: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:16:43.431 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:16:44.168 INFO] Application exiting
+[2026-02-05 20:16:44.168 INFO] Enhanced memory saver not enabled, skipping conversation save
+[2026-02-05 20:16:54.396 INFO] Logging system initialized
+[2026-02-05 20:16:54.396 INFO] Log file path: /Users/jiangmeng/workspace/SAW/cortex-mem
+[2026-02-05 20:16:54.396 INFO] Logger initialized
+[2026-02-05 20:16:54.396 INFO] Initializing infrastructure with data directory: ./cortex-data
+[2026-02-05 20:16:54.397 INFO] Infrastructure initialized successfully
+[2026-02-05 20:16:54.397 INFO] Infrastructure initialized successfully
+[2026-02-05 20:16:54.398 INFO] Application initialized
+[2026-02-05 20:16:54.398 INFO] Application created successfully
+[2026-02-05 20:16:54.411 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:16:59.579 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:04.657 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:09.720 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:14.728 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:19.764 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:24.831 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:29.863 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:34.925 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:39.965 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:44.997 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:50.028 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:17:55.065 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:00.091 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:05.127 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:10.158 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:15.206 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:20.234 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:25.268 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:30.294 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:35.350 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:40.400 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:45.494 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:50.508 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:18:55.533 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:00.636 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:05.712 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:10.770 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:15.826 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:20.858 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:25.899 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:30.930 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:35.957 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:41.004 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:46.037 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:51.055 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:19:56.069 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:20:01.082 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:20:06.098 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:20:11.118 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:20:16.147 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:20:21.157 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:20:26.219 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:20:31.249 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:21:41.420 INFO] Logging system initialized
+[2026-02-05 20:21:41.420 INFO] Log file path: /Users/jiangmeng/workspace/SAW/cortex-mem
+[2026-02-05 20:21:41.420 INFO] Logger initialized
+[2026-02-05 20:21:41.420 INFO] Initializing infrastructure with data directory: ./cortex-data
+[2026-02-05 20:21:41.421 INFO] Infrastructure initialized successfully
+[2026-02-05 20:21:41.421 INFO] Infrastructure initialized successfully
+[2026-02-05 20:21:41.422 INFO] Application initialized
+[2026-02-05 20:21:41.422 INFO] Application created successfully
+[2026-02-05 20:21:41.436 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:21:46.612 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:21:51.652 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:21:56.702 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:01.726 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:06.777 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:11.820 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:16.871 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:21.912 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:26.955 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:31.999 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:37.049 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:42.090 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:47.140 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:52.185 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:22:57.243 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:02.282 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:07.334 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:12.381 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:17.432 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:22.475 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:27.523 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:32.557 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:37.620 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:42.668 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:47.730 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:52.770 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:23:57.804 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:02.843 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:07.907 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:12.992 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:15.251 INFO] 选择机器人: SnowInShadow
+[2026-02-05 20:24:15.251 INFO] State change: Some(BotSelection) -> PasswordInput
+[2026-02-05 20:24:17.303 INFO] 密码验证成功
+[2026-02-05 20:24:17.303 INFO] State change: Some(PasswordInput) -> Chat
+[2026-02-05 20:24:17.303 INFO] Entering chat mode
+[2026-02-05 20:24:17.303 INFO] Selected bot: SnowInShadow (ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5)
+[2026-02-05 20:24:17.303 INFO] Entering chat mode, bot: SnowInShadow (ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5)
+[2026-02-05 20:24:17.303 INFO] Updated current bot ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5
+[2026-02-05 20:24:17.303 INFO] Starting API server...
+[2026-02-05 20:24:17.303 WARN] Audio connect not enabled
+[2026-02-05 20:24:18.043 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:21.406 INFO] Updated current bot ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5
+[2026-02-05 20:24:21.412 INFO] Created system prompt
+[2026-02-05 20:24:21.412 INFO] Selected bot: SnowInShadow
+[2026-02-05 20:24:21.412 INFO] User message: 你是谁
+[2026-02-05 20:24:21.412 INFO] Added message 12_24_21_9b64b3d8.md to session tars_thread
+[2026-02-05 20:24:21.414 ERROR] Failed to generate response: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:23.112 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:28.176 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:33.250 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:38.260 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:41.218 INFO] Application exiting
+[2026-02-05 20:24:41.218 INFO] Enhanced memory saver not enabled, skipping conversation save
+[2026-02-05 20:24:58.200 INFO] Logging system initialized
+[2026-02-05 20:24:58.200 INFO] Log file path: /Users/jiangmeng/workspace/SAW/cortex-mem
+[2026-02-05 20:24:58.200 INFO] Logger initialized
+[2026-02-05 20:24:58.200 INFO] Initializing infrastructure with data directory: ./cortex-data
+[2026-02-05 20:24:58.201 INFO] Infrastructure initialized successfully
+[2026-02-05 20:24:58.201 INFO] Infrastructure initialized successfully
+[2026-02-05 20:24:58.202 INFO] Application initialized
+[2026-02-05 20:24:58.202 INFO] Application created successfully
+[2026-02-05 20:24:58.211 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:24:59.199 INFO] 选择机器人: SnowInShadow
+[2026-02-05 20:24:59.199 INFO] State change: Some(BotSelection) -> PasswordInput
+[2026-02-05 20:25:01.851 INFO] 密码验证成功
+[2026-02-05 20:25:01.851 INFO] State change: Some(PasswordInput) -> Chat
+[2026-02-05 20:25:01.851 INFO] Entering chat mode
+[2026-02-05 20:25:01.851 INFO] Selected bot: SnowInShadow (ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5)
+[2026-02-05 20:25:01.851 INFO] Entering chat mode, bot: SnowInShadow (ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5)
+[2026-02-05 20:25:01.851 INFO] Updated current bot ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5
+[2026-02-05 20:25:01.851 INFO] Starting API server...
+[2026-02-05 20:25:01.851 WARN] Audio connect not enabled
+[2026-02-05 20:25:03.401 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:25:08.432 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:25:13.546 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:25:18.575 ERROR] Service check failed: error sending request for url (http://localhost:11434/v1/chat/completions)
+[2026-02-05 20:25:20.437 INFO] Application exiting
+[2026-02-05 20:25:20.438 INFO] Enhanced memory saver not enabled, skipping conversation save
+[2026-02-05 20:28:09.762 INFO] Logging system initialized
+[2026-02-05 20:28:09.763 INFO] Log file path: /Users/jiangmeng/workspace/SAW/cortex-mem
+[2026-02-05 20:28:09.763 INFO] Logger initialized
+[2026-02-05 20:28:09.763 INFO] Initializing infrastructure with data directory: ./cortex-data
+[2026-02-05 20:28:09.764 INFO] Infrastructure initialized successfully
+[2026-02-05 20:28:09.764 INFO] Infrastructure initialized successfully
+[2026-02-05 20:28:09.765 INFO] Application initialized
+[2026-02-05 20:28:09.766 INFO] Application created successfully
+[2026-02-05 20:28:09.822 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:28:15.058 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:28:20.118 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:28:25.192 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:28:30.308 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:28:35.367 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:28:40.420 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:28:45.482 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:28:50.546 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:28:55.632 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:00.792 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:05.860 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:10.944 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:15.991 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:21.056 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:26.126 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:31.181 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:36.221 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:41.268 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:46.309 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:51.354 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:29:56.393 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:01.466 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:06.549 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:11.604 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:16.677 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:21.714 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:26.778 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:31.898 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:36.951 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:41.999 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:45.705 INFO] Logging system initialized
+[2026-02-05 20:30:45.706 INFO] Log file path: /Users/jiangmeng/workspace/SAW/cortex-mem
+[2026-02-05 20:30:45.706 INFO] Logger initialized
+[2026-02-05 20:30:45.706 INFO] Initializing infrastructure with data directory: ./cortex-data
+[2026-02-05 20:30:45.706 INFO] Infrastructure initialized successfully
+[2026-02-05 20:30:45.706 INFO] Infrastructure initialized successfully
+[2026-02-05 20:30:45.707 INFO] Application initialized
+[2026-02-05 20:30:45.707 INFO] Application created successfully
+[2026-02-05 20:30:45.753 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:46.749 INFO] 选择机器人: SnowInShadow
+[2026-02-05 20:30:46.749 INFO] State change: Some(BotSelection) -> PasswordInput
+[2026-02-05 20:30:47.097 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:49.085 INFO] 密码验证成功
+[2026-02-05 20:30:49.085 INFO] State change: Some(PasswordInput) -> Chat
+[2026-02-05 20:30:49.085 INFO] Entering chat mode
+[2026-02-05 20:30:49.085 INFO] Selected bot: SnowInShadow (ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5)
+[2026-02-05 20:30:49.085 INFO] Entering chat mode, bot: SnowInShadow (ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5)
+[2026-02-05 20:30:49.085 INFO] Updated current bot ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5
+[2026-02-05 20:30:49.085 INFO] Starting API server...
+[2026-02-05 20:30:49.085 WARN] Audio connect not enabled
+[2026-02-05 20:30:50.982 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:52.199 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:53.521 INFO] Updated current bot ID: a925d0b0-63b8-46ee-ad9d-54f596697ea5
+[2026-02-05 20:30:53.525 INFO] Created system prompt
+[2026-02-05 20:30:53.525 INFO] Selected bot: SnowInShadow
+[2026-02-05 20:30:53.525 INFO] User message: 你是谁
+[2026-02-05 20:30:53.525 INFO] Added message 12_30_53_66ddd974.md to session tars_thread
+[2026-02-05 20:30:54.802 INFO] Added message 12_30_54_6001cc50.md to session tars_thread
+[2026-02-05 20:30:56.076 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:30:57.318 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:01.210 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:02.402 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:06.257 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:07.496 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:11.406 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:12.584 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:16.537 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:17.716 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:21.568 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:22.769 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:26.629 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:27.855 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:31.241 INFO] User message: 你记得你是谁吗
+[2026-02-05 20:31:31.241 INFO] Added message 12_31_31_ab534c95.md to session tars_thread
+[2026-02-05 20:31:31.721 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:32.456 INFO] Added message 12_31_32_4b004c90.md to session tars_thread
+[2026-02-05 20:31:32.939 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:36.865 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:38.039 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:41.994 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:43.163 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:47.186 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:48.303 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:52.298 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:53.397 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:57.428 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:31:58.519 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:02.494 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:03.592 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:07.588 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:08.680 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:11.527 INFO] User message: 不，你叫杨雪，是一名软件行业从业的技术人员，也是我过去的同事，我的女下属
+[2026-02-05 20:32:11.528 INFO] Added message 12_32_11_51402e77.md to session tars_thread
+[2026-02-05 20:32:12.685 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:13.819 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:14.236 INFO] Added message 12_32_14_df207e43.md to session tars_thread
+[2026-02-05 20:32:17.768 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:18.940 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:22.840 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:24.073 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:27.921 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:29.208 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:33.036 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:34.280 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:38.089 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:39.397 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:43.149 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:44.495 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:48.187 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:49.587 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:53.327 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:54.680 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:58.372 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:32:59.774 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:03.489 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:04.851 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:09.610 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:09.950 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:14.703 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:15.058 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:15.287 INFO] User message: 叫我SkyronJ，我是一名复合型人才，目前是快手技术团队的领导者，在AI工程化、移动端技术、大前端技术方面能力卓越
+[2026-02-05 20:33:15.288 INFO] Added message 12_33_15_ee8716d6.md to session tars_thread
+[2026-02-05 20:33:18.428 INFO] Added message 12_33_18_c38195b0.md to session tars_thread
+[2026-02-05 20:33:19.821 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:20.177 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:24.937 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:25.308 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:30.037 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:30.418 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:35.161 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:35.453 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:40.288 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:40.544 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:45.336 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:45.633 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:50.376 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:50.726 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:51.377 INFO] User message: 你有记忆工具吗，存储一下你了解到的信息
+[2026-02-05 20:33:51.378 INFO] Added message 12_33_51_4ea66c32.md to session tars_thread
+[2026-02-05 20:33:55.086 INFO] Added message 12_33_55_de8dea6e.md to session tars_thread
+[2026-02-05 20:33:55.511 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:33:55.843 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:00.590 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:00.953 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:05.644 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:06.050 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:10.787 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:11.140 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:15.924 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:16.246 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:20.991 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:21.348 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:26.047 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:26.453 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:31.157 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:31.537 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:36.270 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:36.611 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:41.383 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:41.696 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:46.500 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:46.769 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:51.211 INFO] User message: quit
+[2026-02-05 20:34:51.211 INFO] Added message 12_34_51_e2842662.md to session tars_thread
+[2026-02-05 20:34:51.557 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:51.821 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:34:52.541 INFO] 执行命令: /quit
+[2026-02-05 20:34:52.541 INFO] Application exiting
+[2026-02-05 20:34:52.541 INFO] Enhanced memory saver not enabled, skipping conversation save
+[2026-02-05 20:34:56.897 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:01.947 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:07.000 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:12.052 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:17.112 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:22.159 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:27.223 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:32.278 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:37.350 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:42.393 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:47.460 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:52.520 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:35:57.575 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:02.624 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:07.720 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:12.786 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:17.857 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:22.915 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:27.986 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:33.083 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:38.173 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:43.253 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:48.341 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:53.443 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:36:58.476 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:03.581 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:08.715 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:13.793 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:18.896 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:23.995 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:29.041 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:34.150 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:39.237 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:44.363 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:49.459 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:54.547 WARN] Service unavailable, status: 404 Not Found
+[2026-02-05 20:37:59.604 WARN] Service unavailable, status: 404 Not Found
