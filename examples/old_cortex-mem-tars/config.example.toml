@@ -1,0 +1,80 @@
+# Cortex Memory TARS 配置文件示例
+# 将此文件复制为 config.toml 并修改相应的配置
+
+[qdrant]
+# Qdrant 向量数据库地址
+url = "http://localhost:6334"
+# 集合名称
+collection_name = "cortex_mem"
+# 嵌入维度（可选，默认为 1536）
+embedding_dim = 1536
+# 超时时间（秒）
+timeout_secs = 30
+
+[llm]
+# LLM API 基础 URL
+api_base_url = "https://api.openai.com/v1"
+# API 密钥
+api_key = "your-api-key-here"
+# 使用的模型
+model_efficient = "gpt-4o-mini"
+# 温度参数
+temperature = 0.7
+# 最大令牌数
+max_tokens = 2000
+
+[server]
+# 服务器主机
+host = "localhost"
+# 服务器端口
+port = 8080
+# CORS 允许的来源
+cors_origins = ["*"]
+
+[embedding]
+# 嵌入服务 API 基础 URL
+api_base_url = "https://api.openai.com/v1"
+# 嵌入模型名称
+model_name = "text-embedding-3-small"
+# API 密钥
+api_key = "your-api-key-here"
+# 批处理大小
+batch_size = 100
+# 超时时间（秒）
+timeout_secs = 30
+
+[memory]
+# 最大记忆数量
+max_memories = 10000
+# 相似度阈值
+similarity_threshold = 0.65
+# 最大搜索结果数
+max_search_results = 50
+# 记忆 TTL（小时，可选）
+memory_ttl_hours = null
+# 自动摘要阈值
+auto_summary_threshold = 32768
+# 自动增强
+auto_enhance = true
+# 去重
+deduplicate = true
+# 合并阈值
+merge_threshold = 0.75
+# 搜索相似度阈值（可选）
+search_similarity_threshold = 0.70
+
+[logging]
+# 是否启用日志
+enabled = false
+# 日志目录
+log_directory = "logs"
+# 日志级别
+level = "info"
+
+[api]
+# TARS API 服务器端口
+port = 8080
+# API 密钥（可选，如果启用认证）
+api_key = "ANYTHING_YOU_LIKE"
+# 是否启用 CORS
+enable_cors = true
