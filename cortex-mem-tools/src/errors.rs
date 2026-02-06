@@ -14,6 +14,10 @@ pub enum ToolsError {
     /// Memory not found
     #[error("Memory not found: {0}")]
     NotFound(String),
+    
+    /// Custom error
+    #[error("Custom error: {0}")]
+    Custom(String),
 
     /// Serialization/deserialization error
     #[error("Serialization error: {0}")]

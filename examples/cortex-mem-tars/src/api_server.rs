@@ -152,21 +152,30 @@ async fn retrieve_memory(
 
     let limit = query.limit.unwrap_or(10);
 
-    // 使用 search 方法检索记忆
-    match state.operations.search(&query_text, bot_id.as_deref(), limit).await {
-        Ok(memories) => {
-            log::info!("成功检索到 {} 条记忆", memories.len());
+    // 使用新的 search API
+    let search_args = cortex_mem_tools::SearchArgs {
+        query: query_text,
+        engine: Some("keyword".to_string()),
+        recursive: Some(true),
+        return_layers: Some(vec!["L2".to_string()]),
+        scope: bot_id.map(|id| format!("cortex://threads/{}", id)),
+        limit: Some(limit),
+    };
 
-            let memory_items: Vec<MemoryItem> = memories
+    match state.operations.search(search_args).await {
+        Ok(response) => {
+            log::info!("成功检索到 {} 条记忆", response.total);
+
+            let memory_items: Vec<MemoryItem> = response.results
                 .into_iter()
-                .map(|mem| MemoryItem {
-                    id: mem.uri.clone(),
-                    content: mem.content.clone(),
+                .map(|result| MemoryItem {
+                    id: result.uri.clone(),
+                    content: result.content.unwrap_or_default(),
                     source: "cortex-mem".to_string(),
-                    timestamp: mem.created_at.to_rfc3339(),
-                    speaker_type: None, // V2 不存储 speaker_type
+                    timestamp: chrono::Utc::now().to_rfc3339(),
+                    speaker_type: None,
                     speaker_confidence: None,
-                    relevance: mem.score,
+                    relevance: Some(result.score),
                 })
                 .collect();
 
@@ -206,28 +215,36 @@ async fn list_memory(
 
     let limit = query.limit.unwrap_or(20);
 
-    // 使用 search 方法（空查询）列出最近的记忆
-    match state.operations.search("", bot_id.as_deref(), limit).await {
-        Ok(memories) => {
-            log::info!("成功列出 {} 条记忆", memories.len());
+    // 使用新的 search API
+    let search_args = cortex_mem_tools::SearchArgs {
+        query: "".to_string(),  // 空查询列出所有
+        engine: Some("keyword".to_string()),
+        recursive: Some(true),
+        return_layers: Some(vec!["L2".to_string()]),  // 返回完整内容
+        scope: bot_id.map(|id| format!("cortex://threads/{}", id)),
+        limit: Some(limit),
+    };
+    
+    match state.operations.search(search_args).await {
+        Ok(response) => {
+            log::info!("成功列出 {} 条记忆", response.total);
 
-            let total = memories.len();
-            let memory_items: Vec<MemoryItem> = memories
+            let memory_items: Vec<MemoryItem> = response.results
                 .into_iter()
-                .map(|mem| MemoryItem {
-                    id: mem.uri.clone(),
-                    content: mem.content.clone(),
+                .map(|result| MemoryItem {
+                    id: result.uri.clone(),
+                    content: result.content.unwrap_or_default(),
                     source: "cortex-mem".to_string(),
-                    timestamp: mem.created_at.to_rfc3339(),
-                    speaker_type: None, // V2 不存储 speaker_type
+                    timestamp: chrono::Utc::now().to_rfc3339(),  // TODO: 从 URI 解析时间戳
+                    speaker_type: None,
                     speaker_confidence: None,
-                    relevance: mem.score,
+                    relevance: Some(result.score),
                 })
                 .collect();
 
             let response = ListMemoryResponse {
                 memories: memory_items,
-                total,
+                total: response.total,
             };
 
             Ok(Json(response))

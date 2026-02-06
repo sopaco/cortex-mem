@@ -1,6 +1,5 @@
 use crate::agent::{
-    ChatMessage, agent_reply_with_memory_retrieval_streaming, create_memory_agent,
-    extract_user_basic_info, store_conversations_batch,
+    AgentChatHandler, ChatMessage, create_memory_agent, extract_user_basic_info,
 };
 use crate::config::{BotConfig, ConfigManager};
 use crate::infrastructure::Infrastructure;
@@ -578,48 +577,21 @@ impl App {
             };
 
             let infrastructure_clone = self.infrastructure.clone();
-            let rig_agent_clone = rig_agent.clone();
+            let mut agent_handler = AgentChatHandler::new(rig_agent.clone());
             let msg_tx = self.message_sender.clone();
             let user_input = input_text.to_string();
-            let user_id = self.user_id.clone();
             let user_input_for_stream = user_input.clone();
 
             tokio::spawn(async move {
-                let (stream_tx, mut stream_rx) = mpsc::unbounded_channel::<String>();
-
-                let generation_task = tokio::spawn(async move {
-                    agent_reply_with_memory_retrieval_streaming(
-                        &rig_agent_clone,
-                        infrastructure_clone.unwrap().operations().clone(),
-                        &user_input,
-                        &user_id,
-                        &current_conversations,
-                        stream_tx,
-                    )
-                    .await
-                });
-
-                while let Some(chunk) = stream_rx.recv().await {
-                    if let Err(_) = msg_tx.send(AppMessage::StreamingChunk {
-                        user: user_input_for_stream.clone(),
-                        chunk,
-                    }) {
-                        break;
-                    }
-                }
-
-                match generation_task.await {
-                    Ok(Ok(full_response)) => {
+                match agent_handler.chat(&user_input).await {
+                    Ok(response) => {
                         let _ = msg_tx.send(AppMessage::StreamingComplete {
                             user: user_input_for_stream.clone(),
-                            full_response,
+                            full_response: response,
                         });
                     }
-                    Ok(Err(e)) => {
-                        log::error!("生成回复失败: {}", e);
-                    }
                     Err(e) => {
-                        log::error!("任务执行失败: {}", e);
+                        log::error!("生成回复失败: {}", e);
                     }
                 }
             });
@@ -727,13 +699,34 @@ impl App {
                     "default".to_string()
                 };
                 
-                store_conversations_batch(
-                    infrastructure.operations().clone(),
-                    &conversations,
-                    &thread_id,
-                )
-                .await
-                .map_err(|e| anyhow::anyhow!("保存对话到记忆系统失败: {}", e))?;
+                // 批量存储对话（使用新的 store API）
+                for (user_msg, assistant_msg) in &conversations {
+                    if !user_msg.is_empty() {
+                        let store_args = cortex_mem_tools::StoreArgs {
+                            content: user_msg.clone(),
+                            thread_id: thread_id.clone(),
+                            metadata: None,
+                            auto_generate_layers: Some(true),
+                        };
+                        infrastructure.operations()
+                            .store(store_args)
+                            .await
+                            .map_err(|e| anyhow::anyhow!("存储用户消息失败: {}", e))?;
+                    }
+                    
+                    if !assistant_msg.is_empty() {
+                        let store_args = cortex_mem_tools::StoreArgs {
+                            content: assistant_msg.clone(),
+                            thread_id: thread_id.clone(),
+                            metadata: None,
+                            auto_generate_layers: Some(true),
+                        };
+                        infrastructure.operations()
+                            .store(store_args)
+                            .await
+                            .map_err(|e| anyhow::anyhow!("存储助手消息失败: {}", e))?;
+                    }
+                }
                 log::info!("对话保存完成");
             }
         }
@@ -760,7 +753,6 @@ impl App {
                         None
                     }
                 }
-                _ => None,
             })
             .collect()
     }
@@ -886,49 +878,21 @@ impl App {
                 conversations
             };
 
-            let infrastructure_clone = self.infrastructure.clone();
-            let rig_agent_clone = rig_agent.clone();
+            let mut agent_handler = AgentChatHandler::new(rig_agent.clone());
             let msg_tx = self.message_sender.clone();
             let user_input = content.clone();
-            let user_id = self.user_id.clone();
             let user_input_for_stream = user_input.clone();
 
             tokio::spawn(async move {
-                let (stream_tx, mut stream_rx) = mpsc::unbounded_channel::<String>();
-
-                let generation_task = tokio::spawn(async move {
-                    agent_reply_with_memory_retrieval_streaming(
-                        &rig_agent_clone,
-                        infrastructure_clone.unwrap().operations().clone(),
-                        &user_input,
-                        &user_id,
-                        &current_conversations,
-                        stream_tx,
-                    )
-                    .await
-                });
-
-                while let Some(chunk) = stream_rx.recv().await {
-                    if let Err(_) = msg_tx.send(AppMessage::StreamingChunk {
-                        user: user_input_for_stream.clone(),
-                        chunk,
-                    }) {
-                        break;
-                    }
-                }
-
-                match generation_task.await {
-                    Ok(Ok(full_response)) => {
+                match agent_handler.chat(&user_input).await {
+                    Ok(response) => {
                         let _ = msg_tx.send(AppMessage::StreamingComplete {
                             user: user_input_for_stream.clone(),
-                            full_response,
+                            full_response: response,
                         });
                     }
-                    Ok(Err(e)) => {
-                        log::error!("生成回复失败: {}", e);
-                    }
                     Err(e) => {
-                        log::error!("任务执行失败: {}", e);
+                        log::error!("生成回复失败: {}", e);
                     }
                 }
             });
