@@ -103,14 +103,6 @@ impl ConfigManager {
                     port: 8080,
                     cors_origins: vec!["*".to_string()],
                 },
-                embedding: cortex_mem_config::EmbeddingConfig {
-                    api_base_url: "https://api.openai.com/v1".to_string(),
-                    model_name: "text-embedding-3-small".to_string(),
-                    api_key: "".to_string(),
-                    batch_size: 100,
-                    timeout_secs: 30,
-                },
-                memory: cortex_mem_config::MemoryConfig::default(),
                 logging: cortex_mem_config::LoggingConfig::default(),
             };
             let content = toml::to_string_pretty(&default_config).context("无法序列化默认配置")?;

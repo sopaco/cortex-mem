@@ -142,15 +142,24 @@ impl MemoryOperations {
         let thread_id = payload.agent_id.or(payload.user_id);
         let limit = payload.limit.unwrap_or(20);
         
-        // For now, we use search with empty query to list recent memories
-        // This is a simplified implementation
-        let results = if let Some(tid) = thread_id {
-            self.search("", Some(&tid), limit).await?
+        // 列出记忆：直接遍历文件系统而不是使用搜索
+        let scope = if let Some(tid) = thread_id.as_deref() {
+            format!("cortex://threads/{}", tid)
         } else {
-            Vec::new()
+            "cortex://threads".to_string()
         };
         
-        let memories: Vec<Value> = results.iter().map(|mem| {
+        // 收集所有记忆文件
+        let mut all_memories = Vec::new();
+        self.collect_memories_recursive(&scope, &mut all_memories).await?;
+        
+        // 按时间排序（最新的在前）
+        all_memories.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        
+        // 限制数量
+        all_memories.truncate(limit);
+        
+        let memories: Vec<Value> = all_memories.iter().map(|mem| {
             json!({
                 "id": mem.uri.clone(),
                 "content": mem.content.clone(),
@@ -166,6 +175,33 @@ impl MemoryOperations {
                 "memories": memories,
                 "count": memories.len(),
             })),
+        })
+    }
+    
+    /// Recursively collect all memory files
+    fn collect_memories_recursive<'a>(&'a self, uri: &'a str, memories: &'a mut Vec<MemoryInfo>) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + 'a>> {
+        Box::pin(async move {
+            let entries = self.filesystem.list(uri).await?;
+            
+            for entry in entries {
+                if entry.is_directory {
+                    // 递归探索子目录
+                    self.collect_memories_recursive(&entry.uri, memories).await?;
+                } else if !entry.name.starts_with('.') && entry.name.ends_with(".md") {
+                    // 读取记忆文件
+                    if let Ok(content) = self.filesystem.read(&entry.uri).await {
+                        memories.push(MemoryInfo {
+                            uri: entry.uri.clone(),
+                            content,
+                            score: None,
+                            created_at: chrono::Utc::now(), // TODO: 从文件元数据获取真实时间
+                            updated_at: chrono::Utc::now(),
+                        });
+                    }
+                }
+            }
+            
+            Ok(())
         })
     }
 

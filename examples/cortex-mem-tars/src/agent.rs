@@ -174,9 +174,13 @@ pub async fn extract_user_basic_info(
 
     let mut context = String::new();
 
-    let search_args_personal = ListMemoriesArgs {
+    // ✅ 新架构修复：不再按 memory_type 过滤
+    // 原因：新架构只有 4 种类型（Conversational, Procedural, Semantic, Episodic）
+    //       没有旧架构的 "personal" 和 "factual" 分类
+    // 改为：查询所有记忆，不过滤类型
+    let search_args_all = ListMemoriesArgs {
         limit: Some(20),
-        memory_type: Some("personal".to_string()), // 使用小写以匹配新API
+        memory_type: None,  // ✅ 不过滤类型，返回所有记忆
         user_id: Some(user_id.to_string()),
         agent_id: Some(agent_id.to_string()),
         created_after: None,
@@ -185,39 +189,14 @@ pub async fn extract_user_basic_info(
 
     if let Ok(search_result) = memory_tools
         .list_memories()
-        .call(search_args_personal)
+        .call(search_args_all)
         .await
     {
         if let Some(data) = search_result.data {
             // 根据新的MCP格式调整数据结构访问
             if let Some(results) = data.get("memories").and_then(|r| r.as_array()) {
                 if !results.is_empty() {
-                    context.push_str("用户基本信息 - 特征:\n");
-                    for (i, result) in results.iter().enumerate() {
-                        if let Some(content) = result.get("content").and_then(|c| c.as_str()) {
-                            context.push_str(&format!("{}. {}\n", i + 1, content));
-                        }
-                    }
-                    return Ok(Some(context));
-                }
-            }
-        }
-    }
-
-    let search_args_factual = ListMemoriesArgs {
-        limit: Some(20),
-        memory_type: Some("factual".to_string()), // 使用小写以匹配新API
-        user_id: Some(user_id.to_string()),
-        agent_id: Some(agent_id.to_string()),
-        created_after: None,
-        created_before: None,
-    };
-
-    if let Ok(search_result) = memory_tools.list_memories().call(search_args_factual).await {
-        if let Some(data) = search_result.data {
-            if let Some(results) = data.get("memories").and_then(|r| r.as_array()) {
-                if !results.is_empty() {
-                    context.push_str("用户基本信息 - 事实:\n");
+                    context.push_str("用户相关信息:\n");
                     for (i, result) in results.iter().enumerate() {
                         if let Some(content) = result.get("content").and_then(|c| c.as_str()) {
                             context.push_str(&format!("{}. {}\n", i + 1, content));

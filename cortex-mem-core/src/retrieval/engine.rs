@@ -213,7 +213,14 @@ impl RetrievalEngine {
                 if let Ok(content) = self.filesystem.read(&entry.uri).await {
                     let score = self.relevance_calc.calculate(&content, intent);
                     
-                    if score > 0.3 {
+                    // 降低阈值：对于非空查询使用 0.1，对于空查询直接返回
+                    let threshold = if intent.keywords.is_empty() || intent.keywords.iter().all(|k| k.is_empty()) {
+                        0.0 // 空查询时返回所有内容
+                    } else {
+                        0.1 // 降低阈值，允许更多低分记忆被返回
+                    };
+                    
+                    if score >= threshold {
                         results.push(SearchResult {
                             uri: entry.uri.clone(),
                             score,
