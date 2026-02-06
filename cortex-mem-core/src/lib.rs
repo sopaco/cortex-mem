@@ -119,7 +119,6 @@ pub mod automation;
 pub mod index;
 pub mod init;
 pub mod layers;
-pub mod memory;
 pub mod retrieval;
 
 #[cfg(feature = "vector-search")]
