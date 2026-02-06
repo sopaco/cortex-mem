@@ -140,7 +140,10 @@ pub use filesystem::{CortexFilesystem, FilesystemOperations};
 pub use session::{SessionManager, SessionConfig, Message, MessageRole, Participant, ParticipantManager};
 pub use extraction::{MemoryExtractor, ExtractionConfig};
 pub use llm::LLMClient;
-pub use automation::{AutoExtractor, AutoExtractConfig, IndexerConfig, IndexStats};
+pub use automation::{AutoExtractor, AutoExtractConfig};
+
+#[cfg(feature = "vector-search")]
+pub use automation::{IndexerConfig, IndexStats};
 pub use layers::LayerManager;
 pub use retrieval::{RetrievalEngine, RetrievalOptions, RetrievalResult, SearchResult};
 

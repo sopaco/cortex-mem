@@ -1,219 +1,213 @@
 use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
+use cortex_mem_config::Config as CortexConfig;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-/// Bot configuration
+/// 机器人配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BotConfig {
     pub id: String,
     pub name: String,
     pub system_prompt: String,
     pub access_password: String,
-    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub created_at: DateTime<Utc>,
 }
 
 impl BotConfig {
     pub fn new(
         name: impl Into<String>,
         system_prompt: impl Into<String>,
-        password: impl Into<String>,
+        access_password: impl Into<String>,
     ) -> Self {
         Self {
             id: uuid::Uuid::new_v4().to_string(),
             name: name.into(),
             system_prompt: system_prompt.into(),
-            access_password: password.into(),
-            created_at: chrono::Utc::now(),
+            access_password: access_password.into(),
+            created_at: Utc::now(),
         }
     }
 }
 
-/// LLM Configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LLMConfig {
-    pub api_base_url: String,
-    pub api_key: String,
-    #[serde(alias = "model_efficient")]
-    pub model: String,
-    pub temperature: f32,
-    pub max_tokens: u32,
-}
-
-impl Default for LLMConfig {
-    fn default() -> Self {
-        Self {
-            api_base_url: std::env::var("LLM_API_BASE_URL")
-                .unwrap_or_else(|_| "http://localhost:11434/v1".to_string()),
-            api_key: std::env::var("LLM_API_KEY").unwrap_or_else(|_| "ollama".to_string()),
-            model: std::env::var("LLM_MODEL").unwrap_or_else(|_| "qwen2.5:14b".to_string()),
-            temperature: 0.7,
-            max_tokens: 4096,
-        }
-    }
-}
-
-/// Application configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AppConfig {
-    pub llm: LLMConfig,
-    #[serde(default = "default_data_dir")]
-    pub data_dir: PathBuf,
-    #[serde(default)]
-    pub bots: HashMap<String, BotConfig>,
-}
-
-fn default_data_dir() -> PathBuf {
-    directories::ProjectDirs::from("com", "cortex-mem", "tars")
-        .map(|dirs| dirs.data_dir().to_path_buf())
-        .unwrap_or_else(|| PathBuf::from("./.cortex"))
-}
-
-impl Default for AppConfig {
-    fn default() -> Self {
-        let data_dir = directories::ProjectDirs::from("com", "cortex-mem", "tars")
-            .map(|dirs| dirs.data_dir().to_path_buf())
-            .unwrap_or_else(|| PathBuf::from("./.cortex"));
-
-        Self {
-            llm: LLMConfig::default(),
-            data_dir,
-            bots: HashMap::new(),
-        }
-    }
-}
-
-/// Configuration manager
+/// 配置管理器
 pub struct ConfigManager {
-    config: AppConfig,
-    config_path: PathBuf,
+    config_dir: PathBuf,
+    bots_file: PathBuf,
+    cortex_config: CortexConfig,
 }
 
 impl ConfigManager {
+    /// 创建新的配置管理器
     pub fn new() -> Result<Self> {
-        // Get current working directory
-        let current_dir = std::env::current_dir().context("Failed to get current directory")?;
-        
-        // System config directory
-        let config_dir = directories::ProjectDirs::from("com", "cortex-mem", "tars")
-            .map(|dirs| dirs.config_dir().to_path_buf())
-            .unwrap_or_else(|| PathBuf::from("./config"));
+        // 获取当前工作目录
+        let current_dir = std::env::current_dir().context("无法获取当前工作目录")?;
 
-        fs::create_dir_all(&config_dir)?;
+        // 优先使用当前目录保存 bots.json
+        let local_bots_file = current_dir.join("bots.json");
 
-        // Check for config.toml: prioritize current directory
-        let local_config_path = current_dir.join("config.toml");
-        let system_config_path = config_dir.join("config.toml");
-        
-        let config_path = if local_config_path.exists() {
-            println!("✓ Using config.toml from current directory: {:?}", local_config_path);
-            local_config_path
-        } else if system_config_path.exists() {
-            println!("✓ Using config.toml from system directory: {:?}", system_config_path);
-            system_config_path
+        // 系统配置目录（用于 bots.json）
+        let config_dir = directories::ProjectDirs::from("com", "cortex", "mem-tars")
+            .context("无法获取项目目录")?
+            .config_dir()
+            .to_path_buf();
+
+        fs::create_dir_all(&config_dir).context("无法创建配置目录")?;
+
+        let system_bots_file = config_dir.join("bots.json");
+
+        // 确定使用哪个 bots.json 文件：优先当前目录
+        let _bots_file = if local_bots_file.exists() {
+            log::info!("使用当前目录的机器人配置文件: {:?}", local_bots_file);
+            local_bots_file.clone()
         } else {
-            println!("✓ No config.toml found, creating default in system directory: {:?}", system_config_path);
-            system_config_path
+            log::info!("使用系统配置目录的机器人配置文件: {:?}", system_bots_file);
+            system_bots_file
         };
 
-        // Check for bots.toml: prioritize current directory
-        let local_bots_path = current_dir.join("bots.toml");
-        let system_bots_path = config_dir.join("bots.toml");
-        
-        let bots_path = if local_bots_path.exists() {
-            println!("✓ Using bots.toml from current directory: {:?}", local_bots_path);
-            local_bots_path
+        // cortex-mem 配置文件：优先从当前目录读取
+        let local_config_file = current_dir.join("config.toml");
+        let system_config_file = config_dir.join("config.toml");
+
+        // 确定使用哪个配置文件
+        let cortex_config_file = if local_config_file.exists() {
+            log::info!("使用当前目录的配置文件: {:?}", local_config_file);
+            local_config_file
         } else {
-            println!("✓ Using bots.toml from system directory: {:?}", system_bots_path);
-            system_bots_path
+            log::info!("使用系统配置目录的配置文件: {:?}", system_config_file);
+            system_config_file
         };
 
-        // Load or create main config
-        let mut config = if config_path.exists() {
-            let content = fs::read_to_string(&config_path)?;
-            match toml::from_str(&content) {
-                Ok(c) => {
-                    println!("✓ Successfully loaded config from: {:?}", config_path);
-                    c
-                }
-                Err(e) => {
-                    println!("⚠ Failed to parse config file: {}, using default", e);
-                    AppConfig::default()
-                }
-            }
+        // 加载或创建 cortex-mem 配置
+        let cortex_config = if cortex_config_file.exists() {
+            CortexConfig::load(&cortex_config_file).context("无法加载 cortex-mem 配置")?
         } else {
-            let default_config = AppConfig::default();
-            // Save default config
-            let content = toml::to_string_pretty(&default_config)?;
-            fs::write(&config_path, content)?;
-            println!("✓ Created default config at: {:?}", config_path);
+            // 创建默认配置
+            let default_config = CortexConfig {
+                qdrant: cortex_mem_config::QdrantConfig {
+                    url: "http://localhost:6334".to_string(),
+                    collection_name: "cortex_mem".to_string(),
+                    embedding_dim: Some(1536),
+                    timeout_secs: 30,
+                },
+                llm: cortex_mem_config::LLMConfig {
+                    api_base_url: "https://api.openai.com/v1".to_string(),
+                    api_key: "".to_string(),
+                    model_efficient: "gpt-4o-mini".to_string(),
+                    temperature: 0.7,
+                    max_tokens: 2000,
+                },
+                server: cortex_mem_config::ServerConfig {
+                    host: "localhost".to_string(),
+                    port: 8080,
+                    cors_origins: vec!["*".to_string()],
+                },
+                embedding: cortex_mem_config::EmbeddingConfig {
+                    api_base_url: "https://api.openai.com/v1".to_string(),
+                    model_name: "text-embedding-3-small".to_string(),
+                    api_key: "".to_string(),
+                    batch_size: 100,
+                    timeout_secs: 30,
+                },
+                memory: cortex_mem_config::MemoryConfig::default(),
+                logging: cortex_mem_config::LoggingConfig::default(),
+            };
+            let content = toml::to_string_pretty(&default_config).context("无法序列化默认配置")?;
+            fs::write(&cortex_config_file, content).context("无法写入默认配置文件")?;
+            log::info!("已创建默认 cortex-mem 配置文件: {:?}", cortex_config_file);
             default_config
         };
 
-        // Load bots configuration
-        if bots_path.exists() {
-            let content = fs::read_to_string(&bots_path)?;
-            if let Ok(bots) = toml::from_str::<HashMap<String, BotConfig>>(&content) {
-                let bots_count = bots.len();
-                config.bots = bots;
-                println!("✓ Loaded {} bots from: {:?}", bots_count, bots_path);
-            }
-        }
-
         Ok(Self {
-            config,
-            config_path,
+            config_dir,
+            bots_file: local_bots_file, // 始终使用当前目录的 bots.json
+            cortex_config,
         })
     }
 
-    pub fn config(&self) -> &AppConfig {
-        &self.config
-    }
-
-    pub fn config_dir(&self) -> PathBuf {
-        self.config_path
-            .parent()
-            .unwrap_or(&self.config_path)
-            .to_path_buf()
-    }
-
+    /// 获取所有机器人配置
     pub fn get_bots(&self) -> Result<Vec<BotConfig>> {
-        Ok(self.config.bots.values().cloned().collect())
-    }
-
-    pub fn add_bot(&mut self, bot: BotConfig) -> Result<()> {
-        self.config.bots.insert(bot.id.clone(), bot);
-        self.save_bots(&self.config.bots.clone())
-    }
-
-    pub fn update_bot(&mut self, bot_id: &str, bot: BotConfig) -> Result<()> {
-        self.config.bots.insert(bot_id.to_string(), bot);
-        self.save_bots(&self.config.bots.clone())
-    }
-
-    pub fn remove_bot(&mut self, bot_id: &str) -> Result<bool> {
-        let removed = self.config.bots.remove(bot_id).is_some();
-        if removed {
-            self.save_bots(&self.config.bots.clone())?;
+        if !self.bots_file.exists() {
+            return Ok(vec![]);
         }
-        Ok(removed)
+
+        let content = fs::read_to_string(&self.bots_file).context("无法读取配置文件")?;
+        let bots: Vec<BotConfig> = serde_json::from_str(&content).context("无法解析配置文件")?;
+
+        Ok(bots)
     }
 
-    fn save_bots(&self, bots: &HashMap<String, BotConfig>) -> Result<()> {
-        // Try to save in current directory first, fallback to parent of config_path
-        let current_dir = std::env::current_dir()?;
-        let current_bots_path = current_dir.join("bots.toml");
-        
-        let bots_path = if current_bots_path.parent().is_some() {
-            current_bots_path
-        } else {
-            self.config_path.parent().unwrap().join("bots.toml")
-        };
-        
-        let content = toml::to_string_pretty(bots)?;
-        fs::write(&bots_path, content)?;
-        log::info!("Saved bots to: {:?}", bots_path);
+    /// 保存所有机器人配置
+    fn save_bots(&self, bots: &[BotConfig]) -> Result<()> {
+        let content = serde_json::to_string_pretty(bots).context("无法序列化配置")?;
+        fs::write(&self.bots_file, content).context("无法写入配置文件")?;
         Ok(())
+    }
+
+    /// 添加机器人
+    pub fn add_bot(&self, bot: BotConfig) -> Result<()> {
+        let bot_name = bot.name.clone();
+        let bot_id = bot.id.clone();
+        let mut bots = self.get_bots()?;
+        bots.push(bot);
+        self.save_bots(&bots)?;
+        log::info!("添加机器人: {} (ID: {})", bot_name, bot_id);
+        Ok(())
+    }
+
+    /// 删除机器人
+    #[allow(dead_code)]
+    pub fn remove_bot(&self, bot_id: &str) -> Result<bool> {
+        let mut bots = self.get_bots()?;
+        let original_len = bots.len();
+        bots.retain(|bot| bot.id != bot_id);
+
+        if bots.len() < original_len {
+            self.save_bots(&bots)?;
+            log::info!("删除机器人 ID: {}", bot_id);
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    /// 更新机器人
+    #[allow(dead_code)]
+    pub fn update_bot(&self, bot_id: &str, updated_bot: BotConfig) -> Result<bool> {
+        let bot_name = updated_bot.name.clone();
+        let mut bots = self.get_bots()?;
+        if let Some(bot) = bots.iter_mut().find(|b| b.id == bot_id) {
+            *bot = updated_bot;
+            self.save_bots(&bots)?;
+            log::info!("更新机器人: {} (ID: {})", bot_name, bot_id);
+            Ok(true)
+        } else {
+            Ok(false)
+        }
+    }
+
+    /// 根据 ID 获取机器人
+    #[allow(dead_code)]
+    pub fn get_bot(&self, bot_id: &str) -> Result<Option<BotConfig>> {
+        let bots = self.get_bots()?;
+        Ok(bots.into_iter().find(|bot| bot.id == bot_id))
+    }
+
+    /// 获取配置目录路径
+    #[allow(dead_code)]
+    pub fn config_dir(&self) -> &Path {
+        &self.config_dir
+    }
+
+    /// 获取 cortex-mem 配置
+    pub fn cortex_config(&self) -> &CortexConfig {
+        &self.cortex_config
+    }
+}
+
+impl Default for ConfigManager {
+    fn default() -> Self {
+        Self::new().expect("无法初始化配置管理器")
     }
 }

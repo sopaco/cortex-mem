@@ -2,21 +2,20 @@
 name = "cortex-mem-tars"
 version = "2.0.0"
 edition = "2021"
-description = "TARS - Personal Assistant Demo based on Cortex Memory V2"
-authors = ["Cortex Memory Team"]
-license = "MIT"
 
 [dependencies]
 # Cortex Memory V2 dependencies
+cortex-mem-config = { path = "../../cortex-mem-config" }
 cortex-mem-core = { path = "../../cortex-mem-core", features = ["vector-search"] }
 cortex-mem-tools = { path = "../../cortex-mem-tools", features = ["vector-search"] }
+cortex-mem-rig = { path = "../../cortex-mem-rig" }
 
 # LLM framework
 rig-core = "0.23"
 
 # TUI
 ratatui = "0.29"
-tui-markdown = "0.3"
+tui-markdown = "0.3.7"
 ratatui-core = "0.1"
 crossterm = "0.28"
 tui-textarea = "0.7"
@@ -63,7 +62,3 @@ clipboard = "0.5"
 
 # CLI
 clap = { version = "4.5", features = ["derive"] }
-
-[features]
-default = []
-vector-search = ["cortex-mem-core/vector-search", "cortex-mem-tools/vector-search"]

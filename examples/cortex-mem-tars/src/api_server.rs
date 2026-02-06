@@ -9,39 +9,39 @@ use axum::{
 use chrono::Utc;
 use cortex_mem_tools::MemoryOperations;
 use serde::Deserialize;
+use serde_json::{Value, json};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tower_http::cors::{Any, CorsLayer};
-use uuid::Uuid;
 
 use crate::api_models::{
     ErrorResponse, HealthResponse, ListMemoryResponse, MemoryItem, RetrieveMemoryResponse,
     StoreMemoryRequest, StoreMemoryResponse,
 };
 
-/// Retrieve memory query params
+/// 查询记忆参数
 #[derive(Debug, Deserialize)]
 pub struct RetrieveMemoryQuery {
-    /// Search query
+    /// 查询关键词
     pub query: Option<String>,
-    /// Speaker type filter
-    pub _speaker_type: Option<String>,
-    /// Result limit
+    /// 说话人类型过滤
+    pub speaker_type: Option<String>,
+    /// 返回数量限制
     pub limit: Option<usize>,
 }
 
-/// List memory query params
+/// 列出记忆参数
 #[derive(Debug, Deserialize)]
 pub struct ListMemoryQuery {
-    /// Speaker type filter
-    pub _speaker_type: Option<String>,
-    /// Result limit
+    /// 说话人类型过滤
+    pub speaker_type: Option<String>,
+    /// 返回数量限制
     pub limit: Option<usize>,
-    /// Offset
-    pub _offset: Option<usize>,
+    /// 偏移量
+    pub offset: Option<usize>,
 }
 
-/// API server state
+/// API 服务器状态
 #[derive(Clone)]
 pub struct ApiServerState {
     pub operations: Arc<MemoryOperations>,
@@ -50,8 +50,9 @@ pub struct ApiServerState {
     pub external_message_sender: Option<mpsc::UnboundedSender<String>>,
 }
 
-/// Create API router
+/// 创建 API 路由器
 pub fn create_router(state: ApiServerState) -> Router {
+    // 配置 CORS
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_methods(Any)
@@ -66,114 +67,56 @@ pub fn create_router(state: ApiServerState) -> Router {
         .with_state(state)
 }
 
-/// Health check endpoint
+/// 健康检查端点
 async fn health_check() -> Result<Json<HealthResponse>, StatusCode> {
     let response = HealthResponse {
         status: "healthy".to_string(),
         timestamp: Utc::now().to_rfc3339(),
     };
+
     Ok(Json(response))
 }
 
-/// Store memory endpoint
+/// 存储记忆端点
 async fn store_memory(
     State(state): State<ApiServerState>,
     Json(request): Json<StoreMemoryRequest>,
 ) -> Result<Json<StoreMemoryResponse>, (StatusCode, Json<ErrorResponse>)> {
-    // Chat mode: send message to external channel
-    if state.audio_connect_mode == "chat" {
-        log::info!("Chat mode: received message: {}", request.content);
+    log::info!("收到存储记忆请求");
 
-        if let Some(ref sender) = state.external_message_sender {
-            if let Err(e) = sender.send(request.content.clone()) {
-                log::error!("Failed to send external message: {}", e);
-                return Err((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ErrorResponse {
-                        success: false,
-                        error_type: Some("channel_error".to_string()),
-                        error: format!("Failed to send message: {}", e),
-                    }),
-                ));
-            }
-            log::info!("Message sent to external channel");
-        } else {
-            return Err((
-                StatusCode::SERVICE_UNAVAILABLE,
-                Json(ErrorResponse {
-                    success: false,
-                    error_type: Some("service_unavailable".to_string()),
-                    error: "External message channel not initialized".to_string(),
-                }),
-            ));
-        }
+    // 获取当前 bot_id
+    let bot_id = if let Ok(current_bot_id) = state.current_bot_id.read() {
+        current_bot_id.clone().unwrap_or_else(|| "default".to_string())
+    } else {
+        "default".to_string()
+    };
 
-        return Ok(Json(StoreMemoryResponse {
-            success: true,
-            memory_id: None,
-            message: Some(format!("Chat mode: Message queued - {}", request.content)),
-        }));
-    }
+    // 使用 add_message 存储消息
+    let role = if request.speaker_type.as_deref() == Some("user") {
+        "user"
+    } else {
+        "assistant"
+    };
 
-    // Store mode
-    if request.content.trim().is_empty() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                success: false,
-                error_type: Some("invalid_content".to_string()),
-                error: "Missing required field: content".to_string(),
-            }),
-        ));
-    }
+    match state.operations.add_message(&bot_id, role, &request.content).await {
+        Ok(message_id) => {
+            log::info!("成功存储记忆，ID: {}", message_id);
 
-    if request.source != "audio_listener" {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ErrorResponse {
-                success: false,
-                error_type: Some("invalid_source".to_string()),
-                error: "Invalid source value. Expected 'audio_listener'".to_string(),
-            }),
-        ));
-    }
-
-    let _memory_id = format!("mem_{}", Uuid::new_v4());
-
-    // Store as a message in the current thread/session
-    let thread_id = state
-        .current_bot_id
-        .read()
-        .ok()
-        .and_then(|id| id.clone())
-        .unwrap_or_else(|| "default".to_string());
-
-    let content = format!(
-        "[{}] Audio listener: {}",
-        request.timestamp,
-        request.content
-    );
-
-    match state
-        .operations
-        .add_message(&thread_id, "user", &content)
-        .await
-    {
-        Ok(id) => {
-            log::info!("Memory stored successfully: {}", id);
-            Ok(Json(StoreMemoryResponse {
+            let response = StoreMemoryResponse {
                 success: true,
-                memory_id: Some(id),
+                memory_id: Some(message_id),
                 message: Some("Memory stored successfully".to_string()),
-            }))
+            };
+
+            Ok(Json(response))
         }
         Err(e) => {
-            log::error!("Failed to store memory: {}", e);
+            log::error!("存储记忆失败: {}", e);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
                     success: false,
-                    error_type: Some("internal_error".to_string()),
+                    error_type: Some("STORAGE_ERROR".to_string()),
                     error: format!("Failed to store memory: {}", e),
                 }),
             ))
@@ -181,45 +124,65 @@ async fn store_memory(
     }
 }
 
-/// Retrieve memory endpoint
+/// 检索记忆端点
 async fn retrieve_memory(
     State(state): State<ApiServerState>,
-    Query(params): Query<RetrieveMemoryQuery>,
+    Query(query): Query<RetrieveMemoryQuery>,
 ) -> Result<Json<RetrieveMemoryResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let limit = params.limit.unwrap_or(5);
-    let query = params.query.as_deref().unwrap_or("");
+    log::info!("收到检索记忆请求: {:?}", query);
 
-    let thread_id = state
-        .current_bot_id
-        .read()
-        .ok()
-        .and_then(|id| id.clone());
+    // 获取当前 bot_id
+    let bot_id = if let Ok(current_bot_id) = state.current_bot_id.read() {
+        current_bot_id.clone()
+    } else {
+        None
+    };
 
-    match state.operations.search(query, thread_id.as_deref(), limit).await {
-        Ok(results) => {
-            let memories: Vec<MemoryItem> = results
+    // 如果没有查询关键词，返回错误
+    let query_text = query.query.ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                success: false,
+                error_type: Some("VALIDATION_ERROR".to_string()),
+                error: "Query parameter is required".to_string(),
+            }),
+        )
+    })?;
+
+    let limit = query.limit.unwrap_or(10);
+
+    // 使用 search 方法检索记忆
+    match state.operations.search(&query_text, bot_id.as_deref(), limit).await {
+        Ok(memories) => {
+            log::info!("成功检索到 {} 条记忆", memories.len());
+
+            let memory_items: Vec<MemoryItem> = memories
                 .into_iter()
-                .map(|memory| MemoryItem {
-                    id: memory.uri.clone(),
-                    content: memory.content,
-                    source: "memory".to_string(),
-                    timestamp: memory.created_at.to_rfc3339(),
-                    speaker_type: None,
+                .map(|mem| MemoryItem {
+                    id: mem.uri.clone(),
+                    content: mem.content.clone(),
+                    source: "cortex-mem".to_string(),
+                    timestamp: mem.created_at.to_rfc3339(),
+                    speaker_type: None, // V2 不存储 speaker_type
                     speaker_confidence: None,
-                    relevance: memory.score,
+                    relevance: mem.score,
                 })
                 .collect();
 
-            log::info!("Retrieved {} memories", memories.len());
-            Ok(Json(RetrieveMemoryResponse { memories }))
+            let response = RetrieveMemoryResponse {
+                memories: memory_items,
+            };
+
+            Ok(Json(response))
         }
         Err(e) => {
-            log::error!("Failed to retrieve memories: {}", e);
+            log::error!("检索记忆失败: {}", e);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
                     success: false,
-                    error_type: Some("internal_error".to_string()),
+                    error_type: Some("RETRIEVAL_ERROR".to_string()),
                     error: format!("Failed to retrieve memories: {}", e),
                 }),
             ))
@@ -227,41 +190,55 @@ async fn retrieve_memory(
     }
 }
 
-/// List memory endpoint
+/// 列出记忆端点
 async fn list_memory(
     State(state): State<ApiServerState>,
-    Query(params): Query<ListMemoryQuery>,
+    Query(query): Query<ListMemoryQuery>,
 ) -> Result<Json<ListMemoryResponse>, (StatusCode, Json<ErrorResponse>)> {
-    let limit = params.limit.unwrap_or(10);
+    log::info!("收到列出记忆请求: {:?}", query);
 
-    match state.operations.list_sessions().await {
-        Ok(sessions) => {
-            // For simplicity, return sessions as memory items
-            let memories: Vec<MemoryItem> = sessions
+    // 获取当前 bot_id
+    let bot_id = if let Ok(current_bot_id) = state.current_bot_id.read() {
+        current_bot_id.clone()
+    } else {
+        None
+    };
+
+    let limit = query.limit.unwrap_or(20);
+
+    // 使用 search 方法（空查询）列出最近的记忆
+    match state.operations.search("", bot_id.as_deref(), limit).await {
+        Ok(memories) => {
+            log::info!("成功列出 {} 条记忆", memories.len());
+
+            let total = memories.len();
+            let memory_items: Vec<MemoryItem> = memories
                 .into_iter()
-                .take(limit)
-                .map(|session| MemoryItem {
-                    id: session.thread_id.clone(),
-                    content: format!("Session: {} ({})", session.thread_id, session.status),
-                    source: "session".to_string(),
-                    timestamp: session.created_at.to_rfc3339(),
-                    speaker_type: None,
+                .map(|mem| MemoryItem {
+                    id: mem.uri.clone(),
+                    content: mem.content.clone(),
+                    source: "cortex-mem".to_string(),
+                    timestamp: mem.created_at.to_rfc3339(),
+                    speaker_type: None, // V2 不存储 speaker_type
                     speaker_confidence: None,
-                    relevance: None,
+                    relevance: mem.score,
                 })
                 .collect();
 
-            let total = memories.len();
-            log::info!("Listed {} sessions", total);
-            Ok(Json(ListMemoryResponse { memories, total }))
+            let response = ListMemoryResponse {
+                memories: memory_items,
+                total,
+            };
+
+            Ok(Json(response))
         }
         Err(e) => {
-            log::error!("Failed to list memories: {}", e);
+            log::error!("列出记忆失败: {}", e);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse {
                     success: false,
-                    error_type: Some("internal_error".to_string()),
+                    error_type: Some("LIST_ERROR".to_string()),
                     error: format!("Failed to list memories: {}", e),
                 }),
             ))
@@ -269,31 +246,22 @@ async fn list_memory(
     }
 }
 
-/// Start API server
+/// 启动 API 服务器
 pub async fn start_api_server(state: ApiServerState, port: u16) -> Result<()> {
     let app = create_router(state);
     let addr = format!("0.0.0.0:{}", port);
 
-    log::info!("Starting TARS API server on http://{}", addr);
+    log::info!("🚀 API 服务器正在启动，监听地址: {}", addr);
 
-    match tokio::net::TcpListener::bind(&addr).await {
-        Ok(listener) => {
-            log::info!("Successfully bound to address: {}", addr);
+    let listener = tokio::net::TcpListener::bind(&addr)
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to bind to {}: {}", addr, e))?;
 
-            match axum::serve(listener, app).await {
-                Ok(_) => {
-                    log::info!("API server stopped gracefully");
-                    Ok(())
-                }
-                Err(e) => {
-                    log::error!("API server error: {}", e);
-                    Err(anyhow::anyhow!("API server error: {}", e))
-                }
-            }
-        }
-        Err(e) => {
-            log::error!("Failed to bind to address {}: {}", addr, e);
-            Err(anyhow::anyhow!("Failed to bind to address {}: {}", addr, e))
-        }
-    }
+    log::info!("✅ API 服务器成功绑定到 {}", addr);
+
+    axum::serve(listener, app)
+        .await
+        .map_err(|e| anyhow::anyhow!("Server error: {}", e))?;
+
+    Ok(())
 }

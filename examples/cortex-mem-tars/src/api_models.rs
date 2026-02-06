@@ -1,90 +1,90 @@
 use serde::{Deserialize, Serialize};
 
-/// Store memory request
+/// 存储记忆请求
 #[derive(Debug, Clone, Deserialize)]
 pub struct StoreMemoryRequest {
-    /// Voice transcription content
+    /// 语音转录后的文本内容
     pub content: String,
-    /// Fixed value "audio_listener" indicating source
+    /// 固定值 "audio_listener"，标识来源为语音旁听服务
     pub source: String,
-    /// Timestamp in RFC 3339 format
+    /// 语音识别的时间戳，RFC 3339 格式
     pub timestamp: String,
-    /// Speaker type: "user" or "other"
+    /// 说话人类型："user"（本人）或 "other"（他人）
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub _speaker_type: Option<String>,
-    /// Speaker confidence (0-1)
+    pub speaker_type: Option<String>,
+    /// 说话人识别的置信度（0-1）
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub _speaker_confidence: Option<f32>,
+    pub speaker_confidence: Option<f32>,
 }
 
-/// Store memory response
+/// 存储记忆响应
 #[derive(Debug, Clone, Serialize)]
 pub struct StoreMemoryResponse {
-    /// Whether storage was successful
+    /// 是否成功存储
     pub success: bool,
-    /// Memory ID
+    /// 存储的记忆唯一标识
     #[serde(skip_serializing_if = "Option::is_none")]
     pub memory_id: Option<String>,
-    /// Success or error message
+    /// 成功或错误消息
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
 }
 
-/// Health check response
+/// 健康检查响应
 #[derive(Debug, Clone, Serialize)]
 pub struct HealthResponse {
-    /// API status
+    /// API 状态
     pub status: String,
-    /// Current timestamp
+    /// 当前时间戳
     pub timestamp: String,
 }
 
-/// Error response
+/// 错误响应
 #[derive(Debug, Clone, Serialize)]
 pub struct ErrorResponse {
-    /// Whether successful
+    /// 是否成功
     pub success: bool,
-    /// Error type
+    /// 错误类型
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_type: Option<String>,
-    /// Error message
+    /// 错误信息
     pub error: String,
 }
 
-/// Memory item (for query and list responses)
+/// 记忆项（用于查询和列表响应）
 #[derive(Debug, Clone, Serialize)]
 pub struct MemoryItem {
-    /// Memory ID
+    /// 记忆 ID
     pub id: String,
-    /// Memory content
+    /// 记忆内容
     pub content: String,
-    /// Source
+    /// 来源
     pub source: String,
-    /// Timestamp
+    /// 时间戳
     pub timestamp: String,
-    /// Speaker type
+    /// 说话人类型
     #[serde(skip_serializing_if = "Option::is_none")]
     pub speaker_type: Option<String>,
-    /// Speaker confidence
+    /// 说话人置信度
     #[serde(skip_serializing_if = "Option::is_none")]
     pub speaker_confidence: Option<f32>,
-    /// Relevance score
+    /// 相关性分数
     #[serde(skip_serializing_if = "Option::is_none")]
     pub relevance: Option<f32>,
 }
 
-/// Retrieve memory response
+/// 查询记忆响应
 #[derive(Debug, Clone, Serialize)]
 pub struct RetrieveMemoryResponse {
-    /// Memory list
+    /// 记忆列表
     pub memories: Vec<MemoryItem>,
 }
 
-/// List memory response
+/// 列出记忆响应
 #[derive(Debug, Clone, Serialize)]
 pub struct ListMemoryResponse {
-    /// Memory list
+    /// 记忆列表
     pub memories: Vec<MemoryItem>,
-    /// Total count
+    /// 总数
     pub total: usize,
 }

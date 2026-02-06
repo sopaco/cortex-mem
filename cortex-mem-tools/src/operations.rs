@@ -1,10 +1,19 @@
-use crate::{errors::*, types::*};
+use crate::{errors::*, types::*, mcp_tools::MemoryOperationPayload};
 use cortex_mem_core::{
     CortexFilesystem, SessionManager, SessionConfig, FilesystemOperations,
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::info;
+use serde_json::{json, Value};
+
+/// Tool response for MCP compatibility
+#[derive(Debug, Clone)]
+pub struct ToolResponse {
+    pub success: bool,
+    pub message: String,
+    pub data: Option<Value>,
+}
 
 /// High-level memory operations
 /// 
@@ -81,6 +90,101 @@ impl MemoryOperations {
         
         info!("Added message {} to session {}", message_id, thread_id);
         Ok(message_id)
+    }
+
+    /// Store memory (MCP-compatible)
+    pub async fn store_memory(&self, payload: MemoryOperationPayload) -> Result<ToolResponse> {
+        let content = payload.content.ok_or_else(|| ToolsError::InvalidInput("content is required".to_string()))?;
+        let thread_id = payload.agent_id.or(payload.user_id).unwrap_or_else(|| "default".to_string());
+        let role = "user"; // Default role for stored memories
+        
+        let message_id = self.add_message(&thread_id, role, &content).await?;
+        
+        Ok(ToolResponse {
+            success: true,
+            message: format!("Memory stored successfully with ID: {}", message_id),
+            data: Some(json!({
+                "memory_id": message_id,
+                "thread_id": thread_id,
+            })),
+        })
+    }
+
+    /// Query memory (MCP-compatible)
+    pub async fn query_memory(&self, payload: MemoryOperationPayload) -> Result<ToolResponse> {
+        let query = payload.query.ok_or_else(|| ToolsError::InvalidInput("query is required".to_string()))?;
+        let limit = payload.k.unwrap_or(10);
+        let thread_id = payload.agent_id.or(payload.user_id);
+        
+        let results = self.search(&query, thread_id.as_deref(), limit).await?;
+        
+        let memories: Vec<Value> = results.iter().map(|mem| {
+            json!({
+                "id": mem.uri.clone(),
+                "content": mem.content.clone(),
+                "score": mem.score,
+                "created_at": mem.created_at.to_rfc3339(),
+            })
+        }).collect();
+        
+        Ok(ToolResponse {
+            success: true,
+            message: format!("Found {} memories", memories.len()),
+            data: Some(json!({
+                "memories": memories,
+                "count": memories.len(),
+            })),
+        })
+    }
+
+    /// List memories (MCP-compatible)
+    pub async fn list_memories(&self, payload: MemoryOperationPayload) -> Result<ToolResponse> {
+        let thread_id = payload.agent_id.or(payload.user_id);
+        let limit = payload.limit.unwrap_or(20);
+        
+        // For now, we use search with empty query to list recent memories
+        // This is a simplified implementation
+        let results = if let Some(tid) = thread_id {
+            self.search("", Some(&tid), limit).await?
+        } else {
+            Vec::new()
+        };
+        
+        let memories: Vec<Value> = results.iter().map(|mem| {
+            json!({
+                "id": mem.uri.clone(),
+                "content": mem.content.clone(),
+                "score": mem.score,
+                "created_at": mem.created_at.to_rfc3339(),
+            })
+        }).collect();
+        
+        Ok(ToolResponse {
+            success: true,
+            message: format!("Found {} memories", memories.len()),
+            data: Some(json!({
+                "memories": memories,
+                "count": memories.len(),
+            })),
+        })
+    }
+
+    /// Get memory by ID (MCP-compatible)
+    pub async fn get_memory(&self, payload: MemoryOperationPayload) -> Result<ToolResponse> {
+        let memory_id = payload.memory_id.ok_or_else(|| ToolsError::InvalidInput("memory_id is required".to_string()))?;
+        
+        // Try to read the file
+        let content = self.filesystem.read(&memory_id).await
+            .map_err(|_| ToolsError::NotFound(format!("Memory not found: {}", memory_id)))?;
+        
+        Ok(ToolResponse {
+            success: true,
+            message: "Memory retrieved successfully".to_string(),
+            data: Some(json!({
+                "id": memory_id,
+                "content": content,
+            })),
+        })
     }
 
     /// Search memories

@@ -17,134 +17,154 @@ use std::sync::Arc;
 
 #[derive(Parser, Debug)]
 #[command(name = "cortex-mem-tars")]
-#[command(about = "TARS, An Interactive Demonstration Program Based on Cortex Memory V2")]
-#[command(author = "Cortex Memory Team")]
+#[command(about = "TARS, An Interactive Demonstration Program Based on Cortex Memory")]
+#[command(author = "Sopaco")]
 #[command(version)]
 struct Args {
-    /// Enable enhanced memory saver - save conversations to memory on exit
+    /// 启用增强记忆保存功能，退出时自动保存对话到记忆系统
     #[arg(long, action)]
     enhance_memory_saver: bool,
 
-    /// Enable audio connect - start API server for voice recognition
+    /// 启用音频连接功能，启动 API 服务器监听语音识别信息传入
     #[arg(long, action)]
     enable_audio_connect: bool,
 
-    /// Audio connect mode: store (save to memory) or chat (simulate user input)
+    /// 音频连接模式：store（存储到记忆系统）或 chat（模拟用户输入发送消息）
     #[arg(long, default_value = "store")]
     audio_connect_mode: String,
-
-    /// Data directory for cortex filesystem
-    #[arg(short, long, default_value = "./cortex-data")]
-    data_dir: String,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // Parse command line arguments
+    // 解析命令行参数
     let args = Args::parse();
 
     if args.enhance_memory_saver {
-        log::info!("Enhanced memory saver enabled");
+        log::info!("已启用增强记忆保存功能");
     }
 
     if args.enable_audio_connect {
-        log::info!("Audio connect enabled");
-        log::info!("Audio connect mode: {}", args.audio_connect_mode);
+        log::info!("已启用音频连接功能");
+        if args.audio_connect_mode != "store" && args.audio_connect_mode != "chat" {
+            log::warn!("无效的 audio_connect_mode 值: {}，将使用默认值 'store'", args.audio_connect_mode);
+        }
+        log::info!("音频连接模式: {}", args.audio_connect_mode);
     }
 
-    // Initialize configuration manager
-    let mut config_manager = ConfigManager::new().context("Failed to initialize config manager")?;
-    log::info!("Config manager initialized");
+    // 初始化配置管理器
+    let config_manager = ConfigManager::new().context("无法初始化配置管理器")?;
+    log::info!("配置管理器初始化成功");
 
-    // Initialize logger
-    let log_manager = init_logger(&config_manager.config_dir()).context("Failed to initialize logger")?;
-    log::info!("Logger initialized");
+    // 初始化日志系统
+    let log_manager = init_logger(config_manager.config_dir()).context("无法初始化日志系统")?;
+    log::info!("日志系统初始化成功");
 
-    // Create default bots
-    create_default_bots(&mut config_manager).context("Failed to create default bots")?;
+    // 创建默认机器人
+    create_default_bots(&config_manager).context("无法创建默认机器人")?;
 
-    // Initialize infrastructure (MemoryOperations)
-    let infrastructure = match Infrastructure::new(&args.data_dir).await {
+    // 初始化基础设施（LLM 客户端、向量存储、记忆管理器）
+    let infrastructure = match Infrastructure::new(config_manager.cortex_config().clone()).await {
         Ok(inf) => {
-            log::info!("Infrastructure initialized successfully");
+            log::info!("基础设施初始化成功");
             Some(Arc::new(inf))
         }
         Err(e) => {
-            log::warn!("Infrastructure initialization failed: {}", e);
+            log::warn!("基础设施初始化失败，将使用 Mock Agent: {}", e);
             None
         }
     };
 
-    // Create and run application
+    // 创建并运行应用
     let mut app = App::new(
         config_manager,
         log_manager,
         infrastructure.clone(),
         args.enable_audio_connect,
         args.audio_connect_mode.clone(),
-        args.data_dir.clone(),
     )
-    .context("Failed to create application")?;
+    .context("无法创建应用")?;
+    log::info!("应用创建成功");
 
-    log::info!("Application created successfully");
+    // 检查服务可用性
+    app.check_service_status()
+        .await
+        .context("无法检查服务状态")?;
 
-    // Check service status
-    app.check_service_status().await.context("Failed to check service status")?;
+    // 运行应用
+    app.run().await.context("应用运行失败")?;
 
-    // Run application
-    app.run().await.context("Application run failed")?;
-
-    // On exit, save conversations if enhanced memory saver is enabled
+    // 退出时保存对话到记忆系统（仅在启用增强记忆保存功能时）
     if args.enhance_memory_saver {
         if let Some(_inf) = infrastructure {
-            println!("\n╔══════════════════════════════════════════════════════════════════════════════╗");
-            println!("║                            🧠 Cortex Memory - Exit Process                     ║");
-            println!("╚══════════════════════════════════════════════════════════════════════════════╝");
+            println!(
+                "\n╔══════════════════════════════════════════════════════════════════════════════╗"
+            );
+            println!(
+                "║                            🧠 Cortex Memory - 退出流程                       ║"
+            );
+            println!(
+                "╚══════════════════════════════════════════════════════════════════════════════╝"
+            );
 
-            log::info!("Starting exit process, saving conversations to memory...");
+            log::info!("🚀 开始退出流程，准备保存对话到记忆系统...");
 
             let conversations = app.get_conversations();
-            let thread_id = app.get_thread_id();
+            let user_id = app.get_user_id();
 
-            println!("📋 Session Summary:");
-            println!("   • Conversations: {} turns", conversations.len());
-            println!("   • Thread ID: {}", thread_id);
+            println!("📋 会话摘要:");
+            println!("   • 对话轮次: {} 轮", conversations.len());
+            println!("   • 用户ID: {}", user_id);
 
             if conversations.is_empty() {
-                println!("⚠️  No conversations to save");
-                println!("\n╔══════════════════════════════════════════════════════════════════════════════╗");
-                println!("║                                    ✅ Exit Complete                          ║");
-                println!("╚══════════════════════════════════════════════════════════════════════════════╝");
+                println!("⚠️ 没有需要存储的内容");
+                println!(
+                    "\n╔══════════════════════════════════════════════════════════════════════════════╗"
+                );
+                println!(
+                    "║                                    ✅ 退出流程完成                           ║"
+                );
+                println!(
+                    "╚══════════════════════════════════════════════════════════════════════════════╝"
+                );
                 println!("👋 Cortex TARS powering down. Goodbye!");
                 return Ok(());
             }
 
-            println!("\n🧠 Saving conversations to memory...");
-            println!("📝 Storing {} conversation pairs...", conversations.len());
+            println!("\n🧠 开始执行记忆化存储...");
+            println!("📝 正在保存 {} 条对话记录到记忆库...", conversations.len());
+            println!("🚀 开始存储对话到记忆系统...");
 
             match app.save_conversations_to_memory().await {
                 Ok(_) => {
-                    println!("✨ Memory saved successfully!");
-                    println!("✅ All conversations stored in memory system");
-                    println!("🔍 Storage details:");
-                    println!("   • Conversation pairs: {}", conversations.len());
+                    println!("✨ 记忆化完成！");
+                    println!("✅ 所有对话已成功存储到记忆系统");
+                    println!("🔍 存储详情:");
+                    println!("   • 对话轮次: {} 轮", conversations.len());
+                    println!("   • 用户消息: {} 条", conversations.len());
+                    println!("   • 助手消息: {} 条", conversations.len());
                 }
                 Err(e) => {
-                    println!("❌ Failed to save memory: {}", e);
-                    println!("⚠️  Continuing with normal exit");
+                    println!("❌ 记忆存储失败: {}", e);
+                    println!("⚠️ 虽然记忆化失败，但仍正常退出");
                 }
             }
 
-            println!("\n╔══════════════════════════════════════════════════════════════════════════════╗");
-            println!("║                                  🎉 Exit Complete                            ║");
-            println!("╚══════════════════════════════════════════════════════════════════════════════╝");
+            println!(
+                "\n╔══════════════════════════════════════════════════════════════════════════════╗"
+            );
+            println!(
+                "║                                  🎉 退出流程完成                             ║"
+            );
+            println!(
+                "╚══════════════════════════════════════════════════════════════════════════════╝"
+            );
             println!("👋 Cortex TARS powering down. Goodbye!");
         } else {
-            println!("\n⚠️  Infrastructure not initialized, cannot save conversations");
+            println!("\n⚠️ 基础设施未初始化，无法保存对话到记忆系统");
             println!("👋 Cortex TARS powering down. Goodbye!");
         }
     } else {
-        log::info!("Enhanced memory saver not enabled, skipping conversation save");
+        log::info!("未启用增强记忆保存功能，跳过对话保存");
         println!("\n👋 Cortex TARS powering down. Goodbye!");
     }
 

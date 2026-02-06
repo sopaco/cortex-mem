@@ -5,7 +5,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-/// Log manager
+/// 日志管理器
 pub struct LogManager {
     #[allow(dead_code)]
     log_file: PathBuf,
@@ -14,21 +14,21 @@ pub struct LogManager {
 }
 
 impl LogManager {
-    /// Create new log manager
+    /// 创建新的日志管理器
     pub fn new(log_dir: &Path) -> Result<Self> {
         let log_file = log_dir.join("app.log");
 
-        // Ensure log directory exists
+        // 确保日志目录存在
         if let Some(parent) = log_file.parent() {
-            std::fs::create_dir_all(parent).context("Failed to create log directory")?;
+            std::fs::create_dir_all(parent).context("无法创建日志目录")?;
         }
 
-        // Open or create log file
+        // 打开或创建日志文件
         let file = OpenOptions::new()
             .create(true)
             .append(true)
             .open(&log_file)
-            .context("Failed to open log file")?;
+            .context("无法打开日志文件")?;
 
         Ok(Self {
             log_file,
@@ -37,27 +37,22 @@ impl LogManager {
         })
     }
 
-    /// Write log entry
+    /// 写入日志
     pub fn write(&self, level: Level, message: &str) -> Result<()> {
         let timestamp = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
         let log_line = format!("[{} {}] {}", timestamp, level, message);
 
-        // Write to file
-        let mut file = self
-            .file
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Failed to acquire file lock: {}", e))?;
-        writeln!(file, "{}", log_line).context("Failed to write log")?;
-        file.flush().context("Failed to flush log")?;
+        // 写入文件
+        let mut file = self.file.lock().map_err(|e| anyhow::anyhow!("无法获取文件锁: {}", e))?;
+        writeln!(file, "{}", log_line)
+            .context("无法写入日志")?;
+        file.flush().context("无法刷新日志")?;
 
-        // Add to in-memory log lines
-        let mut lines = self
-            .lines
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Failed to acquire log lines lock: {}", e))?;
+        // 添加到内存中的日志行
+        let mut lines = self.lines.lock().map_err(|e| anyhow::anyhow!("无法获取日志行锁: {}", e))?;
         lines.push(log_line.clone());
 
-        // Limit in-memory log lines
+        // 限制内存中的日志行数
         if lines.len() > 1000 {
             let excess = lines.len() - 1000;
             lines.drain(0..excess);
@@ -66,14 +61,11 @@ impl LogManager {
         Ok(())
     }
 
-    /// Read log content
+    /// 读取日志内容
     pub fn read_logs(&self, max_lines: usize) -> Result<Vec<String>> {
-        let lines = self
-            .lines
-            .lock()
-            .map_err(|e| anyhow::anyhow!("Failed to acquire log lines lock: {}", e))?;
+        let lines = self.lines.lock().map_err(|e| anyhow::anyhow!("无法获取日志行锁: {}", e))?;
 
-        // Return last max_lines
+        // 返回最后 max_lines 行
         if lines.len() > max_lines {
             Ok(lines[lines.len() - max_lines..].to_vec())
         } else {
@@ -82,7 +74,7 @@ impl LogManager {
     }
 }
 
-/// Custom Logger
+/// 自定义 Logger
 struct SimpleLogger {
     manager: Arc<LogManager>,
 }
@@ -96,7 +88,7 @@ impl log::Log for SimpleLogger {
         if self.enabled(record.metadata()) {
             let message = format!("{}", record.args());
             if let Err(e) = self.manager.write(record.level(), &message) {
-                eprintln!("Failed to write log: {}", e);
+                eprintln!("日志写入失败: {}", e);
             }
         }
     }
@@ -104,22 +96,22 @@ impl log::Log for SimpleLogger {
     fn flush(&self) {}
 }
 
-/// Initialize logging system
+/// 初始化日志系统
 pub fn init_logger(log_dir: &Path) -> Result<Arc<LogManager>> {
     let manager = Arc::new(LogManager::new(log_dir)?);
 
-    // Create custom logger
+    // 创建自定义 logger
     let logger = SimpleLogger {
         manager: Arc::clone(&manager),
     };
 
-    // Set global logger
+    // 设置全局 logger
     log::set_logger(Box::leak(Box::new(logger)))
-        .map_err(|e| anyhow::anyhow!("Failed to set logger: {}", e))?;
+        .map_err(|e| anyhow::anyhow!("无法设置 logger: {}", e))?;
     log::set_max_level(LevelFilter::Info);
 
-    log::info!("Logging system initialized");
-    log::info!("Log file path: {}", log_dir.display());
+    log::info!("日志系统初始化完成");
+    log::info!("日志文件路径: {}", log_dir.display());
 
     Ok(manager)
 }

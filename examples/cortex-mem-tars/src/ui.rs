@@ -847,6 +847,7 @@ impl AppUi {
         for message in &self.messages {
             // 角色标签行
             let role_label = match message.role {
+                crate::agent::MessageRole::System => "[System]",
                 crate::agent::MessageRole::User => "[You]",
                 crate::agent::MessageRole::Assistant => "[AI]",
             };
@@ -1277,11 +1278,13 @@ impl AppUi {
 
         for (idx, message) in self.messages.iter().enumerate() {
             let role_label = match message.role {
+                crate::agent::MessageRole::System => "System",
                 crate::agent::MessageRole::User => "You",
                 crate::agent::MessageRole::Assistant => "TARS AI",
             };
 
             let role_color = match message.role {
+                crate::agent::MessageRole::System => Color::Yellow,
                 crate::agent::MessageRole::User => self.current_theme.accent_color,
                 crate::agent::MessageRole::Assistant => self.current_theme.primary_color,
             };
@@ -1816,6 +1819,7 @@ Powered by Cortex Memory";
 
         for message in &self.messages {
             let role = match message.role {
+                crate::agent::MessageRole::System => "System",
                 crate::agent::MessageRole::User => "You",
                 crate::agent::MessageRole::Assistant => "TARS AI",
             };

@@ -1,38 +1,47 @@
 use anyhow::{Context, Result};
+use cortex_mem_config::Config;
 use cortex_mem_tools::MemoryOperations;
 use std::sync::Arc;
 
-/// Infrastructure for cortex-mem-tars using V2 architecture
+/// Infrastructure manager - manages memory operations and configuration
 pub struct Infrastructure {
     operations: Arc<MemoryOperations>,
-    _data_dir: String,
+    config: Config,
 }
 
 impl Infrastructure {
-    /// Create new infrastructure with data directory
-    pub async fn new(data_dir: &str) -> Result<Self> {
-        log::info!("Initializing infrastructure with data directory: {}", data_dir);
+    /// Create new infrastructure from configuration
+    pub async fn new(config: Config) -> Result<Self> {
+        log::info!("正在初始化基础设施...");
+
+        // Get data directory from config or use default
+        let data_dir = std::env::var("CORTEX_DATA_DIR")
+            .unwrap_or_else(|_| {
+                directories::ProjectDirs::from("com", "cortex-mem", "tars")
+                    .map(|dirs| dirs.data_dir().to_string_lossy().to_string())
+                    .unwrap_or_else(|| "./.cortex".to_string())
+            });
 
         // Initialize MemoryOperations from data directory
-        let operations = MemoryOperations::from_data_dir(data_dir)
+        let operations = MemoryOperations::from_data_dir(&data_dir)
             .await
             .context("Failed to initialize MemoryOperations")?;
 
-        log::info!("Infrastructure initialized successfully");
+        log::info!("基础设施初始化成功");
 
         Ok(Self {
             operations: Arc::new(operations),
-            _data_dir: data_dir.to_string(),
+            config,
         })
     }
 
-    /// Get MemoryOperations
+    /// Get memory operations (V2 API)
     pub fn operations(&self) -> &Arc<MemoryOperations> {
         &self.operations
     }
 
-    /// Get data directory
-    pub fn _data_dir(&self) -> &str {
-        &self._data_dir
+    /// Get configuration
+    pub fn config(&self) -> &Config {
+        &self.config
     }
 }
