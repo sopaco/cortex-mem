@@ -1,0 +1,28 @@
+[package]
+name = "cortex-mem-rig"
+version = "1.0.0"
+edition = "2024"
+license = "MIT"
+description = "Rig framework integration for Rust agent memory system"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+rig-core = { workspace = true }
+tracing = { workspace = true }
+async-trait = { workspace = true }
+
+# Local dependencies
+cortex-mem-core = { path = "../cortex-mem-core" }
+cortex-mem-config = { path = "../cortex-mem-config" }
+cortex-mem-tools = { path = "../cortex-mem-tools" }
+
+
+
+[features]
+default = []
+examples = []
