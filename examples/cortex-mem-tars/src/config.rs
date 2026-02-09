@@ -41,43 +41,22 @@ pub struct ConfigManager {
 impl ConfigManager {
     /// 创建新的配置管理器
     pub fn new() -> Result<Self> {
-        // 获取当前工作目录
-        let current_dir = std::env::current_dir().context("无法获取当前工作目录")?;
-
-        // 优先使用当前目录保存 bots.json
-        let local_bots_file = current_dir.join("bots.json");
-
-        // 系统配置目录（用于 bots.json）
-        let config_dir = directories::ProjectDirs::from("com", "cortex", "mem-tars")
+        // 使用系统应用数据目录（macOS: ~/Library/Application Support/com.cortex-mem.tars）
+        let config_dir = directories::ProjectDirs::from("com", "cortex-mem", "tars")
             .context("无法获取项目目录")?
-            .config_dir()
+            .data_dir()  // 使用 data_dir 而不是 config_dir
             .to_path_buf();
 
+        // 确保配置目录存在
         fs::create_dir_all(&config_dir).context("无法创建配置目录")?;
+        log::info!("应用数据目录: {:?}", config_dir);
 
-        let system_bots_file = config_dir.join("bots.json");
+        // 所有配置文件都从系统目录读取
+        let bots_file = config_dir.join("bots.json");
+        let cortex_config_file = config_dir.join("config.toml");
 
-        // 确定使用哪个 bots.json 文件：优先当前目录
-        let _bots_file = if local_bots_file.exists() {
-            log::info!("使用当前目录的机器人配置文件: {:?}", local_bots_file);
-            local_bots_file.clone()
-        } else {
-            log::info!("使用系统配置目录的机器人配置文件: {:?}", system_bots_file);
-            system_bots_file
-        };
-
-        // cortex-mem 配置文件：优先从当前目录读取
-        let local_config_file = current_dir.join("config.toml");
-        let system_config_file = config_dir.join("config.toml");
-
-        // 确定使用哪个配置文件
-        let cortex_config_file = if local_config_file.exists() {
-            log::info!("使用当前目录的配置文件: {:?}", local_config_file);
-            local_config_file
-        } else {
-            log::info!("使用系统配置目录的配置文件: {:?}", system_config_file);
-            system_config_file
-        };
+        log::info!("机器人配置文件: {:?}", bots_file);
+        log::info!("Cortex 配置文件: {:?}", cortex_config_file);
 
         // 加载或创建 cortex-mem 配置
         let cortex_config = if cortex_config_file.exists() {
@@ -113,7 +92,7 @@ impl ConfigManager {
 
         Ok(Self {
             config_dir,
-            bots_file: local_bots_file, // 始终使用当前目录的 bots.json
+            bots_file,
             cortex_config,
         })
     }
