@@ -2,13 +2,18 @@ use anyhow::Result;
 use chrono::{DateTime, Local};
 use cortex_mem_tools::MemoryOperations;
 use cortex_mem_rig::create_memory_tools;
+use futures::StreamExt;
 use rig::{
     agent::Agent as RigAgent,
     client::CompletionClient,
     providers::openai::{Client, CompletionModel},
-    completion::Prompt,
+    completion::Message,
+    streaming::{StreamingChat, StreamingPrompt},
+    message::Text,
 };
+use rig::agent::MultiTurnStreamItem;
 use std::sync::Arc;
+use tokio::sync::mpsc;
 
 /// 消息角色
 #[derive(Debug, Clone, PartialEq)]
@@ -228,7 +233,7 @@ pub async fn extract_user_basic_info(
     }
 }
 
-/// Agent多轮对话处理器
+/// Agent多轮对话处理器 - 支持流式输出和多轮工具调用
 pub struct AgentChatHandler {
     agent: RigAgent<CompletionModel>,
     history: Vec<ChatMessage>,
@@ -246,26 +251,116 @@ impl AgentChatHandler {
         &self.history
     }
 
-    /// 进行对话（简化版本，使用 prompt）
-    pub async fn chat(
+    /// 进行对话（流式版本，支持多轮工具调用）
+    pub async fn chat_stream(
         &mut self,
         user_input: &str,
-    ) -> Result<String, Box<dyn std::error::Error>> {
+    ) -> Result<mpsc::Receiver<String>, anyhow::Error> {
         // 添加用户消息到历史
         self.history.push(ChatMessage::user(user_input));
 
-        // 构建完整的提示（包含历史）
-        let mut full_prompt = String::new();
-        for msg in &self.history {
-            match msg.role {
-                MessageRole::User => full_prompt.push_str(&format!("User: {}\n", msg.content)),
-                MessageRole::Assistant => full_prompt.push_str(&format!("Assistant: {}\n", msg.content)),
-            }
-        }
-        full_prompt.push_str("Assistant: ");
+        // 构建对话历史 - 转换为 Rig Message 格式
+        let chat_history: Vec<Message> = self
+            .history
+            .iter()
+            .filter_map(|msg| match msg.role {
+                MessageRole::User => Some(Message::User {
+                    content: rig::OneOrMany::one(rig::completion::message::UserContent::Text(Text {
+                        text: msg.content.clone(),
+                    })),
+                }),
+                MessageRole::Assistant => Some(Message::Assistant {
+                    id: None,
+                    content: rig::OneOrMany::one(rig::completion::message::AssistantContent::Text(Text {
+                        text: msg.content.clone(),
+                    })),
+                }),
+            })
+            .collect();
 
-        // 使用 prompt 而不是 chat
-        let response = self.agent.prompt(&full_prompt).await?;
+        // 获取当前用户输入（最后一条用户消息）
+        let prompt_message = Message::User {
+            content: rig::OneOrMany::one(rig::completion::message::UserContent::Text(Text {
+                text: user_input.to_string(),
+            })),
+        };
+
+        // 创建通道用于发送流式内容
+        let (tx, rx) = mpsc::channel(100);
+
+        // 克隆 agent 用于异步任务
+        let agent = self.agent.clone();
+
+        // 在后台任务中处理流式响应
+        tokio::spawn(async move {
+            let mut full_response = String::new();
+
+            // 使用 stream_chat + multi_turn 支持工具调用（Rig 0.23 风格）
+            let mut stream = agent
+                .stream_chat(prompt_message, chat_history)
+                .multi_turn(20)  // 支持最多 20 轮工具调用
+                .await;
+                
+            // 处理流式响应
+            while let Some(item) = stream.next().await {
+                match item {
+                    Ok(stream_item) => {
+                        match stream_item {
+                            MultiTurnStreamItem::StreamItem(content) => {
+                                use rig::streaming::StreamedAssistantContent;
+                                match content {
+                                    StreamedAssistantContent::Text(text_content) => {
+                                        let text = &text_content.text;
+                                        full_response.push_str(text);
+                                        
+                                        // 发送流式内容
+                                        if tx.send(text.clone()).await.is_err() {
+                                            break;
+                                        }
+                                    }
+                                    StreamedAssistantContent::ToolCall(_) => {
+                                        // 工具调用，可以选择显示
+                                        log::debug!("调用工具中...");
+                                    }
+                                    _ => {}
+                                }
+                            }
+                            MultiTurnStreamItem::FinalResponse(final_resp) => {
+                                // 最终响应
+                                full_response = final_resp.response().to_string();
+                                let _ = tx.send(full_response.clone()).await;
+                                break;
+                            }
+                            _ => {
+                                // 其他类型的流式项目
+                                log::debug!("收到其他类型的流式项目");
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("流式处理错误: {:?}", e);
+                        let error_msg = format!("[错误: {}]", e);
+                        let _ = tx.send(error_msg).await;
+                        break;
+                    }
+                }
+            }
+        });
+
+        Ok(rx)
+    }
+
+    /// 进行对话（非流式版本）
+    pub async fn chat(
+        &mut self,
+        user_input: &str,
+    ) -> Result<String, anyhow::Error> {
+        let mut rx = self.chat_stream(user_input).await?;
+        let mut response = String::new();
+
+        while let Some(chunk) = rx.recv().await {
+            response.push_str(&chunk);
+        }
 
         // 添加助手回复到历史
         self.history.push(ChatMessage::assistant(response.clone()));

@@ -271,7 +271,7 @@ pub async fn agent_reply_with_memory_retrieval_streaming(
     // 获取流式响应
     let stream = agent
         .stream_chat(prompt_message, chat_history)
-        .multi_turn(10);
+        .multi_turn(20);
 
     let mut full_response = String::new();
 

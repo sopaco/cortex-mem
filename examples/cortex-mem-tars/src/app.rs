@@ -583,11 +583,23 @@ impl App {
             let user_input_for_stream = user_input.clone();
 
             tokio::spawn(async move {
-                match agent_handler.chat(&user_input).await {
-                    Ok(response) => {
+                match agent_handler.chat_stream(&user_input).await {
+                    Ok(mut rx) => {
+                        let mut full_response = String::new();
+                        
+                        while let Some(chunk) = rx.recv().await {
+                            full_response.push_str(&chunk);
+                            if let Err(_) = msg_tx.send(AppMessage::StreamingChunk {
+                                user: user_input_for_stream.clone(),
+                                chunk,
+                            }) {
+                                break;
+                            }
+                        }
+                        
                         let _ = msg_tx.send(AppMessage::StreamingComplete {
                             user: user_input_for_stream.clone(),
-                            full_response: response,
+                            full_response,
                         });
                     }
                     Err(e) => {
@@ -884,11 +896,23 @@ impl App {
             let user_input_for_stream = user_input.clone();
 
             tokio::spawn(async move {
-                match agent_handler.chat(&user_input).await {
-                    Ok(response) => {
+                match agent_handler.chat_stream(&user_input).await {
+                    Ok(mut rx) => {
+                        let mut full_response = String::new();
+                        
+                        while let Some(chunk) = rx.recv().await {
+                            full_response.push_str(&chunk);
+                            if let Err(_) = msg_tx.send(AppMessage::StreamingChunk {
+                                user: user_input_for_stream.clone(),
+                                chunk,
+                            }) {
+                                break;
+                            }
+                        }
+                        
                         let _ = msg_tx.send(AppMessage::StreamingComplete {
                             user: user_input_for_stream.clone(),
-                            full_response: response,
+                            full_response,
                         });
                     }
                     Err(e) => {
