@@ -87,15 +87,23 @@ impl LayerManager {
         // 1. Write L2 (detail)
         self.filesystem.write(uri, content).await?;
         
-        // Only generate L0/L1 if LLM client is available
+        // 2. Generate L0/L1 (with or without LLM)
         if let Some(llm) = &self.llm_client {
-            // 2. Generate and write L0 (abstract)
+            // ✅ 有 LLM：使用 LLM 生成高质量摘要
             let abstract_text = self.abstract_gen.generate_with_llm(content, llm).await?;
             let abstract_uri = Self::get_layer_uri(uri, ContextLayer::L0Abstract);
             self.filesystem.write(&abstract_uri, &abstract_text).await?;
             
-            // 3. Generate and write L1 (overview)
             let overview = self.overview_gen.generate_with_llm(content, llm).await?;
+            let overview_uri = Self::get_layer_uri(uri, ContextLayer::L1Overview);
+            self.filesystem.write(&overview_uri, &overview).await?;
+        } else {
+            // ✅ 没有 LLM：使用 fallback 方法（基于规则）
+            let abstract_text = self.abstract_gen.generate(content).await?;
+            let abstract_uri = Self::get_layer_uri(uri, ContextLayer::L0Abstract);
+            self.filesystem.write(&abstract_uri, &abstract_text).await?;
+            
+            let overview = self.overview_gen.generate(content).await?;
             let overview_uri = Self::get_layer_uri(uri, ContextLayer::L1Overview);
             self.filesystem.write(&overview_uri, &overview).await?;
         }
@@ -133,7 +141,7 @@ mod tests {
         
         let manager = LayerManager::new(fs.clone());
         
-        let uri = "cortex://threads/test/messages/msg1.md";
+        let uri = "cortex://session/test/messages/msg1.md";
         let content = "# Test Message\n\nThis is a test about OAuth 2.0.\n\n- Secure\n- Standard";
         
         manager.generate_all_layers(uri, content).await.unwrap();
@@ -160,7 +168,7 @@ mod tests {
         
         let manager = LayerManager::new(fs.clone());
         
-        let uri = "cortex://threads/test/messages/msg2.md";
+        let uri = "cortex://session/test/messages/msg2.md";
         let content = "Test content for lazy generation.";
         
         // Write only L2
@@ -171,7 +179,7 @@ mod tests {
         assert!(!l0.is_empty());
         
         // L0 file should now exist
-        let abstract_uri = "cortex://threads/test/messages/.abstract.md";
+        let abstract_uri = "cortex://session/test/messages/.abstract.md";
         assert!(fs.exists(abstract_uri).await.unwrap());
     }
 }

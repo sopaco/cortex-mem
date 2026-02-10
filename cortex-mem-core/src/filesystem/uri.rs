@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 /// Format: `cortex://{dimension}/{id}/{category}/{subcategory}/{resource}?{params}`
 /// 
 /// Examples:
-/// - `cortex://threads/thread_abc123/timeline/2026-02/03/10_00.md`
+/// - `cortex://session/thread_abc123/timeline/2026-02/03/10_00.md`
 /// - `cortex://agents/bot_001/memories/facts/oauth_knowledge.md`
 /// - `cortex://users/user_001/preferences/communication_style.md`
 #[derive(Debug, Clone, PartialEq)]
@@ -127,8 +127,8 @@ impl UriParser {
     /// ```
     /// use cortex_mem_core::filesystem::UriParser;
     /// 
-    /// let uri = UriParser::parse("cortex://threads/abc123/timeline").unwrap();
-    /// assert_eq!(uri.dimension, cortex_mem_core::Dimension::Threads);
+    /// let uri = UriParser::parse("cortex://session/abc123/timeline").unwrap();
+    /// assert_eq!(uri.dimension, cortex_mem_core::Dimension::Session);
     /// assert_eq!(uri.id, "abc123");
     /// assert_eq!(uri.category, "timeline");
     /// ```
@@ -148,7 +148,7 @@ impl UriParser {
         // 3. Parse path
         let parts: Vec<&str> = path_part.split('/').filter(|s| !s.is_empty()).collect();
         
-        // Allow dimension-only URIs (e.g., "cortex://threads")
+        // Allow dimension-only URIs (e.g., "cortex://session")
         if parts.is_empty() {
             return Err(Error::InvalidPath);
         }
@@ -218,8 +218,8 @@ mod tests {
     
     #[test]
     fn test_parse_simple_uri() {
-        let uri = UriParser::parse("cortex://threads/abc123/timeline").unwrap();
-        assert_eq!(uri.dimension, Dimension::Threads);
+        let uri = UriParser::parse("cortex://session/abc123/timeline").unwrap();
+        assert_eq!(uri.dimension, Dimension::Session);
         assert_eq!(uri.id, "abc123");
         assert_eq!(uri.category, "timeline");
         assert!(uri.subcategory.is_none());
@@ -228,8 +228,8 @@ mod tests {
     
     #[test]
     fn test_parse_full_uri() {
-        let uri = UriParser::parse("cortex://threads/abc123/timeline/2026-02/03/10_00.md").unwrap();
-        assert_eq!(uri.dimension, Dimension::Threads);
+        let uri = UriParser::parse("cortex://session/abc123/timeline/2026-02/03/10_00.md").unwrap();
+        assert_eq!(uri.dimension, Dimension::Session);
         assert_eq!(uri.id, "abc123");
         assert_eq!(uri.category, "timeline");
         assert_eq!(uri.subcategory, Some("2026-02".to_string()));
@@ -238,7 +238,7 @@ mod tests {
     
     #[test]
     fn test_parse_with_params() {
-        let uri = UriParser::parse("cortex://threads/abc123/timeline?layer=L1").unwrap();
+        let uri = UriParser::parse("cortex://session/abc123/timeline?layer=L1").unwrap();
         assert_eq!(uri.params.get("layer"), Some(&"L1".to_string()));
     }
     
@@ -251,7 +251,7 @@ mod tests {
     #[test]
     fn test_to_file_path() {
         let uri = CortexUri {
-            dimension: Dimension::Threads,
+            dimension: Dimension::Session,
             id: "abc123".to_string(),
             category: "timeline".to_string(),
             subcategory: Some("2026-02".to_string()),
@@ -260,6 +260,6 @@ mod tests {
         };
         
         let path = uri.to_file_path(Path::new("/data"));
-        assert_eq!(path, PathBuf::from("/data/threads/abc123/timeline/2026-02/03.md"));
+        assert_eq!(path, PathBuf::from("/data/session/abc123/timeline/2026-02/03.md"));
     }
 }

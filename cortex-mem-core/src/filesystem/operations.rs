@@ -31,13 +31,23 @@ pub trait FilesystemOperations: Send + Sync {
 /// Cortex filesystem implementation
 pub struct CortexFilesystem {
     root: PathBuf,
+    tenant_id: Option<String>,
 }
 
 impl CortexFilesystem {
-    /// Create a new CortexFilesystem with the given root directory
+    /// Create a new CortexFilesystem with the given root directory (no tenant isolation)
     pub fn new(root: impl AsRef<Path>) -> Self {
         Self {
             root: root.as_ref().to_path_buf(),
+            tenant_id: None,
+        }
+    }
+    
+    /// Create a new CortexFilesystem with tenant isolation
+    pub fn with_tenant(root: impl AsRef<Path>, tenant_id: impl Into<String>) -> Self {
+        Self {
+            root: root.as_ref().to_path_buf(),
+            tenant_id: Some(tenant_id.into()),
         }
     }
     
@@ -46,24 +56,47 @@ impl CortexFilesystem {
         &self.root
     }
     
+    /// Get the tenant ID
+    pub fn tenant_id(&self) -> Option<&str> {
+        self.tenant_id.as_deref()
+    }
+    
     /// Initialize the filesystem structure
     pub async fn initialize(&self) -> Result<()> {
-        // Create root directory
-        fs::create_dir_all(&self.root).await?;
+        // Get the base directory (with or without tenant)
+        let base_dir = if let Some(tenant_id) = &self.tenant_id {
+            self.root.join("tenants").join(tenant_id).join("cortex")
+        } else {
+            self.root.clone()
+        };
         
-        // Create dimension directories
-        for dimension in &["agents", "users", "threads", "global"] {
-            let dir = self.root.join(dimension);
+        // Create root directory
+        fs::create_dir_all(&base_dir).await?;
+        
+        // Create dimension directories (OpenViking style: resources, user, agent, session)
+        for dimension in &["resources", "user", "agent", "session"] {
+            let dir = base_dir.join(dimension);
             fs::create_dir_all(dir).await?;
         }
         
         Ok(())
     }
     
-    /// Get file path from URI
+    /// Get file path from URI (with tenant isolation)
     fn uri_to_path(&self, uri: &str) -> Result<PathBuf> {
         let parsed_uri = UriParser::parse(uri)?;
-        Ok(parsed_uri.to_file_path(&self.root))
+        
+        // If tenant_id exists, add tenant prefix
+        let path = if let Some(tenant_id) = &self.tenant_id {
+            // /root/tenants/{tenant_id}/cortex/{path}
+            let tenant_base = self.root.join("tenants").join(tenant_id).join("cortex");
+            parsed_uri.to_file_path(&tenant_base)
+        } else {
+            // /root/{path}
+            parsed_uri.to_file_path(&self.root)
+        };
+        
+        Ok(path)
     }
     
     /// Load metadata from .metadata.json
@@ -215,10 +248,26 @@ mod tests {
         
         fs.initialize().await.unwrap();
         
-        assert!(temp_dir.path().join("agents").exists());
-        assert!(temp_dir.path().join("users").exists());
-        assert!(temp_dir.path().join("threads").exists());
-        assert!(temp_dir.path().join("global").exists());
+        // OpenViking style dimensions
+        assert!(temp_dir.path().join("resources").exists());
+        assert!(temp_dir.path().join("user").exists());
+        assert!(temp_dir.path().join("agent").exists());
+        assert!(temp_dir.path().join("session").exists());
+    }
+    
+    #[tokio::test]
+    async fn test_filesystem_with_tenant() {
+        let temp_dir = TempDir::new().unwrap();
+        let fs = CortexFilesystem::with_tenant(temp_dir.path(), "agent-a");
+        
+        fs.initialize().await.unwrap();
+        
+        // Tenant directories should exist
+        let tenant_base = temp_dir.path().join("tenants/agent-a/cortex");
+        assert!(tenant_base.join("resources").exists());
+        assert!(tenant_base.join("user").exists());
+        assert!(tenant_base.join("agent").exists());
+        assert!(tenant_base.join("session").exists());
     }
     
     #[tokio::test]
@@ -227,7 +276,7 @@ mod tests {
         let fs = CortexFilesystem::new(temp_dir.path());
         fs.initialize().await.unwrap();
         
-        let uri = "cortex://threads/test123/messages/msg001.md";
+        let uri = "cortex://session/test123/messages/msg001.md";
         let content = "# Test Message\n\nHello World!";
         
         fs.write(uri, content).await.unwrap();
@@ -237,16 +286,44 @@ mod tests {
     }
     
     #[tokio::test]
+    async fn test_tenant_isolation() {
+        let temp_dir = TempDir::new().unwrap();
+        
+        // Create two tenant filesystems
+        let fs_a = CortexFilesystem::with_tenant(temp_dir.path(), "agent-a");
+        let fs_b = CortexFilesystem::with_tenant(temp_dir.path(), "agent-b");
+        
+        fs_a.initialize().await.unwrap();
+        fs_b.initialize().await.unwrap();
+        
+        // Write to tenant A
+        let uri = "cortex://user/memories/entities/Alice.md";
+        fs_a.write(uri, "Agent A's memory about Alice").await.unwrap();
+        
+        // Write to tenant B
+        fs_b.write(uri, "Agent B's memory about Alice").await.unwrap();
+        
+        // Read from each tenant
+        let content_a = fs_a.read(uri).await.unwrap();
+        let content_b = fs_b.read(uri).await.unwrap();
+        
+        // They should be different
+        assert_eq!(content_a, "Agent A's memory about Alice");
+        assert_eq!(content_b, "Agent B's memory about Alice");
+        assert_ne!(content_a, content_b);
+    }
+    
+    #[tokio::test]
     async fn test_list_directory() {
         let temp_dir = TempDir::new().unwrap();
         let fs = CortexFilesystem::new(temp_dir.path());
         fs.initialize().await.unwrap();
         
         // Write some files
-        fs.write("cortex://threads/test/msg1.md", "content1").await.unwrap();
-        fs.write("cortex://threads/test/msg2.md", "content2").await.unwrap();
+        fs.write("cortex://session/test/msg1.md", "content1").await.unwrap();
+        fs.write("cortex://session/test/msg2.md", "content2").await.unwrap();
         
-        let entries = fs.list("cortex://threads/test").await.unwrap();
+        let entries = fs.list("cortex://session/test").await.unwrap();
         assert_eq!(entries.len(), 2);
     }
     
@@ -256,7 +333,7 @@ mod tests {
         let fs = CortexFilesystem::new(temp_dir.path());
         fs.initialize().await.unwrap();
         
-        let uri = "cortex://threads/test/file.md";
+        let uri = "cortex://session/test/file.md";
         assert!(!fs.exists(uri).await.unwrap());
         
         fs.write(uri, "content").await.unwrap();

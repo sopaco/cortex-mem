@@ -47,7 +47,7 @@ mod tests {
 
         // 创建测试线程和消息
         let thread_id = "test-thread-1";
-        let timeline_uri = format!("cortex://threads/{}/timeline", thread_id);
+        let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
         
         // 创建测试消息
         let messages = vec![
@@ -105,7 +105,7 @@ mod tests {
         let (filesystem, embedding_client, vector_store) = setup_test_environment().await;
 
         let thread_id = "test-thread-2";
-        let timeline_uri = format!("cortex://threads/{}/timeline", thread_id);
+        let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
 
         // 第一次索引：2条消息
         let messages = vec![
@@ -183,7 +183,7 @@ mod tests {
         let (filesystem, embedding_client, vector_store) = setup_test_environment().await;
 
         let thread_id = "test-thread-3";
-        let timeline_uri = format!("cortex://threads/{}/timeline", thread_id);
+        let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
 
         // 创建15条消息（超过batch_size）
         for i in 0..15 {

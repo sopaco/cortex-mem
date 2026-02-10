@@ -1,14 +1,14 @@
 use anyhow::Result;
 use chrono::{DateTime, Local};
 use cortex_mem_tools::MemoryOperations;
-use cortex_mem_rig::create_memory_tools;
+use cortex_mem_rig::{create_memory_tools_with_tenant, create_memory_tools_with_tenant_and_llm};
 use futures::StreamExt;
 use rig::{
     agent::Agent as RigAgent,
     client::CompletionClient,
     providers::openai::{Client, CompletionModel},
     completion::Message,
-    streaming::{StreamingChat, StreamingPrompt},
+    streaming::StreamingChat,
     message::Text,
 };
 use rig::agent::MultiTurnStreamItem;
@@ -48,20 +48,36 @@ impl ChatMessage {
     }
 }
 
-/// 创建带记忆功能的Agent（OpenViking 风格）
+/// 创建带记忆功能的Agent（OpenViking 风格 + 租户隔离）
 pub async fn create_memory_agent(
-    operations: Arc<MemoryOperations>,
+    data_dir: impl AsRef<std::path::Path>,
     api_base_url: &str,
     api_key: &str,
     model: &str,
     user_info: Option<&str>,
     bot_system_prompt: Option<&str>,
-    _agent_id: &str,
+    agent_id: &str,
     _user_id: &str,
 ) -> Result<RigAgent<CompletionModel>, Box<dyn std::error::Error>> {
-    // 创建新的 OpenViking 风格记忆工具
-    let memory_tools = create_memory_tools(operations.clone());
-
+    // 创建 cortex LLMClient 用于 L0/L1 生成
+    let llm_config = cortex_mem_core::llm::LLMConfig {
+        api_base_url: api_base_url.to_string(),
+        api_key: api_key.to_string(),
+        model_efficient: model.to_string(),
+        temperature: 0.1,
+        max_tokens: 4096,
+    };
+    let cortex_llm_client: Arc<dyn cortex_mem_core::llm::LLMClient> = 
+        Arc::new(cortex_mem_core::llm::LLMClientImpl::new(llm_config)?);
+    
+    // 创建租户工具（agent_id 作为 tenant_id）+ LLM 支持
+    let memory_tools = create_memory_tools_with_tenant_and_llm(
+        data_dir, 
+        agent_id,
+        cortex_llm_client,
+    ).await?;
+    
+    // 创建 Rig LLM 客户端用于 Agent 对话
     let llm_client = Client::builder(api_key)
         .base_url(api_base_url)
         .build();
@@ -72,24 +88,25 @@ pub async fn create_memory_agent(
 
 此会话发生的初始时间：{current_time}
 
+你的 Bot ID：{bot_id}
+
 记忆工具说明（OpenViking 风格分层访问）：
 
 🔍 搜索工具：
 - search(query, options): 智能搜索记忆
   - engine: "keyword"（默认）| "vector" | "hybrid"
   - return_layers: ["L0"] (默认) | ["L0", "L1"] | ["L0", "L1", "L2"]
-  - scope: 搜索范围，支持以下格式：
-    * "cortex://threads" - 所有对话线程（默认）
-    * "cortex://agents" - 所有 Agent 记忆
-    * "cortex://users" - 所有用户记忆
-    * "cortex://global" - 全局共享记忆
-    * "cortex://threads/thread_123" - 特定线程
+  - scope: 搜索范围（可选）
+    * 可以指定搜索范围：
+      - "cortex://user/memories/" - 用户记忆
+      - "cortex://agent/memories/" - Agent 记忆
+      - "cortex://session/{{session_id}}/" - 特定会话
+      - "cortex://resources/" - 知识库
   - 示例：search(query="Python 装饰器", return_layers=["L0"])
 
-- find(query, scope): 快速查找，返回 L0 摘要
-  - scope 参数同上，会自动修正为有效的 dimension
-  - 例如：find(query="系统状态", scope="cortex://threads")
-  - 注意：不要使用 "cortex://system" 等无效 dimension
+- find(query): 快速查找，返回 L0 摘要
+  - 自动在记忆空间中搜索
+  - 例如：find(query="用户偏好")
 
 📖 分层访问工具（按需加载）：
 - abstract(uri): 获取 L0 摘要（~100 tokens）- 快速判断相关性
@@ -102,7 +119,9 @@ pub async fn create_memory_agent(
   - 用于浏览记忆结构
 
 💾 存储工具：
-- store(content, thread_id): 存储新内容，自动生成 L0/L1 摘要
+- store(content): 存储新内容到记忆空间，自动生成 L0/L1 摘要
+  - 内容会自动存储到会话中
+  - 自动生成分层摘要
 
 使用策略（重要）：
 1. 优先使用 search 查找相关记忆，默认只返回 L0 摘要
@@ -110,6 +129,14 @@ pub async fn create_memory_agent(
 3. 仅在必须了解完整细节时调用 read 获取 L2
 4. 这种渐进式加载可以大幅减少 token 消耗（节省 80-90%）
 5. 重要信息自动使用 store 存储
+
+记忆隔离说明：
+- 每个 Bot 拥有独立的租户空间（物理隔离）
+- 记忆组织采用 OpenViking 架构：
+  - cortex://resources/ - 知识库
+  - cortex://user/ - 用户记忆
+  - cortex://agent/ - Agent 记忆
+  - cortex://session/ - 会话记录
 
 用户基本信息：
 {info}
@@ -120,11 +147,14 @@ pub async fn create_memory_agent(
 - 专注于用户的需求和想要了解的信息
 "#,
             current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"),
+            bot_id = agent_id,
             info = info)
     } else {
         format!(r#"你是一个拥有分层记忆功能的智能 AI 助手。
 
 此会话发生的初始时间：{current_time}
+
+你的 Bot ID：{bot_id}
 
 记忆工具说明（OpenViking 风格分层访问）：
 
@@ -132,16 +162,12 @@ pub async fn create_memory_agent(
 - search(query, options): 智能搜索记忆
   - engine: "keyword"（默认）| "vector" | "hybrid"
   - return_layers: ["L0"] (默认) | ["L0", "L1"] | ["L0", "L1", "L2"]
-  - scope: 搜索范围，支持以下格式：
-    * "cortex://threads" - 所有对话线程（默认）
-    * "cortex://agents" - 所有 Agent 记忆
-    * "cortex://users" - 所有用户记忆
-    * "cortex://global" - 全局共享记忆
+  - scope: 搜索范围（可选）
   - 示例：search(query="Python 装饰器", return_layers=["L0"])
 
 - find(query): 快速查找，返回 L0 摘要
-  - 自动在 threads 维度下搜索
-  - 例如：find(query="系统状态")
+  - 自动在记忆空间中搜索
+  - 例如：find(query="用户偏好")
 
 📖 分层访问工具（按需加载）：
 - abstract(uri): L0 摘要（~100 tokens）- 快速判断相关性
@@ -152,15 +178,20 @@ pub async fn create_memory_agent(
 - ls(uri): 列出目录内容
 
 💾 存储工具：
-- store(content, thread_id): 存储新内容
+- store(content): 存储新内容到你的记忆空间
 
 使用策略：
 1. 优先使用 search，默认返回 L0 摘要
 2. 根据 L0 判断相关性，需要时调用 overview 获取 L1
 3. 仅在必须时调用 read 获取 L2 完整内容
 4. 渐进式加载可节省 80-90% token
+
+记忆隔离说明：
+- 每个 Bot 拥有独立的租户空间（物理隔离）
+- 你的记忆不会与其他 Bot 共享
 "#,
-            current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"))
+            current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"),
+            bot_id = agent_id)
     };
 
     // 追加机器人系统提示词

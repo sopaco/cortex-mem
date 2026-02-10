@@ -235,7 +235,7 @@ impl AutoIndexer {
 
     /// 收集线程中的所有消息
     async fn collect_messages(&self, thread_id: &str) -> Result<Vec<Message>> {
-        let timeline_uri = format!("cortex://threads/{}/timeline", thread_id);
+        let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
         let mut messages = Vec::new();
 
         self.collect_messages_recursive(&timeline_uri, &mut messages).await?;

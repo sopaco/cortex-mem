@@ -86,7 +86,7 @@ impl MemoryExtractor {
     /// Extract memories from a thread
     pub async fn extract_from_thread(&self, thread_id: &str) -> Result<ExtractedMemories> {
         // List all messages in the thread
-        let timeline_uri = format!("cortex://threads/{}/timeline", thread_id);
+        let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
         
         // Recursively collect all message files
         let mut message_contents = Vec::new();
@@ -139,7 +139,7 @@ impl MemoryExtractor {
         // Simple markdown parsing - look for role and content
         let mut role = MessageRole::User;
         let mut message_content = String::new();
-        let id = uuid::Uuid::new_v4();
+        let _id = uuid::Uuid::new_v4();
         
         for line in content.lines() {
             if line.starts_with("# 👤 User") {
@@ -224,7 +224,7 @@ Return JSON only, no additional text."#,
             // Add source URIs
             let mut fact_with_sources = fact;
             for msg in messages {
-                fact_with_sources.source_uris.push(format!("cortex://threads/temp/{}", msg.id));
+                fact_with_sources.source_uris.push(format!("cortex://session/temp/{}", msg.id));
             }
             
             if fact_with_sources.confidence >= self.config.min_confidence {
@@ -274,7 +274,7 @@ Return JSON only, no additional text."#,
             
             let mut decision_with_sources = decision;
             for msg in messages {
-                decision_with_sources.source_uris.push(format!("cortex://threads/temp/{}", msg.id));
+                decision_with_sources.source_uris.push(format!("cortex://session/temp/{}", msg.id));
             }
             
             if decision_with_sources.confidence >= self.config.min_confidence {
@@ -331,7 +331,7 @@ Return JSON only, no additional text."#,
         memories: &ExtractedMemories,
     ) -> Result<String> {
         let extraction_uri = format!(
-            "cortex://threads/{}/extractions/{}.md",
+            "cortex://session/{}/extractions/{}.md",
             thread_id,
             memories.extracted_at.format("%Y%m%d_%H%M%S")
         );

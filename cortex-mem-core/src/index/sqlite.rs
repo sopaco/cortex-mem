@@ -276,7 +276,7 @@ mod tests {
         let past = now - chrono::Duration::hours(2);
         
         let entry1 = IndexEntry {
-            uri: "cortex://threads/t1/msg1.md".to_string(),
+            uri: "cortex://session/t1/msg1.md".to_string(),
             dimension: "threads".to_string(),
             id: "t1".to_string(),
             category: None,
@@ -287,7 +287,7 @@ mod tests {
         };
         
         let entry2 = IndexEntry {
-            uri: "cortex://threads/t1/msg2.md".to_string(),
+            uri: "cortex://session/t1/msg2.md".to_string(),
             dimension: "threads".to_string(),
             id: "t1".to_string(),
             category: None,

@@ -70,6 +70,7 @@ impl ConfigManager {
                     embedding_dim: Some(1536),
                     timeout_secs: 30,
                 },
+                embedding: cortex_mem_config::EmbeddingConfig::default(),
                 llm: cortex_mem_config::LLMConfig {
                     api_base_url: "https://api.openai.com/v1".to_string(),
                     api_key: "".to_string(),
@@ -83,6 +84,7 @@ impl ConfigManager {
                     cors_origins: vec!["*".to_string()],
                 },
                 logging: cortex_mem_config::LoggingConfig::default(),
+                cortex: cortex_mem_config::CortexConfig::default(),
             };
             let content = toml::to_string_pretty(&default_config).context("无法序列化默认配置")?;
             fs::write(&cortex_config_file, content).context("无法写入默认配置文件")?;

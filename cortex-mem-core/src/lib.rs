@@ -142,7 +142,11 @@ pub use llm::LLMClient;
 pub use automation::{AutoExtractor, AutoExtractConfig};
 
 #[cfg(feature = "vector-search")]
-pub use automation::{IndexerConfig, IndexStats};
+pub use automation::{AutoIndexer, IndexerConfig, IndexStats, FsWatcher, WatcherConfig};
+
+#[cfg(feature = "vector-search")]
+pub use automation::{SyncManager, SyncConfig, SyncStats};
+
 pub use layers::LayerManager;
 pub use retrieval::{RetrievalEngine, RetrievalOptions, RetrievalResult, SearchResult};
 
@@ -154,9 +158,6 @@ pub use embedding::{EmbeddingClient, EmbeddingConfig};
 
 #[cfg(feature = "vector-search")]
 pub use search::{VectorSearchEngine, SearchOptions};
-
-#[cfg(feature = "vector-search")]
-pub use automation::{AutoIndexer, FsWatcher, WatcherConfig};
 
 // Session-related re-exports
 pub use session::message::MessageStorage;

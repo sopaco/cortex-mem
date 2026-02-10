@@ -277,7 +277,7 @@ mod tests {
             .with_subject("UI Preferences")
             .with_confidence(0.95)
             .with_importance(MemoryImportance::High)
-            .add_source("cortex://threads/session1/msg001.md");
+            .add_source("cortex://session/session1/msg001.md");
         
         assert_eq!(fact.content, "User prefers dark mode");
         assert_eq!(fact.subject, Some("UI Preferences".to_string()));

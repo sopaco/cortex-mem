@@ -174,13 +174,13 @@ mod tests {
         
         // Add some documents
         index.add_document(
-            "cortex://threads/t1/msg1.md",
+            "cortex://session/t1/msg1.md",
             "This is about OAuth 2.0 authentication and security.",
             &vec!["oauth".to_string(), "authentication".to_string()],
         ).unwrap();
         
         index.add_document(
-            "cortex://threads/t1/msg2.md",
+            "cortex://session/t1/msg2.md",
             "PostgreSQL database setup and configuration.",
             &vec!["database".to_string(), "postgresql".to_string()],
         ).unwrap();

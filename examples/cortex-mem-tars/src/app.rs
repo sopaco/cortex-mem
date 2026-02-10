@@ -494,7 +494,7 @@ impl App {
                     };
 
                     match create_memory_agent(
-                        infrastructure.operations().clone(),
+                        infrastructure.config().cortex.data_dir(),
                         &infrastructure.config().llm.api_base_url,
                         &infrastructure.config().llm.api_key,
                         &infrastructure.config().llm.model_efficient,
@@ -538,7 +538,7 @@ impl App {
         if let Some(rig_agent) = &self.rig_agent {
             // 使用真实 Agent 进行流式响应
             // 构建历史对话（排除当前用户输入）
-            let current_conversations: Vec<(String, String)> = {
+            let _current_conversations: Vec<(String, String)> = {
                 let mut conversations = Vec::new();
                 let mut last_user_msg: Option<String> = None;
 
@@ -576,7 +576,7 @@ impl App {
                 conversations
             };
 
-            let infrastructure_clone = self.infrastructure.clone();
+            let _infrastructure_clone = self.infrastructure.clone();
             let mut agent_handler = AgentChatHandler::new(rig_agent.clone());
             let msg_tx = self.message_sender.clone();
             let user_input = input_text.to_string();
@@ -810,7 +810,7 @@ impl App {
                     };
 
                     match create_memory_agent(
-                        infrastructure.operations().clone(),
+                        infrastructure.config().cortex.data_dir(),
                         &infrastructure.config().llm.api_base_url,
                         &infrastructure.config().llm.api_key,
                         &infrastructure.config().llm.model_efficient,
@@ -852,7 +852,7 @@ impl App {
         // 使用真实的带记忆的 Agent 进行流式响应
         if let Some(rig_agent) = &self.rig_agent {
             // 构建历史对话（排除当前用户输入）
-            let current_conversations: Vec<(String, String)> = {
+            let _current_conversations: Vec<(String, String)> = {
                 let mut conversations = Vec::new();
                 let mut last_user_msg: Option<String> = None;
 

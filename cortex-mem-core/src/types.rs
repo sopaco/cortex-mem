@@ -5,32 +5,37 @@ use std::collections::HashMap;
 /// Dimension of memory storage
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Dimension {
-    /// Agent-specific memories
-    Agents,
+    /// Resource-specific memories (facts, knowledge)
+    Resources,
     /// User-specific memories
-    Users,
-    /// Thread/conversation memories
-    Threads,
-    /// Global shared memories
-    Global,
+    User,
+    /// Agent-specific memories
+    Agent,
+    /// Session/conversation memories
+    Session,
 }
 
 impl Dimension {
     pub fn as_str(&self) -> &'static str {
         match self {
-            Dimension::Agents => "agents",
-            Dimension::Users => "users",
-            Dimension::Threads => "threads",
-            Dimension::Global => "global",
+            Dimension::Resources => "resources",
+            Dimension::User => "user",
+            Dimension::Agent => "agent",
+            Dimension::Session => "session",
         }
     }
     
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
-            "agents" => Some(Dimension::Agents),
-            "users" => Some(Dimension::Users),
-            "threads" => Some(Dimension::Threads),
-            "global" => Some(Dimension::Global),
+            "resources" => Some(Dimension::Resources),
+            "user" => Some(Dimension::User),
+            "agent" => Some(Dimension::Agent),
+            "session" => Some(Dimension::Session),
+            // Legacy support
+            "agents" => Some(Dimension::Agent),
+            "users" => Some(Dimension::User),
+            "threads" => Some(Dimension::Session),
+            "global" => Some(Dimension::Resources),
             _ => None,
         }
     }

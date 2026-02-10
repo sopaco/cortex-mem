@@ -171,7 +171,7 @@ impl SessionManager {
         let metadata = SessionMetadata::new(thread_id);
         
         // Save metadata to filesystem
-        let metadata_uri = format!("cortex://threads/{}/.session.json", thread_id);
+        let metadata_uri = format!("cortex://session/{}/.session.json", thread_id);
         let metadata_json = serde_json::to_string_pretty(&metadata)?;
         self.filesystem.write(&metadata_uri, &metadata_json).await?;
         
@@ -180,7 +180,7 @@ impl SessionManager {
     
     /// Load session metadata
     pub async fn load_session(&self, thread_id: &str) -> Result<SessionMetadata> {
-        let metadata_uri = format!("cortex://threads/{}/.session.json", thread_id);
+        let metadata_uri = format!("cortex://session/{}/.session.json", thread_id);
         let metadata_json = self.filesystem.read(&metadata_uri).await?;
         let metadata: SessionMetadata = serde_json::from_str(&metadata_json)?;
         Ok(metadata)
@@ -188,7 +188,7 @@ impl SessionManager {
     
     /// Update session metadata
     pub async fn update_session(&self, metadata: &SessionMetadata) -> Result<()> {
-        let metadata_uri = format!("cortex://threads/{}/.session.json", metadata.thread_id);
+        let metadata_uri = format!("cortex://session/{}/.session.json", metadata.thread_id);
         let metadata_json = serde_json::to_string_pretty(metadata)?;
         self.filesystem.write(&metadata_uri, &metadata_json).await?;
         Ok(())
@@ -215,13 +215,13 @@ impl SessionManager {
     
     /// Delete a session
     pub async fn delete_session(&self, thread_id: &str) -> Result<()> {
-        let session_uri = format!("cortex://threads/{}", thread_id);
+        let session_uri = format!("cortex://session/{}", thread_id);
         self.filesystem.delete(&session_uri).await
     }
     
     /// Check if session exists
     pub async fn session_exists(&self, thread_id: &str) -> Result<bool> {
-        let metadata_uri = format!("cortex://threads/{}/.session.json", thread_id);
+        let metadata_uri = format!("cortex://session/{}/.session.json", thread_id);
         self.filesystem.exists(&metadata_uri).await
     }
     

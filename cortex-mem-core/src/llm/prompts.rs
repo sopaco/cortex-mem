@@ -3,30 +3,58 @@ pub struct Prompts;
 
 impl Prompts {
     /// Prompt for generating L0 abstract
+    /// 
+    /// Based on OpenViking design: ~100 tokens, single-sentence summary
+    /// for quick relevance checking and filtering
     pub fn abstract_generation(content: &str) -> String {
         format!(
-            r#"Summarize the following content in 1-2 sentences (maximum 100 tokens).
-Focus on the core topic and key information.
+            r#"Generate a concise abstract (~100 tokens maximum) for the following content.
+
+Requirements:
+- Single sentence or 2-3 short sentences maximum
+- Capture the CORE ESSENCE: who, what, when (if applicable)
+- Focus on the most important information for quick relevance checking
+- Use clear, direct language
+- Avoid filler words and unnecessary details
 
 Content:
 {}
 
-Summary:"#,
+Abstract (max 100 tokens):"#,
             content
         )
     }
     
     /// Prompt for generating L1 overview
+    /// 
+    /// Based on OpenViking design: ~2K tokens, structured overview
+    /// for decision-making and planning
     pub fn overview_generation(content: &str) -> String {
         format!(
-            r#"Extract and structure the following information from the content:
+            r#"Generate a structured overview (~500-2000 tokens) of the following content.
 
-1. Core topics (list 2-5 main topics)
-2. Key points (list 3-7 important points)
-3. Important entities (people, organizations, technologies mentioned)
-4. Brief summary (2-3 sentences)
+Structure your response as markdown with these sections:
 
-Format the output as a structured markdown document with clear sections.
+## Summary
+2-3 paragraph overview of the core content and its significance
+
+## Core Topics
+List 3-5 main themes or topics (bullet points)
+
+## Key Points
+List 5-10 important takeaways or insights (numbered or bullets)
+
+## Entities
+Important people, organizations, technologies, or concepts mentioned
+
+## Context
+Any relevant background, timeframe, or situational information
+
+Requirements:
+- Use clear markdown formatting
+- Be comprehensive but concise
+- Focus on information useful for understanding and decision-making
+- Aim for ~500-2000 tokens total
 
 Content:
 {}

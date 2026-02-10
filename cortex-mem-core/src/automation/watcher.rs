@@ -118,7 +118,7 @@ impl FsWatcher {
         &self,
         last_state: &mut std::collections::HashMap<String, Vec<String>>,
     ) -> Result<Vec<FsEvent>> {
-        let threads_uri = "cortex://threads";
+        let threads_uri = "cortex://session";
         let entries = self.filesystem.list(threads_uri).await?;
         
         let mut events = Vec::new();
@@ -129,7 +129,7 @@ impl FsWatcher {
             }
             
             let thread_id = entry.name.clone();
-            let timeline_uri = format!("cortex://threads/{}/timeline", thread_id);
+            let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
             
             // 获取当前线程的所有消息
             match self.get_message_ids(&timeline_uri).await {

@@ -48,7 +48,7 @@ impl Tool for AbstractTool {
                     "properties": {
                         "uri": {
                             "type": "string",
-                            "description": "内容的 URI（如 cortex://threads/{thread_id}/...）"
+                            "description": "内容的 URI"
                         }
                     },
                     "required": ["uri"]
@@ -219,8 +219,7 @@ impl Tool for SearchTool {
                         },
                         "scope": {
                             "type": "string",
-                            "description": "搜索范围 URI",
-                            "default": "cortex://threads"
+                            "description": "搜索范围 URI"
                         },
                         "limit": {
                             "type": "integer",
@@ -326,7 +325,7 @@ impl Tool for LsTool {
                     "properties": {
                         "uri": {
                             "type": "string",
-                            "description": "目录 URI（如 cortex://threads/{thread_id}/timeline）"
+                            "description": "目录 URI"
                         },
                         "recursive": {
                             "type": "boolean",
@@ -339,7 +338,7 @@ impl Tool for LsTool {
                             "default": false
                         }
                     },
-                    "required": ["uri"]
+                    "required": []
                 }),
             }
         }
@@ -386,7 +385,7 @@ impl Tool for ExploreTool {
                         "start_uri": {
                             "type": "string",
                             "description": "起始 URI",
-                            "default": "cortex://threads"
+                            "default": "cortex://session"
                         },
                         "max_depth": {
                             "type": "integer",
@@ -451,7 +450,7 @@ impl Tool for StoreTool {
                         },
                         "thread_id": {
                             "type": "string",
-                            "description": "线程 ID"
+                            "description": "会话 ID"
                         },
                         "metadata": {
                             "type": "object",
@@ -463,7 +462,7 @@ impl Tool for StoreTool {
                             "default": true
                         }
                     },
-                    "required": ["content", "thread_id"]
+                    "required": ["content"]
                 }),
             }
         }

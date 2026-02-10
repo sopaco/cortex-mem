@@ -9,7 +9,6 @@ use axum::{
 use chrono::Utc;
 use cortex_mem_tools::MemoryOperations;
 use serde::Deserialize;
-use serde_json::{Value, json};
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tower_http::cors::{Any, CorsLayer};

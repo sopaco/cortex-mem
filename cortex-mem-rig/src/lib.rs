@@ -1,6 +1,7 @@
 pub mod tools;
 
 pub use cortex_mem_tools::MemoryOperations;
+pub use cortex_mem_core::llm::LLMClient;
 pub use tools::*;
 
 use std::sync::Arc;
@@ -59,4 +60,30 @@ impl MemoryTools {
 /// Create memory tools for Rig agents
 pub fn create_memory_tools(operations: Arc<MemoryOperations>) -> MemoryTools {
     MemoryTools::new(operations)
+}
+
+/// Create memory tools with tenant isolation (recommended)
+pub async fn create_memory_tools_with_tenant(
+    data_dir: impl AsRef<std::path::Path>,
+    tenant_id: impl Into<String>,
+) -> Result<MemoryTools, Box<dyn std::error::Error>> {
+    let operations = MemoryOperations::with_tenant(
+        data_dir.as_ref().to_str().unwrap(),
+        tenant_id
+    ).await?;
+    Ok(MemoryTools::new(Arc::new(operations)))
+}
+
+/// Create memory tools with tenant isolation and LLM support (recommended for high-quality L0/L1)
+pub async fn create_memory_tools_with_tenant_and_llm(
+    data_dir: impl AsRef<std::path::Path>,
+    tenant_id: impl Into<String>,
+    llm_client: Arc<dyn LLMClient>,
+) -> Result<MemoryTools, Box<dyn std::error::Error>> {
+    let operations = MemoryOperations::with_tenant_and_llm(
+        data_dir.as_ref().to_str().unwrap(),
+        tenant_id,
+        llm_client,
+    ).await?;
+    Ok(MemoryTools::new(Arc::new(operations)))
 }

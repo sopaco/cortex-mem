@@ -1,6 +1,7 @@
 use crate::{errors::*, types::*};
 use cortex_mem_core::{
     CortexFilesystem, SessionManager, SessionConfig, FilesystemOperations, LayerManager,
+    llm::LLMClient,
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -35,7 +36,7 @@ impl MemoryOperations {
         }
     }
 
-    /// Create from data directory
+    /// Create from data directory (no tenant isolation)
     pub async fn from_data_dir(data_dir: &str) -> Result<Self> {
         let filesystem = Arc::new(CortexFilesystem::new(data_dir));
         filesystem.initialize().await?;
@@ -51,6 +52,133 @@ impl MemoryOperations {
             layer_manager,
             #[cfg(feature = "vector-search")]
             vector_engine: None,
+        })
+    }
+    
+    /// Create from data directory with tenant isolation
+    pub async fn with_tenant(data_dir: &str, tenant_id: impl Into<String>) -> Result<Self> {
+        let filesystem = Arc::new(CortexFilesystem::with_tenant(data_dir, tenant_id));
+        filesystem.initialize().await?;
+
+        let config = SessionConfig::default();
+        let session_manager = SessionManager::new(filesystem.clone(), config);
+        let session_manager = Arc::new(RwLock::new(session_manager));
+        
+        // Use fallback LayerManager (no LLM) - for LLM support, use with_tenant_and_llm()
+        let layer_manager = Arc::new(LayerManager::new(filesystem.clone()));
+
+        Ok(Self {
+            filesystem,
+            session_manager,
+            layer_manager,
+            #[cfg(feature = "vector-search")]
+            vector_engine: None,
+        })
+    }
+    
+    /// Create from data directory with tenant isolation and LLM support
+    pub async fn with_tenant_and_llm(
+        data_dir: &str,
+        tenant_id: impl Into<String>,
+        llm_client: Arc<dyn LLMClient>,
+    ) -> Result<Self> {
+        let filesystem = Arc::new(CortexFilesystem::with_tenant(data_dir, tenant_id));
+        filesystem.initialize().await?;
+
+        let config = SessionConfig::default();
+        let session_manager = SessionManager::new(filesystem.clone(), config);
+        let session_manager = Arc::new(RwLock::new(session_manager));
+        
+        // Use LLM-enabled LayerManager for high-quality L0/L1 generation
+        let layer_manager = Arc::new(LayerManager::with_llm(filesystem.clone(), llm_client));
+
+        Ok(Self {
+            filesystem,
+            session_manager,
+            layer_manager,
+            #[cfg(feature = "vector-search")]
+            vector_engine: None,
+        })
+    }
+
+    /// Create from data directory with vector search enabled
+    #[cfg(feature = "vector-search")]
+    pub async fn from_data_dir_with_vector(
+        data_dir: &str,
+        qdrant_url: &str,
+        qdrant_collection: &str,
+        embedding_api_base_url: &str,
+        embedding_api_key: &str,
+    ) -> Result<Self> {
+        use cortex_mem_core::{
+            embedding::EmbeddingClient, embedding::EmbeddingConfig,
+            search::VectorSearchEngine,
+            vector_store::QdrantVectorStore,
+            automation::SyncManager, automation::SyncConfig,
+        };
+
+        let filesystem = Arc::new(CortexFilesystem::new(data_dir));
+        filesystem.initialize().await?;
+
+        let config = SessionConfig::default();
+        let session_manager = SessionManager::new(filesystem.clone(), config);
+        let session_manager = Arc::new(RwLock::new(session_manager));
+        let layer_manager = Arc::new(LayerManager::new(filesystem.clone()));
+
+        // Initialize Qdrant
+        let qdrant_config = cortex_mem_core::QdrantConfig {
+            url: qdrant_url.to_string(),
+            collection_name: qdrant_collection.to_string(),
+            embedding_dim: Some(1536), // Default for OpenAI embeddings
+            timeout_secs: 30,
+        };
+        let vector_store = Arc::new(QdrantVectorStore::new(&qdrant_config).await?);
+
+        // Initialize Embedding client
+        let embedding_config = EmbeddingConfig {
+            api_base_url: embedding_api_base_url.to_string(),
+            api_key: embedding_api_key.to_string(),
+            model_name: "text-embedding-3-small".to_string(),
+            batch_size: 10,
+            timeout_secs: 30,
+        };
+        let embedding_client = Arc::new(EmbeddingClient::new(embedding_config)?);
+
+        // Create vector search engine
+        let vector_engine = Arc::new(VectorSearchEngine::new(
+            vector_store.clone(),
+            embedding_client.clone(),
+            filesystem.clone(),
+        ));
+
+        // Auto-sync existing content to vector database
+        let sync_manager = SyncManager::new(
+            filesystem.clone(),
+            embedding_client.clone(),
+            vector_store.clone(),
+            SyncConfig::default(),
+        );
+
+        tracing::info!("Starting auto-sync to vector database...");
+        match sync_manager.sync_all().await {
+            Ok(stats) => {
+                tracing::info!(
+                    "Auto-sync completed: {} indexed, {} skipped",
+                    stats.indexed_files,
+                    stats.skipped_files
+                );
+            }
+            Err(e) => {
+                tracing::warn!("Auto-sync failed: {}", e);
+                // Don't fail initialization if sync fails
+            }
+        }
+
+        Ok(Self {
+            filesystem,
+            session_manager,
+            layer_manager,
+            vector_engine: Some(vector_engine),
         })
     }
     
@@ -73,7 +201,7 @@ impl MemoryOperations {
         // Ensure session exists
         if !sm.session_exists(thread_id).await? {
             drop(sm);
-            let mut sm = self.session_manager.write().await;
+            let sm = self.session_manager.write().await;
             sm.create_session(thread_id).await?;
             drop(sm);
         }

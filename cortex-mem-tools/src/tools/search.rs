@@ -1,6 +1,6 @@
 // Search Tools - OpenViking style intelligent search
 
-use crate::{Result, ToolsError, types::*, MemoryOperations};
+use crate::{Result, types::*, MemoryOperations, ToolsError};
 use cortex_mem_core::{RetrievalEngine, RetrievalOptions, ContextLayer, FilesystemOperations};
 
 impl MemoryOperations {

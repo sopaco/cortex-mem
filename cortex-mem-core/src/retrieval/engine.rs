@@ -291,27 +291,27 @@ mod tests {
         
         // Create some test memories with proper structure
         // First, create a memory about OAuth
-        let uri1 = "cortex://threads/test/session1/msg1.md";
+        let uri1 = "cortex://session/test/session1/msg1.md";
         let content1 = "# OAuth Implementation\n\nOAuth 2.0 is a secure authentication protocol used for API security.";
         fs.write(uri1, content1).await.unwrap();
         
         // Generate L0 abstract for the session directory
         let abstract1 = "OAuth 2.0 authentication and security implementation";
-        fs.write("cortex://threads/test/session1/.abstract.md", abstract1).await.unwrap();
+        fs.write("cortex://session/test/session1/.abstract.md", abstract1).await.unwrap();
         
         // Create another memory about database
-        let uri2 = "cortex://threads/test/session2/msg2.md";
+        let uri2 = "cortex://session/test/session2/msg2.md";
         let content2 = "# Database Setup\n\nPostgreSQL database configuration and schema design.";
         fs.write(uri2, content2).await.unwrap();
         
         // Generate L0 abstract for the second session directory
         let abstract2 = "Database setup and PostgreSQL configuration";
-        fs.write("cortex://threads/test/session2/.abstract.md", abstract2).await.unwrap();
+        fs.write("cortex://session/test/session2/.abstract.md", abstract2).await.unwrap();
         
         // Search for OAuth with relaxed scoring
         let result = engine.search(
             "OAuth authentication security",
-            "cortex://threads/test",
+            "cortex://session/test",
             RetrievalOptions {
                 top_k: 5,
                 min_score: 0.2,  // Lower threshold for testing

@@ -34,7 +34,7 @@ impl TimelineGenerator {
     
     /// Generate daily timeline index
     /// 
-    /// Creates an index file at cortex://threads/{thread_id}/timeline/{YYYY-MM}/{DD}/index.md
+    /// Creates an index file at cortex://session/{thread_id}/timeline/{YYYY-MM}/{DD}/index.md
     pub async fn generate_daily_index(
         &self,
         thread_id: &str,
@@ -44,7 +44,7 @@ impl TimelineGenerator {
     ) -> Result<String> {
         let year_month = format!("{:04}-{:02}", year, month);
         let day_str = format!("{:02}", day);
-        let timeline_path = format!("cortex://threads/{}/timeline/{}/{}", thread_id, year_month, day_str);
+        let timeline_path = format!("cortex://session/{}/timeline/{}/{}", thread_id, year_month, day_str);
         
         // List all messages in this day
         let entries = self.filesystem.list(&timeline_path).await?;
@@ -82,7 +82,7 @@ impl TimelineGenerator {
     
     /// Generate monthly timeline index
     /// 
-    /// Creates an index file at cortex://threads/{thread_id}/timeline/{YYYY-MM}/index.md
+    /// Creates an index file at cortex://session/{thread_id}/timeline/{YYYY-MM}/index.md
     pub async fn generate_monthly_index(
         &self,
         thread_id: &str,
@@ -90,7 +90,7 @@ impl TimelineGenerator {
         month: u32,
     ) -> Result<String> {
         let year_month = format!("{:04}-{:02}", year, month);
-        let timeline_path = format!("cortex://threads/{}/timeline/{}", thread_id, year_month);
+        let timeline_path = format!("cortex://session/{}/timeline/{}", thread_id, year_month);
         
         // List all day directories
         let entries = self.filesystem.list(&timeline_path).await?;
@@ -141,7 +141,7 @@ impl TimelineGenerator {
         thread_id: &str,
         year: i32,
     ) -> Result<String> {
-        let timeline_path = format!("cortex://threads/{}/timeline", thread_id);
+        let timeline_path = format!("cortex://session/{}/timeline", thread_id);
         
         // List all month directories
         let entries = self.filesystem.list(&timeline_path).await?;
@@ -177,7 +177,7 @@ impl TimelineGenerator {
     
     /// Generate all timeline indexes for a thread
     pub async fn generate_all_indexes(&self, thread_id: &str) -> Result<Vec<String>> {
-        let timeline_path = format!("cortex://threads/{}/timeline", thread_id);
+        let timeline_path = format!("cortex://session/{}/timeline", thread_id);
         
         // Check if timeline exists
         if !self.filesystem.exists(&timeline_path).await? {
@@ -248,7 +248,7 @@ impl TimelineGenerator {
             let year_month = format!("{:04}-{:02}", current.year(), current.month());
             let day = format!("{:02}", current.day());
             let day_path = format!(
-                "cortex://threads/{}/timeline/{}/{}",
+                "cortex://session/{}/timeline/{}/{}",
                 thread_id, year_month, day
             );
             

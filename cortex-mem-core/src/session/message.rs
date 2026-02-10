@@ -100,7 +100,7 @@ impl MessageStorage {
     
     /// Save a message to the timeline
     /// 
-    /// URI format: cortex://threads/{thread_id}/timeline/{YYYY-MM}/{DD}/{HH_MM_SS}_{message_id}.md
+    /// URI format: cortex://session/{thread_id}/timeline/{YYYY-MM}/{DD}/{HH_MM_SS}_{message_id}.md
     /// 
     /// Note: L0 and L1 layer generation is handled separately by the LayerManager
     /// to avoid coupling message storage with LLM operations
@@ -117,7 +117,7 @@ impl MessageStorage {
         );
         
         let uri = format!(
-            "cortex://threads/{}/timeline/{}/{}/{}",
+            "cortex://session/{}/timeline/{}/{}/{}",
             thread_id, year_month, day, filename
         );
         
@@ -144,7 +144,7 @@ impl MessageStorage {
         
         // Generate L0 and L1 layers for the thread
         // This is done asynchronously and errors are logged but don't fail the save
-        let thread_uri = format!("cortex://threads/{}", thread_id);
+        let thread_uri = format!("cortex://session/{}", thread_id);
         let content = message.to_markdown();
         if let Err(e) = layer_manager.generate_all_layers(&thread_uri, &content).await {
             tracing::warn!("Failed to generate layers for thread {}: {}", thread_id, e);
@@ -200,7 +200,7 @@ impl MessageStorage {
     
     /// List all messages in a thread
     pub async fn list_messages(&self, thread_id: &str) -> Result<Vec<String>> {
-        let timeline_uri = format!("cortex://threads/{}/timeline", thread_id);
+        let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
         
         // Recursively list all .md files in timeline
         let mut messages = Vec::new();
@@ -274,7 +274,7 @@ mod tests {
         let msg = Message::user("Hello from test");
         let uri = storage.save_message("test-thread", &msg).await.unwrap();
         
-        assert!(uri.contains("cortex://threads/test-thread/timeline"));
+        assert!(uri.contains("cortex://session/test-thread/timeline"));
         assert!(uri.contains(".md"));
         
         // Verify file was created

@@ -14,13 +14,9 @@ impl Infrastructure {
     pub async fn new(config: Config) -> Result<Self> {
         log::info!("正在初始化基础设施...");
 
-        // Get data directory from config or use default
-        let data_dir = std::env::var("CORTEX_DATA_DIR")
-            .unwrap_or_else(|_| {
-                directories::ProjectDirs::from("com", "cortex-mem", "tars")
-                    .map(|dirs| dirs.data_dir().to_string_lossy().to_string())
-                    .unwrap_or_else(|| "./.cortex".to_string())
-            });
+        // Get data directory from config (which handles priorities correctly)
+        let data_dir = config.cortex.data_dir();
+        log::info!("使用数据目录: {}", data_dir);
 
         // Initialize MemoryOperations from data directory
         let operations = MemoryOperations::from_data_dir(&data_dir)

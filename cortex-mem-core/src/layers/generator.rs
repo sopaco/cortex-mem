@@ -13,9 +13,14 @@ impl AbstractGenerator {
     }
     
     /// Generate abstract from content using LLM
+    /// 
+    /// Uses optimized prompt based on OpenViking design
     pub async fn generate_with_llm(&self, content: &str, llm: &Arc<dyn LLMClient>) -> Result<String> {
-        let system = "You are a summarization expert. Generate a concise 1-2 sentence abstract (max 100 tokens) that captures the core essence of the content.";
-        let prompt = format!("Summarize this content in 1-2 sentences:\n\n{}", content);
+        let system = r#"You are an expert at creating concise abstracts.
+Your goal is to generate single-sentence summaries that capture the core essence of content for quick relevance checking.
+Keep abstracts under 100 tokens. Be direct and informative."#;
+        
+        let prompt = crate::llm::prompts::Prompts::abstract_generation(content);
         
         llm.complete_with_system(system, &prompt).await
     }
@@ -23,7 +28,7 @@ impl AbstractGenerator {
     /// Generate abstract from content (fallback without LLM)
     pub async fn generate(&self, content: &str) -> Result<String> {
         // Simple implementation: take first paragraph or first 200 chars
-        let abstract_text = if content.len() <= 200 {
+        let abstract_text = if content.chars().count() <= 200 {
             content.to_string()
         } else {
             // Find first paragraph or take first 200 chars
@@ -33,10 +38,12 @@ impl AbstractGenerator {
                 .collect::<Vec<_>>()
                 .join(" ");
             
-            if first_para.len() <= 200 {
+            if first_para.chars().count() <= 200 {
                 first_para
             } else {
-                format!("{}...", &first_para[..197])
+                // Use char indices to avoid splitting UTF-8 characters
+                let truncated: String = first_para.chars().take(197).collect();
+                format!("{}...", truncated)
             }
         };
         
@@ -69,16 +76,14 @@ impl OverviewGenerator {
     }
     
     /// Generate overview from content using LLM
+    /// 
+    /// Uses optimized prompt based on OpenViking design
     pub async fn generate_with_llm(&self, content: &str, llm: &Arc<dyn LLMClient>) -> Result<String> {
-        let system = r#"You are a content analysis expert. Generate a structured overview (500-2000 tokens) with:
-1. Core Topics (3-5 main themes)
-2. Key Points (5-10 important takeaways)  
-3. Entities (people, places, technologies mentioned)
-4. Summary (2-3 paragraph overview)
-
-Format as markdown."#;
+        let system = r#"You are an expert at creating structured overviews.
+Your goal is to provide comprehensive yet concise summaries (500-2000 tokens) that help users understand and make decisions about content.
+Use clear markdown structure with sections for Summary, Core Topics, Key Points, Entities, and Context."#;
         
-        let prompt = format!("Analyze and create a structured overview of this content:\n\n{}", content);
+        let prompt = crate::llm::prompts::Prompts::overview_generation(content);
         
         llm.complete_with_system(system, &prompt).await
     }

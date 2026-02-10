@@ -123,6 +123,7 @@ pub struct FindResponse {
 /// List directory arguments
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LsArgs {
+    #[serde(default)]
     pub uri: String,
     pub recursive: Option<bool>,
     pub include_abstracts: Option<bool>,
@@ -177,6 +178,7 @@ pub struct ExploreResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoreArgs {
     pub content: String,
+    #[serde(default)]
     pub thread_id: String,
     pub metadata: Option<Value>,
     pub auto_generate_layers: Option<bool>,
