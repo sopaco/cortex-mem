@@ -196,6 +196,13 @@ impl MemoryOperations {
         role: &str,
         content: &str,
     ) -> Result<String> {
+        // Ensure thread_id is not empty
+        let thread_id = if thread_id.is_empty() {
+            "default"
+        } else {
+            thread_id
+        };
+        
         let sm = self.session_manager.read().await;
         
         // Ensure session exists

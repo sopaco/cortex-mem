@@ -7,13 +7,20 @@ use std::collections::HashMap;
 impl MemoryOperations {
     /// Store content with automatic L0/L1 layer generation
     pub async fn store(&self, args: StoreArgs) -> Result<StoreResponse> {
+        // Ensure thread_id is not empty (LLM may not provide it)
+        let thread_id = if args.thread_id.is_empty() {
+            "default".to_string()
+        } else {
+            args.thread_id.clone()
+        };
+        
         let sm = self.session_manager.read().await;
         
         // Ensure session exists
-        if !sm.session_exists(&args.thread_id).await? {
+        if !sm.session_exists(&thread_id).await? {
             drop(sm);
             let sm_write = self.session_manager.write().await;
-            sm_write.create_session(&args.thread_id).await?;
+            sm_write.create_session(&thread_id).await?;
             drop(sm_write);
             // Re-acquire read lock
         }
@@ -22,7 +29,7 @@ impl MemoryOperations {
         
         // Create and save message
         let message = Message::new(MessageRole::User, &args.content);
-        let message_uri = sm.message_storage().save_message(&args.thread_id, &message).await?;
+        let message_uri = sm.message_storage().save_message(&thread_id, &message).await?;
         
         // Auto-generate layers if requested
         let layers_generated = HashMap::new();
