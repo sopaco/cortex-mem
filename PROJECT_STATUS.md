@@ -2,7 +2,7 @@
 
 **项目名称**: Cortex Memory  
 **当前版本**: V2.0.0  
-**最后更新**: 2026-02-09 14:50  
+**最后更新**: 2026-02-11 10:00  
 **状态**: ✅ 生产就绪
 
 ---
@@ -19,10 +19,11 @@ Cortex Memory是一个高性能、模块化的AI Agent记忆管理系统，采�
 - ✅ **会话管理**: 完整的对话生命周期管理
 - ✅ **记忆提取**: LLM驱动的自动提取
 - ✅ **丰富工具链**: CLI、MCP、HTTP、Tools库、Rig集成
+- ✅ **多维度存储**: session/user/agent 三种存储范围支持
 
 ---
 
-## 🎯 当前状态 (2026-02-04)
+## 🎯 当前状态 (2026-02-11)
 
 ### ✅ 已完成功能
 
@@ -38,6 +39,7 @@ Cortex Memory是一个高性能、模块化的AI Agent记忆管理系统，采�
 | LLM集成 (llm) | ✅ | rig-core 0.23集成 |
 | 向量存储 (vector_store) | ✅ | Qdrant集成（可选） |
 | 自动索引 (sync) | ✅ | 文件系统到Qdrant自动同步 |
+| 多维度存储 | ✅ | session/user/agent 存储范围 |
 
 #### 2. 工具链
 
@@ -84,6 +86,43 @@ Cortex Memory是一个高性能、模块化的AI Agent记忆管理系统，采�
 ---
 
 ## 🚀 近期完成 (最近30天)
+
+### 2026-02-11: 多维度存储 + 自动存储机制 + 租户路径优化
+
+**完成内容**:
+1. ✅ **多维度存储支持** - 实现 session/user/agent 三种存储维度
+   - **session**: 会话级存储（默认）- `cortex://session/{thread_id}/timeline/`
+   - **user**: 用户长期记忆 - `cortex://user/{user_id}/memories/`
+   - **agent**: Agent专属记忆 - `cortex://agent/{agent_id}/memories/`
+2. ✅ **对话自动存储机制** - AgentChatHandler 自动保存每轮对话
+   - 每轮对话后自动存储用户输入和助手回复
+   - 存储到 session 维度，自动生成 L0/L1 摘要
+   - 无需手动调用 store 工具，简化 Agent 逻辑
+   - 废弃手动保存方法 `save_conversations_to_memory()`
+3. ✅ **租户路径优化** - 统一单数命名规范
+   - 使用 `user/` 替代 `users/`，`agent/` 替代 `agents/`
+   - 修复租户目录结构：移除多余的 `cortex` 子文件夹
+   - 租户路径：`/data/tenants/{tenant_id}/user/`（不再是 `.../cortex/user/`）
+   - 支持自动路由：单数路径在租户模式下自动映射到租户子目录
+4. ✅ **自动记忆提取集成** - 退出时触发会话分析
+   - 创建 AutoExtractor 并绑定到租户 operations
+   - 应用退出时自动提取会话中的事实、决策、实体
+   - 自动保存到 user 和 agent 维度作为长期记忆
+5. ✅ **StoreTool 增强** - 新增 `scope` 参数支持
+   - cortex-mem-rig: 更新工具定义，添加 scope 枚举参数
+   - cortex-mem-tools: 实现多维度存储逻辑
+   - 自动日期路径组织（YYYY-MM/DD/HH_MM_SS_id.md）
+6. ✅ **用户记忆检索优化** - 改进 `extract_user_basic_info` 函数
+   - 从 `cortex://user/{user_id}/` 维度搜索长期记忆
+   - 优先使用 L1 overview，回退到 L0 abstract 或原始内容
+   - 支持加载最多 20 条用户记忆
+
+**技术亮点**:
+- **零手动存储**: Agent 无需关心存储逻辑，专注对话质量
+- **统一的路径架构**: `cortex://{scope}/{id}/{type}/{date}/{file}.md`
+- **租户透明**: 单数路径自动适配租户模式，代码无需感知租户
+- **完整的生命周期**: 对话存储 → 会话提取 → 长期记忆生成
+- **向后兼容**: 默认 session 维度保持原有行为
 
 ### 2026-02-09: 向量搜索完善 + Bot记忆隔离 + 工具链修复
 
@@ -179,6 +218,24 @@ Cortex Memory是一个高性能、模块化的AI Agent记忆管理系统，采�
      - 统一路径: `cortex://threads/{bot_id}`
      - 修复工具链: StoreArgs/LsArgs serde(default)
 
+3. ~~对话自动存储~~ ✅
+   - ~~当前: 需要手动调用 store 工具保存对话~~
+   - ~~目标: AgentChatHandler 自动保存每轮对话~~
+   - ~~优先级: 高~~
+   - **完成**: 实现了完整的自动存储机制
+     - AgentChatHandler 自动保存用户输入和助手回复
+     - 存储到 session 维度，自动生成 L0/L1 摘要
+     - 移除 store_tool()，简化 Agent 工具链
+
+4. ~~租户路径规范化~~ ✅
+   - ~~当前: 混合使用 users/ 和 user/，租户路径冗余~~
+   - ~~目标: 统一使用单数命名，简化租户目录结构~~
+   - ~~优先级: 中~~
+   - **完成**: 路径规范化完成
+     - 统一使用 `user/` 和 `agent/`（单数）
+     - 修复租户目录：`tenants/{tenant_id}/user/`（移除多余 cortex 层）
+     - 支持自动路由到租户子目录
+
 ### 需要重构的部分
 
 1. **错误处理统一** ⚠️
@@ -221,7 +278,7 @@ Cortex Memory是一个高性能、模块化的AI Agent记忆管理系统，采�
 
 ## 🔄 版本历史
 
-### V2.0.0 (2026-02-09)
+### V2.0.0 (2026-02-11)
 
 **重大变更**:
 - ✅ 从Qdrant向量数据库迁移到文件系统为主
@@ -233,6 +290,9 @@ Cortex Memory是一个高性能、模块化的AI Agent记忆管理系统，采�
 - ✅ **Qdrant索引自动化**（2026-02-09完成）
 - ✅ **Bot记忆隔离**（2026-02-09完成）
 - ✅ **工具链修复**（2026-02-09完成）
+- ✅ **多维度存储**（2026-02-11完成）
+- ✅ **对话自动存储**（2026-02-11完成）
+- ✅ **租户路径规范化**（2026-02-11完成）
 
 **新增功能**:
 - ✅ MCP服务器（Claude Desktop集成）
@@ -243,6 +303,9 @@ Cortex Memory是一个高性能、模块化的AI Agent记忆管理系统，采�
 - ✅ **SyncManager自动索引**
 - ✅ **Bot记忆隔离支持**（cortex://threads/{bot_id}）
 - ✅ **TARS演示程序**（完整的多Bot示例）
+- ✅ **多维度存储支持**（session/user/agent scope）
+- ✅ **对话自动存储**（AgentChatHandler 自动保存）
+- ✅ **自动记忆提取**（退出时触发会话分析）
 
 **改进**:
 - ✅ 零外部依赖存储
@@ -251,6 +314,8 @@ Cortex Memory是一个高性能、模块化的AI Agent记忆管理系统，采�
 - ✅ 模块化设计
 - ✅ Feature-gating可选功能
 - ✅ **完整的向量搜索实现**
+- ✅ **租户路径透明化**（单数命名自动适配）
+- ✅ **零手动存储**（对话自动保存）
 
 ### V1.x (历史版本)
 
@@ -316,7 +381,7 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 ---
 
-**最后更新**: 2026-02-09 14:50  
+**最后更新**: 2026-02-11 10:30  
 **维护者**: Cortex Memory Development Team  
-**状态**: ✅ 生产就绪 - 核心功能完整，Bot隔离支持，工具链稳定
+**状态**: ✅ 生产就绪 - 核心功能完整，多维度存储，自动存储机制，租户隔离
 **状态**: ✅ 活跃开发中

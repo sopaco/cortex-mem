@@ -65,8 +65,10 @@ impl CortexFilesystem {
     pub async fn initialize(&self) -> Result<()> {
         // Get the base directory (with or without tenant)
         let base_dir = if let Some(tenant_id) = &self.tenant_id {
-            self.root.join("tenants").join(tenant_id).join("cortex")
+            // For tenant: /root/tenants/{tenant_id}/ (without extra cortex subfolder)
+            self.root.join("tenants").join(tenant_id)
         } else {
+            // For non-tenant: /root/
             self.root.clone()
         };
         
@@ -86,10 +88,10 @@ impl CortexFilesystem {
     fn uri_to_path(&self, uri: &str) -> Result<PathBuf> {
         let parsed_uri = UriParser::parse(uri)?;
         
-        // If tenant_id exists, add tenant prefix
+        // If tenant_id exists, add tenant prefix (without extra cortex subfolder)
         let path = if let Some(tenant_id) = &self.tenant_id {
-            // /root/tenants/{tenant_id}/cortex/{path}
-            let tenant_base = self.root.join("tenants").join(tenant_id).join("cortex");
+            // /root/tenants/{tenant_id}/{path}
+            let tenant_base = self.root.join("tenants").join(tenant_id);
             parsed_uri.to_file_path(&tenant_base)
         } else {
             // /root/{path}

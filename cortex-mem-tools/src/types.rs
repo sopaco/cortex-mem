@@ -182,6 +182,13 @@ pub struct StoreArgs {
     pub thread_id: String,
     pub metadata: Option<Value>,
     pub auto_generate_layers: Option<bool>,
+    /// Storage scope: "session" (default), "user", or "agent"
+    #[serde(default = "default_scope")]
+    pub scope: String,
+}
+
+fn default_scope() -> String {
+    "session".to_string()
 }
 
 /// Store response

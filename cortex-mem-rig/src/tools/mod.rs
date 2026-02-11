@@ -450,7 +450,13 @@ impl Tool for StoreTool {
                         },
                         "thread_id": {
                             "type": "string",
-                            "description": "会话 ID"
+                            "description": "会话 ID 或 Agent ID（根据 scope 而定）"
+                        },
+                        "scope": {
+                            "type": "string",
+                            "description": "存储范围：'session'（会话，默认）、'user'（用户长期记忆）、'agent'（Agent 记忆）",
+                            "enum": ["session", "user", "agent"],
+                            "default": "session"
                         },
                         "metadata": {
                             "type": "object",

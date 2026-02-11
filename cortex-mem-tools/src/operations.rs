@@ -35,6 +35,11 @@ impl MemoryOperations {
             vector_engine: None,
         }
     }
+    
+    /// Get the underlying filesystem
+    pub fn filesystem(&self) -> &Arc<CortexFilesystem> {
+        &self.filesystem
+    }
 
     /// Create from data directory (no tenant isolation)
     pub async fn from_data_dir(data_dir: &str) -> Result<Self> {

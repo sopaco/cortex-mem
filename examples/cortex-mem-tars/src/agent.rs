@@ -49,6 +49,7 @@ impl ChatMessage {
 }
 
 /// 创建带记忆功能的Agent（OpenViking 风格 + 租户隔离）
+/// 返回 (Agent, MemoryOperations) 以便外部使用租户隔离的 operations
 pub async fn create_memory_agent(
     data_dir: impl AsRef<std::path::Path>,
     api_base_url: &str,
@@ -58,7 +59,7 @@ pub async fn create_memory_agent(
     bot_system_prompt: Option<&str>,
     agent_id: &str,
     _user_id: &str,
-) -> Result<RigAgent<CompletionModel>, Box<dyn std::error::Error>> {
+) -> Result<(RigAgent<CompletionModel>, Arc<MemoryOperations>), Box<dyn std::error::Error>> {
     // 创建 cortex LLMClient 用于 L0/L1 生成
     let llm_config = cortex_mem_core::llm::LLMConfig {
         api_base_url: api_base_url.to_string(),
@@ -76,6 +77,9 @@ pub async fn create_memory_agent(
         agent_id,
         cortex_llm_client,
     ).await?;
+    
+    // 获取租户 operations 用于外部使用
+    let tenant_operations = memory_tools.operations().clone();
     
     // 创建 Rig LLM 客户端用于 Agent 对话
     let llm_client = Client::builder(api_key)
@@ -118,11 +122,6 @@ pub async fn create_memory_agent(
   - include_abstracts: 是否包含文件摘要
   - 用于浏览记忆结构
 
-💾 存储工具：
-- store(content): 存储新内容到记忆空间，自动生成 L0/L1 摘要
-  - 内容会自动存储到会话中
-  - 自动生成分层摘要
-
 📍 **主动召回原则**（关键）：
 当用户的问题可能涉及历史信息、用户偏好或之前的对话内容时，你必须**主动**调用记忆工具。
 
@@ -139,10 +138,6 @@ pub async fn create_memory_agent(
 3. 仅在必须了解完整细节时调用 read 获取 L2
 4. 这种渐进式加载可以大幅减少 token 消耗（节省 80-90%）
 
-**存储策略**：
-- 重要信息自动使用 store 存储
-- 用户明确提到的偏好、需求、背景信息必须存储
-
 记忆隔离说明：
 - 每个 Bot 拥有独立的租户空间（物理隔离）
 - 记忆组织采用 OpenViking 架构：
@@ -150,6 +145,7 @@ pub async fn create_memory_agent(
   - cortex://user/ - 用户记忆
   - cortex://agent/ - Agent 记忆
   - cortex://session/ - 会话记录
+- 对话内容会自动保存到 session，你无需关心存储
 
 用户基本信息：
 {info}
@@ -191,9 +187,6 @@ pub async fn create_memory_agent(
 📂 文件系统工具：
 - ls(uri): 列出目录内容
 
-💾 存储工具：
-- store(content): 存储新内容到你的记忆空间
-
 📍 **主动召回原则**（关键）：
 当用户的问题可能涉及历史信息、用户偏好或之前的对话内容时，你必须**主动**调用记忆工具。
 
@@ -212,6 +205,7 @@ pub async fn create_memory_agent(
 重要指令：
 - 你是一个**主动**使用记忆的 AI 助手，不要等待用户明确说"搜索"才去查找记忆！
 - 遇到任何可能涉及历史信息的问题，**先搜索，再回答**
+- 对话内容会自动保存到 session，你无需关心存储
 
 记忆隔离说明：
 - 每个 Bot 拥有独立的租户空间（物理隔离）
@@ -244,44 +238,51 @@ pub async fn create_memory_agent(
         .tool(memory_tools.read_tool())
         // 文件系统工具
         .tool(memory_tools.ls_tool())
-        // 存储工具
-        .tool(memory_tools.store_tool())
+        // 注意：移除了 store_tool()，对话由系统自动存储到 session
         .build();
 
-    Ok(completion_model)
+    Ok((completion_model, tenant_operations))
 }
 
-/// 从记忆中提取用户基本信息（使用新的 search 工具）
+/// 从记忆中提取用户基本信息（从 cortex://user/tars_user/ 加载）
 pub async fn extract_user_basic_info(
     operations: Arc<MemoryOperations>,
     user_id: &str,
     _agent_id: &str,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
     // 使用新的 search 工具查找用户相关信息
+    // 从 cortex://user/tars_user/ 维度搜索（长期记忆）
     let search_args = cortex_mem_tools::SearchArgs {
-        query: format!("用户 {} 的基本信息", user_id),
+        query: "".to_string(),  // 空查询获取所有用户记忆
         engine: Some("keyword".to_string()),
         recursive: Some(true),
         return_layers: Some(vec!["L1".to_string()]),  // 获取 L1 概览
-        scope: Some(format!("cortex://threads")),
-        limit: Some(10),
+        scope: Some(format!("cortex://user/{}", user_id)),  // 从用户维度搜索
+        limit: Some(20),  // 加载最多 20 条用户记忆
     };
 
     match operations.search(search_args).await {
         Ok(response) => {
             if response.results.is_empty() {
+                tracing::info!("No user memories found for user: {}", user_id);
                 return Ok(None);
             }
 
             let mut context = String::new();
-            context.push_str("用户相关信息:\n");
+            context.push_str(&format!("## 用户记忆（{}条）\n\n", response.results.len()));
 
             for (i, result) in response.results.iter().enumerate() {
-                if let Some(overview) = &result.overview_text {
-                    context.push_str(&format!("{}. {}\n", i + 1, overview));
-                }
+                // 优先使用 L1 overview，如果没有则使用 L0 abstract，最后使用原始内容
+                let content = result.overview_text.as_ref()
+                    .or(result.abstract_text.as_ref())
+                    .or(result.content.as_ref())
+                    .map(|s| s.as_str())
+                    .unwrap_or("[无内容]");
+                
+                context.push_str(&format!("{}. {}\n\n", i + 1, content));
             }
 
+            tracing::info!("Loaded {} user memories for user: {}", response.results.len(), user_id);
             Ok(Some(context))
         }
         Err(e) => {
@@ -295,6 +296,8 @@ pub async fn extract_user_basic_info(
 pub struct AgentChatHandler {
     agent: RigAgent<CompletionModel>,
     history: Vec<ChatMessage>,
+    operations: Option<Arc<MemoryOperations>>,
+    session_id: String,
 }
 
 impl AgentChatHandler {
@@ -302,11 +305,60 @@ impl AgentChatHandler {
         Self {
             agent,
             history: Vec::new(),
+            operations: None,
+            session_id: uuid::Uuid::new_v4().to_string(),
+        }
+    }
+    
+    /// Create with memory operations for auto-saving conversations
+    pub fn with_memory(
+        agent: RigAgent<CompletionModel>,
+        operations: Arc<MemoryOperations>,
+        session_id: String,
+    ) -> Self {
+        Self {
+            agent,
+            history: Vec::new(),
+            operations: Some(operations),
+            session_id,
         }
     }
 
     pub fn history(&self) -> &[ChatMessage] {
         &self.history
+    }
+    
+    /// Auto-save conversation to session dimension
+    async fn save_conversation(&self, user_input: &str, assistant_response: &str) {
+        if let Some(ops) = &self.operations {
+            // Save user message
+            if !user_input.is_empty() {
+                let user_store = cortex_mem_tools::StoreArgs {
+                    content: user_input.to_string(),
+                    thread_id: self.session_id.clone(),
+                    scope: "session".to_string(),
+                    metadata: None,
+                    auto_generate_layers: Some(true),
+                };
+                if let Err(e) = ops.store(user_store).await {
+                    tracing::warn!("Failed to save user message: {}", e);
+                }
+            }
+            
+            // Save assistant message
+            if !assistant_response.is_empty() {
+                let assistant_store = cortex_mem_tools::StoreArgs {
+                    content: assistant_response.to_string(),
+                    thread_id: self.session_id.clone(),
+                    scope: "session".to_string(),
+                    metadata: None,
+                    auto_generate_layers: Some(true),
+                };
+                if let Err(e) = ops.store(assistant_store).await {
+                    tracing::warn!("Failed to save assistant message: {}", e);
+                }
+            }
+        }
     }
 
     /// 进行对话（流式版本，支持多轮工具调用）
@@ -348,6 +400,9 @@ impl AgentChatHandler {
 
         // 克隆 agent 用于异步任务
         let agent = self.agent.clone();
+        let user_input_clone = user_input.to_string();
+        let ops_clone = self.operations.clone();
+        let session_id_clone = self.session_id.clone();
 
         // 在后台任务中处理流式响应
         tokio::spawn(async move {
@@ -400,6 +455,37 @@ impl AgentChatHandler {
                         let error_msg = format!("[错误: {}]", e);
                         let _ = tx.send(error_msg).await;
                         break;
+                    }
+                }
+            }
+            
+            // 对话结束后自动保存到 session
+            if let Some(ops) = ops_clone {
+                // Save user message
+                if !user_input_clone.is_empty() {
+                    let user_store = cortex_mem_tools::StoreArgs {
+                        content: user_input_clone.clone(),
+                        thread_id: session_id_clone.clone(),
+                        scope: "session".to_string(),
+                        metadata: None,
+                        auto_generate_layers: Some(true),
+                    };
+                    if let Err(e) = ops.store(user_store).await {
+                        tracing::warn!("Failed to save user message: {}", e);
+                    }
+                }
+                
+                // Save assistant message
+                if !full_response.is_empty() {
+                    let assistant_store = cortex_mem_tools::StoreArgs {
+                        content: full_response.clone(),
+                        thread_id: session_id_clone.clone(),
+                        scope: "session".to_string(),
+                        metadata: None,
+                        auto_generate_layers: Some(true),
+                    };
+                    if let Err(e) = ops.store(assistant_store).await {
+                        tracing::warn!("Failed to save assistant message: {}", e);
                     }
                 }
             }

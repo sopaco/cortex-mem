@@ -16,6 +16,11 @@ impl MemoryTools {
         Self { operations }
     }
     
+    /// Get the underlying MemoryOperations
+    pub fn operations(&self) -> &Arc<MemoryOperations> {
+        &self.operations
+    }
+    
     // ==================== Tiered Access Tools ====================
     
     pub fn abstract_tool(&self) -> AbstractTool {

@@ -1,5 +1,5 @@
 use crate::{
-    extraction::{ExtractedMemories, MemoryExtractor},
+    extraction::{ExtractedMemories, MemoryExtractor, UserProfile, ExtractedUserInfo, UserInfoCategory},
     filesystem::CortexFilesystem,
     llm::LLMClient,
     session::{SessionManager, manager::SessionMetadata},
@@ -128,65 +128,419 @@ impl AutoExtractor {
         Ok(Some(stats))
     }
 
-    /// 保存用户记忆
+    /// 保存用户记忆（结构化版本）
     /// 
-    /// 参考OpenViking的User Memory Update机制：
-    /// - 用户的个人信息、偏好、习惯
-    /// - 存储到 cortex://users/{user_id}/memories/
+    /// 新的实现：
+    /// 1. 使用 LLM 提取结构化用户信息（5 大类）
+    /// 2. 读取已有记忆，传给 LLM 作为上下文
+    /// 3. LLM 判断是更新还是新增
+    /// 4. 控制每类记忆的总量
     async fn save_user_memories(
         &self,
         thread_id: &str,
-        extracted: &ExtractedMemories,
+        _extracted: &ExtractedMemories,
     ) -> Result<usize> {
         use crate::filesystem::FilesystemOperations;
 
-        // 目前简化实现：将所有facts保存为用户记忆
-        // 未来可以通过LLM判断哪些是用户相关的
-
-        let user_id = "default"; // 可以从session metadata获取
-        let memories_dir = format!("cortex://users/{}/memories", user_id);
-
-        let mut saved_count = 0;
-
-        // 保存重要的facts作为用户记忆
-        for fact in &extracted.facts {
-            if fact.confidence >= 0.7 {
-                let memory_id = uuid::Uuid::new_v4();
-                let memory_uri = format!("{}/{}.md", memories_dir, memory_id);
-
-                let content = format!(
-                    "# User Memory\n\n\
-                    **Source**: {}\n\
-                    **Extracted**: {}\n\
-                    **Confidence**: {}\n\n\
-                    ## Content\n\n\
-                    {}\n",
-                    thread_id,
-                    chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC"),
-                    fact.confidence,
-                    fact.content
-                );
-
-                match self.filesystem.write(&memory_uri, &content).await {
-                    Ok(_) => {
-                        saved_count += 1;
+        let user_id = "tars_user"; // TARS 使用固定用户ID
+        let profile_uri = format!("cortex://user/{}/profile.json", user_id);
+        
+        // Step 1: 读取已有的用户档案
+        let existing_profile = self.load_user_profile(&profile_uri).await?;
+        
+        // Step 2: 从当前 session 提取用户信息
+        let new_info = self.extract_user_info_structured(thread_id, &existing_profile).await?;
+        
+        // Step 3: 合并新旧信息（LLM 驱动的去重和更新）
+        let merged_profile = self.merge_user_profiles(existing_profile, new_info, thread_id).await?;
+        
+        // Step 4: 控制每类记忆的总量
+        let limited_profile = self.limit_profile_size(merged_profile);
+        
+        // Step 5: 保存更新后的档案
+        let saved_count = self.save_user_profile(&profile_uri, &limited_profile).await?;
+        
+        info!(
+            "用户记忆已更新: {} ({})",
+            saved_count,
+            limited_profile.category_stats()
+        );
+        
+        Ok(saved_count)
+    }
+    
+    /// 加载用户档案
+    async fn load_user_profile(&self, profile_uri: &str) -> Result<UserProfile> {
+        use crate::filesystem::FilesystemOperations;
+        
+        match self.filesystem.read(profile_uri).await {
+            Ok(content) => {
+                match serde_json::from_str::<UserProfile>(&content) {
+                    Ok(profile) => {
+                        info!("已加载用户档案: {}", profile.category_stats());
+                        Ok(profile)
                     }
                     Err(e) => {
-                        warn!("Failed to save user memory: {}", e);
+                        warn!("解析用户档案失败: {}, 创建新档案", e);
+                        Ok(UserProfile::new())
+                    }
+                }
+            }
+            Err(_) => {
+                info!("用户档案不存在，创建新档案");
+                Ok(UserProfile::new())
+            }
+        }
+    }
+    
+    /// 从 session 提取结构化用户信息
+    async fn extract_user_info_structured(
+        &self,
+        thread_id: &str,
+        existing_profile: &UserProfile,
+    ) -> Result<ExtractedUserInfo> {
+        // 读取 session 的所有对话
+        let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
+        let conversation = self.collect_conversation_text(&timeline_uri).await?;
+        
+        if conversation.is_empty() {
+            return Ok(ExtractedUserInfo {
+                personal_info: vec![],
+                work_history: vec![],
+                preferences: vec![],
+                relationships: vec![],
+                goals: vec![],
+            });
+        }
+        
+        // 构建包含已有记忆的 Prompt
+        let existing_context = existing_profile.to_markdown();
+        
+        let prompt = self.build_extraction_prompt(&conversation, &existing_context);
+        
+        // 调用 LLM 提取
+        info!("调用 LLM 提取用户信息，对话长度: {} 字符", conversation.len());
+        let response = self.llm.complete(&prompt).await?;
+        
+        // 记录 LLM 返回的原始内容（用于调试）
+        info!("LLM 返回内容长度: {} 字符", response.len());
+        tracing::debug!("LLM 原始返回: {}", response);
+        
+        // 解析 JSON
+        match serde_json::from_str::<ExtractedUserInfo>(&response) {
+            Ok(info) => {
+                info!(
+                    "成功解析用户信息: {} 条个人信息, {} 条工作履历, {} 条偏好, {} 条关系, {} 条目标",
+                    info.personal_info.len(),
+                    info.work_history.len(),
+                    info.preferences.len(),
+                    info.relationships.len(),
+                    info.goals.len()
+                );
+                Ok(info)
+            }
+            Err(e) => {
+                warn!("❌ 解析 LLM 返回的用户信息失败: {}", e);
+                warn!("LLM 返回内容: {}", response);
+                
+                // 尝试提取 JSON 部分（可能被包裹在 ```json ... ``` 中）
+                let json_content = if response.contains("```json") {
+                    // 提取 ```json ... ``` 之间的内容
+                    response
+                        .split("```json")
+                        .nth(1)
+                        .and_then(|s| s.split("```").next())
+                        .unwrap_or(&response)
+                        .trim()
+                } else if response.contains("```") {
+                    // 提取 ``` ... ``` 之间的内容
+                    response
+                        .split("```")
+                        .nth(1)
+                        .unwrap_or(&response)
+                        .trim()
+                } else {
+                    &response
+                };
+                
+                // 再次尝试解析
+                match serde_json::from_str::<ExtractedUserInfo>(json_content) {
+                    Ok(info) => {
+                        info!("✅ 从 Markdown 代码块中提取 JSON 成功");
+                        Ok(info)
+                    }
+                    Err(e2) => {
+                        warn!("❌ 再次解析失败: {}", e2);
+                        // 返回空结果而不是失败
+                        Ok(ExtractedUserInfo {
+                            personal_info: vec![],
+                            work_history: vec![],
+                            preferences: vec![],
+                            relationships: vec![],
+                            goals: vec![],
+                        })
                     }
                 }
             }
         }
+    }
+    
+    /// 构建结构化提取 Prompt
+    fn build_extraction_prompt(&self, conversation: &str, existing_context: &str) -> String {
+        format!(
+            r#"Extract REAL USER PROFILE INFORMATION from the conversation below.
 
-        info!("Saved {} user memories", saved_count);
-        Ok(saved_count)
+## TASK
+Analyze the conversation and extract information about the **REAL USER** (the human person who is chatting, NOT the AI assistant).
+
+IMPORTANT: 
+- In this conversation, the REAL USER might say "I am..." or "my name is..." - extract THIS person's information
+- DO NOT extract information about the AI assistant or its role-play character
+- Focus on the HUMAN user's actual background, preferences, and characteristics
+
+Extract information categorized into 5 types:
+
+1. **personal_info** - Personal background and traits:
+   - Name, age, location, education
+   - Personality type (e.g., INTJ), character traits
+   - Core values, beliefs
+   - Example: "用户名叫 SkyronJ，是 INTJ 人格"
+   
+2. **work_history** - Professional background:
+   - Current/past positions, companies
+   - Key responsibilities, projects
+   - Achievements, skills
+   - Example: "SkyronJ 曾在快手担任团队负责人"
+
+3. **preferences** - Likes, habits, and style:
+   - Food preferences (e.g., likes Hunan cuisine)
+   - Hobbies, interests
+   - Work style, communication preferences
+   - Daily habits
+   - Example: "SkyronJ 专业领域是 Rust 技术"
+
+4. **relationships** - Important people and organizations:
+   - Colleagues, friends, family
+   - Affiliation with organizations
+   - Social connections
+   - Example: "SkyronJ 有个同事叫杨雪"
+
+5. **goals** - Aspirations and plans:
+   - Career goals
+   - Personal development goals
+   - Life objectives
+   - Example: "SkyronJ 的目标是成为技术领导者"
+
+## EXISTING USER PROFILE (for reference and update)
+
+```markdown
+{}
+```
+
+## IMPORTANT RULES
+
+1. **ONLY extract REAL USER information** (the human person). DO NOT extract:
+   - ❌ AI assistant's information or role-play character
+   - ❌ AI system status or errors
+   - ❌ Conversation metadata ("information comes from...")
+   - ❌ AI's thoughts or self-evaluations
+   - ❌ General knowledge or definitions
+   - ❌ Temporary conversation states
+
+2. **Identify who is the REAL USER**:
+   - Look for "I am...", "My name is...", "我叫...", "我是..." from the human
+   - The person giving information about themselves is the REAL USER
+   - Example: If someone says "I am SkyronJ, I work at...", extract info about SkyronJ
+
+3. **Compare with existing profile**:
+   - If information already exists and is similar, DO NOT extract again
+   - If new information adds detail or updates existing info, extract it
+   - Focus on NEW or UPDATED information
+
+4. **Be objective and factual**:
+   - Extract WHAT the user said/did, not interpretations
+   - Avoid subjective evaluations unless directly stated
+   - Use clear, concise language
+
+5. **Set appropriate scores**:
+   - confidence: 0.7-1.0 (how certain this is about the REAL USER)
+   - importance: 1-10 (how valuable this information is)
+
+## OUTPUT FORMAT
+
+Return ONLY valid JSON in this exact structure:
+
+```json
+{{
+  "personal_info": [
+    {{
+      "content": "Clear statement about real user's personal background/traits",
+      "confidence": 0.85,
+      "importance": 7
+    }}
+  ],
+  "work_history": [
+    {{
+      "content": "Clear statement about real user's work experience",
+      "confidence": 0.9,
+      "importance": 8
+    }}
+  ],
+  "preferences": [
+    {{
+      "content": "Clear statement about real user's preferences/habits",
+      "confidence": 0.8,
+      "importance": 6
+    }}
+  ],
+  "relationships": [
+    {{
+      "content": "Clear statement about real user's relationships",
+      "confidence": 0.85,
+      "importance": 7
+    }}
+  ],
+  "goals": [
+    {{
+      "content": "Clear statement about real user's goals",
+      "confidence": 0.8,
+      "importance": 8
+    }}
+  ]
+}}
+```
+
+## CONVERSATION
+
+```
+{}
+```
+
+## RESPONSE
+
+Return ONLY the JSON object. No additional text before or after."#,
+            existing_context, conversation
+        )
+    }
+    
+    /// 收集 session 的对话文本（使用 Box::pin 避免递归问题）
+    fn collect_conversation_text<'a>(
+        &'a self,
+        timeline_uri: &'a str,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String>> + Send + 'a>> {
+        Box::pin(async move {
+            use crate::filesystem::FilesystemOperations;
+            
+            let mut conversation = String::new();
+            
+            // 递归收集所有消息文件
+            if let Ok(entries) = self.filesystem.list(timeline_uri).await {
+                for entry in entries {
+                    if entry.is_directory && !entry.name.starts_with('.') {
+                        // 递归子目录
+                        let sub_text = self.collect_conversation_text(&entry.uri).await?;
+                        conversation.push_str(&sub_text);
+                    } else if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                        // 读取消息文件
+                        if let Ok(content) = self.filesystem.read(&entry.uri).await {
+                            conversation.push_str(&content);
+                            conversation.push_str("\n\n---\n\n");
+                        }
+                    }
+                }
+            }
+            
+            Ok(conversation)
+        })
+    }
+    
+    /// 合并新旧用户档案（LLM 驱动的去重和更新）
+    async fn merge_user_profiles(
+        &self,
+        existing: UserProfile,
+        new_info: ExtractedUserInfo,
+        source_session: &str,
+    ) -> Result<UserProfile> {
+        let mut merged = existing.clone();
+        
+        // 将新提取的信息转换为 UserProfile
+        let new_profile = new_info.to_user_profile(source_session);
+        
+        // 合并每个类别
+        for category in &[
+            UserInfoCategory::PersonalInfo,
+            UserInfoCategory::WorkHistory,
+            UserInfoCategory::Preferences,
+            UserInfoCategory::Relationships,
+            UserInfoCategory::Goals,
+        ] {
+            let new_items = new_profile.get_category(category);
+            
+            for new_item in new_items {
+                // 简化合并：直接添加（后续可以用 LLM 判断是否重复）
+                merged.add_item(new_item.clone());
+            }
+        }
+        
+        Ok(merged)
+    }
+    
+    /// 限制档案大小
+    fn limit_profile_size(&self, mut profile: UserProfile) -> UserProfile {
+        const MAX_PER_CATEGORY: usize = 10;
+        
+        // 对每个类别，保留最重要的 N 条
+        for category in &[
+            UserInfoCategory::PersonalInfo,
+            UserInfoCategory::WorkHistory,
+            UserInfoCategory::Preferences,
+            UserInfoCategory::Relationships,
+            UserInfoCategory::Goals,
+        ] {
+            let items = profile.get_category_mut(category);
+            
+            if items.len() > MAX_PER_CATEGORY {
+                // 按重要性和置信度排序
+                items.sort_by(|a, b| {
+                    let score_a = a.importance as f32 * a.confidence;
+                    let score_b = b.importance as f32 * b.confidence;
+                    score_b.partial_cmp(&score_a).unwrap()
+                });
+                
+                // 只保留前 N 条
+                items.truncate(MAX_PER_CATEGORY);
+                
+                info!(
+                    "类别 {:?} 超出限制，保留前 {} 条",
+                    category, MAX_PER_CATEGORY
+                );
+            }
+        }
+        
+        profile
+    }
+    
+    /// 保存用户档案
+    async fn save_user_profile(
+        &self,
+        profile_uri: &str,
+        profile: &UserProfile,
+    ) -> Result<usize> {
+        use crate::filesystem::FilesystemOperations;
+        
+        let json_content = serde_json::to_string_pretty(profile)?;
+        self.filesystem.write(profile_uri, &json_content).await?;
+        
+        Ok(profile.total_count())
     }
 
     /// 保存Agent记忆
     /// 
     /// 参考OpenViking的Agent Memory Update机制：
     /// - Agent学到的知识、经验、决策模式
-    /// - 存储到 cortex://agents/{agent_id}/memories/
+    /// - 存储到 cortex://agent/{agent_id}/memories/
+    /// 
+    /// 注意：使用 cortex://agent/ (单数) 而不是 agents/，这样在租户模式下会自动路由到 tenants/{tenant_id}/agent/
     async fn save_agent_memories(
         &self,
         thread_id: &str,
@@ -194,8 +548,8 @@ impl AutoExtractor {
     ) -> Result<usize> {
         use crate::filesystem::FilesystemOperations;
 
-        let agent_id = "default"; // 可以从session metadata获取
-        let memories_dir = format!("cortex://agents/{}/memories", agent_id);
+        let agent_id = "tars"; // TARS Agent ID
+        let memories_dir = format!("cortex://agent/{}/memories", agent_id);
 
         let mut saved_count = 0;
 
