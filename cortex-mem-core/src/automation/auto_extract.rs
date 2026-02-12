@@ -54,6 +54,8 @@ pub struct AutoExtractor {
     llm: Arc<dyn LLMClient>,
     extractor: MemoryExtractor,
     config: AutoExtractConfig,
+    /// 用户ID，用于保存用户记忆
+    user_id: String,
 }
 
 impl AutoExtractor {
@@ -71,7 +73,32 @@ impl AutoExtractor {
             llm,
             extractor,
             config,
+            user_id: "default".to_string(),
         }
+    }
+
+    /// 创建新的自动提取器，指定用户ID
+    pub fn with_user_id(
+        filesystem: Arc<CortexFilesystem>,
+        llm: Arc<dyn LLMClient>,
+        config: AutoExtractConfig,
+        user_id: impl Into<String>,
+    ) -> Self {
+        let extraction_config = crate::extraction::ExtractionConfig::default();
+        let extractor = MemoryExtractor::new(filesystem.clone(), llm.clone(), extraction_config);
+
+        Self {
+            filesystem,
+            llm,
+            extractor,
+            config,
+            user_id: user_id.into(),
+        }
+    }
+
+    /// 设置用户ID
+    pub fn set_user_id(&mut self, user_id: impl Into<String>) {
+        self.user_id = user_id.into();
     }
 
     /// 在会话关闭时自动提取
@@ -142,8 +169,8 @@ impl AutoExtractor {
     ) -> Result<usize> {
         use crate::filesystem::FilesystemOperations;
 
-        let user_id = "tars_user"; // TARS 使用固定用户ID
-        let profile_uri = format!("cortex://user/{}/profile.json", user_id);
+        // 使用配置的用户ID
+        let profile_uri = format!("cortex://user/{}/profile.json", self.user_id);
 
         // Step 1: 读取已有的用户档案
         let existing_profile = self.load_user_profile(&profile_uri).await?;
@@ -161,9 +188,10 @@ impl AutoExtractor {
         let saved_count = self.save_user_profile(&profile_uri, &limited_profile).await?;
 
         info!(
-            "用户记忆已更新: {} ({})",
+            "用户记忆已更新: {} ({}) for user: {}",
             saved_count,
-            limited_profile.category_stats()
+            limited_profile.category_stats(),
+            self.user_id
         );
 
         Ok(saved_count)
@@ -228,9 +256,12 @@ impl AutoExtractor {
 
         // 解析 JSON
         match serde_json::from_str::<ExtractedUserInfo>(&response) {
-            Ok(info) => {
+            Ok(mut info) => {
+                // 后处理：过滤掉与已有记忆重复的内容
+                info = self.filter_duplicate_info(info, existing_profile);
+                
                 info!(
-                    "成功解析用户信息: {} 条个人信息, {} 条工作履历, {} 条偏好, {} 条关系, {} 条目标",
+                    "成功解析用户信息（去重后）: {} 条个人信息, {} 条工作履历, {} 条偏好, {} 条关系, {} 条目标",
                     info.personal_info.len(),
                     info.work_history.len(),
                     info.preferences.len(),
@@ -352,10 +383,12 @@ Extract information categorized into 5 types:
    - The person giving information about themselves is the REAL USER
    - Example: If someone says "I am SkyronJ, I work at...", extract info about SkyronJ
 
-3. **Compare with existing profile**:
-   - If information already exists and is similar, DO NOT extract again
-   - If new information adds detail or updates existing info, extract it
-   - Focus on NEW or UPDATED information
+3. **CRITICAL: Avoid duplication with existing profile**:
+   - The "EXISTING USER PROFILE" section above shows what we ALREADY know about the user
+   - DO NOT extract information that is already in the existing profile
+   - Only extract NEW information that is not in the existing profile
+   - If the conversation mentions something we already know (e.g., "As I told you, I'm SkyronJ"), DO NOT extract it again
+   - Example: If existing profile says "用户名叫 SkyronJ", and conversation mentions "I'm SkyronJ", DO NOT extract "用户名叫 SkyronJ" again
 
 4. **Be objective and factual**:
    - Extract WHAT the user said/did, not interpretations
@@ -454,7 +487,7 @@ Return ONLY the JSON object. No additional text before or after."#,
         })
     }
 
-    /// 合并新旧用户档案（LLM 驱动的去重和更新）
+    /// 合并新旧用户档案（带去重逻辑）
     async fn merge_user_profiles(
         &self,
         existing: UserProfile,
@@ -476,13 +509,199 @@ Return ONLY the JSON object. No additional text before or after."#,
         ] {
             let new_items = new_profile.get_category(category);
 
-            for new_item in new_items {
-                // 简化合并：直接添加（后续可以用 LLM 判断是否重复）
-                merged.add_item(new_item.clone());
+            // 收集需要添加的新项目
+            let items_to_add: Vec<_> = new_items
+                .into_iter()
+                .filter(|new_item| {
+                    // 检查是否已存在相似内容
+                    let existing_items = merged.get_category(category);
+                    let is_duplicate = existing_items.iter().any(|existing_item| {
+                        Self::is_similar_content(&existing_item.content, &new_item.content)
+                    });
+
+                    if is_duplicate {
+                        info!("跳过重复项: {}", new_item.content.chars().take(50).collect::<String>());
+                        false
+                    } else {
+                        true
+                    }
+                })
+                .cloned()
+                .collect();
+
+            // 添加新项目
+            for item in items_to_add {
+                merged.add_item(item);
             }
         }
 
         Ok(merged)
+    }
+
+    /// 检查两个内容是否相似（简单的相似度检查）
+    fn is_similar_content(a: &str, b: &str) -> bool {
+        // 标准化：小写、去除多余空格
+        let normalize = |s: &str| -> String {
+            s.to_lowercase()
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ")
+        };
+
+        let normalized_a = normalize(a);
+        let normalized_b = normalize(b);
+
+        // 完全相同
+        if normalized_a == normalized_b {
+            return true;
+        }
+
+        // 包含关系（一个包含另一个的主要部分）
+        let char_count_a = normalized_a.chars().count();
+        let char_count_b = normalized_b.chars().count();
+        
+        if char_count_a > 10 && char_count_b > 10 {
+            // 提取关键词（简单实现：取前30个字符作为"指纹"）
+            let fingerprint_a: String = normalized_a.chars().take(30).collect();
+            let fingerprint_b: String = normalized_b.chars().take(30).collect();
+
+            // 如果前30个字符有80%相似，认为是重复
+            let similarity = Self::calculate_similarity(&fingerprint_a, &fingerprint_b);
+            if similarity > 0.8 {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// 过滤掉与已有记忆重复的新信息
+    fn filter_duplicate_info(
+        &self,
+        new_info: ExtractedUserInfo,
+        existing_profile: &UserProfile,
+    ) -> ExtractedUserInfo {
+        // 提取已有记忆的内容用于比较
+        let existing_contents: Vec<&str> = existing_profile
+            .personal_info
+            .iter()
+            .map(|item| item.content.as_str())
+            .chain(existing_profile.work_history.iter().map(|item| item.content.as_str()))
+            .chain(existing_profile.preferences.iter().map(|item| item.content.as_str()))
+            .chain(existing_profile.relationships.iter().map(|item| item.content.as_str()))
+            .chain(existing_profile.goals.iter().map(|item| item.content.as_str()))
+            .collect();
+
+        // 过滤每个类别
+        let personal_info: Vec<_> = new_info
+            .personal_info
+            .into_iter()
+            .filter(|item| {
+                !existing_contents.iter().any(|existing| {
+                    Self::is_similar_content(&item.content, existing)
+                })
+            })
+            .collect();
+
+        let work_history: Vec<_> = new_info
+            .work_history
+            .into_iter()
+            .filter(|item| {
+                !existing_contents.iter().any(|existing| {
+                    Self::is_similar_content(&item.content, existing)
+                })
+            })
+            .collect();
+
+        let preferences: Vec<_> = new_info
+            .preferences
+            .into_iter()
+            .filter(|item| {
+                !existing_contents.iter().any(|existing| {
+                    Self::is_similar_content(&item.content, existing)
+                })
+            })
+            .collect();
+
+        let relationships: Vec<_> = new_info
+            .relationships
+            .into_iter()
+            .filter(|item| {
+                !existing_contents.iter().any(|existing| {
+                    Self::is_similar_content(&item.content, existing)
+                })
+            })
+            .collect();
+
+        let goals: Vec<_> = new_info
+            .goals
+            .into_iter()
+            .filter(|item| {
+                !existing_contents.iter().any(|existing| {
+                    Self::is_similar_content(&item.content, existing)
+                })
+            })
+            .collect();
+
+        // 记录过滤结果
+        let total_new = personal_info.len()
+            + work_history.len()
+            + preferences.len()
+            + relationships.len()
+            + goals.len();
+        if total_new > 0 {
+            info!("过滤后新增 {} 条新记忆", total_new);
+        } else {
+            info!("没有新记忆需要添加（全部已在 profile 中）");
+        }
+
+        ExtractedUserInfo {
+            personal_info,
+            work_history,
+            preferences,
+            relationships,
+            goals,
+        }
+    }
+
+    /// 计算两个字符串的相似度（基于最长公共子串）
+    fn calculate_similarity(a: &str, b: &str) -> f64 {
+        if a.is_empty() || b.is_empty() {
+            return 0.0;
+        }
+
+        let a_chars: Vec<char> = a.chars().collect();
+        let b_chars: Vec<char> = b.chars().collect();
+
+        let mut max_match = 0;
+        let a_len = a_chars.len();
+        let b_len = b_chars.len();
+        
+        if a_len == 0 || b_len == 0 {
+            return 0.0;
+        }
+        
+        let min_len = a_len.min(b_len);
+
+        // 滑动窗口检查相似度
+        for window_size in (1..=min_len).rev() {
+            for i in 0..=a_len.saturating_sub(window_size) {
+                let window_a: String = a_chars[i..(i + window_size).min(a_len)].iter().collect();
+                // 在 b 中查找这个窗口
+                for j in 0..=b_len.saturating_sub(window_size) {
+                    let window_b: String = b_chars[j..(j + window_size).min(b_len)].iter().collect();
+                    if window_a == window_b {
+                        max_match = max_match.max(window_size);
+                        break;
+                    }
+                }
+                if max_match == window_size {
+                    break;
+                }
+            }
+        }
+
+        max_match as f64 / a_len.max(b_len) as f64
     }
 
     /// 限制档案大小

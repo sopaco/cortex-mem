@@ -329,33 +329,4 @@ impl LLMClient for LLMClientImpl {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_llm_config_default() {
-        let config = LLMConfig::default();
-        assert!(!config.api_base_url.is_empty());
-        assert_eq!(config.temperature, 0.1);
-        assert_eq!(config.max_tokens, 4096);
-    }
-
-    #[test]
-    fn test_llm_client_creation() {
-        let config = LLMConfig {
-            api_base_url: "http://localhost:8000".to_string(),
-            api_key: "test-key".to_string(),
-            model_efficient: "test-model".to_string(),
-            temperature: 0.5,
-            max_tokens: 2048,
-        };
-
-        let client = LLMClientImpl::new(config.clone());
-        assert!(client.is_ok());
-        
-        let client = client.unwrap();
-        assert_eq!(client.model_name(), "test-model");
-        assert_eq!(client.config().temperature, 0.5);
-    }
-}
+// 核心功能测试已迁移至 cortex-mem-tools/tests/core_functionality_tests.rs

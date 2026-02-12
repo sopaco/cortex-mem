@@ -169,27 +169,4 @@ Use clear markdown structure with sections for Summary, Core Topics, Key Points,
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[tokio::test]
-    async fn test_abstract_generator() {
-        let gen = AbstractGenerator::new();
-        let content = "This is a test message about OAuth 2.0 implementation.\n\nOAuth provides secure authorization.";
-        
-        let abstract_text = gen.generate(content).await.unwrap();
-        assert!(!abstract_text.is_empty());
-        assert!(abstract_text.len() <= 200);
-    }
-    
-    #[tokio::test]
-    async fn test_overview_generator() {
-        let gen = OverviewGenerator::new();
-        let content = "# OAuth 2.0\n\n## Introduction\n\n- Secure authorization\n- Industry standard\n\nOAuth provides delegated access.";
-        
-        let overview = gen.generate(content).await.unwrap();
-        assert!(overview.contains("# Overview"));
-        assert!(overview.contains("OAuth 2.0"));
-    }
-}
+// 核心功能测试已迁移至 cortex-mem-tools/tests/core_functionality_tests.rs

@@ -185,6 +185,12 @@ pub struct StoreArgs {
     /// Storage scope: "session" (default), "user", or "agent"
     #[serde(default = "default_scope")]
     pub scope: String,
+    /// User ID for user scope storage (required when scope is "user")
+    #[serde(default)]
+    pub user_id: Option<String>,
+    /// Agent ID for agent scope storage (required when scope is "agent")
+    #[serde(default)]
+    pub agent_id: Option<String>,
 }
 
 fn default_scope() -> String {

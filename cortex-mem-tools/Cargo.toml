@@ -21,6 +21,10 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 async-trait = { workspace = true }
 
+[dev-dependencies]
+tempfile = "3.0"
+futures = { workspace = true }
+
 [features]
 default = []
 vector-search = ["cortex-mem-core/vector-search"]

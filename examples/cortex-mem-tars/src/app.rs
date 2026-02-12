@@ -521,13 +521,14 @@ impl App {
                                     let llm_client = Arc::new(llm_client);
                                     let filesystem = tenant_ops.filesystem().clone();
                                     let auto_extract_config = AutoExtractConfig::default();
-                                    let auto_extractor = AutoExtractor::new(
+                                    let auto_extractor = AutoExtractor::with_user_id(
                                         filesystem,
                                         llm_client,
                                         auto_extract_config,
+                                        &self.user_id,  // 传入 tars_user
                                     );
                                     self.auto_extractor = Some(Arc::new(auto_extractor));
-                                    log::info!("✅ 已创建会话记忆自动提取器");
+                                    log::info!("✅ 已创建会话记忆自动提取器 (user_id: {})", self.user_id);
                                 }
                             }
                             
@@ -857,16 +858,17 @@ impl App {
                                     let llm_client = Arc::new(llm_client);
                                     let filesystem = tenant_ops.filesystem().clone();
                                     let auto_extract_config = AutoExtractConfig::default();
-                                    let auto_extractor = AutoExtractor::new(
+                                    let auto_extractor = AutoExtractor::with_user_id(
                                         filesystem,
                                         llm_client,
                                         auto_extract_config,
+                                        &self.user_id,  // 传入 tars_user
                                     );
                                     self.auto_extractor = Some(Arc::new(auto_extractor));
-                                    log::info!("✅ 已创建会话记忆自动提取器");
+                                    log::info!("✅ 已创建会话记忆自动提取器 (user_id: {})", self.user_id);
                                 }
                             }
-                            
+
                             self.rig_agent = Some(rig_agent);
                             log::info!("已创建带记忆功能的真实 Agent");
                         }

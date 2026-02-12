@@ -387,12 +387,14 @@ impl AgentChatHandler {
                     scope: "session".to_string(),
                     metadata: None,
                     auto_generate_layers: Some(true),
+                    user_id: None,
+                    agent_id: None,
                 };
                 if let Err(e) = ops.store(user_store).await {
                     tracing::warn!("Failed to save user message: {}", e);
                 }
             }
-            
+
             // Save assistant message
             if !assistant_response.is_empty() {
                 let assistant_store = cortex_mem_tools::StoreArgs {
@@ -401,6 +403,8 @@ impl AgentChatHandler {
                     scope: "session".to_string(),
                     metadata: None,
                     auto_generate_layers: Some(true),
+                    user_id: None,
+                    agent_id: None,
                 };
                 if let Err(e) = ops.store(assistant_store).await {
                     tracing::warn!("Failed to save assistant message: {}", e);
@@ -517,12 +521,14 @@ impl AgentChatHandler {
                         scope: "session".to_string(),
                         metadata: None,
                         auto_generate_layers: Some(true),
+                        user_id: None,
+                        agent_id: None,
                     };
                     if let Err(e) = ops.store(user_store).await {
                         tracing::warn!("Failed to save user message: {}", e);
                     }
                 }
-                
+
                 // Save assistant message
                 if !full_response.is_empty() {
                     let assistant_store = cortex_mem_tools::StoreArgs {
@@ -531,6 +537,8 @@ impl AgentChatHandler {
                         scope: "session".to_string(),
                         metadata: None,
                         auto_generate_layers: Some(true),
+                        user_id: None,
+                        agent_id: None,
                     };
                     if let Err(e) = ops.store(assistant_store).await {
                         tracing::warn!("Failed to save assistant message: {}", e);

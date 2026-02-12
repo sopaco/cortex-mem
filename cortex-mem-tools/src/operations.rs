@@ -405,25 +405,20 @@ impl MemoryOperations {
         let uris = entries.into_iter().map(|e| e.uri).collect();
         Ok(uris)
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+    /// Delete file or directory
+    pub async fn delete(&self, uri: &str) -> Result<()> {
+        self.filesystem.delete(uri).await?;
+        tracing::info!("Deleted: {}", uri);
+        Ok(())
+    }
 
-    #[tokio::test]
-    async fn test_operations() {
-        let tmpdir = tempfile::tempdir().unwrap();
-        let ops = MemoryOperations::from_data_dir(tmpdir.path().to_str().unwrap())
-            .await
-            .unwrap();
-
-        // Add message
-        let msg_id = ops.add_message("test-session", "user", "Hello").await.unwrap();
-        assert!(!msg_id.is_empty());
-
-        // List sessions
-        let sessions = ops.list_sessions().await.unwrap();
-        assert_eq!(sessions.len(), 1);
+    /// Check if file/directory exists
+    pub async fn exists(&self, uri: &str) -> Result<bool> {
+        let exists = self.filesystem.exists(uri).await
+            .map_err(ToolsError::Core)?;
+        Ok(exists)
     }
 }
+
+// 核心功能测试已迁移至 tests/core_functionality_tests.rs

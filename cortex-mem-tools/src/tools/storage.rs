@@ -17,7 +17,8 @@ impl MemoryOperations {
         // Build URI based on scope
         let uri = match scope {
             "user" => {
-                // cortex://user/tars_user/memories/YYYY-MM/DD/HH_MM_SS_id.md
+                // cortex://user/{user_id}/memories/YYYY-MM/DD/HH_MM_SS_id.md
+                let user_id = args.user_id.as_deref().unwrap_or("default");
                 let now = Utc::now();
                 let year_month = now.format("%Y-%m").to_string();
                 let day = now.format("%d").to_string();
@@ -26,15 +27,13 @@ impl MemoryOperations {
                     now.format("%H_%M_%S"),
                     uuid::Uuid::new_v4().to_string().split('-').next().unwrap_or("unknown")
                 );
-                format!("cortex://user/tars_user/memories/{}/{}/{}", year_month, day, filename)
+                format!("cortex://user/{}/memories/{}/{}/{}", user_id, year_month, day, filename)
             },
             "agent" => {
                 // cortex://agent/{agent_id}/memories/YYYY-MM/DD/HH_MM_SS_id.md
-                let agent_id = if args.thread_id.is_empty() {
-                    "default"
-                } else {
-                    &args.thread_id
-                };
+                let agent_id = args.agent_id.as_deref()
+                    .or_else(|| if args.thread_id.is_empty() { None } else { Some(&args.thread_id) })
+                    .unwrap_or("default");
                 let now = Utc::now();
                 let year_month = now.format("%Y-%m").to_string();
                 let day = now.format("%d").to_string();
