@@ -32,6 +32,10 @@ struct Args {
     /// 音频连接模式：store（存储到记忆系统）或 chat（模拟用户输入发送消息）
     #[arg(long, default_value = "store")]
     audio_connect_mode: String,
+    
+    /// 启用增强向量搜索功能，使用 Qdrant 进行语义搜索
+    #[arg(long, action)]
+    enhance_vector_search: bool,
 }
 
 #[tokio::main]
@@ -49,6 +53,12 @@ async fn main() -> Result<()> {
             log::warn!("无效的 audio_connect_mode 值: {}，将使用默认值 'store'", args.audio_connect_mode);
         }
         log::info!("音频连接模式: {}", args.audio_connect_mode);
+    }
+    
+    if args.enhance_vector_search {
+        log::info!("✅ 已启用增强向量搜索功能（Qdrant）");
+    } else {
+        log::info!("ℹ️ 向量搜索功能未启用，使用 --enhance-vector-search 参数启用");
     }
 
     // 初始化配置管理器
@@ -81,6 +91,7 @@ async fn main() -> Result<()> {
         infrastructure.clone(),
         args.enable_audio_connect,
         args.audio_connect_mode.clone(),
+        args.enhance_vector_search,  // ✅ 传递向量搜索标志
     )
     .context("无法创建应用")?;
     log::info!("应用创建成功");

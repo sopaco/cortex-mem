@@ -27,6 +27,9 @@ pub struct QdrantVectorStore {
 
 impl QdrantVectorStore {
     /// Create a new Qdrant vector store
+    /// 
+    /// If `embedding_dim` is set in config, this will automatically ensure
+    /// the collection exists (creating it if necessary).
     pub async fn new(config: &QdrantConfig) -> Result<Self> {
         let client = Qdrant::from_url(&config.url)
             .build()
@@ -37,6 +40,11 @@ impl QdrantVectorStore {
             collection_name: config.collection_name.clone(),
             embedding_dim: config.embedding_dim,
         };
+
+        // Auto-create collection if embedding_dim is set
+        if store.embedding_dim.is_some() {
+            store.ensure_collection().await?;
+        }
 
         Ok(store)
     }

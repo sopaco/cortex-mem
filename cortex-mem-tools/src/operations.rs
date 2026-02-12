@@ -105,6 +105,98 @@ impl MemoryOperations {
             vector_engine: None,
         })
     }
+    
+    /// Create from data directory with tenant isolation, LLM support, and vector search
+    #[cfg(feature = "vector-search")]
+    pub async fn with_tenant_and_vector(
+        data_dir: &str,
+        tenant_id: impl Into<String>,
+        llm_client: Arc<dyn LLMClient>,
+        qdrant_url: &str,
+        qdrant_collection: &str,
+        embedding_api_base_url: &str,
+        embedding_api_key: &str,
+    ) -> Result<Self> {
+        use cortex_mem_core::{
+            embedding::EmbeddingClient, embedding::EmbeddingConfig,
+            search::VectorSearchEngine,
+            vector_store::QdrantVectorStore,
+            automation::SyncManager, automation::SyncConfig,
+        };
+
+        let filesystem = Arc::new(CortexFilesystem::with_tenant(data_dir, tenant_id));
+        filesystem.initialize().await?;
+
+        let config = SessionConfig::default();
+        let session_manager = SessionManager::new(filesystem.clone(), config);
+        let session_manager = Arc::new(RwLock::new(session_manager));
+        
+        // Use LLM-enabled LayerManager for high-quality L0/L1 generation
+        let layer_manager = Arc::new(LayerManager::with_llm(filesystem.clone(), llm_client));
+
+        // Initialize Qdrant
+        tracing::info!("正在初始化 Qdrant 向量存储: {}", qdrant_url);
+        let qdrant_config = cortex_mem_core::QdrantConfig {
+            url: qdrant_url.to_string(),
+            collection_name: qdrant_collection.to_string(),
+            embedding_dim: Some(1536), // Default for OpenAI embeddings
+            timeout_secs: 30,
+        };
+        let vector_store = Arc::new(QdrantVectorStore::new(&qdrant_config).await?);
+        tracing::info!("✅ Qdrant 连接成功");
+
+        // Initialize Embedding client
+        tracing::info!("正在初始化 Embedding 客户端");
+        let embedding_config = EmbeddingConfig {
+            api_base_url: embedding_api_base_url.to_string(),
+            api_key: embedding_api_key.to_string(),
+            model_name: "text-embedding-3-small".to_string(),
+            batch_size: 10,
+            timeout_secs: 30,
+        };
+        let embedding_client = Arc::new(EmbeddingClient::new(embedding_config)?);
+        tracing::info!("✅ Embedding 客户端初始化成功");
+
+        // Create vector search engine
+        let vector_engine = Arc::new(VectorSearchEngine::new(
+            vector_store.clone(),
+            embedding_client.clone(),
+            filesystem.clone(),
+        ));
+        tracing::info!("✅ 向量搜索引擎创建成功");
+
+        // Auto-sync existing content to vector database (in background)
+        let sync_manager = SyncManager::new(
+            filesystem.clone(),
+            embedding_client.clone(),
+            vector_store.clone(),
+            SyncConfig::default(),
+        );
+
+        // Spawn background sync task
+        tokio::spawn(async move {
+            tracing::info!("🔄 开始后台同步到向量数据库...");
+            match sync_manager.sync_all().await {
+                Ok(stats) => {
+                    tracing::info!(
+                        "✅ 自动同步完成: {} 个文件已索引, {} 个文件跳过",
+                        stats.indexed_files,
+                        stats.skipped_files
+                    );
+                }
+                Err(e) => {
+                    tracing::warn!("⚠️ 自动同步失败: {}", e);
+                }
+            }
+        });
+
+        Ok(Self {
+            filesystem,
+            session_manager,
+            layer_manager,
+            vector_engine: Some(vector_engine),
+        })
+    }
 
     /// Create from data directory with vector search enabled
     #[cfg(feature = "vector-search")]

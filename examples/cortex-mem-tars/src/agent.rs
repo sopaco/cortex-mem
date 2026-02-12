@@ -2,6 +2,8 @@ use anyhow::Result;
 use chrono::{DateTime, Local};
 use cortex_mem_tools::MemoryOperations;
 use cortex_mem_rig::{create_memory_tools_with_tenant, create_memory_tools_with_tenant_and_llm};
+#[cfg(feature = "vector-search")]
+use cortex_mem_rig::create_memory_tools_with_tenant_and_vector;
 use futures::StreamExt;
 use rig::{
     agent::Agent as RigAgent,
@@ -59,6 +61,11 @@ pub async fn create_memory_agent(
     bot_system_prompt: Option<&str>,
     agent_id: &str,
     _user_id: &str,
+    enable_vector_search: bool,  // ✅ 新增参数
+    qdrant_url: Option<&str>,    // ✅ Qdrant URL
+    qdrant_collection: Option<&str>,  // ✅ Qdrant collection
+    embedding_api_base_url: Option<&str>,  // ✅ Embedding API base URL
+    embedding_api_key: Option<&str>,  // ✅ Embedding API key
 ) -> Result<(RigAgent<CompletionModel>, Arc<MemoryOperations>), Box<dyn std::error::Error>> {
     // 创建 cortex LLMClient 用于 L0/L1 生成
     let llm_config = cortex_mem_core::llm::LLMConfig {
@@ -71,12 +78,41 @@ pub async fn create_memory_agent(
     let cortex_llm_client: Arc<dyn cortex_mem_core::llm::LLMClient> = 
         Arc::new(cortex_mem_core::llm::LLMClientImpl::new(llm_config)?);
     
-    // 创建租户工具（agent_id 作为 tenant_id）+ LLM 支持
-    let memory_tools = create_memory_tools_with_tenant_and_llm(
-        data_dir, 
-        agent_id,
-        cortex_llm_client,
-    ).await?;
+    // 根据 enable_vector_search 决定使用哪种初始化方法
+    #[cfg(feature = "vector-search")]
+    let memory_tools = if enable_vector_search {
+        // ✅ 使用向量搜索版本
+        tracing::info!("🔍 启用向量搜索功能");
+        create_memory_tools_with_tenant_and_vector(
+            data_dir, 
+            agent_id,
+            cortex_llm_client,
+            qdrant_url.unwrap_or("http://localhost:6334"),
+            qdrant_collection.unwrap_or("cortex_mem"),
+            embedding_api_base_url.unwrap_or(api_base_url),
+            embedding_api_key.unwrap_or(api_key),
+        ).await?
+    } else {
+        // 使用普通版本（无向量搜索）
+        tracing::info!("ℹ️ 向量搜索功能未启用");
+        create_memory_tools_with_tenant_and_llm(
+            data_dir, 
+            agent_id,
+            cortex_llm_client,
+        ).await?
+    };
+    
+    #[cfg(not(feature = "vector-search"))]
+    let memory_tools = {
+        if enable_vector_search {
+            tracing::warn!("⚠️ 向量搜索功能需要 vector-search feature，当前未编译");
+        }
+        create_memory_tools_with_tenant_and_llm(
+            data_dir, 
+            agent_id,
+            cortex_llm_client,
+        ).await?
+    };
     
     // 获取租户 operations 用于外部使用
     let tenant_operations = memory_tools.operations().clone();
@@ -244,49 +280,61 @@ pub async fn create_memory_agent(
     Ok((completion_model, tenant_operations))
 }
 
-/// 从记忆中提取用户基本信息（从 cortex://user/tars_user/ 加载）
+/// 从记忆中提取用户基本信息（从 cortex://user/tars_user/profile.json 加载）
 pub async fn extract_user_basic_info(
     operations: Arc<MemoryOperations>,
     user_id: &str,
     _agent_id: &str,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    // 使用新的 search 工具查找用户相关信息
-    // 从 cortex://user/tars_user/ 维度搜索（长期记忆）
-    let search_args = cortex_mem_tools::SearchArgs {
-        query: "".to_string(),  // 空查询获取所有用户记忆
-        engine: Some("keyword".to_string()),
-        recursive: Some(true),
-        return_layers: Some(vec!["L1".to_string()]),  // 获取 L1 概览
-        scope: Some(format!("cortex://user/{}", user_id)),  // 从用户维度搜索
-        limit: Some(20),  // 加载最多 20 条用户记忆
-    };
-
-    match operations.search(search_args).await {
-        Ok(response) => {
-            if response.results.is_empty() {
-                tracing::info!("No user memories found for user: {}", user_id);
+    use cortex_mem_core::filesystem::FilesystemOperations;
+    
+    // 直接读取 profile.json 文件
+    let profile_uri = format!("cortex://user/{}/profile.json", user_id);
+    
+    match operations.filesystem().read(&profile_uri).await {
+        Ok(json_str) => {
+            // 解析 JSON
+            let profile: serde_json::Value = serde_json::from_str(&json_str)?;
+            
+            let mut context = String::new();
+            context.push_str("## 用户记忆\n\n");
+            
+            // 解析各个类别
+            let categories = vec![
+                ("personal_info", "个人信息"),
+                ("work_history", "工作经历"),
+                ("preferences", "偏好习惯"),
+                ("relationships", "人际关系"),
+                ("goals", "目标愿景"),
+            ];
+            
+            let mut total_count = 0;
+            for (key, label) in categories {
+                if let Some(items) = profile.get(key).and_then(|v| v.as_array()) {
+                    if !items.is_empty() {
+                        context.push_str(&format!("### {}\n", label));
+                        for item in items {
+                            if let Some(content) = item.get("content").and_then(|v| v.as_str()) {
+                                context.push_str(&format!("- {}\n", content));
+                                total_count += 1;
+                            }
+                        }
+                        context.push_str("\n");
+                    }
+                }
+            }
+            
+            if total_count == 0 {
+                tracing::info!("Profile exists but empty for user: {}", user_id);
                 return Ok(None);
             }
-
-            let mut context = String::new();
-            context.push_str(&format!("## 用户记忆（{}条）\n\n", response.results.len()));
-
-            for (i, result) in response.results.iter().enumerate() {
-                // 优先使用 L1 overview，如果没有则使用 L0 abstract，最后使用原始内容
-                let content = result.overview_text.as_ref()
-                    .or(result.abstract_text.as_ref())
-                    .or(result.content.as_ref())
-                    .map(|s| s.as_str())
-                    .unwrap_or("[无内容]");
-                
-                context.push_str(&format!("{}. {}\n\n", i + 1, content));
-            }
-
-            tracing::info!("Loaded {} user memories for user: {}", response.results.len(), user_id);
+            
+            tracing::info!("Loaded {} user memory items from profile.json for user: {}", total_count, user_id);
             Ok(Some(context))
         }
         Err(e) => {
-            tracing::warn!("Failed to extract user info: {}", e);
+            // 文件不存在或读取失败
+            tracing::info!("No user profile found for user {}: {}", user_id, e);
             Ok(None)
         }
     }

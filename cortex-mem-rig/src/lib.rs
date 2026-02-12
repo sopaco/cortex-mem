@@ -92,3 +92,26 @@ pub async fn create_memory_tools_with_tenant_and_llm(
     ).await?;
     Ok(MemoryTools::new(Arc::new(operations)))
 }
+
+/// Create memory tools with tenant isolation, LLM support, and vector search (full-featured)
+#[cfg(feature = "vector-search")]
+pub async fn create_memory_tools_with_tenant_and_vector(
+    data_dir: impl AsRef<std::path::Path>,
+    tenant_id: impl Into<String>,
+    llm_client: Arc<dyn LLMClient>,
+    qdrant_url: &str,
+    qdrant_collection: &str,
+    embedding_api_base_url: &str,
+    embedding_api_key: &str,
+) -> Result<MemoryTools, Box<dyn std::error::Error>> {
+    let operations = MemoryOperations::with_tenant_and_vector(
+        data_dir.as_ref().to_str().unwrap(),
+        tenant_id,
+        llm_client,
+        qdrant_url,
+        qdrant_collection,
+        embedding_api_base_url,
+        embedding_api_key,
+    ).await?;
+    Ok(MemoryTools::new(Arc::new(operations)))
+}

@@ -46,6 +46,7 @@ pub struct App {
     previous_state: Option<crate::ui::AppState>,
     external_message_sender: mpsc::UnboundedSender<String>,
     external_message_receiver: mpsc::UnboundedReceiver<String>,
+    enable_vector_search: bool,  // ✅ 向量搜索标志
 }
 
 /// 应用消息类型
@@ -73,6 +74,7 @@ impl App {
         infrastructure: Option<Arc<Infrastructure>>,
         enable_audio_connect: bool,
         audio_connect_mode: String,
+        enable_vector_search: bool,  // ✅ 新增参数
     ) -> Result<Self> {
         let mut ui = AppUi::new();
 
@@ -110,6 +112,7 @@ impl App {
             previous_state: Some(initial_state),
             external_message_sender: external_msg_tx,
             external_message_receiver: external_msg_rx,
+            enable_vector_search,  // ✅ 存储向量搜索标志
         })
     }
 
@@ -483,15 +486,21 @@ impl App {
 
                 // 如果有基础设施，创建真实的带记忆的 Agent
                 if let Some(infrastructure) = &self.infrastructure {
+                    let config = infrastructure.config();
                     match create_memory_agent(
-                        infrastructure.config().cortex.data_dir(),
-                        &infrastructure.config().llm.api_base_url,
-                        &infrastructure.config().llm.api_key,
-                        &infrastructure.config().llm.model_efficient,
+                        config.cortex.data_dir(),
+                        &config.llm.api_base_url,
+                        &config.llm.api_key,
+                        &config.llm.model_efficient,
                         None,  // user_info 稍后从租户 operations 提取
                         Some(bot.system_prompt.as_str()),
                         &bot.id,
                         &self.user_id,
+                        self.enable_vector_search,  // ✅ 传递向量搜索标志
+                        Some(&config.qdrant.url),   // ✅ Qdrant URL
+                        Some(&config.qdrant.collection_name),  // ✅ Collection
+                        Some(&config.embedding.api_base_url),  // ✅ Embedding API
+                        Some(&config.embedding.api_key),  // ✅ Embedding Key
                     )
                     .await
                     {
@@ -542,15 +551,21 @@ impl App {
                             
                             // 如果有用户信息，需要重新创建 Agent（带用户信息）
                             if user_info.is_some() {
+                                let config = infrastructure.config();
                                 match create_memory_agent(
-                                    infrastructure.config().cortex.data_dir(),
-                                    &infrastructure.config().llm.api_base_url,
-                                    &infrastructure.config().llm.api_key,
-                                    &infrastructure.config().llm.model_efficient,
+                                    config.cortex.data_dir(),
+                                    &config.llm.api_base_url,
+                                    &config.llm.api_key,
+                                    &config.llm.model_efficient,
                                     user_info.as_deref(),
                                     Some(bot.system_prompt.as_str()),
                                     &bot.id,
                                     &self.user_id,
+                                    self.enable_vector_search,  // ✅ 传递向量搜索标志
+                                    Some(&config.qdrant.url),
+                                    Some(&config.qdrant.collection_name),
+                                    Some(&config.embedding.api_base_url),
+                                    Some(&config.embedding.api_key),
                                 )
                                 .await
                                 {
@@ -808,15 +823,21 @@ impl App {
                         }
                     };
 
+                    let config = infrastructure.config();
                     match create_memory_agent(
-                        infrastructure.config().cortex.data_dir(),
-                        &infrastructure.config().llm.api_base_url,
-                        &infrastructure.config().llm.api_key,
-                        &infrastructure.config().llm.model_efficient,
+                        config.cortex.data_dir(),
+                        &config.llm.api_base_url,
+                        &config.llm.api_key,
+                        &config.llm.model_efficient,
                         user_info.as_deref(),
                         Some(bot.system_prompt.as_str()),
                         &bot.id,
                         &self.user_id,
+                        self.enable_vector_search,  // ✅ 传递向量搜索标志
+                        Some(&config.qdrant.url),
+                        Some(&config.qdrant.collection_name),
+                        Some(&config.embedding.api_base_url),
+                        Some(&config.embedding.api_key),
                     )
                     .await
                     {
