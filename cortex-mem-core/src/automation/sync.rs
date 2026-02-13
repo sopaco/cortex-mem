@@ -199,38 +199,84 @@ impl SyncManager {
         })
     }
 
-    /// 同步单个文件
+    /// 同步单个文件（支持分层向量索引）
     async fn sync_file(&self, uri: &str, memory_type: MemoryType) -> Result<bool> {
-        // 检查是否已经索引
-        if self.is_indexed(uri).await? {
+        // 检查是否已经索引（检查L2层）
+        let l2_id = format!("{}#L2", uri);
+        if self.is_indexed(&l2_id).await? {
             debug!("File already indexed: {}", uri);
             return Ok(false);
         }
 
-        // 读取文件内容
-        let content = self.filesystem.read(uri).await?;
-
-        // 生成embedding
-        let embedding = self.embedding.embed(&content).await?;
-
-        // 解析URI获取元数据
-        let metadata = self.parse_metadata(uri, memory_type)?;
-
-        // 创建Memory对象
-        let memory = Memory {
-            id: uri.to_string(),
-            content: content.clone(),
-            embedding,
+        // 1. 读取并索引L2原始内容
+        let l2_content = self.filesystem.read(uri).await?;
+        let l2_embedding = self.embedding.embed(&l2_content).await?;
+        let l2_metadata = self.parse_metadata(uri, memory_type.clone(), "L2")?;
+        
+        let l2_memory = Memory {
+            id: l2_id.clone(),
+            content: l2_content.clone(),
+            embedding: l2_embedding,
             created_at: chrono::Utc::now(),
             updated_at: chrono::Utc::now(),
-            metadata,
+            metadata: l2_metadata,
         };
+        self.vector_store.insert(&l2_memory).await?;
+        debug!("L2 indexed: {}", uri);
 
-        // 存储到向量数据库
-        self.vector_store.insert(&memory).await?;
+        // 2. 尝试读取并索引L0 abstract
+        let abstract_uri = Self::get_layer_uri(uri, "L0");
+        if let Ok(l0_content) = self.filesystem.read(&abstract_uri).await {
+            let l0_id = format!("{}#L0", uri);
+            if !self.is_indexed(&l0_id).await? {
+                let l0_embedding = self.embedding.embed(&l0_content).await?;
+                let l0_metadata = self.parse_metadata(uri, memory_type.clone(), "L0")?;
+                
+                let l0_memory = Memory {
+                    id: l0_id,
+                    content: l0_content,
+                    embedding: l0_embedding,
+                    created_at: chrono::Utc::now(),
+                    updated_at: chrono::Utc::now(),
+                    metadata: l0_metadata,
+                };
+                self.vector_store.insert(&l0_memory).await?;
+                debug!("L0 indexed: {}", abstract_uri);
+            }
+        }
 
-        debug!("File indexed: {}", uri);
+        // 3. 尝试读取并索引L1 overview
+        let overview_uri = Self::get_layer_uri(uri, "L1");
+        if let Ok(l1_content) = self.filesystem.read(&overview_uri).await {
+            let l1_id = format!("{}#L1", uri);
+            if !self.is_indexed(&l1_id).await? {
+                let l1_embedding = self.embedding.embed(&l1_content).await?;
+                let l1_metadata = self.parse_metadata(uri, memory_type.clone(), "L1")?;
+                
+                let l1_memory = Memory {
+                    id: l1_id,
+                    content: l1_content,
+                    embedding: l1_embedding,
+                    created_at: chrono::Utc::now(),
+                    updated_at: chrono::Utc::now(),
+                    metadata: l1_metadata,
+                };
+                self.vector_store.insert(&l1_memory).await?;
+                debug!("L1 indexed: {}", overview_uri);
+            }
+        }
+
         Ok(true)
+    }
+
+    /// 获取分层文件URI
+    fn get_layer_uri(base_uri: &str, layer: &str) -> String {
+        let dir = base_uri.rsplit_once('/').map(|(dir, _)| dir).unwrap_or(base_uri);
+        match layer {
+            "L0" => format!("{}/.abstract.md", dir),
+            "L1" => format!("{}/.overview.md", dir),
+            _ => base_uri.to_string(),
+        }
     }
 
     /// 检查文件是否已索引
@@ -246,8 +292,8 @@ impl SyncManager {
         }
     }
 
-    /// 解析URI获取元数据
-    fn parse_metadata(&self, uri: &str, memory_type: MemoryType) -> Result<MemoryMetadata> {
+    /// 解析URI获取元数据（支持layer标识）
+    fn parse_metadata(&self, uri: &str, memory_type: MemoryType, layer: &str) -> Result<MemoryMetadata> {
         use serde_json::Value;
         
         // 从URI中提取信息
@@ -265,6 +311,7 @@ impl SyncManager {
         let mut custom = std::collections::HashMap::new();
         custom.insert("uri".to_string(), Value::String(uri.to_string()));
         custom.insert("path".to_string(), Value::String(path.clone()));
+        custom.insert("layer".to_string(), Value::String(layer.to_string()));
 
         Ok(MemoryMetadata {
             user_id: if dimension == "users" { Some(path.clone()) } else { None },

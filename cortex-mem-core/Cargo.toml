@@ -22,8 +22,6 @@ tracing-subscriber = { workspace = true }
 walkdir = { workspace = true }
 rig-core = { workspace = true }
 reqwest = { workspace = true }
-rusqlite = { workspace = true }
-tantivy = { workspace = true }
 
 # Additional dependencies
 regex = "1.10"

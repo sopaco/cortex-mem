@@ -24,15 +24,6 @@ pub enum Error {
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
     
-    #[error("Database error: {0}")]
-    Database(#[from] rusqlite::Error),
-    
-    #[error("Search error: {0}")]
-    Search(#[from] tantivy::TantivyError),
-    
-    #[error("Query parse error: {0}")]
-    QueryParse(#[from] tantivy::query::QueryParserError),
-    
     #[error("LLM error: {0}")]
     Llm(String),
     

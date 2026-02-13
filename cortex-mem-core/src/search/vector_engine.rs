@@ -177,8 +177,8 @@ impl VectorSearchEngine {
             let mut results = Vec::new();
 
             for entry in entries {
-                // Skip hidden files
-                if entry.name.starts_with('.') {
+                // Allow .abstract.md and .overview.md, but skip other hidden files
+                if entry.name.starts_with('.') && !entry.name.ends_with(".abstract.md") && !entry.name.ends_with(".overview.md") {
                     continue;
                 }
 

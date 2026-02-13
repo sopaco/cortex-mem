@@ -1,7 +1,15 @@
 // Search Tools - OpenViking style intelligent search
 
-use crate::{Result, types::*, MemoryOperations, ToolsError};
+use crate::{Result, types::*, MemoryOperations};
 use cortex_mem_core::{RetrievalEngine, RetrievalOptions, ContextLayer, FilesystemOperations};
+
+/// 查询类型枚举
+#[derive(Debug, Clone, Copy)]
+enum QueryType {
+    Exact,      // 精确查询：日期、ID、专有名词
+    Semantic,   // 语义查询：概念、主题、问题
+    Mixed,      // 混合查询
+}
 
 impl MemoryOperations {
     /// Intelligent search with multiple engines and tiered results
@@ -95,6 +103,47 @@ impl MemoryOperations {
     
     // ==================== Internal Methods ====================
     
+    /// 分析查询类型
+    fn analyze_query_type(query: &str) -> QueryType {
+        let query_lower = query.to_lowercase();
+        
+        // 规则1: 包含日期格式 -> Exact
+        // 匹配格式: YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
+        if query.chars().filter(|c| c.is_numeric()).count() >= 6 {
+            // 简单检测：如果包含至少6个数字，可能是日期
+            if query.contains('-') || query.contains('/') || query.contains('.') {
+                return QueryType::Exact;
+            }
+        }
+        
+        // 规则2: 包含引号 -> Exact
+        if query.contains('"') || query.contains('\'') {
+            return QueryType::Exact;
+        }
+        
+        // 规则3: 包含问号/疑问词 -> Semantic
+        let question_words = ["什么", "如何", "为什么", "怎么", "哪里", "谁", 
+                              "what", "how", "why", "where", "who", "when"];
+        if query.contains('?') || question_words.iter().any(|w| query_lower.contains(w)) {
+            return QueryType::Semantic;
+        }
+        
+        // 规则4: 包含"关于"/"讨论"等主题词 -> Semantic
+        let topic_words = ["关于", "讨论", "决定", "计划", "想法", 
+                          "about", "discussion", "decision", "plan", "idea"];
+        if topic_words.iter().any(|w| query_lower.contains(w)) {
+            return QueryType::Semantic;
+        }
+        
+        // 规则5: 查询很短(≤5个字符)且无空格 -> Exact (可能是ID或关键词)
+        if query.len() <= 5 && !query.contains(' ') {
+            return QueryType::Exact;
+        }
+        
+        // 默认: Mixed
+        QueryType::Mixed
+    }
+    
     /// Keyword search using RetrievalEngine
     async fn keyword_search(&self, args: &SearchArgs) -> Result<Vec<RawSearchResult>> {
         let engine = RetrievalEngine::new(
@@ -120,6 +169,7 @@ impl MemoryOperations {
     #[cfg(feature = "vector-search")]
     async fn vector_search(&self, args: &SearchArgs) -> Result<Vec<RawSearchResult>> {
         use cortex_mem_core::search::SearchResult as CoreSearchResult;
+        use crate::ToolsError;
         
         let engine = self.vector_engine.as_ref()
             .ok_or(ToolsError::Custom("Vector search not enabled".to_string()))?;
@@ -147,24 +197,32 @@ impl MemoryOperations {
         }).collect())
     }
     
-    /// Hybrid search combining keyword and vector search
+    /// Hybrid search combining keyword and vector search (with adaptive weighting)
     #[cfg(feature = "vector-search")]
     async fn hybrid_search(&self, args: &SearchArgs) -> Result<Vec<RawSearchResult>> {
         // Get results from both engines
         let keyword_results = self.keyword_search(args).await?;
         let vector_results = self.vector_search(args).await?;
         
-        // Merge and deduplicate
+        // Analyze query type to determine weights
+        let query_type = Self::analyze_query_type(&args.query);
+        let (keyword_weight, vector_weight) = match query_type {
+            QueryType::Exact => (0.8, 0.2),    // 精确查询优先关键词匹配
+            QueryType::Semantic => (0.2, 0.8), // 语义查询优先向量相似度
+            QueryType::Mixed => (0.5, 0.5),    // 混合查询平衡权重
+        };
+        
+        // Merge and deduplicate with adaptive weights
         let mut combined: std::collections::HashMap<String, f32> = std::collections::HashMap::new();
         
         for result in keyword_results {
-            combined.insert(result.uri.clone(), result.score * 0.5);
+            combined.insert(result.uri.clone(), result.score * keyword_weight);
         }
         
         for result in vector_results {
             combined.entry(result.uri.clone())
-                .and_modify(|score| *score += result.score * 0.5)
-                .or_insert(result.score * 0.5);
+                .and_modify(|score| *score += result.score * vector_weight)
+                .or_insert(result.score * vector_weight);
         }
         
         let mut results: Vec<RawSearchResult> = combined.into_iter()

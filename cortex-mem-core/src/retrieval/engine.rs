@@ -205,8 +205,9 @@ impl RetrievalEngine {
                     continue;
                 }
                 
-                if entry.name.starts_with('.') {
-                    continue; // Skip metadata files
+                // Allow .abstract.md and .overview.md, but skip other hidden files
+                if entry.name.starts_with('.') && !entry.name.ends_with(".abstract.md") && !entry.name.ends_with(".overview.md") {
+                    continue; // Skip other metadata files
                 }
                 
                 // Load L1 or L2 content

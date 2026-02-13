@@ -53,10 +53,6 @@ async-trait = "0.1"
 # File system
 walkdir = "2.4"
 
-# Indexing
-rusqlite = { version = "0.32", features = ["bundled", "chrono"] }
-tantivy = "0.22"
-
 # Markdown
 pulldown-cmark = "0.11"
 

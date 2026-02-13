@@ -311,13 +311,13 @@ pub struct MemoryExtractionResponse {
 
 ```mermaid
 graph TD
-    A[Load Timeline] --> B[Format Prompt with EXTRACTION_PROMPT]
-    B --> C[Invoke LLMClientImpl::extract_memories()]
-    C --> D[Parse LLM Response via Fallback Chain]
-    D --> E[Validate Output Structure]
-    E --> F[Write .extracted.json to Filesystem]
-    F --> G[Update SQLite Index with Extraction Timestamp]
-    G --> H[Return Extraction Summary]
+    A[加载时间线] --> B[格式化提取提示]
+    B --> C[调用LLM提取记忆]
+    C --> D[解析LLM响应]
+    D --> E[验证输出结构]
+    E --> F[写入提取JSON文件]
+    F --> G[更新SQLite索引时间戳]
+    G --> H[返回提取摘要]
 ```
 
 > **Critical Insight**: The `.extracted.json` file becomes the **source of truth** for structured memory. Raw `.md` files are retained for audit, but all downstream processing (optimization, summarization) uses extracted data.
@@ -328,12 +328,12 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Load L2 Detail] --> B[Format Prompt with ABSTRACT_PROMPT]
-    B --> C[LLMClientImpl::complete()]
-    C --> D[Store as .abstract.md]
-    A --> E[Format Prompt with OVERVIEW_PROMPT]
-    E --> F[LLMClientImpl::complete_with_system()]
-    F --> G[Store as .overview.md]
+    A[加载二级详情] --> B[格式化摘要提示]
+    B --> C[调用LLM完成]
+    C --> D[存储摘要文件]
+    A --> E[格式化概述提示]
+    E --> F[调用LLM系统完成]
+    F --> G[存储概述文件]
 ```
 
 > **Performance Impact**: L0/L1 layers reduce retrieval latency by 60–80% by avoiding full-text scanning of raw logs.

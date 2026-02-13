@@ -116,10 +116,11 @@ pub mod session;
 pub mod extraction;
 pub mod llm;
 pub mod automation;
-pub mod index;
-pub mod init;
 pub mod layers;
 pub mod retrieval;
+
+#[cfg(feature = "vector-search")]
+pub mod init;
 
 #[cfg(feature = "vector-search")]
 pub mod vector_store;

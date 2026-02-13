@@ -1,8 +1,10 @@
 use crate::{
-    extraction::{ExtractedMemories, MemoryExtractor, UserProfile, ExtractedUserInfo, UserInfoCategory},
+    extraction::{
+        ExtractedMemories, ExtractedUserInfo, MemoryExtractor, UserInfoCategory, UserProfile,
+    },
     filesystem::CortexFilesystem,
     llm::LLMClient,
-    session::{SessionManager, manager::SessionMetadata},
+    session::{manager::SessionMetadata, SessionManager},
     Result,
 };
 use std::sync::Arc;
@@ -125,7 +127,10 @@ impl AutoExtractor {
         );
 
         // 执行提取
-        let extracted = self.extractor.extract_from_thread(&session.thread_id).await?;
+        let extracted = self
+            .extractor
+            .extract_from_thread(&session.thread_id)
+            .await?;
 
         let mut stats = AutoExtractStats {
             facts_extracted: extracted.facts.len(),
@@ -136,15 +141,21 @@ impl AutoExtractor {
         };
 
         // 保存提取结果
-        self.extractor.save_extraction(&session.thread_id, &extracted).await?;
+        self.extractor
+            .save_extraction(&session.thread_id, &extracted)
+            .await?;
 
         // 分类存储记忆
         if self.config.save_user_memories {
-            stats.user_memories_saved = self.save_user_memories(&session.thread_id, &extracted).await?;
+            stats.user_memories_saved = self
+                .save_user_memories(&session.thread_id, &extracted)
+                .await?;
         }
 
         if self.config.save_agent_memories {
-            stats.agent_memories_saved = self.save_agent_memories(&session.thread_id, &extracted).await?;
+            stats.agent_memories_saved = self
+                .save_agent_memories(&session.thread_id, &extracted)
+                .await?;
         }
 
         info!(
@@ -167,8 +178,6 @@ impl AutoExtractor {
         thread_id: &str,
         _extracted: &ExtractedMemories,
     ) -> Result<usize> {
-        use crate::filesystem::FilesystemOperations;
-
         // 使用配置的用户ID
         let profile_uri = format!("cortex://user/{}/profile.json", self.user_id);
 
@@ -176,16 +185,22 @@ impl AutoExtractor {
         let existing_profile = self.load_user_profile(&profile_uri).await?;
 
         // Step 2: 从当前 session 提取用户信息
-        let new_info = self.extract_user_info_structured(thread_id, &existing_profile).await?;
+        let new_info = self
+            .extract_user_info_structured(thread_id, &existing_profile)
+            .await?;
 
         // Step 3: 合并新旧信息（LLM 驱动的去重和更新）
-        let merged_profile = self.merge_user_profiles(existing_profile, new_info, thread_id).await?;
+        let merged_profile = self
+            .merge_user_profiles(existing_profile, new_info, thread_id)
+            .await?;
 
         // Step 4: 控制每类记忆的总量
         let limited_profile = self.limit_profile_size(merged_profile);
 
         // Step 5: 保存更新后的档案
-        let saved_count = self.save_user_profile(&profile_uri, &limited_profile).await?;
+        let saved_count = self
+            .save_user_profile(&profile_uri, &limited_profile)
+            .await?;
 
         info!(
             "用户记忆已更新: {} ({}) for user: {}",
@@ -202,18 +217,16 @@ impl AutoExtractor {
         use crate::filesystem::FilesystemOperations;
 
         match self.filesystem.read(profile_uri).await {
-            Ok(content) => {
-                match serde_json::from_str::<UserProfile>(&content) {
-                    Ok(profile) => {
-                        info!("已加载用户档案: {}", profile.category_stats());
-                        Ok(profile)
-                    }
-                    Err(e) => {
-                        warn!("解析用户档案失败: {}, 创建新档案", e);
-                        Ok(UserProfile::new())
-                    }
+            Ok(content) => match serde_json::from_str::<UserProfile>(&content) {
+                Ok(profile) => {
+                    info!("已加载用户档案: {}", profile.category_stats());
+                    Ok(profile)
                 }
-            }
+                Err(e) => {
+                    warn!("解析用户档案失败: {}, 创建新档案", e);
+                    Ok(UserProfile::new())
+                }
+            },
             Err(_) => {
                 info!("用户档案不存在，创建新档案");
                 Ok(UserProfile::new())
@@ -247,7 +260,10 @@ impl AutoExtractor {
         let prompt = self.build_extraction_prompt(&conversation, &existing_context);
 
         // 调用 LLM 提取
-        info!("调用 LLM 提取用户信息，对话长度: {} 字符", conversation.len());
+        info!(
+            "调用 LLM 提取用户信息，对话长度: {} 字符",
+            conversation.len()
+        );
         let response = self.llm.complete(&prompt).await?;
 
         // 记录 LLM 返回的原始内容（用于调试）
@@ -259,7 +275,7 @@ impl AutoExtractor {
             Ok(mut info) => {
                 // 后处理：过滤掉与已有记忆重复的内容
                 info = self.filter_duplicate_info(info, existing_profile);
-                
+
                 info!(
                     "成功解析用户信息（去重后）: {} 条个人信息, {} 条工作履历, {} 条偏好, {} 条关系, {} 条目标",
                     info.personal_info.len(),
@@ -285,11 +301,7 @@ impl AutoExtractor {
                         .trim()
                 } else if response.contains("```") {
                     // 提取 ``` ... ``` 之间的内容
-                    response
-                        .split("```")
-                        .nth(1)
-                        .unwrap_or(&response)
-                        .trim()
+                    response.split("```").nth(1).unwrap_or(&response).trim()
                 } else {
                     &response
                 };
@@ -520,7 +532,10 @@ Return ONLY the JSON object. No additional text before or after."#,
                     });
 
                     if is_duplicate {
-                        info!("跳过重复项: {}", new_item.content.chars().take(50).collect::<String>());
+                        info!(
+                            "跳过重复项: {}",
+                            new_item.content.chars().take(50).collect::<String>()
+                        );
                         false
                     } else {
                         true
@@ -559,7 +574,7 @@ Return ONLY the JSON object. No additional text before or after."#,
         // 包含关系（一个包含另一个的主要部分）
         let char_count_a = normalized_a.chars().count();
         let char_count_b = normalized_b.chars().count();
-        
+
         if char_count_a > 10 && char_count_b > 10 {
             // 提取关键词（简单实现：取前30个字符作为"指纹"）
             let fingerprint_a: String = normalized_a.chars().take(30).collect();
@@ -586,10 +601,30 @@ Return ONLY the JSON object. No additional text before or after."#,
             .personal_info
             .iter()
             .map(|item| item.content.as_str())
-            .chain(existing_profile.work_history.iter().map(|item| item.content.as_str()))
-            .chain(existing_profile.preferences.iter().map(|item| item.content.as_str()))
-            .chain(existing_profile.relationships.iter().map(|item| item.content.as_str()))
-            .chain(existing_profile.goals.iter().map(|item| item.content.as_str()))
+            .chain(
+                existing_profile
+                    .work_history
+                    .iter()
+                    .map(|item| item.content.as_str()),
+            )
+            .chain(
+                existing_profile
+                    .preferences
+                    .iter()
+                    .map(|item| item.content.as_str()),
+            )
+            .chain(
+                existing_profile
+                    .relationships
+                    .iter()
+                    .map(|item| item.content.as_str()),
+            )
+            .chain(
+                existing_profile
+                    .goals
+                    .iter()
+                    .map(|item| item.content.as_str()),
+            )
             .collect();
 
         // 过滤每个类别
@@ -597,9 +632,9 @@ Return ONLY the JSON object. No additional text before or after."#,
             .personal_info
             .into_iter()
             .filter(|item| {
-                !existing_contents.iter().any(|existing| {
-                    Self::is_similar_content(&item.content, existing)
-                })
+                !existing_contents
+                    .iter()
+                    .any(|existing| Self::is_similar_content(&item.content, existing))
             })
             .collect();
 
@@ -607,9 +642,9 @@ Return ONLY the JSON object. No additional text before or after."#,
             .work_history
             .into_iter()
             .filter(|item| {
-                !existing_contents.iter().any(|existing| {
-                    Self::is_similar_content(&item.content, existing)
-                })
+                !existing_contents
+                    .iter()
+                    .any(|existing| Self::is_similar_content(&item.content, existing))
             })
             .collect();
 
@@ -617,9 +652,9 @@ Return ONLY the JSON object. No additional text before or after."#,
             .preferences
             .into_iter()
             .filter(|item| {
-                !existing_contents.iter().any(|existing| {
-                    Self::is_similar_content(&item.content, existing)
-                })
+                !existing_contents
+                    .iter()
+                    .any(|existing| Self::is_similar_content(&item.content, existing))
             })
             .collect();
 
@@ -627,9 +662,9 @@ Return ONLY the JSON object. No additional text before or after."#,
             .relationships
             .into_iter()
             .filter(|item| {
-                !existing_contents.iter().any(|existing| {
-                    Self::is_similar_content(&item.content, existing)
-                })
+                !existing_contents
+                    .iter()
+                    .any(|existing| Self::is_similar_content(&item.content, existing))
             })
             .collect();
 
@@ -637,9 +672,9 @@ Return ONLY the JSON object. No additional text before or after."#,
             .goals
             .into_iter()
             .filter(|item| {
-                !existing_contents.iter().any(|existing| {
-                    Self::is_similar_content(&item.content, existing)
-                })
+                !existing_contents
+                    .iter()
+                    .any(|existing| Self::is_similar_content(&item.content, existing))
             })
             .collect();
 
@@ -676,11 +711,11 @@ Return ONLY the JSON object. No additional text before or after."#,
         let mut max_match = 0;
         let a_len = a_chars.len();
         let b_len = b_chars.len();
-        
+
         if a_len == 0 || b_len == 0 {
             return 0.0;
         }
-        
+
         let min_len = a_len.min(b_len);
 
         // 滑动窗口检查相似度
@@ -689,7 +724,8 @@ Return ONLY the JSON object. No additional text before or after."#,
                 let window_a: String = a_chars[i..(i + window_size).min(a_len)].iter().collect();
                 // 在 b 中查找这个窗口
                 for j in 0..=b_len.saturating_sub(window_size) {
-                    let window_b: String = b_chars[j..(j + window_size).min(b_len)].iter().collect();
+                    let window_b: String =
+                        b_chars[j..(j + window_size).min(b_len)].iter().collect();
                     if window_a == window_b {
                         max_match = max_match.max(window_size);
                         break;
@@ -740,11 +776,7 @@ Return ONLY the JSON object. No additional text before or after."#,
     }
 
     /// 保存用户档案
-    async fn save_user_profile(
-        &self,
-        profile_uri: &str,
-        profile: &UserProfile,
-    ) -> Result<usize> {
+    async fn save_user_profile(&self, profile_uri: &str, profile: &UserProfile) -> Result<usize> {
         use crate::filesystem::FilesystemOperations;
 
         let json_content = serde_json::to_string_pretty(profile)?;
@@ -827,7 +859,9 @@ Return ONLY the JSON object. No additional text before or after."#,
         };
 
         // 保存提取结果
-        self.extractor.save_extraction(thread_id, &extracted).await?;
+        self.extractor
+            .save_extraction(thread_id, &extracted)
+            .await?;
 
         // 分类存储
         if self.config.save_user_memories {
