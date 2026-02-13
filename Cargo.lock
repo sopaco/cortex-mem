@@ -447,6 +447,7 @@ dependencies = [
  "clap",
  "colored",
  "cortex-mem-core",
+ "cortex-mem-tools",
  "serde",
  "serde_json",
  "tokio",

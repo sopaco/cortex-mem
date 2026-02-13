@@ -161,3 +161,17 @@ pub struct Filters {
     pub max_importance: Option<f32>,
     pub custom: HashMap<String, serde_json::Value>,
 }
+
+impl Filters {
+    /// Add a custom filter field
+    pub fn add_custom(&mut self, key: &str, value: impl Into<serde_json::Value>) {
+        self.custom.insert(key.to_string(), value.into());
+    }
+    
+    /// Create filters with a specific layer
+    pub fn with_layer(layer: &str) -> Self {
+        let mut filters = Self::default();
+        filters.add_custom("layer", layer);
+        filters
+    }
+}

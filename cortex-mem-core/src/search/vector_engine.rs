@@ -108,6 +108,146 @@ impl VectorSearchEngine {
 
         Ok(results)
     }
+    
+    /// Layered semantic search - utilizes L0/L1/L2 three-layer architecture
+    /// 
+    /// This method implements a three-stage retrieval strategy:
+    /// 1. Stage 1 (L0): Fast positioning using .abstract.md files
+    /// 2. Stage 2 (L1): Deep exploration using .overview.md files  
+    /// 3. Stage 3 (L2): Precise matching using full message content
+    /// 
+    /// Combined scoring: 0.2*L0 + 0.3*L1 + 0.5*L2
+    pub async fn layered_semantic_search(
+        &self,
+        query: &str,
+        options: &SearchOptions,
+    ) -> Result<Vec<SearchResult>> {
+        use tracing::{info, warn};
+        
+        // Generate query embedding once
+        let query_vec = self.embedding.embed(query).await?;
+        
+        // Stage 1: L0 fast positioning - search .abstract.md
+        info!("Stage 1: Scanning L0 abstract layer");
+        let l0_filters = crate::types::Filters::with_layer("L0");
+        
+        let l0_results = self.qdrant
+            .search_with_threshold(&query_vec, &l0_filters, options.limit * 3, Some(0.6))
+            .await?;
+        
+        if l0_results.is_empty() {
+            warn!("No L0 results found, falling back to full search");
+            return self.semantic_search(query, options).await;
+        }
+        
+        info!("Found {} L0 candidates", l0_results.len());
+        
+        // Stage 2: L1 deep exploration - search .overview.md in candidate directories
+        info!("Stage 2: Exploring L1 overview layer");
+        let mut l1_candidates = Vec::new();
+        
+        for l0_result in l0_results {
+            // Extract base URI (remove #L0 suffix)
+            let base_uri = l0_result.memory.id.trim_end_matches("#L0");
+            let l1_id = format!("{}#L1", base_uri);
+            
+            // Try to get L1 layer
+            if let Ok(Some(l1_memory)) = self.qdrant.get(&l1_id).await {
+                let l1_score = Self::cosine_similarity(&query_vec, &l1_memory.embedding);
+                if l1_score >= options.threshold {
+                    l1_candidates.push((base_uri.to_string(), l0_result.score, l1_score));
+                }
+            }
+        }
+        
+        info!("Found {} L1 candidates", l1_candidates.len());
+        
+        // Stage 3: L2 precise matching - search actual message content
+        info!("Stage 3: Searching L2 detail layer");
+        let mut final_results = Vec::new();
+        
+        for (base_uri, l0_score, l1_score) in l1_candidates {
+            // Extract timeline URI from base_uri
+            // base_uri format: cortex://session/abc/timeline
+            let timeline_uri = &base_uri;
+            
+            // List all files in timeline directory
+            if let Ok(entries) = self.filesystem.list(timeline_uri).await {
+                for entry in entries {
+                    // Skip directories and hidden files
+                    if entry.is_directory || !entry.name.ends_with(".md") || entry.name.starts_with('.') {
+                        continue;
+                    }
+                    
+                    let l2_id = format!("{}#L2", entry.uri);
+                    if let Ok(Some(l2_memory)) = self.qdrant.get(&l2_id).await {
+                        let l2_score = Self::cosine_similarity(&query_vec, &l2_memory.embedding);
+                        
+                        // Combined scoring: 0.2*L0 + 0.3*L1 + 0.5*L2
+                        let combined_score = l0_score * 0.2 + l1_score * 0.3 + l2_score * 0.5;
+                        
+                        if combined_score >= options.threshold {
+                            final_results.push(SearchResult {
+                                uri: entry.uri,
+                                score: combined_score,
+                                snippet: Self::extract_snippet(&l2_memory.content, query),
+                                content: Some(l2_memory.content),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Sort and truncate
+        final_results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
+        final_results.truncate(options.limit);
+        
+        info!("Layered search completed: {} final results", final_results.len());
+        Ok(final_results)
+    }
+    
+    /// Calculate cosine similarity between two vectors (helper method)
+    fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
+        if a.len() != b.len() {
+            return 0.0;
+        }
+        
+        let dot_product: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
+        let magnitude_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
+        let magnitude_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+        
+        if magnitude_a == 0.0 || magnitude_b == 0.0 {
+            0.0
+        } else {
+            dot_product / (magnitude_a * magnitude_b)
+        }
+    }
+    
+    /// Extract snippet around query match
+    fn extract_snippet(content: &str, query: &str) -> String {
+        let query_lower = query.to_lowercase();
+        let content_lower = content.to_lowercase();
+        
+        if let Some(pos) = content_lower.find(&query_lower) {
+            let start = pos.saturating_sub(100);
+            let end = (pos + query.len() + 100).min(content.len());
+            let snippet = &content[start..end];
+            
+            if start > 0 {
+                format!("...{}", snippet)
+            } else {
+                snippet.to_string()
+            }
+        } else {
+            // Return first 200 chars if no match
+            if content.len() > 200 {
+                format!("{}...", &content[..200])
+            } else {
+                content.to_string()
+            }
+        }
+    }
 
     /// Recursive directory search (inspired by OpenViking)
     pub async fn recursive_search(
@@ -195,7 +335,7 @@ impl VectorSearchEngine {
                                 results.push(SearchResult {
                                     uri: entry.uri,
                                     score,
-                                    snippet: self.extract_snippet(&content, query),
+                                    snippet: Self::extract_snippet(&content, query),
                                     content: Some(content),
                                 });
                             }
@@ -230,32 +370,7 @@ impl VectorSearchEngine {
         let query_vec = self.embedding.embed(query).await?;
         let content_vec = self.embedding.embed(content).await?;
 
-        Ok(cosine_similarity(&query_vec, &content_vec))
-    }
-
-    /// Extract snippet around query match
-    fn extract_snippet(&self, content: &str, query: &str) -> String {
-        let query_lower = query.to_lowercase();
-        let content_lower = content.to_lowercase();
-
-        if let Some(pos) = content_lower.find(&query_lower) {
-            let start = pos.saturating_sub(100);
-            let end = (pos + query.len() + 100).min(content.len());
-            let snippet = &content[start..end];
-            
-            if start > 0 {
-                format!("...{}", snippet)
-            } else {
-                snippet.to_string()
-            }
-        } else {
-            // Return first 200 chars if no match
-            if content.len() > 200 {
-                format!("{}...", &content[..200])
-            } else {
-                content.to_string()
-            }
-        }
+        Ok(Self::cosine_similarity(&query_vec, &content_vec))
     }
 }
 
@@ -267,7 +382,8 @@ struct QueryIntent {
     keywords: Vec<String>,
 }
 
-/// Calculate cosine similarity between two vectors
+/// Calculate cosine similarity between two vectors (used by VectorSearchEngine and tests)
+#[allow(dead_code)]
 fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
     if a.len() != b.len() {
         return 0.0;

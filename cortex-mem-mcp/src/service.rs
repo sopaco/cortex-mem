@@ -51,6 +51,9 @@ pub struct QueryMemoryArgs {
     repos_dimension: Option<String>,
     /// Maximum number of results
     limit: Option<usize>,
+    /// Search mode: "keyword" (default), "vector", "hybrid", "layered"
+    #[cfg(feature = "vector-search")]
+    mode: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -164,37 +167,66 @@ impl MemoryMcpService {
             "cortex://threads".to_string()
         };
         
-        // Use RetrievalEngine for search
-        let layer_manager = Arc::new(cortex_mem_core::LayerManager::new(self.filesystem.clone()));
-        let engine = cortex_mem_core::RetrievalEngine::new(self.filesystem.clone(), layer_manager);
+        // Determine search mode
+        #[cfg(feature = "vector-search")]
+        let mode = params.0.mode.as_deref().unwrap_or("keyword");
+        #[cfg(not(feature = "vector-search"))]
+        let mode = "keyword";
         
-        let options = cortex_mem_core::RetrievalOptions {
-            top_k: limit,
-            min_score: 0.3,
-            load_details: true,
-            max_candidates: limit * 2,
-        };
-        
-        match engine.search(query, &scope, options).await {
-            Ok(result) => {
-                let results: Vec<String> = result.results.iter()
-                    .map(|r| format!("{}: {}", r.uri, r.snippet))
-                    .collect();
+        match mode {
+            "keyword" => {
+                // Use RetrievalEngine for keyword search
+                let layer_manager = Arc::new(cortex_mem_core::LayerManager::new(self.filesystem.clone()));
+                let engine = cortex_mem_core::RetrievalEngine::new(self.filesystem.clone(), layer_manager);
                 
-                let total = results.len();
-                info!("Query '{}' found {} results in scope {}", query, total, scope);
+                let options = cortex_mem_core::RetrievalOptions {
+                    top_k: limit,
+                    min_score: 0.3,
+                    load_details: true,
+                    max_candidates: limit * 2,
+                };
                 
-                Ok(Json(QueryMemoryResult {
-                    success: true,
-                    query: query.clone(),
-                    results,
-                    total,
-                    message: format!("Found {} memories", total),
-                }))
+                match engine.search(query, &scope, options).await {
+                    Ok(result) => {
+                        let results: Vec<String> = result.results.iter()
+                            .map(|r| format!("{}: {}", r.uri, r.snippet))
+                            .collect();
+                        
+                        let total = results.len();
+                        info!("Keyword query '{}' found {} results in scope {}", query, total, scope);
+                        
+                        Ok(Json(QueryMemoryResult {
+                            success: true,
+                            query: query.clone(),
+                            results,
+                            total,
+                            message: format!("Found {} memories (keyword mode)", total),
+                        }))
+                    }
+                    Err(e) => {
+                        error!("Keyword query failed: {}", e);
+                        Err(format!("Keyword search failed: {}", e))
+                    }
+                }
             }
-            Err(e) => {
-                error!("Query failed: {}", e);
-                Err(format!("Search failed: {}", e))
+            
+            #[cfg(feature = "vector-search")]
+            "vector" | "hybrid" | "layered" => {
+                // For vector-based modes, we would need VectorSearchEngine
+                // Since MCP service doesn't have vector_engine initialized by default,
+                // we return an error message
+                Err(format!(
+                    "Vector search mode '{}' requires MCP service to be initialized with vector-search support. \
+                    Please use MemoryMcpService::with_vector() constructor or fall back to 'keyword' mode.",
+                    mode
+                ))
+            }
+            
+            _ => {
+                Err(format!("Unknown search mode '{}'. Supported modes: keyword{}", 
+                    mode,
+                    if cfg!(feature = "vector-search") { ", vector, hybrid, layered" } else { "" }
+                ))
             }
         }
     }

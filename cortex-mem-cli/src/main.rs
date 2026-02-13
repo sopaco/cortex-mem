@@ -1,11 +1,41 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use cortex_mem_core::*;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 mod commands;
 use commands::{add, automation, delete, get, list, search, session, stats};
+
+/// Search engine mode
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum SearchEngine {
+    /// Keyword-based search (fast, offline)
+    Keyword,
+    /// Vector-based semantic search (slow, accurate, requires vector-search feature)
+    #[cfg(feature = "vector-search")]
+    Vector,
+    /// Hybrid search combining keyword and vector (best accuracy, requires vector-search feature)
+    #[cfg(feature = "vector-search")]
+    Hybrid,
+    /// Layered semantic search (fastest vector search, requires vector-search feature)
+    #[cfg(feature = "vector-search")]
+    Layered,
+}
+
+impl SearchEngine {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SearchEngine::Keyword => "keyword",
+            #[cfg(feature = "vector-search")]
+            SearchEngine::Vector => "vector",
+            #[cfg(feature = "vector-search")]
+            SearchEngine::Hybrid => "hybrid",
+            #[cfg(feature = "vector-search")]
+            SearchEngine::Layered => "layered",
+        }
+    }
+}
 
 /// Cortex-Mem CLI - File-based memory management for AI Agents
 #[derive(Parser)]
@@ -56,6 +86,10 @@ enum Commands {
         /// Minimum relevance score (0.0-1.0)
         #[arg(short = 's', long, default_value = "0.3")]
         min_score: f32,
+        
+        /// Search engine mode
+        #[arg(short, long, value_enum, default_value = "keyword")]
+        engine: SearchEngine,
     },
 
     /// List memories
@@ -169,8 +203,9 @@ async fn main() -> Result<()> {
             thread,
             limit,
             min_score,
+            engine,
         } => {
-            search::execute(fs, &query, thread.as_deref(), limit, min_score).await?;
+            search::execute(fs, &query, thread.as_deref(), limit, min_score, engine).await?;
         }
         Commands::List { thread, dimension } => {
             list::execute(fs, thread.as_deref(), dimension.as_deref()).await?;

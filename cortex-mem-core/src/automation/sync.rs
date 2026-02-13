@@ -175,6 +175,15 @@ impl SyncManager {
         Box::pin(async move {
             let entries = self.filesystem.list(uri).await?;
             let mut stats = SyncStats::default();
+            
+            // ✅ 新增: 如果是timeline目录,生成L0/L1层
+            if uri.contains("/timeline") && !uri.contains(".md") {
+                if let Err(e) = self.generate_timeline_layers(uri).await {
+                    warn!("Failed to generate timeline layers for {}: {}", uri, e);
+                } else {
+                    info!("Generated timeline layers for {}", uri);
+                }
+            }
 
             for entry in entries {
                 if entry.is_directory {
@@ -336,6 +345,16 @@ impl SyncManager {
         let mut hasher = DefaultHasher::new();
         content.hash(&mut hasher);
         format!("{:x}", hasher.finish())
+    }
+    
+    /// 为timeline目录生成L0/L1层
+    /// 
+    /// 调用LayerManager生成timeline级别的abstract和overview
+    async fn generate_timeline_layers(&self, timeline_uri: &str) -> Result<()> {
+        use crate::LayerManager;
+        
+        let layer_manager = LayerManager::new(self.filesystem.clone());
+        layer_manager.generate_timeline_layers(timeline_uri).await
     }
 }
 

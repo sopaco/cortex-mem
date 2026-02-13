@@ -9,73 +9,100 @@ use std::path::Path;
 #[cfg(feature = "vector-search")]
 use cortex_mem_core::{EmbeddingClient, VectorSearchEngine, QdrantVectorStore, search::SearchOptions};
 
-/// Search for content in the filesystem
-pub async fn search_filesystem(
+use crate::SearchEngine;
+
+/// Execute search command (main entry point from main.rs)
+pub async fn execute(
     fs: Arc<CortexFilesystem>,
     query: &str,
     thread: Option<&str>,
+    limit: usize,
+    min_score: f32,
+    engine: SearchEngine,
 ) -> Result<()> {
     println!("{} Searching for: {}", "🔍".bold(), query.yellow());
     
+    match engine {
+        SearchEngine::Keyword => {
+            search_keyword(fs, query, thread, limit, min_score).await
+        },
+        #[cfg(feature = "vector-search")]
+        SearchEngine::Vector => {
+            search_vector_mode(fs, query, thread, limit).await
+        },
+        #[cfg(feature = "vector-search")]
+        SearchEngine::Hybrid => {
+            search_hybrid_mode(fs, query, thread, limit).await
+        },
+        #[cfg(feature = "vector-search")]
+        SearchEngine::Layered => {
+            search_layered_mode(fs, query, thread, limit).await
+        },
+    }
+}
+
+/// Keyword search using RetrievalEngine
+async fn search_keyword(
+    fs: Arc<CortexFilesystem>,
+    query: &str,
+    thread: Option<&str>,
+    limit: usize,
+    min_score: f32,
+) -> Result<()> {
     let scope = if let Some(t) = thread {
-        format!("cortex://threads/{}", t)
+        format!("cortex://session/{}", t)
     } else {
-        "cortex://".to_string()
+        "cortex://session".to_string()
     };
     
     println!("  {} Scope: {}", "📂".dimmed(), scope.dimmed());
-    println!("  {} Strategy: {}", "⚙".dimmed(), "Filesystem".dimmed());
+    println!("  {} Strategy: {}", "⚙".dimmed(), "Keyword (BM25-like)".cyan());
     
-    // Simple filesystem search
-    println!("  {} Searching filesystem...", "🔍".dimmed());
+    // Use RetrievalEngine
+    let layer_manager = Arc::new(LayerManager::new(fs.clone()));
+    let engine = RetrievalEngine::new(fs, layer_manager);
     
-    let entries = fs.list(&scope).await?;
-    let mut results = Vec::new();
+    let options = RetrievalOptions {
+        top_k: limit,
+        min_score,
+        load_details: true,
+        max_candidates: limit * 2,
+    };
     
-    for entry in entries {
-        if !entry.is_directory && entry.uri.ends_with(".md") {
-            if let Ok(content) = fs.read(&entry.uri).await {
-                if content.to_lowercase().contains(&query.to_lowercase()) {
-                    results.push((entry.uri, content));
-                }
-            }
-        }
-    }
+    println!("  {} Searching...", "🔍".dimmed());
+    let result = engine.search(query, &scope, options).await?;
     
     // Display results
-    if results.is_empty() {
+    if result.results.is_empty() {
         println!("\n{} No results found", "ℹ".yellow().bold());
         return Ok(());
     }
     
-    println!("\n{} Found {} results:", "✓".green().bold(), results.len());
+    println!("\n{} Found {} results:", "✓".green().bold(), result.results.len());
     println!();
     
-    for (i, (uri, content)) in results.iter().enumerate() {
-        let snippet = if content.len() > 100 {
-            format!("{}...", &content[..100])
-        } else {
-            content.clone()
-        };
-        println!("{} {}", 
+    for (i, res) in result.results.iter().enumerate() {
+        println!("{} {} (score: {:.3})", 
             format!("{}.", i + 1).dimmed(),
-            uri.bright_blue()
+            res.uri.bright_blue(),
+            res.score
         );
-        println!("   {}", snippet.dimmed());
+        println!("   {}", res.snippet.dimmed());
         println!();
     }
     
     Ok(())
 }
 
-/// Search using vector similarity (requires vector-search feature)
+/// Vector search using VectorSearchEngine
 #[cfg(feature = "vector-search")]
-pub async fn search_vector(
+async fn search_vector_mode(
     fs: Arc<CortexFilesystem>,
     query: &str,
     thread: Option<&str>,
+    limit: usize,
 ) -> Result<()> {
-    println!("{} Semantic search for: {}", "🔍".bold(), query.yellow());
+    println!("  {} Strategy: {}", "⚙".dimmed(), "Vector (Semantic)".bright_magenta());
     
     // Load configs
     if !Path::new("config.toml").exists() {
@@ -94,7 +121,7 @@ pub async fn search_vector(
     let dim = embedding.dimension().await?;
     println!("  {} Dimension: {}", "✓".green(), dim);
     
-    // Create Qdrant store with LLM client for dimension detection
+    // Create Qdrant store
     let llm_config = load_llm_config_from_toml("config.toml")?;
     let llm_client = cortex_mem_core::llm::LLMClientImpl::new(llm_config)?;
     let qdrant = Arc::new(
@@ -106,16 +133,15 @@ pub async fn search_vector(
     
     // Search
     let scope = if let Some(t) = thread {
-        format!("cortex://threads/{}", t)
+        format!("cortex://session/{}", t)
     } else {
-        "cortex://".to_string()
+        "cortex://session".to_string()
     };
     
     println!("  {} Scope: {}", "📂".dimmed(), scope.dimmed());
-    println!("  {} Strategy: {}", "⚙".dimmed(), "Vector (Semantic)".bright_magenta());
     
     let options = SearchOptions {
-        limit: 10,
+        limit,
         threshold: 0.5,
         root_uri: Some(scope.clone()),
         recursive: true,
@@ -146,40 +172,190 @@ pub async fn search_vector(
     Ok(())
 }
 
-/// Hybrid search combining filesystem and vector search
+/// Hybrid search using MemoryOperations
 #[cfg(feature = "vector-search")]
-pub async fn search_hybrid(
+async fn search_hybrid_mode(
     fs: Arc<CortexFilesystem>,
     query: &str,
     thread: Option<&str>,
+    limit: usize,
 ) -> Result<()> {
-    println!("{} Hybrid search for: {}", "🔍".bold(), query.yellow());
-    println!("  {} Strategy: {}", "⚙".dimmed(), "Hybrid (Filesystem + Vector)".bright_magenta());
+    use cortex_mem_core::SessionManager;
+    use tokio::sync::RwLock;
     
-    // Run both searches in parallel
-    println!("  {} Running parallel searches...", "🚀".dimmed());
+    println!("  {} Strategy: {}", "⚙".dimmed(), "Hybrid (Keyword + Vector)".bright_magenta());
     
-    let fs1 = fs.clone();
-    let fs2 = fs.clone();
-    let query1 = query.to_string();
-    let query2 = query.to_string();
-    let thread1 = thread.map(|s| s.to_string());
-    let thread2 = thread.map(|s| s.to_string());
+    // Load configs and initialize
+    if !Path::new("config.toml").exists() {
+        anyhow::bail!("config.toml not found. Hybrid search requires Qdrant and embedding configurations.");
+    }
     
-    let (file_result, vec_result) = tokio::join!(
-        async move {
-            search_filesystem(fs1, &query1, thread1.as_deref()).await
-        },
-        async move {
-            search_vector(fs2, &query2, thread2.as_deref()).await
-        }
+    println!("  {} Loading config from config.toml", "⚙".dimmed());
+    let (qdrant_config, embedding_config) = load_vector_configs("config.toml")?;
+    
+    // Initialize clients
+    println!("  {} Initializing clients", "🔌".dimmed());
+    let embedding = Arc::new(EmbeddingClient::new(embedding_config)?);
+    let llm_config = load_llm_config_from_toml("config.toml")?;
+    let llm_client = cortex_mem_core::llm::LLMClientImpl::new(llm_config)?;
+    let qdrant = Arc::new(
+        QdrantVectorStore::new_with_llm_client(&qdrant_config, &llm_client).await?
     );
     
-    // Both must succeed
-    file_result?;
-    vec_result?;
+    // Create session manager
+    let session_config = cortex_mem_core::SessionConfig::default();
+    let session_manager = SessionManager::new(fs.clone(), session_config);
+    let _session_manager = Arc::new(RwLock::new(session_manager));
     
-    println!("\n{} Hybrid search complete", "✓".green().bold());
+    // Create engines
+    let layer_manager = Arc::new(LayerManager::new(fs.clone()));
+    let vector_engine = Arc::new(VectorSearchEngine::new(qdrant, embedding, fs.clone()));
+    use cortex_mem_core::RetrievalEngine;
+    use cortex_mem_core::search::SearchOptions as CoreSearchOptions;
+    
+    let scope = if let Some(t) = thread {
+        format!("cortex://session/{}", t)
+    } else {
+        "cortex://session".to_string()
+    };
+    
+    println!("  {} Scope: {}", "📂".dimmed(), scope.dimmed());
+    println!("  {} Performing hybrid search...", "🚀".dimmed());
+    
+    // Execute keyword search
+    let keyword_engine = RetrievalEngine::new(fs.clone(), layer_manager.clone());
+    let keyword_options = cortex_mem_core::RetrievalOptions {
+        top_k: limit,
+        min_score: 0.3,
+        load_details: true,
+        max_candidates: limit * 2,
+    };
+    let keyword_result = keyword_engine.search(query, &scope, keyword_options).await?;
+    
+    // Execute vector search  
+    let vector_options = CoreSearchOptions {
+        limit,
+        threshold: 0.5,
+        root_uri: Some(scope.clone()),
+        recursive: true,
+    };
+    let vector_results = vector_engine.semantic_search(query, &vector_options).await?;
+    
+    // Merge results with 0.5/0.5 weights (simple hybrid)
+    use std::collections::HashMap;
+    let mut combined: HashMap<String, f32> = HashMap::new();
+    
+    for res in keyword_result.results {
+        combined.insert(res.uri.clone(), res.score * 0.5);
+    }
+    
+    for res in vector_results {
+        combined.entry(res.uri.clone())
+            .and_modify(|score| *score += res.score * 0.5)
+            .or_insert(res.score * 0.5);
+    }
+    
+    let mut results: Vec<(String, f32)> = combined.into_iter().collect();
+    results.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+    results.truncate(limit);
+    
+    // Display results
+    if results.is_empty() {
+        println!("\n{} No results found", "ℹ".yellow().bold());
+        return Ok(());
+    }
+    
+    println!("\n{} Found {} hybrid matches:", "✓".green().bold(), results.len());
+    println!();
+    
+    for (i, (uri, score)) in results.iter().enumerate() {
+        println!("{} {} (combined score: {:.3})", 
+            format!("{}.", i + 1).dimmed(),
+            uri.bright_blue(),
+            score
+        );
+        // Read and display snippet
+        if let Ok(content) = fs.read(uri).await {
+            let snippet = if content.len() > 100 {
+                format!("{}...", &content[..100])
+            } else {
+                content
+            };
+            println!("   {}", snippet.dimmed());
+        }
+        println!();
+    }
+    
+    Ok(())
+}
+
+/// Layered semantic search using VectorSearchEngine
+#[cfg(feature = "vector-search")]
+async fn search_layered_mode(
+    fs: Arc<CortexFilesystem>,
+    query: &str,
+    thread: Option<&str>,
+    limit: usize,
+) -> Result<()> {
+    println!("  {} Strategy: {}", "⚙".dimmed(), "Layered Vector (L0→L1→L2)".bright_magenta());
+    
+    // Load configs
+    if !Path::new("config.toml").exists() {
+        anyhow::bail!("config.toml not found. Layered search requires Qdrant and embedding configurations.");
+    }
+    
+    println!("  {} Loading config from config.toml", "⚙".dimmed());
+    let (qdrant_config, embedding_config) = load_vector_configs("config.toml")?;
+    
+    // Initialize clients
+    println!("  {} Initializing clients", "🔌".dimmed());
+    let embedding = Arc::new(EmbeddingClient::new(embedding_config)?);
+    let llm_config = load_llm_config_from_toml("config.toml")?;
+    let llm_client = cortex_mem_core::llm::LLMClientImpl::new(llm_config)?;
+    let qdrant = Arc::new(
+        QdrantVectorStore::new_with_llm_client(&qdrant_config, &llm_client).await?
+    );
+    
+    // Create search engine
+    let engine = VectorSearchEngine::new(qdrant, embedding, fs.clone());
+    
+    // Search
+    let scope = if let Some(t) = thread {
+        format!("cortex://session/{}", t)
+    } else {
+        "cortex://session".to_string()
+    };
+    
+    println!("  {} Scope: {}", "📂".dimmed(), scope.dimmed());
+    
+    let options = SearchOptions {
+        limit,
+        threshold: 0.5,
+        root_uri: Some(scope.clone()),
+        recursive: true,
+    };
+    
+    println!("  {} Performing layered search...", "🎯".dimmed());
+    let results = engine.layered_semantic_search(query, &options).await?;
+    
+    // Display results
+    if results.is_empty() {
+        println!("\n{} No results found", "ℹ".yellow().bold());
+        return Ok(());
+    }
+    
+    println!("\n{} Found {} layered matches:", "✓".green().bold(), results.len());
+    println!();
+    
+    for (i, res) in results.iter().enumerate() {
+        println!("{} {} (combined score: {:.3})", 
+            format!("{}.", i + 1).dimmed(),
+            res.uri.bright_blue(),
+            res.score
+        );
+        println!("   {}", res.snippet.dimmed());
+        println!();
+    }
     
     Ok(())
 }
@@ -269,17 +445,4 @@ fn load_vector_configs(path: &str) -> Result<(cortex_mem_core::config::QdrantCon
     };
     
     Ok((qdrant_config, embedding_config))
-}
-
-/// Execute search command (entry point from main.rs)
-pub async fn execute(
-    fs: Arc<CortexFilesystem>,
-    query: &str,
-    thread: Option<&str>,
-    _limit: usize,
-    _min_score: f32,
-) -> Result<()> {
-    // For now, use filesystem search by default
-    // Future: add --semantic and --hybrid flags
-    search_filesystem(fs, query, thread).await
 }
