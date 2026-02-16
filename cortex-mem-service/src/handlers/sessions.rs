@@ -1,6 +1,4 @@
 use axum::{
-    Router,
-    routing::post,
     extract::{Path, State},
     Json,
 };
@@ -12,13 +10,6 @@ use crate::{
     state::AppState,
 };
 use cortex_mem_core::FilesystemOperations;
-
-pub fn routes() -> Router<Arc<AppState>> {
-    Router::new()
-        .route("/", post(create_session).get(list_sessions))
-        .route("/:thread_id/messages", post(add_message))
-        .route("/:thread_id/close", post(close_session))
-}
 
 /// Create a new session
 pub async fn create_session(
@@ -55,6 +46,7 @@ pub async fn create_session(
 }
 
 /// List all sessions
+#[allow(dead_code)]
 pub async fn list_sessions(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<ApiResponse<Vec<SessionResponse>>>> {
@@ -84,7 +76,7 @@ pub async fn list_sessions(
 }
 
 /// Add message to session
-async fn add_message(
+pub async fn add_message(
     State(state): State<Arc<AppState>>,
     Path(thread_id): Path<String>,
     Json(payload): Json<AddMessageRequest>,

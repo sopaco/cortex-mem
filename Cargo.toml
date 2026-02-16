@@ -6,15 +6,15 @@ members = [
     "cortex-mem-tools",
     "cortex-mem-rig",
     "cortex-mem-service",
+    "cortex-mem-cli",
+    "cortex-mem-mcp",
     "examples/cortex-mem-tars"
-    # Note: cortex-mem-cli and cortex-mem-mcp temporarily excluded
-    # They need significant refactoring to work with the new API
 ]
 
 [workspace.package]
 version = "2.0.0"
-edition = "2021"
-rust-version = "1.75"
+edition = "2024"
+rust-version = "1.86"
 authors = ["Sopaco"]
 license = "MIT"
 repository = "https://github.com/sopaco/cortex-mem"

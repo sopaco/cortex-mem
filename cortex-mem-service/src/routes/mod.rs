@@ -1,7 +1,4 @@
-use axum::{
-    Router,
-    routing::post,
-};
+use axum::Router;
 use crate::state::AppState;
 
 mod filesystem;

@@ -19,15 +19,6 @@ impl<T> ApiResponse<T> {
             timestamp: Utc::now(),
         }
     }
-
-    pub fn error(message: impl Into<String>) -> ApiResponse<()> {
-        ApiResponse {
-            success: false,
-            data: None,
-            error: Some(message.into()),
-            timestamp: Utc::now(),
-        }
-    }
 }
 
 /// File entry response
@@ -69,19 +60,6 @@ pub struct AddMessageRequest {
     pub content: String,
 }
 
-/// Search mode (always uses vector search)
-#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
-#[serde(rename_all = "lowercase")]
-pub enum SearchMode {
-    Vector,  // Vector semantic search (default and only mode)
-}
-
-impl Default for SearchMode {
-    fn default() -> Self {
-        SearchMode::Vector
-    }
-}
-
 /// Search request
 #[derive(Debug, Deserialize)]
 pub struct SearchRequest {
@@ -89,8 +67,6 @@ pub struct SearchRequest {
     pub thread: Option<String>,
     pub limit: Option<usize>,
     pub min_score: Option<f32>,
-    #[serde(default)]
-    pub mode: SearchMode,  // New: search mode
 }
 
 /// Search result response
@@ -100,5 +76,5 @@ pub struct SearchResultResponse {
     pub score: f32,
     pub snippet: String,
     pub content: Option<String>,
-    pub source: String,  // "filesystem" | "vector" | "hybrid"
+    pub source: String,
 }

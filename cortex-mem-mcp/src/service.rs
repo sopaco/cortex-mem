@@ -1,5 +1,5 @@
-use anyhow::Result;
-use cortex_mem_core::{layers::manager::LayerManager, *};
+use cortex_mem_core::{FilesystemOperations, SearchOptions};
+use cortex_mem_tools::MemoryOperations;
 use rmcp::{
     handler::server::tool::ToolRouter, handler::server::wrapper::Parameters, model::*, tool,
     tool_handler, tool_router, Json, ServerHandler,
@@ -12,71 +12,81 @@ use tracing::{debug, error, info};
 /// MCP Service for Cortex Memory
 #[derive(Clone)]
 pub struct MemoryMcpService {
-    filesystem: Arc<CortexFilesystem>,
-    _default_agent_id: Option<String>,
-    _default_user_id: Option<String>,
+    operations: Arc<MemoryOperations>,
     tool_router: ToolRouter<Self>,
 }
+
+// ==================== Tool Arguments & Results ====================
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct StoreMemoryArgs {
     /// Content to store
     content: String,
-    /// Optional user dimension
-    user_dimension: Option<String>,
-    /// Optional repository dimension
-    repos_dimension: Option<String>,
-    /// Optional tags for categorization
-    tags: Option<Vec<String>>,
+    /// Thread/session ID (optional, defaults to "default")
+    thread_id: Option<String>,
+    /// Message role: "user", "assistant", or "system"
+    role: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct StoreMemoryResult {
     success: bool,
     uri: String,
-    memory_id: String,
+    message_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct QueryMemoryArgs {
     /// Search query
     query: String,
-    /// Optional user dimension to filter
-    user_dimension: Option<String>,
-    /// Optional repository dimension to filter
-    repos_dimension: Option<String>,
-    /// Maximum number of results
+    /// Thread ID to search in (optional)
+    thread_id: Option<String>,
+    /// Maximum number of results (default: 10)
     limit: Option<usize>,
-    /// Search mode: "keyword" (default), "vector", "hybrid", "layered"
-    #[cfg(feature = "vector-search")]
-    mode: Option<String>,
+    /// Search scope: "session", "user", "agent" (default: "session")
+    scope: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct QueryMemoryResult {
     success: bool,
     query: String,
-    results: Vec<String>,
+    results: Vec<SearchResultItem>,
     total: usize,
-    message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct SearchResultItem {
+    uri: String,
+    score: f32,
+    snippet: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ListMemoriesArgs {
-    /// User dimension to list
-    user_dimension: Option<String>,
-    /// Repository dimension to list
-    repos_dimension: Option<String>,
-    /// Maximum number of results
+    /// URI to list (e.g., "cortex://session" or "cortex://user/preferences")
+    uri: Option<String>,
+    /// Maximum number of results (default: 50)
     limit: Option<usize>,
+    /// Include abstracts in results
+    include_abstracts: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 pub struct ListMemoriesResult {
     success: bool,
-    memories: Vec<String>,
+    uri: String,
+    entries: Vec<ListEntry>,
     total: usize,
-    message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct ListEntry {
+    name: String,
+    uri: String,
+    is_directory: bool,
+    size: Option<usize>,
+    abstract_text: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
@@ -92,17 +102,38 @@ pub struct GetMemoryResult {
     content: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct DeleteMemoryArgs {
+    /// URI of the memory to delete
+    uri: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct DeleteMemoryResult {
+    success: bool,
+    uri: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct GetAbstractArgs {
+    /// URI of the memory
+    uri: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct GetAbstractResult {
+    success: bool,
+    uri: String,
+    abstract_text: String,
+}
+
+// ==================== MCP Tools Implementation ====================
+
 #[tool_router]
 impl MemoryMcpService {
-    pub fn new(
-        filesystem: Arc<CortexFilesystem>,
-        default_agent_id: Option<String>,
-        default_user_id: Option<String>,
-    ) -> Self {
+    pub fn new(operations: Arc<MemoryOperations>) -> Self {
         Self {
-            filesystem,
-            _default_agent_id: default_agent_id,
-            _default_user_id: default_user_id,
+            operations,
             tool_router: Self::tool_router(),
         }
     }
@@ -111,204 +142,155 @@ impl MemoryMcpService {
     async fn store_memory(
         &self,
         params: Parameters<StoreMemoryArgs>,
-    ) -> Result<Json<StoreMemoryResult>, String> {
+    ) -> std::result::Result<Json<StoreMemoryResult>, String> {
         debug!("store_memory called with args: {:?}", params.0);
 
-        // Generate a unique ID for this memory
-        let memory_id = uuid::Uuid::new_v4().to_string();
+        let thread_id = params.0.thread_id.unwrap_or_else(|| "default".to_string());
+        let role = params.0.role.as_deref().unwrap_or("user");
 
-        // Construct URI based on dimensions
-        let uri = if let Some(user) = &params.0.user_dimension {
-            format!("cortex://user/{}/memories/{}", user, memory_id)
-        } else if let Some(repos) = &params.0.repos_dimension {
-            format!("cortex://repos/{}/memories/{}", repos, memory_id)
-        } else {
-            format!("cortex://memories/{}", memory_id)
-        };
-
-        // Write the memory content
-        if let Err(e) = self.filesystem.write(&uri, &params.0.content).await {
-            return Err(format!("Failed to store memory: {}", e));
-        }
-
-        info!("Memory stored at: {}", uri);
-
-        Ok(Json(StoreMemoryResult {
-            success: true,
-            uri,
-            memory_id,
-        }))
-    }
-
-    #[tool(description = "Search and retrieve memories using semantic search")]
-    async fn query_memory(
-        &self,
-        params: Parameters<QueryMemoryArgs>,
-    ) -> Result<Json<QueryMemoryResult>, String> {
-        debug!("query_memory called with args: {:?}", params.0);
-
-        let limit = params.0.limit.unwrap_or(10);
-        let query = &params.0.query;
-
-        // Build search scope based on dimensions
-        let scope = if let Some(ref repos) = params.0.repos_dimension {
-            if let Some(ref user) = params.0.user_dimension {
-                format!("cortex://agents/{}/users/{}/threads", repos, user)
-            } else {
-                format!("cortex://agents/{}/threads", repos)
-            }
-        } else if let Some(ref user) = params.0.user_dimension {
-            format!("cortex://users/{}/threads", user)
-        } else {
-            "cortex://threads".to_string()
-        };
-
-        // Determine search mode
-        #[cfg(feature = "vector-search")]
-        let mode = params.0.mode.as_deref().unwrap_or("keyword");
-        #[cfg(not(feature = "vector-search"))]
-        let mode = "keyword";
-
-        match mode {
-            "keyword" => {
-                // Use RetrievalEngine for keyword search
-                let layer_manager = Arc::new(LayerManager::new(self.filesystem.clone()));
-                let engine =
-                    cortex_mem_core::RetrievalEngine::new(self.filesystem.clone(), layer_manager);
-
-                let options = cortex_mem_core::RetrievalOptions {
-                    top_k: limit,
-                    min_score: 0.3,
-                    load_details: true,
-                    max_candidates: limit * 2,
-                };
-
-                match engine.search(query, &scope, options).await {
-                    Ok(result) => {
-                        let results: Vec<String> = result
-                            .results
-                            .iter()
-                            .map(|r| format!("{}: {}", r.uri, r.snippet))
-                            .collect();
-
-                        let total = results.len();
-                        info!(
-                            "Keyword query '{}' found {} results in scope {}",
-                            query, total, scope
-                        );
-
-                        Ok(Json(QueryMemoryResult {
-                            success: true,
-                            query: query.clone(),
-                            results,
-                            total,
-                            message: format!("Found {} memories (keyword mode)", total),
-                        }))
-                    }
-                    Err(e) => {
-                        error!("Keyword query failed: {}", e);
-                        Err(format!("Keyword search failed: {}", e))
-                    }
-                }
-            }
-
-            #[cfg(feature = "vector-search")]
-            "vector" | "hybrid" | "layered" => {
-                // For vector-based modes, we would need VectorSearchEngine
-                // Since MCP service doesn't have vector_engine initialized by default,
-                // we return an error message
-                Err(format!(
-                    "Vector search mode '{}' requires MCP service to be initialized with vector-search support. \
-                    Please use MemoryMcpService::with_vector() constructor or fall back to 'keyword' mode.",
-                    mode
-                ))
-            }
-
-            _ => Err(format!(
-                "Unknown search mode '{}'. Supported modes: keyword{}",
-                mode,
-                if cfg!(feature = "vector-search") {
-                    ", vector, hybrid, layered"
-                } else {
-                    ""
-                }
-            )),
-        }
-    }
-
-    #[tool(description = "List memories from a specific dimension")]
-    async fn list_memories(
-        &self,
-        params: Parameters<ListMemoriesArgs>,
-    ) -> Result<Json<ListMemoriesResult>, String> {
-        debug!("list_memories called with args: {:?}", params.0);
-
-        let limit = params.0.limit.unwrap_or(50);
-
-        // Build scope based on dimensions
-        let scope = if let Some(ref repos) = params.0.repos_dimension {
-            if let Some(ref user) = params.0.user_dimension {
-                format!("cortex://agents/{}/users/{}/threads", repos, user)
-            } else {
-                format!("cortex://agents/{}/threads", repos)
-            }
-        } else if let Some(ref user) = params.0.user_dimension {
-            format!("cortex://users/{}/threads", user)
-        } else {
-            "cortex://threads".to_string()
-        };
-
-        // List files in the scope
-        match self.filesystem.list(&scope).await {
-            Ok(entries) => {
-                let mut memories = Vec::new();
-
-                for entry in entries {
-                    // Skip hidden files except .abstract.md and .overview.md
-                    if entry.name.starts_with('.')
-                        && entry.name != ".abstract.md"
-                        && entry.name != ".overview.md"
-                    {
-                        continue;
-                    }
-
-                    if entry.is_directory {
-                        memories.push(format!("📁 {}/", entry.name));
-                    } else {
-                        memories.push(format!("📄 {} ({} bytes)", entry.name, entry.size));
-                    }
-
-                    if memories.len() >= limit {
-                        break;
-                    }
-                }
-
-                let total = memories.len();
-                info!("Listed {} memories in scope {}", total, scope);
-
-                Ok(Json(ListMemoriesResult {
+        match self.operations.add_message(&thread_id, role, &params.0.content).await {
+            Ok(message_id) => {
+                let uri = format!("cortex://session/{}/timeline/{}.md", thread_id, message_id);
+                info!("Memory stored at: {}", uri);
+                
+                Ok(Json(StoreMemoryResult {
                     success: true,
-                    memories,
-                    total,
-                    message: format!("Found {} items", total),
+                    uri,
+                    message_id,
                 }))
             }
             Err(e) => {
-                error!("List failed: {}", e);
-                Err(format!("Failed to list memories: {}", e))
+                error!("Failed to store memory: {}", e);
+                Err(format!("Failed to store memory: {}", e))
             }
         }
+    }
+
+    #[tool(description = "Search memories using semantic vector search")]
+    async fn query_memory(
+        &self,
+        params: Parameters<QueryMemoryArgs>,
+    ) -> std::result::Result<Json<QueryMemoryResult>, String> {
+        debug!("query_memory called with args: {:?}", params.0);
+
+        let limit = params.0.limit.unwrap_or(10);
+        let scope = params.0.scope.as_deref().unwrap_or("session");
+        
+        // Build search scope URI
+        let scope_uri = if let Some(ref thread_id) = params.0.thread_id {
+            format!("cortex://session/{}", thread_id)
+        } else {
+            match scope {
+                "session" => "cortex://session".to_string(),
+                "user" => "cortex://user".to_string(),
+                "agent" => "cortex://agent".to_string(),
+                _ => "cortex://session".to_string(),
+            }
+        };
+
+        // Use VectorSearchEngine for semantic search
+        let options = SearchOptions {
+            limit,
+            threshold: 0.3,
+            root_uri: Some(scope_uri.clone()),
+            recursive: true,
+        };
+
+        match self.operations.vector_engine()
+            .semantic_search(&params.0.query, &options).await 
+        {
+            Ok(results) => {
+                let search_results: Vec<SearchResultItem> = results
+                    .iter()
+                    .map(|r| SearchResultItem {
+                        uri: r.uri.clone(),
+                        score: r.score,
+                        snippet: r.snippet.clone(),
+                    })
+                    .collect();
+
+                let total = search_results.len();
+                info!("Query '{}' found {} results", params.0.query, total);
+
+                Ok(Json(QueryMemoryResult {
+                    success: true,
+                    query: params.0.query.clone(),
+                    results: search_results,
+                    total,
+                }))
+            }
+            Err(e) => {
+                error!("Query failed: {}", e);
+                Err(format!("Search failed: {}", e))
+            }
+        }
+    }
+
+    #[tool(description = "List memories from a specific URI path")]
+    async fn list_memories(
+        &self,
+        params: Parameters<ListMemoriesArgs>,
+    ) -> std::result::Result<Json<ListMemoriesResult>, String> {
+        debug!("list_memories called with args: {:?}", params.0);
+
+        let uri = params.0.uri.as_deref().unwrap_or("cortex://session");
+        let limit = params.0.limit.unwrap_or(50);
+        let include_abstracts = params.0.include_abstracts.unwrap_or(false);
+
+        // Use filesystem to list entries
+        let entries = match self.operations.filesystem().list(uri).await {
+            Ok(e) => e,
+            Err(e) => {
+                error!("List failed: {}", e);
+                return Err(format!("Failed to list: {}", e));
+            }
+        };
+
+        let mut result_entries = Vec::new();
+
+        for entry in entries.into_iter().take(limit) {
+            // Skip hidden files (except layer files)
+            if entry.name.starts_with('.') 
+                && entry.name != ".abstract.md" 
+                && entry.name != ".overview.md" 
+            {
+                continue;
+            }
+
+            let abstract_text = if include_abstracts && !entry.is_directory {
+                self.operations.get_abstract(&entry.uri).await.ok().map(|a| a.abstract_text)
+            } else {
+                None
+            };
+
+            result_entries.push(ListEntry {
+                name: entry.name,
+                uri: entry.uri,
+                is_directory: entry.is_directory,
+                size: Some(entry.size as usize),
+                abstract_text,
+            });
+        }
+
+        let total = result_entries.len();
+        info!("Listed {} items at {}", total, uri);
+
+        Ok(Json(ListMemoriesResult {
+            success: true,
+            uri: uri.to_string(),
+            entries: result_entries,
+            total,
+        }))
     }
 
     #[tool(description = "Retrieve a specific memory by its URI")]
     async fn get_memory(
         &self,
         params: Parameters<GetMemoryArgs>,
-    ) -> Result<Json<GetMemoryResult>, String> {
+    ) -> std::result::Result<Json<GetMemoryResult>, String> {
         debug!("get_memory called with args: {:?}", params.0);
 
-        // Read the memory content
-        match self.filesystem.read(&params.0.uri).await {
+        match self.operations.read_file(&params.0.uri).await {
             Ok(content) => {
                 info!("Memory retrieved from: {}", params.0.uri);
                 Ok(Json(GetMemoryResult {
@@ -317,7 +299,55 @@ impl MemoryMcpService {
                     content,
                 }))
             }
-            Err(e) => Err(format!("Failed to get memory: {}", e)),
+            Err(e) => {
+                error!("Failed to get memory: {}", e);
+                Err(format!("Failed to get memory: {}", e))
+            }
+        }
+    }
+
+    #[tool(description = "Delete a memory by its URI")]
+    async fn delete_memory(
+        &self,
+        params: Parameters<DeleteMemoryArgs>,
+    ) -> std::result::Result<Json<DeleteMemoryResult>, String> {
+        debug!("delete_memory called with args: {:?}", params.0);
+
+        match self.operations.delete(&params.0.uri).await {
+            Ok(_) => {
+                info!("Memory deleted: {}", params.0.uri);
+                Ok(Json(DeleteMemoryResult {
+                    success: true,
+                    uri: params.0.uri.clone(),
+                }))
+            }
+            Err(e) => {
+                error!("Failed to delete memory: {}", e);
+                Err(format!("Failed to delete memory: {}", e))
+            }
+        }
+    }
+
+    #[tool(description = "Get the abstract (L0 layer) of a memory")]
+    async fn get_abstract(
+        &self,
+        params: Parameters<GetAbstractArgs>,
+    ) -> std::result::Result<Json<GetAbstractResult>, String> {
+        debug!("get_abstract called with args: {:?}", params.0);
+
+        match self.operations.get_abstract(&params.0.uri).await {
+            Ok(abstract_result) => {
+                info!("Abstract retrieved for: {}", params.0.uri);
+                Ok(Json(GetAbstractResult {
+                    success: true,
+                    uri: params.0.uri.clone(),
+                    abstract_text: abstract_result.abstract_text,
+                }))
+            }
+            Err(e) => {
+                error!("Failed to get abstract: {}", e);
+                Err(format!("Failed to get abstract: {}", e))
+            }
         }
     }
 }
@@ -327,8 +357,21 @@ impl ServerHandler for MemoryMcpService {
     fn get_info(&self) -> ServerInfo {
         ServerInfo {
             instructions: Some(
-                "Cortex Memory MCP Server - Provides memory management tools for AI assistants. \
-                Supports storing, querying, listing, and retrieving memories with dimension support."
+                "Cortex Memory MCP Server - Provides memory management tools for AI assistants.\n\
+                \n\
+                Available tools:\n\
+                - store_memory: Store a new memory\n\
+                - query_memory: Search memories using semantic search\n\
+                - list_memories: List memories at a specific path\n\
+                - get_memory: Retrieve a specific memory\n\
+                - delete_memory: Delete a memory\n\
+                - get_abstract: Get the abstract summary of a memory\n\
+                \n\
+                URI format: cortex://{dimension}/{category}/{resource}\n\
+                Examples:\n\
+                - cortex://session/default/timeline/...\n\
+                - cortex://user/preferences/language.md\n\
+                - cortex://agent/cases/case_001.md"
                     .to_string(),
             ),
             capabilities: ServerCapabilities::builder().enable_tools().build(),

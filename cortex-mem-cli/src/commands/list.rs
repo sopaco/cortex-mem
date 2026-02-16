@@ -1,25 +1,20 @@
 use anyhow::Result;
 use colored::Colorize;
-use cortex_mem_core::*;
+use cortex_mem_core::FilesystemOperations;
+use cortex_mem_tools::MemoryOperations;
 use std::sync::Arc;
 
 pub async fn execute(
-    fs: Arc<CortexFilesystem>,
-    thread: Option<&str>,
-    dimension: Option<&str>,
+    operations: Arc<MemoryOperations>,
+    uri: Option<&str>,
+    include_abstracts: bool,
 ) -> Result<()> {
-    // Determine list scope
-    let uri = match (dimension, thread) {
-        (Some(dim), Some(thread_id)) => format!("cortex://{}/{}", dim, thread_id),
-        (Some(dim), None) => format!("cortex://{}", dim),
-        (None, Some(thread_id)) => format!("cortex://threads/{}", thread_id),
-        (None, None) => "cortex://".to_string(),
-    };
+    let list_uri = uri.unwrap_or("cortex://session");
+    
+    println!("{} Listing memories from: {}", "📋".bold(), list_uri.cyan());
 
-    println!("{} Listing memories from: {}", "📋".bold(), uri.cyan());
-
-    // List entries
-    let entries = fs.list(&uri).await?;
+    // List entries using filesystem
+    let entries = operations.filesystem().list(list_uri).await?;
 
     if entries.is_empty() {
         println!("\n{} No memories found", "ℹ".yellow().bold());
@@ -59,6 +54,14 @@ pub async fn execute(
         for file in files {
             println!("  • {}", file.name);
             println!("    {} bytes", file.size.to_string().dimmed());
+            
+            // Show abstract if requested
+            if include_abstracts {
+                if let Ok(abstract_result) = operations.get_abstract(&file.uri).await {
+                    let snippet: String = abstract_result.abstract_text.chars().take(100).collect();
+                    println!("    {} {}", "Abstract:".dimmed(), snippet.dimmed());
+                }
+            }
         }
     }
 

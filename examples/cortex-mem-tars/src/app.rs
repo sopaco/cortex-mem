@@ -23,8 +23,8 @@ use cortex_mem_tools::MemoryOperations;
 use cortex_mem_core::automation::{AutoExtractor, AutoExtractConfig};
 
 /// 应用程序
+#[allow(dead_code)]
 pub struct App {
-    #[allow(dead_code)]
     config_manager: ConfigManager,
     log_manager: Arc<LogManager>,
     ui: AppUi,
@@ -625,7 +625,6 @@ impl App {
                                 conversations.push((user_msg, msg.content.clone()));
                             }
                         }
-                        _ => {}
                     }
                 }
 
@@ -741,6 +740,7 @@ impl App {
     /// 注意：此方法已被弃用，因为 AgentChatHandler 已在每轮对话后自动存储
     /// 保留此方法仅用于兼容性或作为备用
     #[deprecated(note = "AgentChatHandler 已自动存储对话，无需手动调用此方法")]
+    #[allow(dead_code)]
     pub async fn save_conversations_to_memory(&self) -> Result<()> {
         log::warn!("save_conversations_to_memory 已被弃用，AgentChatHandler 已自动存储对话");
         Ok(())
@@ -904,7 +904,6 @@ impl App {
                                 conversations.push((user_msg, msg.content.clone()));
                             }
                         }
-                        _ => {}
                     }
                 }
 

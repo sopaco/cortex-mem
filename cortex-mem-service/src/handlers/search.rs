@@ -1,4 +1,4 @@
-use axum::{extract::State, routing::post, Json, Router};
+use axum::{extract::State, Json};
 use std::sync::Arc;
 
 use crate::{
@@ -6,10 +6,6 @@ use crate::{
     models::{ApiResponse, SearchRequest, SearchResultResponse},
     state::AppState,
 };
-
-pub fn routes() -> Router<Arc<AppState>> {
-    Router::new().route("/", post(search))
-}
 
 /// Search endpoint using vector search
 pub async fn search(

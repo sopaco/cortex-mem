@@ -1,6 +1,4 @@
 use axum::{
-    Router,
-    routing::post,
     extract::{Path, State},
     Json,
 };
@@ -12,13 +10,6 @@ use crate::{
     models::ApiResponse,
     state::AppState,
 };
-
-pub fn routes() -> Router<Arc<AppState>> {
-    Router::new()
-        .route("/extract/:thread_id", post(trigger_extraction))
-        .route("/index/:thread_id", post(trigger_indexing))
-        .route("/index-all", post(trigger_indexing_all))
-}
 
 #[derive(Debug, Deserialize)]
 pub struct ExtractionRequest {

@@ -1,44 +1,26 @@
 use anyhow::Result;
-use clap::{Parser, Subcommand, ValueEnum};
-use cortex_mem_core::*;
+use clap::{Parser, Subcommand};
+use cortex_mem_config::Config;
+use cortex_mem_core::llm::LLMClientImpl;
+use cortex_mem_tools::MemoryOperations;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 mod commands;
-use commands::{add, automation, delete, get, list, search, session, stats};
-
-/// Search engine mode
-#[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum SearchEngine {
-    /// Keyword-based search (fast, offline)
-    Keyword,
-    /// Vector-based semantic search (slow, accurate, requires vector-search feature)
-    Vector,
-    /// Hybrid search combining keyword and vector (best accuracy, requires vector-search feature)
-    Hybrid,
-    /// Layered semantic search (fastest vector search, requires vector-search feature)
-    Layered,
-}
-
-impl SearchEngine {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            SearchEngine::Keyword => "keyword",
-            SearchEngine::Vector => "vector",
-            SearchEngine::Hybrid => "hybrid",
-            SearchEngine::Layered => "layered",
-        }
-    }
-}
+use commands::{add, delete, get, list, search, session, stats};
 
 /// Cortex-Mem CLI - File-based memory management for AI Agents
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
 struct Cli {
-    /// Data directory path
-    #[arg(short, long, default_value = "./cortex-data")]
-    data_dir: PathBuf,
+    /// Path to configuration file
+    #[arg(short, long, default_value = "config.toml")]
+    config: PathBuf,
+
+    /// Tenant identifier
+    #[arg(long, default_value = "default")]
+    tenant: String,
 
     /// Verbose mode
     #[arg(short, long)]
@@ -64,7 +46,7 @@ enum Commands {
         content: String,
     },
 
-    /// Search for memories
+    /// Search for memories using semantic vector search
     Search {
         /// Search query
         query: String,
@@ -80,27 +62,31 @@ enum Commands {
         /// Minimum relevance score (0.0-1.0)
         #[arg(short = 's', long, default_value = "0.3")]
         min_score: f32,
-        
-        /// Search engine mode
-        #[arg(short, long, value_enum, default_value = "keyword")]
-        engine: SearchEngine,
+
+        /// Search scope: "session", "user", or "agent"
+        #[arg(long, default_value = "session")]
+        scope: String,
     },
 
     /// List memories
     List {
-        /// Thread ID
+        /// URI path to list (e.g., "cortex://session" or "cortex://user/preferences")
         #[arg(short, long)]
-        thread: Option<String>,
+        uri: Option<String>,
 
-        /// Dimension (agents/users/threads/global)
-        #[arg(short, long)]
-        dimension: Option<String>,
+        /// Include abstracts in results
+        #[arg(long)]
+        include_abstracts: bool,
     },
 
     /// Get a specific memory
     Get {
         /// Memory URI
         uri: String,
+
+        /// Show abstract (L0) instead of full content
+        #[arg(short, long)]
+        abstract_only: bool,
     },
 
     /// Delete a memory
@@ -115,18 +101,15 @@ enum Commands {
         action: SessionAction,
     },
 
-    /// Automation features
-    Automation {
-        #[command(subcommand)]
-        action: AutomationAction,
-    },
-
     /// Show statistics
     Stats,
 }
 
 #[derive(Subcommand)]
 enum SessionAction {
+    /// List all sessions
+    List,
+
     /// Create a new session
     Create {
         /// Thread ID
@@ -135,36 +118,6 @@ enum SessionAction {
         /// Session title
         #[arg(short, long)]
         title: Option<String>,
-    },
-
-    /// Close a session
-    Close {
-        /// Thread ID
-        thread: String,
-    },
-
-    /// Extract memories from a session
-    Extract {
-        /// Thread ID
-        thread: String,
-    },
-
-    /// List all sessions
-    List,
-}
-
-#[derive(Subcommand)]
-enum AutomationAction {
-    /// Build vector index for a session
-    Index {
-        /// Thread ID
-        thread: String,
-    },
-
-    /// Auto-extract memories from a session
-    AutoExtract {
-        /// Thread ID
-        thread: String,
     },
 }
 
@@ -179,108 +132,79 @@ async fn main() -> Result<()> {
             .init();
     }
 
-    // Initialize filesystem
-    let fs = Arc::new(CortexFilesystem::new(&cli.data_dir));
-    fs.initialize().await?;
+    // Load configuration (required for vector search)
+    let config = Config::load(&cli.config).map_err(|e| {
+        anyhow::anyhow!(
+            "Failed to load config from {}: {}. \
+             Please ensure config.toml exists with [llm], [qdrant], and [embedding] sections.",
+            cli.config.display(),
+            e
+        )
+    })?;
+
+    // Initialize LLM client
+    let model_name = config.llm.model_efficient.clone();
+    let llm_config = cortex_mem_core::llm::LLMConfig {
+        api_base_url: config.llm.api_base_url,
+        api_key: config.llm.api_key,
+        model_efficient: config.llm.model_efficient,
+        temperature: config.llm.temperature,
+        max_tokens: config.llm.max_tokens as usize,
+    };
+    let llm_client = Arc::new(LLMClientImpl::new(llm_config)?);
+
+    // Determine data directory
+    let data_dir = config.cortex.data_dir();
+
+    // Initialize MemoryOperations with vector search
+    let operations = MemoryOperations::new(
+        &data_dir,
+        &cli.tenant,
+        llm_client,
+        &config.qdrant.url,
+        &config.qdrant.collection_name,
+        &config.embedding.api_base_url,
+        &config.embedding.api_key,
+        &config.embedding.model_name,
+        config.qdrant.embedding_dim,
+    ).await?;
+
+    if cli.verbose {
+        eprintln!("LLM model: {}", model_name);
+        eprintln!("Data directory: {}", data_dir);
+    }
+
+    let operations = Arc::new(operations);
 
     // Execute command
     match cli.command {
-        Commands::Add {
-            thread,
-            role,
-            content,
-        } => {
-            add::execute(fs, &thread, &role, &content).await?;
+        Commands::Add { thread, role, content } => {
+            add::execute(operations, &thread, &role, &content).await?;
         }
-        Commands::Search {
-            query,
-            thread,
-            limit,
-            min_score,
-            engine,
-        } => {
-            search::execute(fs, &query, thread.as_deref(), limit, min_score, engine).await?;
+        Commands::Search { query, thread, limit, min_score, scope } => {
+            search::execute(operations, &query, thread.as_deref(), limit, min_score, &scope).await?;
         }
-        Commands::List { thread, dimension } => {
-            list::execute(fs, thread.as_deref(), dimension.as_deref()).await?;
+        Commands::List { uri, include_abstracts } => {
+            list::execute(operations, uri.as_deref(), include_abstracts).await?;
         }
-        Commands::Get { uri } => {
-            get::execute(fs, &uri).await?;
+        Commands::Get { uri, abstract_only } => {
+            get::execute(operations, &uri, abstract_only).await?;
         }
         Commands::Delete { uri } => {
-            delete::execute(fs, &uri).await?;
+            delete::execute(operations, &uri).await?;
         }
         Commands::Session { action } => match action {
-            SessionAction::Create { thread, title } => {
-                session::create(fs, &thread, title.as_deref()).await?;
-            }
-            SessionAction::Close { thread } => {
-                session::close(fs, &thread).await?;
-            }
-            SessionAction::Extract { thread } => {
-                session::extract(fs, &thread).await?;
-            }
             SessionAction::List => {
-                session::list(fs).await?;
+                session::list(operations).await?;
             }
-        },
-        Commands::Automation { action } => match action {
-            AutomationAction::Index { thread } => {
-                automation::index_session(fs, &thread).await?;
-            }
-            AutomationAction::AutoExtract { thread } => {
-                // Load LLM config
-                let llm_config = if std::path::Path::new("config.toml").exists() {
-                    match load_llm_config_from_toml("config.toml") {
-                        Ok(config) => config,
-                        Err(e) => {
-                            eprintln!("Failed to load config.toml: {}", e);
-                            cortex_mem_core::llm::client::LLMConfig::default()
-                        }
-                    }
-                } else {
-                    cortex_mem_core::llm::client::LLMConfig::default()
-                };
-                
-                let llm = Arc::new(cortex_mem_core::llm::LLMClientImpl::new(llm_config)?);
-                automation::auto_extract_on_close(fs, &thread, llm).await?;
+            SessionAction::Create { thread, title } => {
+                session::create(operations, &thread, title.as_deref()).await?;
             }
         },
         Commands::Stats => {
-            stats::execute(fs).await?;
+            stats::execute(operations).await?;
         }
     }
 
     Ok(())
-}
-
-fn load_llm_config_from_toml(path: &str) -> Result<cortex_mem_core::llm::client::LLMConfig> {
-    let content = std::fs::read_to_string(path)?;
-    let value: toml::Value = toml::from_str(&content)?;
-    
-    let llm_section = value.get("llm")
-        .ok_or_else(|| anyhow::anyhow!("No [llm] section in config.toml"))?;
-    
-    let config = cortex_mem_core::llm::client::LLMConfig {
-        api_base_url: llm_section.get("api_base_url")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| anyhow::anyhow!("Missing llm.api_base_url"))?
-            .to_string(),
-        api_key: llm_section.get("api_key")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| anyhow::anyhow!("Missing llm.api_key"))?
-            .to_string(),
-        model_efficient: llm_section.get("model_efficient")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| anyhow::anyhow!("Missing llm.model_efficient"))?
-            .to_string(),
-        temperature: llm_section.get("temperature")
-            .and_then(|v| v.as_float())
-            .unwrap_or(0.1) as f32,
-        max_tokens: llm_section.get("max_tokens")
-            .and_then(|v| v.as_integer())
-            .unwrap_or(4096) as usize,
-    };
-    
-    Ok(config)
 }

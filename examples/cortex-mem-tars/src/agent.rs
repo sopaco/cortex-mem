@@ -344,6 +344,7 @@ impl AgentChatHandler {
         }
     }
 
+    #[allow(dead_code)]
     pub fn history(&self) -> &[ChatMessage] {
         &self.history
     }
@@ -475,6 +476,7 @@ impl AgentChatHandler {
     }
 
     /// 进行对话（非流式版本）
+    #[allow(dead_code)]
     pub async fn chat(&mut self, user_input: &str) -> Result<String, anyhow::Error> {
         let mut rx = self.chat_stream(user_input).await?;
         let mut response = String::new();

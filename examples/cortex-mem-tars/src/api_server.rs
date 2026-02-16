@@ -24,6 +24,7 @@ pub struct RetrieveMemoryQuery {
     /// 查询关键词
     pub query: Option<String>,
     /// 说话人类型过滤
+    #[allow(dead_code)]
     pub speaker_type: Option<String>,
     /// 返回数量限制
     pub limit: Option<usize>,
@@ -33,10 +34,12 @@ pub struct RetrieveMemoryQuery {
 #[derive(Debug, Deserialize)]
 pub struct ListMemoryQuery {
     /// 说话人类型过滤
+    #[allow(dead_code)]
     pub speaker_type: Option<String>,
     /// 返回数量限制
     pub limit: Option<usize>,
     /// 偏移量
+    #[allow(dead_code)]
     pub offset: Option<usize>,
 }
 
@@ -45,7 +48,9 @@ pub struct ListMemoryQuery {
 pub struct ApiServerState {
     pub operations: Arc<MemoryOperations>,
     pub current_bot_id: Arc<std::sync::RwLock<Option<String>>>,
+    #[allow(dead_code)]
     pub audio_connect_mode: String,
+    #[allow(dead_code)]
     pub external_message_sender: Option<mpsc::UnboundedSender<String>>,
 }
 

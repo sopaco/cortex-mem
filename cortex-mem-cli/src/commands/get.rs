@@ -1,28 +1,31 @@
 use anyhow::Result;
 use colored::Colorize;
-use cortex_mem_core::*;
+use cortex_mem_tools::MemoryOperations;
 use std::sync::Arc;
 
-pub async fn execute(fs: Arc<CortexFilesystem>, uri: &str) -> Result<()> {
+pub async fn execute(
+    operations: Arc<MemoryOperations>,
+    uri: &str,
+    abstract_only: bool,
+) -> Result<()> {
     println!("{} Getting memory: {}", "🔍".bold(), uri.cyan());
 
-    // Check if exists
-    if !fs.exists(uri).await? {
-        eprintln!("{} Memory not found: {}", "Error:".red().bold(), uri);
-        return Ok(());
-    }
-
-    // Read content
-    let content = fs.read(uri).await?;
-
-    println!("\n{}", "─".repeat(80).dimmed());
-    println!("{}", content);
-    println!("{}\n", "─".repeat(80).dimmed());
-
-    // Show metadata
-    if let Ok(meta) = fs.metadata(uri).await {
-        println!("{} Metadata:", "ℹ".cyan().bold());
-        println!("  {}: {}", "Size".cyan(), format!("{} bytes", meta.size).dimmed());
+    if abstract_only {
+        // Get abstract (L0 layer)
+        let abstract_result = operations.get_abstract(uri).await?;
+        
+        println!("\n{}", "─".repeat(80).dimmed());
+        println!("{} Abstract (L0)", "📝".bold());
+        println!("{}\n", "─".repeat(80).dimmed());
+        println!("{}", abstract_result.abstract_text);
+        println!("{}\n", "─".repeat(80).dimmed());
+    } else {
+        // Get full content
+        let content = operations.read_file(uri).await?;
+        
+        println!("\n{}", "─".repeat(80).dimmed());
+        println!("{}", content);
+        println!("{}\n", "─".repeat(80).dimmed());
     }
 
     Ok(())

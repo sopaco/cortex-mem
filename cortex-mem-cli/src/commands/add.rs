@@ -1,39 +1,26 @@
 use anyhow::Result;
 use colored::Colorize;
-use cortex_mem_core::*;
+use cortex_mem_tools::MemoryOperations;
 use std::sync::Arc;
 
 pub async fn execute(
-    fs: Arc<CortexFilesystem>,
+    operations: Arc<MemoryOperations>,
     thread: &str,
     role: &str,
     content: &str,
 ) -> Result<()> {
-    let storage = MessageStorage::new(fs);
+    println!("{} Adding message to session: {}", "📝".bold(), thread.cyan());
 
-    // Parse role
-    let message_role = match role.to_lowercase().as_str() {
-        "user" => MessageRole::User,
-        "assistant" => MessageRole::Assistant,
-        "system" => MessageRole::System,
-        _ => {
-            eprintln!("{} Invalid role: {}", "Error:".red().bold(), role);
-            eprintln!("Valid roles: user, assistant, system");
-            return Ok(());
-        }
-    };
-
-    // Create message
-    let message = Message::new(message_role, content);
-
-    // Save message
-    let uri = storage.save_message(thread, &message).await?;
+    // Add message using MemoryOperations
+    let message_id = operations.add_message(thread, role, content).await?;
 
     println!("{} Message added successfully", "✓".green().bold());
     println!("  {}: {}", "Thread".cyan(), thread);
-    println!("  {}: {:?}", "Role".cyan(), message.role);
-    println!("  {}: {}", "URI".cyan(), uri);
-    println!("  {}: {}", "ID".cyan(), message.id);
+    println!("  {}: {}", "Role".cyan(), role);
+    println!("  {}: {}", "ID".cyan(), message_id);
+
+    let uri = format!("cortex://session/{}/timeline/{}.md", thread, message_id);
+    println!("  {}: {}", "URI".cyan(), uri.bright_blue());
 
     Ok(())
 }

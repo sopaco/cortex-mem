@@ -7,5 +7,6 @@ use std::sync::Arc;
 
 pub fn routes() -> Router<Arc<AppState>> {
     Router::new()
-        .route("/", get(crate::handlers::filesystem::list_directory))
+        .route("/list", get(crate::handlers::filesystem::list_directory))
+        .route("/read/*path", get(crate::handlers::filesystem::read_file))
 }

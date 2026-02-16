@@ -1,6 +1,8 @@
 use anyhow::{anyhow, Result};
 use clap::Parser;
-use cortex_mem_core::*;
+use cortex_mem_config::Config;
+use cortex_mem_core::llm::LLMClientImpl;
+use cortex_mem_tools::MemoryOperations;
 use rmcp::{transport::stdio, ServiceExt};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -19,13 +21,9 @@ struct Cli {
     #[arg(short, long, default_value = "config.toml")]
     config: PathBuf,
 
-    /// Agent identifier for memory operations
-    #[arg(long)]
-    agent: Option<String>,
-
-    /// User identifier for memory operations
-    #[arg(long)]
-    user: Option<String>,
+    /// Tenant identifier for memory operations
+    #[arg(long, default_value = "default")]
+    tenant: String,
 }
 
 #[tokio::main]
@@ -39,31 +37,45 @@ async fn main() -> Result<()> {
 
     info!("Starting Cortex Memory MCP Server");
     info!("Using configuration file: {:?}", cli.config);
-    
-    if let Some(ref agent_id) = cli.agent {
-        info!("Default agent ID: {}", agent_id);
-    }
-    if let Some(ref user_id) = cli.user {
-        info!("Default user ID: {}", user_id);
-    }
+    info!("Tenant ID: {}", cli.tenant);
 
     // Load configuration
-    let _config = load_config(&cli.config).await?;
-
-    // Initialize filesystem
-    let data_path = dirs::data_local_dir()
-        .ok_or_else(|| anyhow!("Failed to get data directory"))?
-        .join("cortex-mem");
+    let config = Config::load(&cli.config)?;
     
-    let filesystem = CortexFilesystem::new(&data_path);
-    let filesystem = Arc::new(filesystem);
+    // Determine data directory
+    let data_dir = config.cortex.data_dir();
+    info!("Data directory: {}", data_dir);
 
-    // Create the service
-    let service = MemoryMcpService::new(
-        filesystem,
-        cli.agent,
-        cli.user,
-    );
+    // Initialize LLM client
+    let model_name = config.llm.model_efficient.clone();
+    let llm_config = cortex_mem_core::llm::LLMConfig {
+        api_base_url: config.llm.api_base_url,
+        api_key: config.llm.api_key,
+        model_efficient: config.llm.model_efficient,
+        temperature: config.llm.temperature,
+        max_tokens: config.llm.max_tokens as usize,
+    };
+    let llm_client = Arc::new(LLMClientImpl::new(llm_config)?);
+    info!("LLM client initialized with model: {}", model_name);
+
+    // Initialize MemoryOperations with vector search
+    let operations = MemoryOperations::new(
+        &data_dir,
+        &cli.tenant,
+        llm_client,
+        &config.qdrant.url,
+        &config.qdrant.collection_name,
+        &config.embedding.api_base_url,
+        &config.embedding.api_key,
+        &config.embedding.model_name,
+        config.qdrant.embedding_dim,
+    ).await?;
+    
+    let operations = Arc::new(operations);
+    info!("MemoryOperations initialized successfully");
+
+    // Create the MCP service
+    let service = MemoryMcpService::new(operations);
 
     // Serve the MCP service
     let running_service = service
@@ -79,11 +91,5 @@ async fn main() -> Result<()> {
         Err(e) => error!("Server error: {:?}", e),
     }
 
-    Ok(())
-}
-
-async fn load_config(_config_path: &PathBuf) -> Result<()> {
-    // For now, just return OK
-    // In the future, we can load LLM config from config.toml
     Ok(())
 }

@@ -5,4 +5,3 @@ pub mod get;
 pub mod delete;
 pub mod session;
 pub mod stats;
-pub mod automation;

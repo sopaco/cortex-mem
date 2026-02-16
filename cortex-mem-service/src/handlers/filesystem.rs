@@ -1,6 +1,4 @@
 use axum::{
-    Router,
-    routing::get,
     extract::{Path, Query, State},
     Json,
 };
@@ -13,12 +11,6 @@ use crate::{
     state::AppState,
 };
 use cortex_mem_core::FilesystemOperations;
-
-pub fn routes() -> Router<Arc<AppState>> {
-    Router::new()
-        .route("/list", get(list_directory))
-        .route("/read/*path", get(read_file))
-}
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
@@ -41,7 +33,7 @@ pub async fn list_directory(
 }
 
 /// Read file content
-async fn read_file(
+pub async fn read_file(
     State(state): State<Arc<AppState>>,
     Path(path): Path<String>,
 ) -> Result<Json<ApiResponse<String>>> {
