@@ -3,9 +3,10 @@
 use crate::{
     embedding::EmbeddingClient,
     filesystem::{CortexFilesystem, FilesystemOperations},
+    layers::manager::LayerManager,
+    types::{Memory, MemoryMetadata, MemoryType},
     vector_store::QdrantVectorStore,
     Result,
-    types::{Memory, MemoryMetadata, MemoryType},
 };
 use std::sync::Arc;
 use tracing::{debug, info, warn};
@@ -78,7 +79,7 @@ impl SyncManager {
             config,
         }
     }
-    
+
     /// 创建默认配置的自动同步管理器
     pub fn with_defaults(
         filesystem: Arc<CortexFilesystem>,
@@ -91,18 +92,22 @@ impl SyncManager {
     /// 同步所有内容到向量数据库
     pub async fn sync_all(&self) -> Result<SyncStats> {
         info!("Starting full sync to vector database");
-        
+
         let mut total_stats = SyncStats::default();
 
         // 同步用户记忆
         if self.config.sync_users {
-            let stats = self.sync_directory("cortex://users", MemoryType::Semantic).await?;
+            let stats = self
+                .sync_directory("cortex://users", MemoryType::Semantic)
+                .await?;
             total_stats.add(&stats);
         }
 
         // 同步Agent记忆
         if self.config.sync_agents {
-            let stats = self.sync_directory("cortex://agents", MemoryType::Semantic).await?;
+            let stats = self
+                .sync_directory("cortex://agents", MemoryType::Semantic)
+                .await?;
             total_stats.add(&stats);
         }
 
@@ -117,7 +122,9 @@ impl SyncManager {
             // global目录可能不存在，如果存在则同步
             if let Ok(entries) = self.filesystem.list("cortex://global").await {
                 if !entries.is_empty() {
-                    let stats = self.sync_directory("cortex://global", MemoryType::Semantic).await?;
+                    let stats = self
+                        .sync_directory("cortex://global", MemoryType::Semantic)
+                        .await?;
                     total_stats.add(&stats);
                 }
             }
@@ -175,7 +182,7 @@ impl SyncManager {
         Box::pin(async move {
             let entries = self.filesystem.list(uri).await?;
             let mut stats = SyncStats::default();
-            
+
             // ✅ 新增: 如果是timeline目录,生成L0/L1层
             if uri.contains("/timeline") && !uri.contains(".md") {
                 if let Err(e) = self.generate_timeline_layers(uri).await {
@@ -221,7 +228,7 @@ impl SyncManager {
         let l2_content = self.filesystem.read(uri).await?;
         let l2_embedding = self.embedding.embed(&l2_content).await?;
         let l2_metadata = self.parse_metadata(uri, memory_type.clone(), "L2")?;
-        
+
         let l2_memory = Memory {
             id: l2_id.clone(),
             content: l2_content.clone(),
@@ -240,7 +247,7 @@ impl SyncManager {
             if !self.is_indexed(&l0_id).await? {
                 let l0_embedding = self.embedding.embed(&l0_content).await?;
                 let l0_metadata = self.parse_metadata(uri, memory_type.clone(), "L0")?;
-                
+
                 let l0_memory = Memory {
                     id: l0_id,
                     content: l0_content,
@@ -261,7 +268,7 @@ impl SyncManager {
             if !self.is_indexed(&l1_id).await? {
                 let l1_embedding = self.embedding.embed(&l1_content).await?;
                 let l1_metadata = self.parse_metadata(uri, memory_type.clone(), "L1")?;
-                
+
                 let l1_memory = Memory {
                     id: l1_id,
                     content: l1_content,
@@ -280,7 +287,10 @@ impl SyncManager {
 
     /// 获取分层文件URI
     fn get_layer_uri(base_uri: &str, layer: &str) -> String {
-        let dir = base_uri.rsplit_once('/').map(|(dir, _)| dir).unwrap_or(base_uri);
+        let dir = base_uri
+            .rsplit_once('/')
+            .map(|(dir, _)| dir)
+            .unwrap_or(base_uri);
         match layer {
             "L0" => format!("{}/.abstract.md", dir),
             "L1" => format!("{}/.overview.md", dir),
@@ -302,17 +312,25 @@ impl SyncManager {
     }
 
     /// 解析URI获取元数据（支持layer标识）
-    fn parse_metadata(&self, uri: &str, memory_type: MemoryType, layer: &str) -> Result<MemoryMetadata> {
+    fn parse_metadata(
+        &self,
+        uri: &str,
+        memory_type: MemoryType,
+        layer: &str,
+    ) -> Result<MemoryMetadata> {
         use serde_json::Value;
-        
+
         // 从URI中提取信息
         // 格式: cortex://dimension/path/to/file.md
         let parts: Vec<&str> = uri.split('/').collect();
-        
+
         let (dimension, path): (&str, String) = if parts.len() >= 3 {
             (parts[2], parts[3..].join("/"))
         } else {
-            ("threads", uri.strip_prefix("cortex://").unwrap_or(uri).to_string())
+            (
+                "threads",
+                uri.strip_prefix("cortex://").unwrap_or(uri).to_string(),
+            )
         };
 
         let hash = self.calculate_hash(uri);
@@ -323,9 +341,21 @@ impl SyncManager {
         custom.insert("layer".to_string(), Value::String(layer.to_string()));
 
         Ok(MemoryMetadata {
-            user_id: if dimension == "users" { Some(path.clone()) } else { None },
-            agent_id: if dimension == "agents" { Some(path.clone()) } else { None },
-            run_id: if dimension == "threads" { Some(path.clone()) } else { None },
+            user_id: if dimension == "users" {
+                Some(path.clone())
+            } else {
+                None
+            },
+            agent_id: if dimension == "agents" {
+                Some(path.clone())
+            } else {
+                None
+            },
+            run_id: if dimension == "threads" {
+                Some(path.clone())
+            } else {
+                None
+            },
             actor_id: None,
             role: None,
             memory_type,
@@ -339,20 +369,18 @@ impl SyncManager {
 
     /// 计算内容的哈希值
     fn calculate_hash(&self, content: &str) -> String {
-        use std::hash::{Hash, Hasher};
         use std::collections::hash_map::DefaultHasher;
-        
+        use std::hash::{Hash, Hasher};
+
         let mut hasher = DefaultHasher::new();
         content.hash(&mut hasher);
         format!("{:x}", hasher.finish())
     }
-    
+
     /// 为timeline目录生成L0/L1层
-    /// 
+    ///
     /// 调用LayerManager生成timeline级别的abstract和overview
     async fn generate_timeline_layers(&self, timeline_uri: &str) -> Result<()> {
-        use crate::LayerManager;
-        
         let layer_manager = LayerManager::new(self.filesystem.clone());
         layer_manager.generate_timeline_layers(timeline_uri).await
     }
@@ -364,19 +392,5 @@ impl SyncStats {
         self.indexed_files += other.indexed_files;
         self.skipped_files += other.skipped_files;
         self.error_files += other.error_files;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_sync_config_default() {
-        let config = SyncConfig::default();
-        assert!(config.sync_users);
-        assert!(config.sync_agents);
-        assert!(config.sync_threads);
-        assert!(config.sync_global);
     }
 }

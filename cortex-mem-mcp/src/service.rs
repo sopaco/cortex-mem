@@ -1,12 +1,8 @@
 use anyhow::Result;
-use cortex_mem_core::*;
+use cortex_mem_core::{layers::manager::LayerManager, *};
 use rmcp::{
-    handler::server::tool::ToolRouter,
-    handler::server::wrapper::Parameters,
-    model::*,
-    tool, tool_handler, tool_router,
-    ServerHandler,
-    Json,
+    handler::server::tool::ToolRouter, handler::server::wrapper::Parameters, model::*, tool,
+    tool_handler, tool_router, Json, ServerHandler,
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -28,7 +24,7 @@ pub struct StoreMemoryArgs {
     content: String,
     /// Optional user dimension
     user_dimension: Option<String>,
-    /// Optional repository dimension  
+    /// Optional repository dimension
     repos_dimension: Option<String>,
     /// Optional tags for categorization
     tags: Option<Vec<String>>,
@@ -120,7 +116,7 @@ impl MemoryMcpService {
 
         // Generate a unique ID for this memory
         let memory_id = uuid::Uuid::new_v4().to_string();
-        
+
         // Construct URI based on dimensions
         let uri = if let Some(user) = &params.0.user_dimension {
             format!("cortex://user/{}/memories/{}", user, memory_id)
@@ -153,7 +149,7 @@ impl MemoryMcpService {
 
         let limit = params.0.limit.unwrap_or(10);
         let query = &params.0.query;
-        
+
         // Build search scope based on dimensions
         let scope = if let Some(ref repos) = params.0.repos_dimension {
             if let Some(ref user) = params.0.user_dimension {
@@ -166,35 +162,41 @@ impl MemoryMcpService {
         } else {
             "cortex://threads".to_string()
         };
-        
+
         // Determine search mode
         #[cfg(feature = "vector-search")]
         let mode = params.0.mode.as_deref().unwrap_or("keyword");
         #[cfg(not(feature = "vector-search"))]
         let mode = "keyword";
-        
+
         match mode {
             "keyword" => {
                 // Use RetrievalEngine for keyword search
-                let layer_manager = Arc::new(cortex_mem_core::LayerManager::new(self.filesystem.clone()));
-                let engine = cortex_mem_core::RetrievalEngine::new(self.filesystem.clone(), layer_manager);
-                
+                let layer_manager = Arc::new(LayerManager::new(self.filesystem.clone()));
+                let engine =
+                    cortex_mem_core::RetrievalEngine::new(self.filesystem.clone(), layer_manager);
+
                 let options = cortex_mem_core::RetrievalOptions {
                     top_k: limit,
                     min_score: 0.3,
                     load_details: true,
                     max_candidates: limit * 2,
                 };
-                
+
                 match engine.search(query, &scope, options).await {
                     Ok(result) => {
-                        let results: Vec<String> = result.results.iter()
+                        let results: Vec<String> = result
+                            .results
+                            .iter()
                             .map(|r| format!("{}: {}", r.uri, r.snippet))
                             .collect();
-                        
+
                         let total = results.len();
-                        info!("Keyword query '{}' found {} results in scope {}", query, total, scope);
-                        
+                        info!(
+                            "Keyword query '{}' found {} results in scope {}",
+                            query, total, scope
+                        );
+
                         Ok(Json(QueryMemoryResult {
                             success: true,
                             query: query.clone(),
@@ -209,7 +211,7 @@ impl MemoryMcpService {
                     }
                 }
             }
-            
+
             #[cfg(feature = "vector-search")]
             "vector" | "hybrid" | "layered" => {
                 // For vector-based modes, we would need VectorSearchEngine
@@ -221,13 +223,16 @@ impl MemoryMcpService {
                     mode
                 ))
             }
-            
-            _ => {
-                Err(format!("Unknown search mode '{}'. Supported modes: keyword{}", 
-                    mode,
-                    if cfg!(feature = "vector-search") { ", vector, hybrid, layered" } else { "" }
-                ))
-            }
+
+            _ => Err(format!(
+                "Unknown search mode '{}'. Supported modes: keyword{}",
+                mode,
+                if cfg!(feature = "vector-search") {
+                    ", vector, hybrid, layered"
+                } else {
+                    ""
+                }
+            )),
         }
     }
 
@@ -239,7 +244,7 @@ impl MemoryMcpService {
         debug!("list_memories called with args: {:?}", params.0);
 
         let limit = params.0.limit.unwrap_or(50);
-        
+
         // Build scope based on dimensions
         let scope = if let Some(ref repos) = params.0.repos_dimension {
             if let Some(ref user) = params.0.user_dimension {
@@ -252,34 +257,35 @@ impl MemoryMcpService {
         } else {
             "cortex://threads".to_string()
         };
-        
+
         // List files in the scope
         match self.filesystem.list(&scope).await {
             Ok(entries) => {
                 let mut memories = Vec::new();
-                
+
                 for entry in entries {
                     // Skip hidden files except .abstract.md and .overview.md
-                    if entry.name.starts_with('.') && 
-                       entry.name != ".abstract.md" && 
-                       entry.name != ".overview.md" {
+                    if entry.name.starts_with('.')
+                        && entry.name != ".abstract.md"
+                        && entry.name != ".overview.md"
+                    {
                         continue;
                     }
-                    
+
                     if entry.is_directory {
                         memories.push(format!("📁 {}/", entry.name));
                     } else {
                         memories.push(format!("📄 {} ({} bytes)", entry.name, entry.size));
                     }
-                    
+
                     if memories.len() >= limit {
                         break;
                     }
                 }
-                
+
                 let total = memories.len();
                 info!("Listed {} memories in scope {}", total, scope);
-                
+
                 Ok(Json(ListMemoriesResult {
                     success: true,
                     memories,
@@ -311,7 +317,7 @@ impl MemoryMcpService {
                     content,
                 }))
             }
-            Err(e) => Err(format!("Failed to get memory: {}", e))
+            Err(e) => Err(format!("Failed to get memory: {}", e)),
         }
     }
 }

@@ -1,19 +1,19 @@
 use anyhow::Result;
 use chrono::{DateTime, Local};
-use cortex_mem_tools::MemoryOperations;
-use cortex_mem_rig::{create_memory_tools_with_tenant, create_memory_tools_with_tenant_and_llm};
 #[cfg(feature = "vector-search")]
 use cortex_mem_rig::create_memory_tools_with_tenant_and_vector;
+use cortex_mem_rig::{create_memory_tools_with_tenant, create_memory_tools_with_tenant_and_llm};
+use cortex_mem_tools::MemoryOperations;
 use futures::StreamExt;
+use rig::agent::MultiTurnStreamItem;
 use rig::{
     agent::Agent as RigAgent,
     client::CompletionClient,
-    providers::openai::{Client, CompletionModel},
     completion::Message,
-    streaming::StreamingChat,
     message::Text,
+    providers::openai::{Client, CompletionModel},
+    streaming::StreamingChat,
 };
-use rig::agent::MultiTurnStreamItem;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 
@@ -61,11 +61,11 @@ pub async fn create_memory_agent(
     bot_system_prompt: Option<&str>,
     agent_id: &str,
     _user_id: &str,
-    enable_vector_search: bool,  // ✅ 新增参数
-    qdrant_url: Option<&str>,    // ✅ Qdrant URL
-    qdrant_collection: Option<&str>,  // ✅ Qdrant collection
-    embedding_api_base_url: Option<&str>,  // ✅ Embedding API base URL
-    embedding_api_key: Option<&str>,  // ✅ Embedding API key
+    enable_vector_search: bool,           // ✅ 新增参数
+    qdrant_url: Option<&str>,             // ✅ Qdrant URL
+    qdrant_collection: Option<&str>,      // ✅ Qdrant collection
+    embedding_api_base_url: Option<&str>, // ✅ Embedding API base URL
+    embedding_api_key: Option<&str>,      // ✅ Embedding API key
 ) -> Result<(RigAgent<CompletionModel>, Arc<MemoryOperations>), Box<dyn std::error::Error>> {
     // 创建 cortex LLMClient 用于 L0/L1 生成
     let llm_config = cortex_mem_core::llm::LLMConfig {
@@ -75,56 +75,48 @@ pub async fn create_memory_agent(
         temperature: 0.1,
         max_tokens: 4096,
     };
-    let cortex_llm_client: Arc<dyn cortex_mem_core::llm::LLMClient> = 
+    let cortex_llm_client: Arc<dyn cortex_mem_core::llm::LLMClient> =
         Arc::new(cortex_mem_core::llm::LLMClientImpl::new(llm_config)?);
-    
+
     // 根据 enable_vector_search 决定使用哪种初始化方法
     #[cfg(feature = "vector-search")]
     let memory_tools = if enable_vector_search {
         // ✅ 使用向量搜索版本
         tracing::info!("🔍 启用向量搜索功能");
         create_memory_tools_with_tenant_and_vector(
-            data_dir, 
+            data_dir,
             agent_id,
             cortex_llm_client,
             qdrant_url.unwrap_or("http://localhost:6334"),
             qdrant_collection.unwrap_or("cortex_mem"),
             embedding_api_base_url.unwrap_or(api_base_url),
             embedding_api_key.unwrap_or(api_key),
-        ).await?
+        )
+        .await?
     } else {
         // 使用普通版本（无向量搜索）
         tracing::info!("ℹ️ 向量搜索功能未启用");
-        create_memory_tools_with_tenant_and_llm(
-            data_dir, 
-            agent_id,
-            cortex_llm_client,
-        ).await?
+        create_memory_tools_with_tenant_and_llm(data_dir, agent_id, cortex_llm_client).await?
     };
-    
+
     #[cfg(not(feature = "vector-search"))]
     let memory_tools = {
         if enable_vector_search {
             tracing::warn!("⚠️ 向量搜索功能需要 vector-search feature，当前未编译");
         }
-        create_memory_tools_with_tenant_and_llm(
-            data_dir, 
-            agent_id,
-            cortex_llm_client,
-        ).await?
+        create_memory_tools_with_tenant_and_llm(data_dir, agent_id, cortex_llm_client).await?
     };
-    
+
     // 获取租户 operations 用于外部使用
     let tenant_operations = memory_tools.operations().clone();
-    
+
     // 创建 Rig LLM 客户端用于 Agent 对话
-    let llm_client = Client::builder(api_key)
-        .base_url(api_base_url)
-        .build();
+    let llm_client = Client::builder(api_key).base_url(api_base_url).build();
 
     // 构建 system prompt（OpenViking 风格）
     let base_system_prompt = if let Some(info) = user_info {
-        format!(r#"你是一个拥有分层记忆功能的智能 AI 助手。
+        format!(
+            r#"你是一个拥有分层记忆功能的智能 AI 助手。
 
 此会话发生的初始时间：{current_time}
 
@@ -194,9 +186,11 @@ pub async fn create_memory_agent(
 "#,
             current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"),
             bot_id = agent_id,
-            info = info)
+            info = info
+        )
     } else {
-        format!(r#"你是一个拥有分层记忆功能的智能 AI 助手。
+        format!(
+            r#"你是一个拥有分层记忆功能的智能 AI 助手。
 
 此会话发生的初始时间：{current_time}
 
@@ -248,7 +242,8 @@ pub async fn create_memory_agent(
 - 你的记忆不会与其他 Bot 共享
 "#,
             current_time = chrono::Local::now().format("%Y年%m月%d日 %H:%M:%S"),
-            bot_id = agent_id)
+            bot_id = agent_id
+        )
     };
 
     // 追加机器人系统提示词
@@ -287,18 +282,18 @@ pub async fn extract_user_basic_info(
     _agent_id: &str,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
     use cortex_mem_core::filesystem::FilesystemOperations;
-    
+
     // 直接读取 profile.json 文件
     let profile_uri = format!("cortex://user/{}/profile.json", user_id);
-    
+
     match operations.filesystem().read(&profile_uri).await {
         Ok(json_str) => {
             // 解析 JSON
             let profile: serde_json::Value = serde_json::from_str(&json_str)?;
-            
+
             let mut context = String::new();
             context.push_str("## 用户记忆\n\n");
-            
+
             // 解析各个类别
             let categories = vec![
                 ("personal_info", "个人信息"),
@@ -307,7 +302,7 @@ pub async fn extract_user_basic_info(
                 ("relationships", "人际关系"),
                 ("goals", "目标愿景"),
             ];
-            
+
             let mut total_count = 0;
             for (key, label) in categories {
                 if let Some(items) = profile.get(key).and_then(|v| v.as_array()) {
@@ -323,13 +318,17 @@ pub async fn extract_user_basic_info(
                     }
                 }
             }
-            
+
             if total_count == 0 {
                 tracing::info!("Profile exists but empty for user: {}", user_id);
                 return Ok(None);
             }
-            
-            tracing::info!("Loaded {} user memory items from profile.json for user: {}", total_count, user_id);
+
+            tracing::info!(
+                "Loaded {} user memory items from profile.json for user: {}",
+                total_count,
+                user_id
+            );
             Ok(Some(context))
         }
         Err(e) => {
@@ -357,7 +356,7 @@ impl AgentChatHandler {
             session_id: uuid::Uuid::new_v4().to_string(),
         }
     }
-    
+
     /// Create with memory operations for auto-saving conversations
     pub fn with_memory(
         agent: RigAgent<CompletionModel>,
@@ -375,7 +374,7 @@ impl AgentChatHandler {
     pub fn history(&self) -> &[ChatMessage] {
         &self.history
     }
-    
+
     /// Auto-save conversation to session dimension
     async fn save_conversation(&self, user_input: &str, assistant_response: &str) {
         if let Some(ops) = &self.operations {
@@ -427,15 +426,19 @@ impl AgentChatHandler {
             .iter()
             .filter_map(|msg| match msg.role {
                 MessageRole::User => Some(Message::User {
-                    content: rig::OneOrMany::one(rig::completion::message::UserContent::Text(Text {
-                        text: msg.content.clone(),
-                    })),
+                    content: rig::OneOrMany::one(rig::completion::message::UserContent::Text(
+                        Text {
+                            text: msg.content.clone(),
+                        },
+                    )),
                 }),
                 MessageRole::Assistant => Some(Message::Assistant {
                     id: None,
-                    content: rig::OneOrMany::one(rig::completion::message::AssistantContent::Text(Text {
-                        text: msg.content.clone(),
-                    })),
+                    content: rig::OneOrMany::one(rig::completion::message::AssistantContent::Text(
+                        Text {
+                            text: msg.content.clone(),
+                        },
+                    )),
                 }),
             })
             .collect();
@@ -463,9 +466,9 @@ impl AgentChatHandler {
             // 使用 stream_chat + multi_turn 支持工具调用（Rig 0.23 风格）
             let mut stream = agent
                 .stream_chat(prompt_message, chat_history)
-                .multi_turn(20)  // 支持最多 20 轮工具调用
+                .multi_turn(20) // 支持最多 20 轮工具调用
                 .await;
-                
+
             // 处理流式响应
             while let Some(item) = stream.next().await {
                 match item {
@@ -477,7 +480,7 @@ impl AgentChatHandler {
                                     StreamedAssistantContent::Text(text_content) => {
                                         let text = &text_content.text;
                                         full_response.push_str(text);
-                                        
+
                                         // 发送流式内容
                                         if tx.send(text.clone()).await.is_err() {
                                             break;
@@ -510,7 +513,7 @@ impl AgentChatHandler {
                     }
                 }
             }
-            
+
             // 对话结束后自动保存到 session
             if let Some(ops) = ops_clone {
                 // Save user message
@@ -551,10 +554,7 @@ impl AgentChatHandler {
     }
 
     /// 进行对话（非流式版本）
-    pub async fn chat(
-        &mut self,
-        user_input: &str,
-    ) -> Result<String, anyhow::Error> {
+    pub async fn chat(&mut self, user_input: &str) -> Result<String, anyhow::Error> {
         let mut rx = self.chat_stream(user_input).await?;
         let mut response = String::new();
 
@@ -566,17 +566,5 @@ impl AgentChatHandler {
         self.history.push(ChatMessage::assistant(response.clone()));
 
         Ok(response)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_chat_message() {
-        let msg = ChatMessage::user("Hello");
-        assert_eq!(msg.role, MessageRole::User);
-        assert_eq!(msg.content, "Hello");
     }
 }

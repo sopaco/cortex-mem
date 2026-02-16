@@ -21,14 +21,14 @@
 //!     // 初始化文件系统
 //!     let filesystem = Arc::new(CortexFilesystem::new("./cortex-data"));
 //!     filesystem.initialize().await?;
-//!     
+//!
 //!     // 写入数据
 //!     filesystem.write("cortex://test.md", "Hello, Cortex!").await?;
-//!     
+//!
 //!     // 读取数据
 //!     let content = filesystem.read("cortex://test.md").await?;
 //!     println!("Content: {}", content);
-//!     
+//!
 //!     Ok(())
 //! }
 //! ```
@@ -56,15 +56,15 @@
 //!             timeout_secs: 30,
 //!         };
 //!         let vector_store = Arc::new(QdrantVectorStore::new(&config).await?);
-//!         
+//!
 //!         // 初始化 Embedding 客户端
 //!         let embedding_config = EmbeddingConfig::default();
 //!         let embedding_client = Arc::new(EmbeddingClient::new(embedding_config)?);
-//!         
+//!
 //!         // 生成 embedding 并存储
 //!         let text = "This is a test memory";
 //!         let embedding = embedding_client.embed(text).await?;
-//!         
+//!
 //!         let memory = Memory {
 //!             id: "mem-1".to_string(),
 //!             content: text.to_string(),
@@ -73,9 +73,9 @@
 //!             updated_at: chrono::Utc::now(),
 //!             metadata: MemoryMetadata::default(),
 //!         };
-//!         
+//!
 //!         vector_store.insert(&memory).await?;
-//!         
+//!
 //!         // 搜索相似记忆
 //!         let query = "test";
 //!         let query_embedding = embedding_client.embed(query).await?;
@@ -84,7 +84,7 @@
 //!             &Filters::default(),
 //!             10
 //!         ).await?;
-//!         
+//!
 //!         println!("Found {} results", results.len());
 //!     }
 //!     Ok(())
@@ -108,16 +108,16 @@
 
 pub mod config;
 pub mod error;
-pub mod types;
 pub mod logging;
+pub mod types;
 
-pub mod filesystem;
-pub mod session;
-pub mod extraction;
-pub mod llm;
 pub mod automation;
+pub mod extraction;
+pub mod filesystem;
 pub mod layers;
+pub mod llm;
 pub mod retrieval;
+pub mod session;
 
 #[cfg(feature = "vector-search")]
 pub mod init;
@@ -136,29 +136,30 @@ pub use config::*;
 pub use error::{Error, Result};
 pub use types::*;
 
+pub use automation::{AutoExtractConfig, AutoExtractor};
+pub use extraction::{ExtractionConfig, MemoryExtractor};
 pub use filesystem::{CortexFilesystem, FilesystemOperations};
-pub use session::{SessionManager, SessionConfig, Message, MessageRole, Participant, ParticipantManager};
-pub use extraction::{MemoryExtractor, ExtractionConfig};
 pub use llm::LLMClient;
-pub use automation::{AutoExtractor, AutoExtractConfig};
+pub use session::{
+    Message, MessageRole, Participant, ParticipantManager, SessionConfig, SessionManager,
+};
 
 #[cfg(feature = "vector-search")]
-pub use automation::{AutoIndexer, IndexerConfig, IndexStats, FsWatcher, WatcherConfig};
+pub use automation::{AutoIndexer, FsWatcher, IndexStats, IndexerConfig, WatcherConfig};
 
 #[cfg(feature = "vector-search")]
-pub use automation::{SyncManager, SyncConfig, SyncStats};
+pub use automation::{SyncConfig, SyncManager, SyncStats};
 
-pub use layers::LayerManager;
 pub use retrieval::{RetrievalEngine, RetrievalOptions, RetrievalResult, SearchResult};
 
 #[cfg(feature = "vector-search")]
-pub use vector_store::{VectorStore, QdrantVectorStore};
+pub use vector_store::{QdrantVectorStore, VectorStore};
 
 #[cfg(feature = "vector-search")]
 pub use embedding::{EmbeddingClient, EmbeddingConfig};
 
 #[cfg(feature = "vector-search")]
-pub use search::{VectorSearchEngine, SearchOptions};
+pub use search::{SearchOptions, VectorSearchEngine};
 
 // Session-related re-exports
 pub use session::message::MessageStorage;

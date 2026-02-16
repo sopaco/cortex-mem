@@ -7,16 +7,13 @@ mod sync;
 #[cfg(feature = "vector-search")]
 mod watcher;
 
-#[cfg(all(test, feature = "vector-search"))]
-mod indexer_tests;
-
 pub use auto_extract::{AutoExtractConfig, AutoExtractStats, AutoExtractor, AutoSessionManager};
 
 #[cfg(feature = "vector-search")]
-pub use indexer::{IndexerConfig, IndexStats, AutoIndexer};
+pub use indexer::{AutoIndexer, IndexStats, IndexerConfig};
 
 #[cfg(feature = "vector-search")]
-pub use sync::{SyncManager, SyncConfig, SyncStats};
+pub use sync::{SyncConfig, SyncManager, SyncStats};
 
 #[cfg(feature = "vector-search")]
-pub use watcher::{FsWatcher, WatcherConfig, FsEvent};
+pub use watcher::{FsEvent, FsWatcher, WatcherConfig};

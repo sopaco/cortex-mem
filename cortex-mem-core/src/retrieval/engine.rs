@@ -1,6 +1,5 @@
-use crate::{
-    ContextLayer, CortexFilesystem, FilesystemOperations, LayerManager, Result,
-};
+use crate::layers::manager::LayerManager;
+use crate::{ContextLayer, CortexFilesystem, FilesystemOperations, Result};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -77,10 +76,7 @@ pub enum StepType {
 }
 
 impl RetrievalEngine {
-    pub fn new(
-        filesystem: Arc<CortexFilesystem>,
-        layer_manager: Arc<LayerManager>,
-    ) -> Self {
+    pub fn new(filesystem: Arc<CortexFilesystem>, layer_manager: Arc<LayerManager>) -> Self {
         Self {
             filesystem,
             _layer_manager: layer_manager,
@@ -88,7 +84,7 @@ impl RetrievalEngine {
             relevance_calc: RelevanceCalculator::new(),
         }
     }
-    
+
     /// Search for relevant memories
     pub async fn search(
         &self,
@@ -102,7 +98,7 @@ impl RetrievalEngine {
             steps: Vec::new(),
             total_duration_ms: 0,
         };
-        
+
         // Step 1: Intent Analysis
         let step_start = std::time::Instant::now();
         let intent = self.intent_analyzer.analyze(query).await?;
@@ -112,7 +108,7 @@ impl RetrievalEngine {
             candidates_count: intent.keywords.len(),
             duration_ms: step_start.elapsed().as_millis() as u64,
         });
-        
+
         // Step 2: L0 Scan - Find candidate directories
         let step_start = std::time::Instant::now();
         let candidates = self.scan_l0(scope, &intent, options.max_candidates).await?;
@@ -122,7 +118,7 @@ impl RetrievalEngine {
             candidates_count: candidates.len(),
             duration_ms: step_start.elapsed().as_millis() as u64,
         });
-        
+
         // Step 3: L1 Exploration - Detailed search in candidates
         let step_start = std::time::Instant::now();
         let mut results = Vec::new();
@@ -136,10 +132,14 @@ impl RetrievalEngine {
             candidates_count: results.len(),
             duration_ms: step_start.elapsed().as_millis() as u64,
         });
-        
+
         // Step 4: Result Aggregation
         let step_start = std::time::Instant::now();
-        results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+        results.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         results.retain(|r| r.score >= options.min_score);
         results.truncate(options.top_k);
         trace.steps.push(TraceStep {
@@ -148,32 +148,37 @@ impl RetrievalEngine {
             candidates_count: results.len(),
             duration_ms: step_start.elapsed().as_millis() as u64,
         });
-        
+
         trace.total_duration_ms = start.elapsed().as_millis() as u64;
-        
+
         Ok(RetrievalResult {
             query: query.to_string(),
             results,
             trace,
         })
     }
-    
+
     /// Scan L0 layer to find candidate directories
-    async fn scan_l0(&self, scope: &str, intent: &Intent, max_candidates: usize) -> Result<Vec<String>> {
+    async fn scan_l0(
+        &self,
+        scope: &str,
+        intent: &Intent,
+        max_candidates: usize,
+    ) -> Result<Vec<String>> {
         let entries = self.filesystem.list(scope).await?;
-        
+
         let mut candidates = Vec::new();
-        
+
         for entry in entries {
             if !entry.is_directory {
                 continue;
             }
-            
+
             // Try to load L0 abstract
             let abstract_uri = format!("{}/.abstract.md", entry.uri);
             if let Ok(abstract_text) = self.filesystem.read(&abstract_uri).await {
                 let score = self.relevance_calc.calculate(&abstract_text, intent);
-                
+
                 if score > 0.2 {
                     candidates.push((entry.uri.clone(), score));
                 }
@@ -183,20 +188,25 @@ impl RetrievalEngine {
                 candidates.push((entry.uri.clone(), 0.5));
             }
         }
-        
+
         // Sort by score and take top candidates
         candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         candidates.truncate(max_candidates);
-        
+
         Ok(candidates.into_iter().map(|(uri, _)| uri).collect())
     }
-    
+
     /// Explore a directory for matching files
-    fn explore_directory<'a>(&'a self, dir_uri: &'a str, intent: &'a Intent) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<SearchResult>>> + Send + 'a>> {
+    fn explore_directory<'a>(
+        &'a self,
+        dir_uri: &'a str,
+        intent: &'a Intent,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<SearchResult>>> + Send + 'a>>
+    {
         Box::pin(async move {
             let entries = self.filesystem.list(dir_uri).await?;
             let mut results = Vec::new();
-            
+
             for entry in entries {
                 if entry.is_directory {
                     // Recursively explore subdirectories (e.g., timeline/2026-02/04)
@@ -204,23 +214,28 @@ impl RetrievalEngine {
                     results.extend(sub_results);
                     continue;
                 }
-                
+
                 // Allow .abstract.md and .overview.md, but skip other hidden files
-                if entry.name.starts_with('.') && !entry.name.ends_with(".abstract.md") && !entry.name.ends_with(".overview.md") {
+                if entry.name.starts_with('.')
+                    && !entry.name.ends_with(".abstract.md")
+                    && !entry.name.ends_with(".overview.md")
+                {
                     continue; // Skip other metadata files
                 }
-                
+
                 // Load L1 or L2 content
                 if let Ok(content) = self.filesystem.read(&entry.uri).await {
                     let score = self.relevance_calc.calculate(&content, intent);
-                    
+
                     // 降低阈值：对于非空查询使用 0.1，对于空查询直接返回
-                    let threshold = if intent.keywords.is_empty() || intent.keywords.iter().all(|k| k.is_empty()) {
+                    let threshold = if intent.keywords.is_empty()
+                        || intent.keywords.iter().all(|k| k.is_empty())
+                    {
                         0.0 // 空查询时返回所有内容
                     } else {
                         0.1 // 降低阈值，允许更多低分记忆被返回
                     };
-                    
+
                     if score >= threshold {
                         results.push(SearchResult {
                             uri: entry.uri.clone(),
@@ -231,28 +246,28 @@ impl RetrievalEngine {
                     }
                 }
             }
-            
+
             Ok(results)
         })
     }
-    
+
     /// Create a snippet highlighting keywords
     fn create_snippet(content: &str, keywords: &[String]) -> String {
         // Find first occurrence of any keyword
         let content_lower = content.to_lowercase();
-        
+
         for keyword in keywords {
             if let Some(pos) = content_lower.find(&keyword.to_lowercase()) {
                 // Use char indices to avoid breaking UTF-8 boundaries
                 let chars: Vec<char> = content.chars().collect();
                 let pos_chars = content[..pos].chars().count();
-                
+
                 // Extract context around keyword (in characters, not bytes)
                 let start = pos_chars.saturating_sub(50);
                 let end = (pos_chars + keyword.chars().count() + 50).min(chars.len());
-                
+
                 let snippet_chars: String = chars[start..end].iter().collect();
-                
+
                 let mut snippet = snippet_chars;
                 if start > 0 {
                     snippet = format!("...{}", snippet);
@@ -260,11 +275,11 @@ impl RetrievalEngine {
                 if end < chars.len() {
                     snippet = format!("{}...", snippet);
                 }
-                
+
                 return snippet;
             }
         }
-        
+
         // Fallback: first 100 chars
         let chars: Vec<char> = content.chars().collect();
         if chars.len() > 100 {

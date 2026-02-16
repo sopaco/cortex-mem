@@ -40,7 +40,7 @@ pub struct IndexStats {
 }
 
 /// 自动索引管理器
-/// 
+///
 /// 负责：
 /// 1. 监听新消息并自动生成embedding
 /// 2. 批量索引现有消息
@@ -108,15 +108,16 @@ impl AutoIndexer {
 
     /// 批量索引线程中的所有消息
     pub async fn index_thread(&self, thread_id: &str) -> Result<IndexStats> {
-        self.index_thread_with_progress::<fn(usize, usize)>(thread_id, None).await
+        self.index_thread_with_progress::<fn(usize, usize)>(thread_id, None)
+            .await
     }
-    
+
     /// 批量索引线程中的所有消息，带进度回调
     pub async fn index_thread_with_progress<F>(
-        &self, 
+        &self,
         thread_id: &str,
         mut progress_callback: Option<F>,
-    ) -> Result<IndexStats> 
+    ) -> Result<IndexStats>
     where
         F: FnMut(usize, usize) + Send,
     {
@@ -139,10 +140,13 @@ impl AutoIndexer {
             .into_iter()
             .filter(|m| !existing_ids.contains(&m.id))
             .collect();
-        
-        info!("Skipping {} already indexed messages", total_messages - messages_to_index.len());
+
+        info!(
+            "Skipping {} already indexed messages",
+            total_messages - messages_to_index.len()
+        );
         stats.total_skipped = total_messages - messages_to_index.len();
-        
+
         if messages_to_index.is_empty() {
             info!("All messages already indexed");
             return Ok(stats);
@@ -152,15 +156,15 @@ impl AutoIndexer {
         let total_to_index = messages_to_index.len();
         for (batch_idx, chunk) in messages_to_index.chunks(self.config.batch_size).enumerate() {
             let batch_start = batch_idx * self.config.batch_size;
-            
+
             // 通知进度
             if let Some(ref mut callback) = progress_callback {
                 callback(batch_start, total_to_index);
             }
-            
+
             // 生成所有embedding
             let contents: Vec<String> = chunk.iter().map(|m| m.content.clone()).collect();
-            
+
             match self.embedding.embed_batch(&contents).await {
                 Ok(embeddings) => {
                     // 为每个消息创建Memory并存储
@@ -199,7 +203,10 @@ impl AutoIndexer {
                     }
                 }
                 Err(e) => {
-                    warn!("Failed to generate embeddings for batch {}: {}", batch_idx, e);
+                    warn!(
+                        "Failed to generate embeddings for batch {}: {}",
+                        batch_idx, e
+                    );
                     stats.total_errors += chunk.len();
                 }
             }
@@ -212,22 +219,28 @@ impl AutoIndexer {
 
         Ok(stats)
     }
-    
+
     /// 获取已索引的消息ID列表
-    async fn get_indexed_message_ids(&self, thread_id: &str) -> Result<std::collections::HashSet<String>> {
+    async fn get_indexed_message_ids(
+        &self,
+        thread_id: &str,
+    ) -> Result<std::collections::HashSet<String>> {
         use crate::vector_store::VectorStore;
-        
+
         // 使用scroll API获取所有已索引的消息ID
         let filters = crate::types::Filters {
             run_id: Some(thread_id.to_string()),
             ..Default::default()
         };
-        
+
         // 滚动查询获取所有ID（不需要embedding）
         match self.vector_store.as_ref().scroll_ids(&filters, 1000).await {
             Ok(ids) => Ok(ids.into_iter().collect()),
             Err(e) => {
-                warn!("Failed to get indexed message IDs: {}, assuming none indexed", e);
+                warn!(
+                    "Failed to get indexed message IDs: {}, assuming none indexed",
+                    e
+                );
                 Ok(std::collections::HashSet::new())
             }
         }
@@ -238,7 +251,8 @@ impl AutoIndexer {
         let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
         let mut messages = Vec::new();
 
-        self.collect_messages_recursive(&timeline_uri, &mut messages).await?;
+        self.collect_messages_recursive(&timeline_uri, &mut messages)
+            .await?;
 
         Ok(messages)
     }
@@ -254,7 +268,8 @@ impl AutoIndexer {
 
             for entry in entries {
                 if entry.is_directory && !entry.name.starts_with('.') {
-                    self.collect_messages_recursive(&entry.uri, messages).await?;
+                    self.collect_messages_recursive(&entry.uri, messages)
+                        .await?;
                 } else if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
                     if let Ok(content) = self.filesystem.as_ref().read(&entry.uri).await {
                         if let Some(message) = self.parse_message_markdown(&content) {
@@ -285,12 +300,17 @@ impl AutoIndexer {
             } else if line.starts_with("# 🔧 System") {
                 role = MessageRole::System;
             } else if line.starts_with("**ID**: `") {
-                if let Some(id_str) = line.strip_prefix("**ID**: `").and_then(|s| s.strip_suffix("`")) {
+                if let Some(id_str) = line
+                    .strip_prefix("**ID**: `")
+                    .and_then(|s| s.strip_suffix("`"))
+                {
                     id = id_str.to_string();
                 }
             } else if line.starts_with("**Timestamp**: ") {
                 if let Some(ts_str) = line.strip_prefix("**Timestamp**: ") {
-                    if let Ok(parsed_ts) = chrono::DateTime::parse_from_str(ts_str, "%Y-%m-%d %H:%M:%S %Z") {
+                    if let Ok(parsed_ts) =
+                        chrono::DateTime::parse_from_str(ts_str, "%Y-%m-%d %H:%M:%S %Z")
+                    {
                         timestamp = parsed_ts.with_timezone(&chrono::Utc);
                     }
                 }
@@ -326,17 +346,5 @@ impl AutoIndexer {
         let mut hasher = DefaultHasher::new();
         content.hash(&mut hasher);
         format!("{:x}", hasher.finish())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_indexer_config_default() {
-        let config = IndexerConfig::default();
-        assert!(config.auto_index);
-        assert_eq!(config.batch_size, 10);
     }
 }

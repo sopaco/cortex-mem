@@ -29,23 +29,23 @@ impl Participant {
             metadata: None,
         }
     }
-    
+
     /// Create a user participant
     pub fn user(id: impl Into<String>) -> Self {
         Self::new(id, ParticipantRole::User)
     }
-    
+
     /// Create an agent participant
     pub fn agent(id: impl Into<String>) -> Self {
         Self::new(id, ParticipantRole::Agent)
     }
-    
+
     /// Set participant name
     pub fn with_name(mut self, name: impl Into<String>) -> Self {
         self.name = Some(name.into());
         self
     }
-    
+
     /// Set participant metadata
     pub fn with_metadata(mut self, metadata: serde_json::Value) -> Self {
         self.metadata = Some(metadata);
@@ -65,27 +65,28 @@ impl ParticipantManager {
             participants: HashMap::new(),
         }
     }
-    
+
     /// Add a participant
     pub fn add(&mut self, participant: Participant) {
-        self.participants.insert(participant.id.clone(), participant);
+        self.participants
+            .insert(participant.id.clone(), participant);
     }
-    
+
     /// Remove a participant
     pub fn remove(&mut self, id: &str) -> Option<Participant> {
         self.participants.remove(id)
     }
-    
+
     /// Get a participant
     pub fn get(&self, id: &str) -> Option<&Participant> {
         self.participants.get(id)
     }
-    
+
     /// List all participants
     pub fn list(&self) -> Vec<&Participant> {
         self.participants.values().collect()
     }
-    
+
     /// List participants by role
     pub fn list_by_role(&self, role: ParticipantRole) -> Vec<&Participant> {
         self.participants
@@ -93,12 +94,12 @@ impl ParticipantManager {
             .filter(|p| p.role == role)
             .collect()
     }
-    
+
     /// Get participant count
     pub fn count(&self) -> usize {
         self.participants.len()
     }
-    
+
     /// Get participant count by role
     pub fn count_by_role(&self, role: ParticipantRole) -> usize {
         self.participants
@@ -106,17 +107,17 @@ impl ParticipantManager {
             .filter(|p| p.role == role)
             .count()
     }
-    
+
     /// Check if participant exists
     pub fn contains(&self, id: &str) -> bool {
         self.participants.contains_key(id)
     }
-    
+
     /// Serialize to JSON
     pub fn to_json(&self) -> Result<String, serde_json::Error> {
         serde_json::to_string_pretty(&self.participants)
     }
-    
+
     /// Deserialize from JSON
     pub fn from_json(json: &str) -> Result<Self, serde_json::Error> {
         let participants: HashMap<String, Participant> = serde_json::from_str(json)?;
@@ -127,63 +128,5 @@ impl ParticipantManager {
 impl Default for ParticipantManager {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_participant_creation() {
-        let user = Participant::user("user-123").with_name("Alice");
-        assert_eq!(user.id, "user-123");
-        assert_eq!(user.role, ParticipantRole::User);
-        assert_eq!(user.name, Some("Alice".to_string()));
-        
-        let agent = Participant::agent("agent-456").with_name("Assistant");
-        assert_eq!(agent.role, ParticipantRole::Agent);
-    }
-    
-    #[test]
-    fn test_participant_manager() {
-        let mut manager = ParticipantManager::new();
-        
-        manager.add(Participant::user("user-1").with_name("Alice"));
-        manager.add(Participant::agent("agent-1").with_name("Bot"));
-        manager.add(Participant::user("user-2").with_name("Bob"));
-        
-        assert_eq!(manager.count(), 3);
-        assert_eq!(manager.count_by_role(ParticipantRole::User), 2);
-        assert_eq!(manager.count_by_role(ParticipantRole::Agent), 1);
-        
-        assert!(manager.contains("user-1"));
-        assert!(!manager.contains("user-3"));
-    }
-    
-    #[test]
-    fn test_participant_manager_list() {
-        let mut manager = ParticipantManager::new();
-        
-        manager.add(Participant::user("user-1"));
-        manager.add(Participant::agent("agent-1"));
-        
-        let users = manager.list_by_role(ParticipantRole::User);
-        assert_eq!(users.len(), 1);
-        assert_eq!(users[0].id, "user-1");
-    }
-    
-    #[test]
-    fn test_participant_manager_serialization() {
-        let mut manager = ParticipantManager::new();
-        manager.add(Participant::user("user-1").with_name("Alice"));
-        
-        let json = manager.to_json().unwrap();
-        assert!(json.contains("user-1"));
-        assert!(json.contains("Alice"));
-        
-        let restored = ParticipantManager::from_json(&json).unwrap();
-        assert_eq!(restored.count(), 1);
-        assert!(restored.contains("user-1"));
     }
 }

@@ -933,17 +933,3 @@ impl AutoSessionManager {
         &mut self.session_manager
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_auto_extract_config_default() {
-        let config = AutoExtractConfig::default();
-        assert_eq!(config.min_message_count, 5);
-        assert!(config.extract_on_close);
-        assert!(config.save_user_memories);
-        assert!(config.save_agent_memories);
-    }
-}

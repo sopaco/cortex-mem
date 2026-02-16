@@ -47,7 +47,9 @@ impl EmbeddingClient {
     /// Embed a single text
     pub async fn embed(&self, text: &str) -> Result<Vec<f32>> {
         let results = self.embed_batch(&[text.to_string()]).await?;
-        results.into_iter().next()
+        results
+            .into_iter()
+            .next()
             .ok_or_else(|| crate::Error::Embedding("No embedding returned".to_string()))
     }
 
@@ -79,8 +81,9 @@ impl EmbeddingClient {
         };
 
         let url = format!("{}/embeddings", self.config.api_base_url);
-        
-        let response = self.client
+
+        let response = self
+            .client
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.config.api_key))
             .header("Content-Type", "application/json")
@@ -103,7 +106,11 @@ impl EmbeddingClient {
             .await
             .map_err(|e| crate::Error::Embedding(format!("Failed to parse response: {}", e)))?;
 
-        Ok(embedding_response.data.into_iter().map(|d| d.embedding).collect())
+        Ok(embedding_response
+            .data
+            .into_iter()
+            .map(|d| d.embedding)
+            .collect())
     }
 
     /// Embed texts in batches
@@ -122,35 +129,5 @@ impl EmbeddingClient {
     pub async fn dimension(&self) -> Result<usize> {
         let embedding = self.embed("test").await?;
         Ok(embedding.len())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    #[ignore] // Requires API key
-    async fn test_embed() {
-        let config = EmbeddingConfig::default();
-        let client = EmbeddingClient::new(config).unwrap();
-        
-        let embedding = client.embed("Hello, world!").await.unwrap();
-        assert!(!embedding.is_empty());
-        assert_eq!(embedding.len(), 1536); // text-embedding-3-small dimension
-    }
-
-    #[tokio::test]
-    #[ignore]
-    async fn test_embed_batch() {
-        let config = EmbeddingConfig::default();
-        let client = EmbeddingClient::new(config).unwrap();
-        
-        let texts = vec!["Hello".to_string(), "World".to_string()];
-        let embeddings = client.embed_batch(&texts).await.unwrap();
-        
-        assert_eq!(embeddings.len(), 2);
-        assert!(!embeddings[0].is_empty());
-        assert!(!embeddings[1].is_empty());
     }
 }

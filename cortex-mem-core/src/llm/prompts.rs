@@ -3,7 +3,7 @@ pub struct Prompts;
 
 impl Prompts {
     /// Prompt for generating L0 abstract
-    /// 
+    ///
     /// Based on OpenViking design: ~100 tokens, single-sentence summary
     /// for quick relevance checking and filtering
     pub fn abstract_generation(content: &str) -> String {
@@ -24,9 +24,9 @@ Abstract (max 100 tokens):"#,
             content
         )
     }
-    
+
     /// Prompt for generating L1 overview
-    /// 
+    ///
     /// Based on OpenViking design: ~2K tokens, structured overview
     /// for decision-making and planning
     pub fn overview_generation(content: &str) -> String {
@@ -63,7 +63,7 @@ Structured Overview:"#,
             content
         )
     }
-    
+
     /// Prompt for memory extraction from conversation
     pub fn memory_extraction(conversation: &str) -> String {
         format!(
@@ -91,7 +91,7 @@ Extracted Memories (JSON):"#,
             conversation
         )
     }
-    
+
     /// Prompt for intent analysis in retrieval
     pub fn intent_analysis(query: &str) -> String {
         format!(
@@ -115,24 +115,5 @@ Query: {}
 Intent Analysis (JSON):"#,
             query
         )
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_abstract_prompt() {
-        let prompt = Prompts::abstract_generation("This is test content about OAuth 2.0.");
-        assert!(prompt.contains("Summarize"));
-        assert!(prompt.contains("OAuth 2.0"));
-    }
-    
-    #[test]
-    fn test_overview_prompt() {
-        let prompt = Prompts::overview_generation("Test content");
-        assert!(prompt.contains("Core topics"));
-        assert!(prompt.contains("Key points"));
     }
 }

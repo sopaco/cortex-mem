@@ -1,7 +1,7 @@
 use crate::{errors::*, types::*};
 use cortex_mem_core::{
-    CortexFilesystem, SessionManager, SessionConfig, FilesystemOperations, LayerManager,
-    llm::LLMClient,
+    layers::manager::LayerManager, llm::LLMClient, CortexFilesystem, FilesystemOperations,
+    SessionConfig, SessionManager,
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -14,7 +14,7 @@ pub struct MemoryOperations {
     pub(crate) filesystem: Arc<CortexFilesystem>,
     pub(crate) session_manager: Arc<RwLock<SessionManager>>,
     pub(crate) layer_manager: Arc<LayerManager>,
-    
+
     #[cfg(feature = "vector-search")]
     pub(crate) vector_engine: Option<Arc<VectorSearchEngine>>,
 }
@@ -26,7 +26,7 @@ impl MemoryOperations {
         session_manager: Arc<RwLock<SessionManager>>,
     ) -> Self {
         let layer_manager = Arc::new(LayerManager::new(filesystem.clone()));
-        
+
         Self {
             filesystem,
             session_manager,
@@ -35,7 +35,7 @@ impl MemoryOperations {
             vector_engine: None,
         }
     }
-    
+
     /// Get the underlying filesystem
     pub fn filesystem(&self) -> &Arc<CortexFilesystem> {
         &self.filesystem
@@ -59,7 +59,7 @@ impl MemoryOperations {
             vector_engine: None,
         })
     }
-    
+
     /// Create from data directory with tenant isolation
     pub async fn with_tenant(data_dir: &str, tenant_id: impl Into<String>) -> Result<Self> {
         let filesystem = Arc::new(CortexFilesystem::with_tenant(data_dir, tenant_id));
@@ -68,7 +68,7 @@ impl MemoryOperations {
         let config = SessionConfig::default();
         let session_manager = SessionManager::new(filesystem.clone(), config);
         let session_manager = Arc::new(RwLock::new(session_manager));
-        
+
         // Use fallback LayerManager (no LLM) - for LLM support, use with_tenant_and_llm()
         let layer_manager = Arc::new(LayerManager::new(filesystem.clone()));
 
@@ -80,7 +80,7 @@ impl MemoryOperations {
             vector_engine: None,
         })
     }
-    
+
     /// Create from data directory with tenant isolation and LLM support
     pub async fn with_tenant_and_llm(
         data_dir: &str,
@@ -93,7 +93,7 @@ impl MemoryOperations {
         let config = SessionConfig::default();
         let session_manager = SessionManager::new(filesystem.clone(), config);
         let session_manager = Arc::new(RwLock::new(session_manager));
-        
+
         // Use LLM-enabled LayerManager for high-quality L0/L1 generation
         let layer_manager = Arc::new(LayerManager::with_llm(filesystem.clone(), llm_client));
 
@@ -105,7 +105,7 @@ impl MemoryOperations {
             vector_engine: None,
         })
     }
-    
+
     /// Create from data directory with tenant isolation, LLM support, and vector search
     #[cfg(feature = "vector-search")]
     pub async fn with_tenant_and_vector(
@@ -118,10 +118,9 @@ impl MemoryOperations {
         embedding_api_key: &str,
     ) -> Result<Self> {
         use cortex_mem_core::{
-            embedding::EmbeddingClient, embedding::EmbeddingConfig,
-            search::VectorSearchEngine,
+            automation::SyncConfig, automation::SyncManager, embedding::EmbeddingClient,
+            embedding::EmbeddingConfig, search::VectorSearchEngine,
             vector_store::QdrantVectorStore,
-            automation::SyncManager, automation::SyncConfig,
         };
 
         let filesystem = Arc::new(CortexFilesystem::with_tenant(data_dir, tenant_id));
@@ -130,7 +129,7 @@ impl MemoryOperations {
         let config = SessionConfig::default();
         let session_manager = SessionManager::new(filesystem.clone(), config);
         let session_manager = Arc::new(RwLock::new(session_manager));
-        
+
         // Use LLM-enabled LayerManager for high-quality L0/L1 generation
         let layer_manager = Arc::new(LayerManager::with_llm(filesystem.clone(), llm_client));
 
@@ -208,10 +207,9 @@ impl MemoryOperations {
         embedding_api_key: &str,
     ) -> Result<Self> {
         use cortex_mem_core::{
-            embedding::EmbeddingClient, embedding::EmbeddingConfig,
-            search::VectorSearchEngine,
+            automation::SyncConfig, automation::SyncManager, embedding::EmbeddingClient,
+            embedding::EmbeddingConfig, search::VectorSearchEngine,
             vector_store::QdrantVectorStore,
-            automation::SyncManager, automation::SyncConfig,
         };
 
         let filesystem = Arc::new(CortexFilesystem::new(data_dir));
@@ -278,7 +276,7 @@ impl MemoryOperations {
             vector_engine: Some(vector_engine),
         })
     }
-    
+
     /// Create with vector search engine (requires vector-search feature)
     #[cfg(feature = "vector-search")]
     pub fn with_vector_engine(mut self, engine: Arc<VectorSearchEngine>) -> Self {
@@ -287,21 +285,16 @@ impl MemoryOperations {
     }
 
     /// Add a message to a session
-    pub async fn add_message(
-        &self,
-        thread_id: &str,
-        role: &str,
-        content: &str,
-    ) -> Result<String> {
+    pub async fn add_message(&self, thread_id: &str, role: &str, content: &str) -> Result<String> {
         // Ensure thread_id is not empty
         let thread_id = if thread_id.is_empty() {
             "default"
         } else {
             thread_id
         };
-        
+
         let sm = self.session_manager.read().await;
-        
+
         // Ensure session exists
         if !sm.session_exists(thread_id).await? {
             drop(sm);
@@ -309,10 +302,10 @@ impl MemoryOperations {
             sm.create_session(thread_id).await?;
             drop(sm);
         }
-        
+
         // Add message using MessageStorage
         let sm = self.session_manager.read().await;
-        
+
         // Create message
         let message = cortex_mem_core::Message::new(
             match role {
@@ -321,16 +314,21 @@ impl MemoryOperations {
                 "system" => cortex_mem_core::MessageRole::System,
                 _ => cortex_mem_core::MessageRole::User,
             },
-            content
+            content,
         );
-        
-        let message_uri = sm.message_storage().save_message(thread_id, &message).await?;
-        
+
+        let message_uri = sm
+            .message_storage()
+            .save_message(thread_id, &message)
+            .await?;
+
         // Extract message ID from URI
-        let message_id = message_uri.rsplit('/').next()
+        let message_id = message_uri
+            .rsplit('/')
+            .next()
             .unwrap_or("unknown")
             .to_string();
-        
+
         tracing::info!("Added message {} to session {}", message_id, thread_id);
         Ok(message_id)
     }
@@ -339,18 +337,24 @@ impl MemoryOperations {
     pub async fn list_sessions(&self) -> Result<Vec<SessionInfo>> {
         // List all thread directories
         let entries = self.filesystem.list("cortex://threads").await?;
-        
+
         let mut session_infos = Vec::new();
         for entry in entries {
             if entry.is_directory {
                 let thread_id = entry.name;
-                if let Ok(metadata) = self.session_manager.read().await.load_session(&thread_id).await {
+                if let Ok(metadata) = self
+                    .session_manager
+                    .read()
+                    .await
+                    .load_session(&thread_id)
+                    .await
+                {
                     let status_str = match metadata.status {
                         cortex_mem_core::session::manager::SessionStatus::Active => "active",
                         cortex_mem_core::session::manager::SessionStatus::Closed => "closed",
                         cortex_mem_core::session::manager::SessionStatus::Archived => "archived",
                     };
-                    
+
                     session_infos.push(SessionInfo {
                         thread_id: metadata.thread_id,
                         status: status_str.to_string(),
@@ -415,7 +419,10 @@ impl MemoryOperations {
 
     /// Check if file/directory exists
     pub async fn exists(&self, uri: &str) -> Result<bool> {
-        let exists = self.filesystem.exists(uri).await
+        let exists = self
+            .filesystem
+            .exists(uri)
+            .await
             .map_err(ToolsError::Core)?;
         Ok(exists)
     }

@@ -186,7 +186,6 @@ QdrantVectorStore::delete_by_uri(&self, uri: &CortexUri) -> Result<()>
 - Supports filtering by `user_id`, `run_id`, `dimension`, and time ranges via Qdrant’s `Filter` DSL.
 
 **Error Handling**:
-- Fallback to in-memory mock store during tests (`#[cfg(test)]`).
 - Retry logic with exponential backoff on Qdrant connectivity failures.
 
 ---

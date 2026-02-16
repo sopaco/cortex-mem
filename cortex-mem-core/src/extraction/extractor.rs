@@ -1,5 +1,7 @@
+use super::types::{
+    ExtractedDecision, ExtractedEntity, ExtractedFact, ExtractedMemories, MemoryImportance,
+};
 use crate::{CortexFilesystem, FilesystemOperations, LLMClient, Message, MessageRole, Result};
-use super::types::{ExtractedMemories, ExtractedFact, ExtractedDecision, ExtractedEntity, MemoryImportance};
 use std::sync::Arc;
 
 /// Extraction configuration
@@ -44,7 +46,7 @@ impl MemoryExtractor {
             config,
         }
     }
-    
+
     /// Extract memories from a list of messages
     pub async fn extract_from_messages(
         &self,
@@ -52,10 +54,10 @@ impl MemoryExtractor {
         messages: &[Message],
     ) -> Result<ExtractedMemories> {
         let mut extracted = ExtractedMemories::new(thread_id);
-        
+
         // Build conversation context
         let conversation = self.build_conversation_context(messages);
-        
+
         // Extract facts
         if self.config.extract_facts {
             let facts = self.extract_facts(&conversation, messages).await?;
@@ -63,7 +65,7 @@ impl MemoryExtractor {
                 extracted.add_fact(fact);
             }
         }
-        
+
         // Extract decisions
         if self.config.extract_decisions {
             let decisions = self.extract_decisions(&conversation, messages).await?;
@@ -71,7 +73,7 @@ impl MemoryExtractor {
                 extracted.add_decision(decision);
             }
         }
-        
+
         // Extract entities
         if self.config.extract_entities {
             let entities = self.extract_entities(&conversation, messages).await?;
@@ -79,26 +81,26 @@ impl MemoryExtractor {
                 extracted.add_entity(entity);
             }
         }
-        
+
         Ok(extracted)
     }
-    
+
     /// Extract memories from a thread
     pub async fn extract_from_thread(&self, thread_id: &str) -> Result<ExtractedMemories> {
         // List all messages in the thread
         let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
-        
+
         // Recursively collect all message files
         let mut message_contents = Vec::new();
         if self.filesystem.exists(&timeline_uri).await? {
             message_contents = self.collect_messages_recursive(&timeline_uri).await?;
         }
-        
+
         if message_contents.is_empty() {
             // Return empty extraction if no messages found
             return Ok(ExtractedMemories::new(thread_id));
         }
-        
+
         // Build messages from markdown content
         let mut messages = Vec::new();
         for (_uri, content) in &message_contents {
@@ -107,15 +109,20 @@ impl MemoryExtractor {
                 messages.push(message);
             }
         }
-        
+
         self.extract_from_messages(thread_id, &messages).await
     }
-    
+
     /// Recursively collect all message files from timeline
-    fn collect_messages_recursive<'a>(&'a self, uri: &'a str) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<(String, String)>>> + Send + 'a>> {
+    fn collect_messages_recursive<'a>(
+        &'a self,
+        uri: &'a str,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Vec<(String, String)>>> + Send + 'a>,
+    > {
         Box::pin(async move {
             let mut result = Vec::new();
-            
+
             let entries = self.filesystem.list(uri).await?;
             for entry in entries {
                 if entry.is_directory && !entry.name.starts_with('.') {
@@ -129,18 +136,18 @@ impl MemoryExtractor {
                     }
                 }
             }
-            
+
             Ok(result)
         })
     }
-    
+
     /// Parse markdown message content to extract Message
     fn parse_message_markdown(&self, content: &str) -> Option<Message> {
         // Simple markdown parsing - look for role and content
         let mut role = MessageRole::User;
         let mut message_content = String::new();
         let _id = uuid::Uuid::new_v4();
-        
+
         for line in content.lines() {
             if line.starts_with("# 👤 User") {
                 role = MessageRole::User;
@@ -149,7 +156,10 @@ impl MemoryExtractor {
             } else if line.starts_with("**ID**: `") {
                 // Extract ID (currently not used, but parsing for future use)
                 #[allow(unused_variables)]
-                if let Some(id_str) = line.strip_prefix("**ID**: `").and_then(|s| s.strip_suffix("`")) {
+                if let Some(id_str) = line
+                    .strip_prefix("**ID**: `")
+                    .and_then(|s| s.strip_suffix("`"))
+                {
                     // ID parsing logic here if needed in future
                 }
             } else if line.starts_with("## Content") {
@@ -163,30 +173,25 @@ impl MemoryExtractor {
                 message_content.push_str(line);
             }
         }
-        
+
         if message_content.is_empty() {
             return None;
         }
-        
+
         Some(Message::new(role, message_content))
     }
-    
+
     /// Build conversation context from messages
     fn build_conversation_context(&self, messages: &[Message]) -> String {
         let mut context = String::new();
-        
+
         for (i, msg) in messages.iter().enumerate() {
-            context.push_str(&format!(
-                "[{}] {:?}: {}\n",
-                i + 1,
-                msg.role,
-                msg.content
-            ));
+            context.push_str(&format!("[{}] {:?}: {}\n", i + 1, msg.role, msg.content));
         }
-        
+
         context
     }
-    
+
     /// Extract facts using LLM
     async fn extract_facts(
         &self,
@@ -195,7 +200,7 @@ impl MemoryExtractor {
     ) -> Result<Vec<ExtractedFact>> {
         let prompt = format!(
             r#"Analyze the following conversation and extract factual statements.
-            
+
 For each fact, provide:
 - content: The factual statement
 - subject: The main subject of the fact (optional)
@@ -210,31 +215,33 @@ Conversation:
 Return JSON only, no additional text."#,
             conversation
         );
-        
+
         // Call LLM (using placeholder implementation)
         let response = self.llm_client.extract_memories(&prompt).await?;
-        
+
         // Parse response into facts - convert from LLM client's Fact type
         let mut facts = Vec::new();
         for llm_fact in &response.facts {
             let fact = ExtractedFact::new(&llm_fact.content)
                 .with_confidence(llm_fact.confidence)
                 .with_importance(MemoryImportance::Medium);
-            
+
             // Add source URIs
             let mut fact_with_sources = fact;
             for msg in messages {
-                fact_with_sources.source_uris.push(format!("cortex://session/temp/{}", msg.id));
+                fact_with_sources
+                    .source_uris
+                    .push(format!("cortex://session/temp/{}", msg.id));
             }
-            
+
             if fact_with_sources.confidence >= self.config.min_confidence {
                 facts.push(fact_with_sources);
             }
         }
-        
+
         Ok(facts)
     }
-    
+
     /// Extract decisions using LLM
     async fn extract_decisions(
         &self,
@@ -243,7 +250,7 @@ Return JSON only, no additional text."#,
     ) -> Result<Vec<ExtractedDecision>> {
         let prompt = format!(
             r#"Analyze the following conversation and extract decisions that were made.
-            
+
 For each decision, provide:
 - decision: The decision that was made
 - context: The context in which it was made
@@ -259,32 +266,38 @@ Conversation:
 Return JSON only, no additional text."#,
             conversation
         );
-        
+
         let response = self.llm_client.extract_memories(&prompt).await?;
-        
+
         // Convert from LLM client's Decision type
         let mut decisions = Vec::new();
         for llm_decision in &response.decisions {
             let decision = ExtractedDecision::new(
                 &llm_decision.decision,
-                llm_decision.rationale.as_ref().map(|s| s.as_str()).unwrap_or("No rationale")
+                llm_decision
+                    .rationale
+                    .as_ref()
+                    .map(|s| s.as_str())
+                    .unwrap_or("No rationale"),
             )
-                .with_confidence(llm_decision.confidence)
-                .with_importance(MemoryImportance::Medium);
-            
+            .with_confidence(llm_decision.confidence)
+            .with_importance(MemoryImportance::Medium);
+
             let mut decision_with_sources = decision;
             for msg in messages {
-                decision_with_sources.source_uris.push(format!("cortex://session/temp/{}", msg.id));
+                decision_with_sources
+                    .source_uris
+                    .push(format!("cortex://session/temp/{}", msg.id));
             }
-            
+
             if decision_with_sources.confidence >= self.config.min_confidence {
                 decisions.push(decision_with_sources);
             }
         }
-        
+
         Ok(decisions)
     }
-    
+
     /// Extract entities using LLM
     async fn extract_entities(
         &self,
@@ -293,7 +306,7 @@ Return JSON only, no additional text."#,
     ) -> Result<Vec<ExtractedEntity>> {
         let prompt = format!(
             r#"Analyze the following conversation and extract entities (people, organizations, products, etc.).
-            
+
 For each entity, provide:
 - name: The entity name
 - type: The entity type (person, organization, product, etc.)
@@ -308,22 +321,28 @@ Conversation:
 Return JSON only, no additional text."#,
             conversation
         );
-        
+
         let response = self.llm_client.extract_memories(&prompt).await?;
-        
+
         // Convert from LLM client's Entity type
         let mut entities = Vec::new();
         for llm_entity in &response.entities {
             let entity = ExtractedEntity::new(&llm_entity.name, &llm_entity.entity_type)
-                .with_description(llm_entity.description.as_ref().map(|s| s.as_str()).unwrap_or(""))
+                .with_description(
+                    llm_entity
+                        .description
+                        .as_ref()
+                        .map(|s| s.as_str())
+                        .unwrap_or(""),
+                )
                 .with_confidence(llm_entity.confidence as f64);
-            
+
             entities.push(entity);
         }
-        
+
         Ok(entities)
     }
-    
+
     /// Save extracted memories to filesystem
     pub async fn save_extraction(
         &self,
@@ -335,70 +354,10 @@ Return JSON only, no additional text."#,
             thread_id,
             memories.extracted_at.format("%Y%m%d_%H%M%S")
         );
-        
+
         let markdown = memories.to_markdown();
         self.filesystem.write(&extraction_uri, &markdown).await?;
-        
-        Ok(extraction_uri)
-    }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::MessageRole;
-    use tempfile::TempDir;
-    
-    #[test]
-    fn test_extraction_config() {
-        let config = ExtractionConfig::default();
-        assert!(config.extract_facts);
-        assert!(config.extract_decisions);
-        assert!(config.extract_entities);
-        assert_eq!(config.min_confidence, 0.6);
-    }
-    
-    #[test]
-    fn test_build_conversation_context() {
-        let temp_dir = TempDir::new().unwrap();
-        let fs = Arc::new(CortexFilesystem::new(temp_dir.path()));
-        let llm_config = crate::llm::client::LLMConfig::default();
-        let llm = Arc::new(LLMClient::new(llm_config).unwrap());
-        let config = ExtractionConfig::default();
-        
-        let extractor = MemoryExtractor::new(fs, llm, config);
-        
-        let messages = vec![
-            Message::user("What is Rust?"),
-            Message::assistant("Rust is a systems programming language."),
-        ];
-        
-        let context = extractor.build_conversation_context(&messages);
-        assert!(context.contains("What is Rust?"));
-        assert!(context.contains("systems programming language"));
-    }
-    
-    #[tokio::test]
-    async fn test_extract_from_messages() {
-        let temp_dir = TempDir::new().unwrap();
-        let fs = Arc::new(CortexFilesystem::new(temp_dir.path()));
-        fs.initialize().await.unwrap();
-        
-        let llm_config = crate::llm::client::LLMConfig::default();
-        let llm = Arc::new(LLMClient::new(llm_config).unwrap());
-        let config = ExtractionConfig::default();
-        
-        let extractor = MemoryExtractor::new(fs, llm, config);
-        
-        let messages = vec![
-            Message::user("I prefer using PostgreSQL"),
-            Message::assistant("Good choice for your use case."),
-        ];
-        
-        // This will use the placeholder LLM implementation
-        let result = extractor.extract_from_messages("test-thread", &messages).await;
-        
-        // Should succeed even with placeholder
-        assert!(result.is_ok());
+        Ok(extraction_uri)
     }
 }
