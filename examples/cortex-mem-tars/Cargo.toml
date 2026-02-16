@@ -6,8 +6,8 @@ edition = "2021"
 [dependencies]
 # Cortex Memory V2 dependencies
 cortex-mem-config = { path = "../../cortex-mem-config" }
-cortex-mem-core = { path = "../../cortex-mem-core", features = ["vector-search"] }
-cortex-mem-tools = { path = "../../cortex-mem-tools", features = ["vector-search"] }
+cortex-mem-core = { path = "../../cortex-mem-core" }
+cortex-mem-tools = { path = "../../cortex-mem-tools" }
 cortex-mem-rig = { path = "../../cortex-mem-rig" }
 
 # LLM framework

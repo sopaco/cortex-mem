@@ -1,8 +1,6 @@
 use anyhow::Result;
 use chrono::{DateTime, Local};
-#[cfg(feature = "vector-search")]
 use cortex_mem_rig::create_memory_tools_with_tenant_and_vector;
-use cortex_mem_rig::{create_memory_tools_with_tenant, create_memory_tools_with_tenant_and_llm};
 use cortex_mem_tools::MemoryOperations;
 use futures::StreamExt;
 use rig::agent::MultiTurnStreamItem;
@@ -54,64 +52,46 @@ impl ChatMessage {
 /// 返回 (Agent, MemoryOperations) 以便外部使用租户隔离的 operations
 pub async fn create_memory_agent(
     data_dir: impl AsRef<std::path::Path>,
-    api_base_url: &str,
-    api_key: &str,
-    model: &str,
+    config: &cortex_mem_config::Config,
     user_info: Option<&str>,
     bot_system_prompt: Option<&str>,
     agent_id: &str,
     _user_id: &str,
-    enable_vector_search: bool,           // ✅ 新增参数
-    qdrant_url: Option<&str>,             // ✅ Qdrant URL
-    qdrant_collection: Option<&str>,      // ✅ Qdrant collection
-    embedding_api_base_url: Option<&str>, // ✅ Embedding API base URL
-    embedding_api_key: Option<&str>,      // ✅ Embedding API key
 ) -> Result<(RigAgent<CompletionModel>, Arc<MemoryOperations>), Box<dyn std::error::Error>> {
     // 创建 cortex LLMClient 用于 L0/L1 生成
     let llm_config = cortex_mem_core::llm::LLMConfig {
-        api_base_url: api_base_url.to_string(),
-        api_key: api_key.to_string(),
-        model_efficient: model.to_string(),
+        api_base_url: config.llm.api_base_url.clone(),
+        api_key: config.llm.api_key.clone(),
+        model_efficient: config.llm.model_efficient.clone(),
         temperature: 0.1,
         max_tokens: 4096,
     };
     let cortex_llm_client: Arc<dyn cortex_mem_core::llm::LLMClient> =
         Arc::new(cortex_mem_core::llm::LLMClientImpl::new(llm_config)?);
 
-    // 根据 enable_vector_search 决定使用哪种初始化方法
-    #[cfg(feature = "vector-search")]
-    let memory_tools = if enable_vector_search {
-        // ✅ 使用向量搜索版本
-        tracing::info!("🔍 启用向量搜索功能");
-        create_memory_tools_with_tenant_and_vector(
-            data_dir,
-            agent_id,
-            cortex_llm_client,
-            qdrant_url.unwrap_or("http://localhost:6334"),
-            qdrant_collection.unwrap_or("cortex_mem"),
-            embedding_api_base_url.unwrap_or(api_base_url),
-            embedding_api_key.unwrap_or(api_key),
-        )
-        .await?
-    } else {
-        // 使用普通版本（无向量搜索）
-        tracing::info!("ℹ️ 向量搜索功能未启用");
-        create_memory_tools_with_tenant_and_llm(data_dir, agent_id, cortex_llm_client).await?
-    };
-
-    #[cfg(not(feature = "vector-search"))]
-    let memory_tools = {
-        if enable_vector_search {
-            tracing::warn!("⚠️ 向量搜索功能需要 vector-search feature，当前未编译");
-        }
-        create_memory_tools_with_tenant_and_llm(data_dir, agent_id, cortex_llm_client).await?
-    };
+    // 使用向量搜索版本（唯一支持的版本）
+    tracing::info!("🔍 使用向量搜索功能");
+    tracing::info!("Embedding 配置: model={}, dim={:?}", config.embedding.model_name, config.qdrant.embedding_dim);
+    let memory_tools = create_memory_tools_with_tenant_and_vector(
+        data_dir,
+        agent_id,
+        cortex_llm_client,
+        &config.qdrant.url,
+        &config.qdrant.collection_name,
+        &config.embedding.api_base_url,
+        &config.embedding.api_key,
+        &config.embedding.model_name,
+        config.qdrant.embedding_dim,
+    )
+    .await?;
 
     // 获取租户 operations 用于外部使用
     let tenant_operations = memory_tools.operations().clone();
 
     // 创建 Rig LLM 客户端用于 Agent 对话
-    let llm_client = Client::builder(api_key).base_url(api_base_url).build();
+    let llm_client = Client::builder(&config.llm.api_key)
+        .base_url(&config.llm.api_base_url)
+        .build();
 
     // 构建 system prompt（OpenViking 风格）
     let base_system_prompt = if let Some(info) = user_info {
@@ -126,12 +106,11 @@ pub async fn create_memory_agent(
 
 🔍 搜索工具：
 - search(query, options): 智能搜索记忆
-  - engine: "keyword"（默认）| "vector" | "hybrid"
   - return_layers: ["L0"] (默认) | ["L0", "L1"] | ["L0", "L1", "L2"]
   - scope: 搜索范围（可选）
     * 可以指定搜索范围：
-      - "cortex://user/memories/" - 用户记忆
-      - "cortex://agent/memories/" - Agent 记忆
+      - "cortex://user/" - 用户记忆
+      - "cortex://agent/" - Agent 记忆
       - "cortex://session/{{session_id}}/" - 特定会话
       - "cortex://resources/" - 知识库
   - 示例：search(query="Python 装饰器", return_layers=["L0"])
@@ -200,7 +179,6 @@ pub async fn create_memory_agent(
 
 🔍 搜索工具：
 - search(query, options): 智能搜索记忆
-  - engine: "keyword"（默认）| "vector" | "hybrid"
   - return_layers: ["L0"] (默认) | ["L0", "L1"] | ["L0", "L1", "L2"]
   - scope: 搜索范围（可选）
   - 示例：search(query="Python 装饰器", return_layers=["L0"])
@@ -253,13 +231,12 @@ pub async fn create_memory_agent(
         base_system_prompt
     };
 
-    // 构建带有新的 OpenViking 风格记忆工具的 agent
+    // 构建带有 OpenViking 风格记忆工具的 agent
     let completion_model = llm_client
-        .completion_model(model)
+        .completion_model(&config.llm.model_efficient)
         .completions_api()
         .into_agent_builder()
         .preamble(&system_prompt)
-        // ==================== 新的 OpenViking 风格工具 ====================
         // 搜索工具（最常用）
         .tool(memory_tools.search_tool())
         .tool(memory_tools.find_tool())
@@ -269,32 +246,29 @@ pub async fn create_memory_agent(
         .tool(memory_tools.read_tool())
         // 文件系统工具
         .tool(memory_tools.ls_tool())
-        // 注意：移除了 store_tool()，对话由系统自动存储到 session
         .build();
 
     Ok((completion_model, tenant_operations))
 }
 
-/// 从记忆中提取用户基本信息（从 cortex://user/tars_user/profile.json 加载）
+/// 从记忆中提取用户基本信息
 pub async fn extract_user_basic_info(
     operations: Arc<MemoryOperations>,
     user_id: &str,
     _agent_id: &str,
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
-    use cortex_mem_core::filesystem::FilesystemOperations;
+    use cortex_mem_core::FilesystemOperations;
 
     // 直接读取 profile.json 文件
     let profile_uri = format!("cortex://user/{}/profile.json", user_id);
 
     match operations.filesystem().read(&profile_uri).await {
         Ok(json_str) => {
-            // 解析 JSON
             let profile: serde_json::Value = serde_json::from_str(&json_str)?;
 
             let mut context = String::new();
             context.push_str("## 用户记忆\n\n");
 
-            // 解析各个类别
             let categories = vec![
                 ("personal_info", "个人信息"),
                 ("work_history", "工作经历"),
@@ -332,7 +306,6 @@ pub async fn extract_user_basic_info(
             Ok(Some(context))
         }
         Err(e) => {
-            // 文件不存在或读取失败
             tracing::info!("No user profile found for user {}: {}", user_id, e);
             Ok(None)
         }
@@ -375,52 +348,13 @@ impl AgentChatHandler {
         &self.history
     }
 
-    /// Auto-save conversation to session dimension
-    async fn save_conversation(&self, user_input: &str, assistant_response: &str) {
-        if let Some(ops) = &self.operations {
-            // Save user message
-            if !user_input.is_empty() {
-                let user_store = cortex_mem_tools::StoreArgs {
-                    content: user_input.to_string(),
-                    thread_id: self.session_id.clone(),
-                    scope: "session".to_string(),
-                    metadata: None,
-                    auto_generate_layers: Some(true),
-                    user_id: None,
-                    agent_id: None,
-                };
-                if let Err(e) = ops.store(user_store).await {
-                    tracing::warn!("Failed to save user message: {}", e);
-                }
-            }
-
-            // Save assistant message
-            if !assistant_response.is_empty() {
-                let assistant_store = cortex_mem_tools::StoreArgs {
-                    content: assistant_response.to_string(),
-                    thread_id: self.session_id.clone(),
-                    scope: "session".to_string(),
-                    metadata: None,
-                    auto_generate_layers: Some(true),
-                    user_id: None,
-                    agent_id: None,
-                };
-                if let Err(e) = ops.store(assistant_store).await {
-                    tracing::warn!("Failed to save assistant message: {}", e);
-                }
-            }
-        }
-    }
-
     /// 进行对话（流式版本，支持多轮工具调用）
     pub async fn chat_stream(
         &mut self,
         user_input: &str,
     ) -> Result<mpsc::Receiver<String>, anyhow::Error> {
-        // 添加用户消息到历史
         self.history.push(ChatMessage::user(user_input));
 
-        // 构建对话历史 - 转换为 Rig Message 格式
         let chat_history: Vec<Message> = self
             .history
             .iter()
@@ -443,33 +377,27 @@ impl AgentChatHandler {
             })
             .collect();
 
-        // 获取当前用户输入（最后一条用户消息）
         let prompt_message = Message::User {
             content: rig::OneOrMany::one(rig::completion::message::UserContent::Text(Text {
                 text: user_input.to_string(),
             })),
         };
 
-        // 创建通道用于发送流式内容
         let (tx, rx) = mpsc::channel(100);
 
-        // 克隆 agent 用于异步任务
         let agent = self.agent.clone();
         let user_input_clone = user_input.to_string();
         let ops_clone = self.operations.clone();
         let session_id_clone = self.session_id.clone();
 
-        // 在后台任务中处理流式响应
         tokio::spawn(async move {
             let mut full_response = String::new();
 
-            // 使用 stream_chat + multi_turn 支持工具调用（Rig 0.23 风格）
             let mut stream = agent
                 .stream_chat(prompt_message, chat_history)
-                .multi_turn(20) // 支持最多 20 轮工具调用
+                .multi_turn(20)
                 .await;
 
-            // 处理流式响应
             while let Some(item) = stream.next().await {
                 match item {
                     Ok(stream_item) => {
@@ -480,27 +408,22 @@ impl AgentChatHandler {
                                     StreamedAssistantContent::Text(text_content) => {
                                         let text = &text_content.text;
                                         full_response.push_str(text);
-
-                                        // 发送流式内容
                                         if tx.send(text.clone()).await.is_err() {
                                             break;
                                         }
                                     }
                                     StreamedAssistantContent::ToolCall(_) => {
-                                        // 工具调用，可以选择显示
                                         log::debug!("调用工具中...");
                                     }
                                     _ => {}
                                 }
                             }
                             MultiTurnStreamItem::FinalResponse(final_resp) => {
-                                // 最终响应
                                 full_response = final_resp.response().to_string();
                                 let _ = tx.send(full_response.clone()).await;
                                 break;
                             }
                             _ => {
-                                // 其他类型的流式项目
                                 log::debug!("收到其他类型的流式项目");
                             }
                         }
@@ -516,7 +439,6 @@ impl AgentChatHandler {
 
             // 对话结束后自动保存到 session
             if let Some(ops) = ops_clone {
-                // Save user message
                 if !user_input_clone.is_empty() {
                     let user_store = cortex_mem_tools::StoreArgs {
                         content: user_input_clone.clone(),
@@ -532,7 +454,6 @@ impl AgentChatHandler {
                     }
                 }
 
-                // Save assistant message
                 if !full_response.is_empty() {
                     let assistant_store = cortex_mem_tools::StoreArgs {
                         content: full_response.clone(),
@@ -562,7 +483,6 @@ impl AgentChatHandler {
             response.push_str(&chunk);
         }
 
-        // 添加助手回复到历史
         self.history.push(ChatMessage::assistant(response.clone()));
 
         Ok(response)

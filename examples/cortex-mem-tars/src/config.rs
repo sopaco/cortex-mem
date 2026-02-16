@@ -60,7 +60,9 @@ impl ConfigManager {
 
         // 加载或创建 cortex-mem 配置
         let cortex_config = if cortex_config_file.exists() {
-            CortexConfig::load(&cortex_config_file).context("无法加载 cortex-mem 配置")?
+            let config = CortexConfig::load(&cortex_config_file).context("无法加载 cortex-mem 配置")?;
+            log::info!("已加载配置: embedding_dim={:?}", config.qdrant.embedding_dim);
+            config
         } else {
             // 创建默认配置
             let default_config = CortexConfig {

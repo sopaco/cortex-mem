@@ -1,5 +1,3 @@
-#![cfg(feature = "vector-search")]
-
 use crate::{
     automation::AutoIndexer,
     filesystem::{CortexFilesystem, FilesystemOperations},
@@ -51,7 +49,6 @@ impl Default for WatcherConfig {
 /// 文件系统监听器
 ///
 /// 监听cortex文件系统的变化，触发自动索引
-#[cfg(feature = "vector-search")]
 pub struct FsWatcher {
     filesystem: Arc<CortexFilesystem>,
     indexer: Arc<AutoIndexer>,
@@ -60,7 +57,6 @@ pub struct FsWatcher {
     event_rx: Option<mpsc::UnboundedReceiver<FsEvent>>,
 }
 
-#[cfg(feature = "vector-search")]
 impl FsWatcher {
     /// 创建新的监听器
     pub fn new(

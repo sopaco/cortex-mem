@@ -130,9 +130,7 @@ impl QdrantVectorStore {
 
             // Verify dimension compatibility if collection exists
             if let Some(expected_dim) = self.embedding_dim {
-                if let Err(e) = self.verify_collection_dimension(expected_dim).await {
-                    warn!("Collection dimension verification failed: {}", e);
-                }
+                self.verify_collection_dimension(expected_dim).await?;
             }
         }
 
@@ -196,6 +194,9 @@ impl QdrantVectorStore {
         );
 
         // Metadata fields
+        if let Some(uri) = &memory.metadata.uri {
+            payload.insert("uri".to_string(), uri.clone().into());
+        }
         if let Some(user_id) = &memory.metadata.user_id {
             payload.insert("user_id".to_string(), user_id.clone().into());
         }
@@ -578,6 +579,12 @@ impl QdrantVectorStore {
         }
 
         let metadata = MemoryMetadata {
+            uri: payload.get("uri").and_then(|v| match v {
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                } => Some(s.to_string()),
+                _ => None,
+            }),
             user_id: payload.get("user_id").and_then(|v| match v {
                 qdrant_client::qdrant::Value {
                     kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),

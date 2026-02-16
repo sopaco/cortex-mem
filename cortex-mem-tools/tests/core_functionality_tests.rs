@@ -451,7 +451,6 @@ mod retrieval_tests {
         // 测试查询 1: Rust 相关（在 user scope 搜索）
         let search_args = SearchArgs {
             query: "Rust 所有权系统".to_string(),
-            engine: Some("keyword".to_string()),
             recursive: Some(true),
             return_layers: Some(vec!["L0".to_string()]),
             scope: Some("cortex://user".to_string()),
@@ -467,7 +466,6 @@ mod retrieval_tests {
         // 测试查询 2: OAuth 相关（在 user scope 搜索）
         let oauth_search = SearchArgs {
             query: "OAuth 2.0 认证流程".to_string(),
-            engine: Some("keyword".to_string()),
             recursive: Some(true),
             return_layers: Some(vec!["L0".to_string()]),
             scope: Some("cortex://user".to_string()),
@@ -520,7 +518,6 @@ mod retrieval_tests {
         // 测试 L0 快速扫描
         let l0_args = SearchArgs {
             query: "Rust".to_string(),
-            engine: Some("keyword".to_string()),
             recursive: Some(true),
             return_layers: Some(vec!["L0".to_string()]), // 只返回 L0
             scope: Some("cortex://session".to_string()),
@@ -539,7 +536,6 @@ mod retrieval_tests {
         // 测试 L2 完整检索
         let l2_args = SearchArgs {
             query: "Rust".to_string(),
-            engine: Some("keyword".to_string()),
             recursive: Some(true),
             return_layers: Some(vec!["L2".to_string()]), // 返回完整内容
             scope: Some("cortex://session".to_string()),
@@ -805,7 +801,6 @@ mod performance_tests {
         
         let search_args = SearchArgs {
             query: "performance".to_string(),
-            engine: Some("keyword".to_string()),
             recursive: Some(true),
             return_layers: Some(vec!["L0".to_string()]),
             scope: Some("cortex://session".to_string()),

@@ -33,7 +33,6 @@ pub enum Error {
     #[error("Configuration error: {0}")]
     Config(String),
     
-    #[cfg(feature = "vector-search")]
     #[error("Vector store error: {0}")]
     VectorStore(#[from] qdrant_client::QdrantError),
     
@@ -44,6 +43,5 @@ pub enum Error {
 /// Result type alias
 pub type Result<T> = std::result::Result<T, Error>;
 
-// Legacy alias for backward compatibility
-#[cfg(feature = "vector-search")]
+/// Legacy alias for backward compatibility
 pub type MemoryError = Error;

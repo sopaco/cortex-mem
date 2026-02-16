@@ -28,4 +28,3 @@ toml = "0.9"
 
 [features]
 default = []
-vector-search = ["cortex-mem-core/vector-search", "cortex-mem-tools"]

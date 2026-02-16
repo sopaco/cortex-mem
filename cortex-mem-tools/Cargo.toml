@@ -27,4 +27,3 @@ futures = { workspace = true }
 
 [features]
 default = []
-vector-search = ["cortex-mem-core/vector-search"]

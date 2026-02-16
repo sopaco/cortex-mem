@@ -7,29 +7,23 @@ use super::generator::{AbstractGenerator, OverviewGenerator};
 /// Layer Manager
 /// 
 /// Manages the three-layer memory architecture (L0/L1/L2)
+/// 
+/// LLM client is mandatory for high-quality layer generation.
 pub struct LayerManager {
     filesystem: Arc<CortexFilesystem>,
     abstract_gen: AbstractGenerator,
     overview_gen: OverviewGenerator,
-    llm_client: Option<Arc<dyn LLMClient>>,
+    llm_client: Arc<dyn LLMClient>,
 }
 
 impl LayerManager {
-    pub fn new(filesystem: Arc<CortexFilesystem>) -> Self {
+    /// Create a new LayerManager with mandatory LLM client
+    pub fn new(filesystem: Arc<CortexFilesystem>, llm_client: Arc<dyn LLMClient>) -> Self {
         Self {
             filesystem,
             abstract_gen: AbstractGenerator::new(),
             overview_gen: OverviewGenerator::new(),
-            llm_client: None,
-        }
-    }
-
-    pub fn with_llm(filesystem: Arc<CortexFilesystem>, llm_client: Arc<dyn LLMClient>) -> Self {
-        Self {
-            filesystem,
-            abstract_gen: AbstractGenerator::new(),
-            overview_gen: OverviewGenerator::new(),
-            llm_client: Some(llm_client),
+            llm_client,
         }
     }
     
@@ -51,9 +45,9 @@ impl LayerManager {
             return self.filesystem.read(&abstract_uri).await;
         }
         
-        // Otherwise, generate from L2
+        // Otherwise, generate from L2 using LLM
         let detail = self.load_detail(uri).await?;
-        let abstract_text = self.abstract_gen.generate(&detail).await?;
+        let abstract_text = self.abstract_gen.generate_with_llm(&detail, &self.llm_client).await?;
         
         // Save for future use
         self.filesystem.write(&abstract_uri, &abstract_text).await?;
@@ -70,7 +64,7 @@ impl LayerManager {
         }
         
         let detail = self.load_detail(uri).await?;
-        let overview = self.overview_gen.generate(&detail).await?;
+        let overview = self.overview_gen.generate_with_llm(&detail, &self.llm_client).await?;
         
         self.filesystem.write(&overview_uri, &overview).await?;
         
@@ -82,50 +76,25 @@ impl LayerManager {
         self.filesystem.read(uri).await
     }
     
-    /// Generate all layers for a new memory
+    /// Generate all layers for a new memory (LLM is mandatory)
     pub async fn generate_all_layers(&self, uri: &str, content: &str) -> Result<()> {
         // 1. Write L2 (detail)
         self.filesystem.write(uri, content).await?;
         
-        // 2. Generate L0/L1 (with or without LLM)
-        if let Some(llm) = &self.llm_client {
-            // ✅ 有 LLM：使用 LLM 生成高质量摘要
-            let abstract_text = self.abstract_gen.generate_with_llm(content, llm).await?;
-            let abstract_uri = Self::get_layer_uri(uri, ContextLayer::L0Abstract);
-            self.filesystem.write(&abstract_uri, &abstract_text).await?;
-            
-            let overview = self.overview_gen.generate_with_llm(content, llm).await?;
-            let overview_uri = Self::get_layer_uri(uri, ContextLayer::L1Overview);
-            self.filesystem.write(&overview_uri, &overview).await?;
-        } else {
-            // ✅ 没有 LLM：使用 fallback 方法（基于规则）
-            let abstract_text = self.abstract_gen.generate(content).await?;
-            let abstract_uri = Self::get_layer_uri(uri, ContextLayer::L0Abstract);
-            self.filesystem.write(&abstract_uri, &abstract_text).await?;
-            
-            let overview = self.overview_gen.generate(content).await?;
-            let overview_uri = Self::get_layer_uri(uri, ContextLayer::L1Overview);
-            self.filesystem.write(&overview_uri, &overview).await?;
-        }
+        // 2. Generate L0 abstract using LLM
+        let abstract_text = self.abstract_gen.generate_with_llm(content, &self.llm_client).await?;
+        let abstract_uri = Self::get_layer_uri(uri, ContextLayer::L0Abstract);
+        self.filesystem.write(&abstract_uri, &abstract_text).await?;
+        
+        // 3. Generate L1 overview using LLM
+        let overview = self.overview_gen.generate_with_llm(content, &self.llm_client).await?;
+        let overview_uri = Self::get_layer_uri(uri, ContextLayer::L1Overview);
+        self.filesystem.write(&overview_uri, &overview).await?;
         
         Ok(())
     }
     
     /// Generate L0/L1 layers for a timeline directory
-    /// 
-    /// This method generates abstract and overview for an entire timeline directory
-    /// by aggregating all messages in the timeline.
-    /// 
-    /// # Arguments
-    /// * `timeline_uri` - URI of the timeline directory (e.g., "cortex://session/abc/timeline")
-    /// 
-    /// # Example
-    /// ```ignore
-    /// layer_manager.generate_timeline_layers("cortex://session/abc/timeline").await?;
-    /// // Creates:
-    /// // - cortex://session/abc/timeline/.abstract.md (L0 - ~100 tokens)
-    /// // - cortex://session/abc/timeline/.overview.md (L1 - ~500-2000 tokens)
-    /// ```
     pub async fn generate_timeline_layers(&self, timeline_uri: &str) -> Result<()> {
         use tracing::{debug, info};
         
@@ -136,7 +105,6 @@ impl LayerManager {
         let mut messages = Vec::new();
         
         for entry in entries {
-            // Skip hidden files except layer files
             if entry.name.starts_with('.') {
                 continue;
             }
@@ -165,28 +133,14 @@ impl LayerManager {
             all_content.push_str("\n\n---\n\n");
         }
         
-        // 3. Generate L0 abstract (timeline-level)
-        let abstract_text = if let Some(llm) = &self.llm_client {
-            debug!("Generating L0 abstract with LLM");
-            self.abstract_gen.generate_with_llm(&all_content, llm).await?
-        } else {
-            debug!("Generating L0 abstract with fallback method");
-            self.abstract_gen.generate(&all_content).await?
-        };
-        
+        // 3. Generate L0 abstract using LLM
+        let abstract_text = self.abstract_gen.generate_with_llm(&all_content, &self.llm_client).await?;
         let abstract_uri = format!("{}/.abstract.md", timeline_uri);
         self.filesystem.write(&abstract_uri, &abstract_text).await?;
         info!("Generated L0 abstract: {}", abstract_uri);
         
-        // 4. Generate L1 overview (timeline-level)
-        let overview = if let Some(llm) = &self.llm_client {
-            debug!("Generating L1 overview with LLM");
-            self.overview_gen.generate_with_llm(&all_content, llm).await?
-        } else {
-            debug!("Generating L1 overview with fallback method");
-            self.overview_gen.generate(&all_content).await?
-        };
-        
+        // 4. Generate L1 overview using LLM
+        let overview = self.overview_gen.generate_with_llm(&all_content, &self.llm_client).await?;
         let overview_uri = format!("{}/.overview.md", timeline_uri);
         self.filesystem.write(&overview_uri, &overview).await?;
         info!("Generated L1 overview: {}", overview_uri);
@@ -198,7 +152,6 @@ impl LayerManager {
     fn get_layer_uri(base_uri: &str, layer: ContextLayer) -> String {
         match layer {
             ContextLayer::L0Abstract => {
-                // Get directory part and append .abstract.md
                 let dir = base_uri.rsplit_once('/').map(|(dir, _)| dir).unwrap_or(base_uri);
                 format!("{}/.abstract.md", dir)
             }
@@ -210,5 +163,3 @@ impl LayerManager {
         }
     }
 }
-
-// 核心功能测试已迁移至 cortex-mem-tools/tests/core_functionality_tests.rs

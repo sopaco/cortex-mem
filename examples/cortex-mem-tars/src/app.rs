@@ -489,18 +489,11 @@ impl App {
                     let config = infrastructure.config();
                     match create_memory_agent(
                         config.cortex.data_dir(),
-                        &config.llm.api_base_url,
-                        &config.llm.api_key,
-                        &config.llm.model_efficient,
+                        config,
                         None,  // user_info 稍后从租户 operations 提取
                         Some(bot.system_prompt.as_str()),
                         &bot.id,
                         &self.user_id,
-                        self.enable_vector_search,  // ✅ 传递向量搜索标志
-                        Some(&config.qdrant.url),   // ✅ Qdrant URL
-                        Some(&config.qdrant.collection_name),  // ✅ Collection
-                        Some(&config.embedding.api_base_url),  // ✅ Embedding API
-                        Some(&config.embedding.api_key),  // ✅ Embedding Key
                     )
                     .await
                     {
@@ -555,18 +548,11 @@ impl App {
                                 let config = infrastructure.config();
                                 match create_memory_agent(
                                     config.cortex.data_dir(),
-                                    &config.llm.api_base_url,
-                                    &config.llm.api_key,
-                                    &config.llm.model_efficient,
+                                    config,
                                     user_info.as_deref(),
                                     Some(bot.system_prompt.as_str()),
                                     &bot.id,
                                     &self.user_id,
-                                    self.enable_vector_search,  // ✅ 传递向量搜索标志
-                                    Some(&config.qdrant.url),
-                                    Some(&config.qdrant.collection_name),
-                                    Some(&config.embedding.api_base_url),
-                                    Some(&config.embedding.api_key),
                                 )
                                 .await
                                 {
@@ -827,18 +813,11 @@ impl App {
                     let config = infrastructure.config();
                     match create_memory_agent(
                         config.cortex.data_dir(),
-                        &config.llm.api_base_url,
-                        &config.llm.api_key,
-                        &config.llm.model_efficient,
+                        config,
                         user_info.as_deref(),
                         Some(bot.system_prompt.as_str()),
                         &bot.id,
                         &self.user_id,
-                        self.enable_vector_search,  // ✅ 传递向量搜索标志
-                        Some(&config.qdrant.url),
-                        Some(&config.qdrant.collection_name),
-                        Some(&config.embedding.api_base_url),
-                        Some(&config.embedding.api_key),
                     )
                     .await
                     {

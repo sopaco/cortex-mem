@@ -2,13 +2,13 @@
 resolver = "2"
 members = [
     "cortex-mem-core",
-    "cortex-mem-cli",
-    "cortex-mem-mcp",
     "cortex-mem-config",
     "cortex-mem-tools",
     "cortex-mem-rig",
     "cortex-mem-service",
     "examples/cortex-mem-tars"
+    # Note: cortex-mem-cli and cortex-mem-mcp temporarily excluded
+    # They need significant refactoring to work with the new API
 ]
 
 [workspace.package]

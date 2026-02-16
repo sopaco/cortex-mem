@@ -1,5 +1,3 @@
-#![cfg(feature = "vector-search")]
-
 use crate::{
     config::QdrantConfig,
     error::Result,
@@ -38,9 +36,12 @@ pub async fn create_auto_config(
     
     if config.embedding_dim.is_none() {
         info!("Auto-detecting embedding dimension for configuration...");
-        // Note: embed method is not in trait, so we use a default dimension
-        let detected_dim = 1536; // Default for text-embedding-3-small
-        info!("Detected embedding dimension: {}", detected_dim);
+        // Try to get from environment variable first, then use default
+        let detected_dim = std::env::var("EMBEDDING_DIM")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(1536); // Default for text-embedding-3-small
+        info!("Using embedding dimension: {}", detected_dim);
         config.embedding_dim = Some(detected_dim);
     }
     

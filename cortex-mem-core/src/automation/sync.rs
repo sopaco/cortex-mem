@@ -1,11 +1,11 @@
-#![cfg(feature = "vector-search")]
-
 use crate::{
     embedding::EmbeddingClient,
     filesystem::{CortexFilesystem, FilesystemOperations},
     layers::manager::LayerManager,
+    llm::LLMClient,
     types::{Memory, MemoryMetadata, MemoryType},
-    vector_store::QdrantVectorStore,
+    vector_store::{QdrantVectorStore, uri_to_vector_id},
+    ContextLayer,
     Result,
 };
 use std::sync::Arc;
@@ -25,6 +25,7 @@ pub struct SyncManager {
     filesystem: Arc<CortexFilesystem>,
     embedding: Arc<EmbeddingClient>,
     vector_store: Arc<crate::vector_store::QdrantVectorStore>,
+    llm_client: Arc<dyn LLMClient>,
     config: SyncConfig,
 }
 
@@ -70,12 +71,14 @@ impl SyncManager {
         filesystem: Arc<CortexFilesystem>,
         embedding: Arc<EmbeddingClient>,
         vector_store: Arc<crate::vector_store::QdrantVectorStore>,
+        llm_client: Arc<dyn LLMClient>,
         config: SyncConfig,
     ) -> Self {
         Self {
             filesystem,
             embedding,
             vector_store,
+            llm_client,
             config,
         }
     }
@@ -85,8 +88,9 @@ impl SyncManager {
         filesystem: Arc<CortexFilesystem>,
         embedding: Arc<EmbeddingClient>,
         vector_store: Arc<QdrantVectorStore>,
+        llm_client: Arc<dyn LLMClient>,
     ) -> Self {
-        Self::new(filesystem, embedding, vector_store, SyncConfig::default())
+        Self::new(filesystem, embedding, vector_store, llm_client, SyncConfig::default())
     }
 
     /// 同步所有内容到向量数据库
@@ -218,7 +222,7 @@ impl SyncManager {
     /// 同步单个文件（支持分层向量索引）
     async fn sync_file(&self, uri: &str, memory_type: MemoryType) -> Result<bool> {
         // 检查是否已经索引（检查L2层）
-        let l2_id = format!("{}#L2", uri);
+        let l2_id = uri_to_vector_id(uri, ContextLayer::L2Detail);
         if self.is_indexed(&l2_id).await? {
             debug!("File already indexed: {}", uri);
             return Ok(false);
@@ -243,7 +247,7 @@ impl SyncManager {
         // 2. 尝试读取并索引L0 abstract
         let abstract_uri = Self::get_layer_uri(uri, "L0");
         if let Ok(l0_content) = self.filesystem.read(&abstract_uri).await {
-            let l0_id = format!("{}#L0", uri);
+            let l0_id = uri_to_vector_id(uri, ContextLayer::L0Abstract);
             if !self.is_indexed(&l0_id).await? {
                 let l0_embedding = self.embedding.embed(&l0_content).await?;
                 let l0_metadata = self.parse_metadata(uri, memory_type.clone(), "L0")?;
@@ -264,7 +268,7 @@ impl SyncManager {
         // 3. 尝试读取并索引L1 overview
         let overview_uri = Self::get_layer_uri(uri, "L1");
         if let Ok(l1_content) = self.filesystem.read(&overview_uri).await {
-            let l1_id = format!("{}#L1", uri);
+            let l1_id = uri_to_vector_id(uri, ContextLayer::L1Overview);
             if !self.is_indexed(&l1_id).await? {
                 let l1_embedding = self.embedding.embed(&l1_content).await?;
                 let l1_metadata = self.parse_metadata(uri, memory_type.clone(), "L1")?;
@@ -299,9 +303,9 @@ impl SyncManager {
     }
 
     /// 检查文件是否已索引
-    async fn is_indexed(&self, uri: &str) -> Result<bool> {
+    async fn is_indexed(&self, id: &str) -> Result<bool> {
         // 尝试从向量数据库查询
-        match self.vector_store.get(uri).await {
+        match self.vector_store.get(id).await {
             Ok(Some(_)) => Ok(true),
             Ok(None) => Ok(false),
             Err(e) => {
@@ -341,6 +345,7 @@ impl SyncManager {
         custom.insert("layer".to_string(), Value::String(layer.to_string()));
 
         Ok(MemoryMetadata {
+            uri: Some(uri.to_string()),
             user_id: if dimension == "users" {
                 Some(path.clone())
             } else {
@@ -381,7 +386,7 @@ impl SyncManager {
     ///
     /// 调用LayerManager生成timeline级别的abstract和overview
     async fn generate_timeline_layers(&self, timeline_uri: &str) -> Result<()> {
-        let layer_manager = LayerManager::new(self.filesystem.clone());
+        let layer_manager = LayerManager::new(self.filesystem.clone(), self.llm_client.clone());
         layer_manager.generate_timeline_layers(timeline_uri).await
     }
 }

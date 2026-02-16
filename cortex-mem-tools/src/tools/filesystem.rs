@@ -6,7 +6,13 @@ use cortex_mem_core::{FilesystemOperations, ContextLayer};
 impl MemoryOperations {
     /// List directory contents
     pub async fn ls(&self, args: LsArgs) -> Result<LsResponse> {
-        let entries = self.filesystem.list(&args.uri).await?;
+        // Use default URI if empty
+        let uri = if args.uri.is_empty() {
+            "cortex://session".to_string()
+        } else {
+            args.uri
+        };
+        let entries = self.filesystem.list(&uri).await?;
         
         let mut result_entries = Vec::new();
         for entry in entries {
@@ -36,7 +42,7 @@ impl MemoryOperations {
         }
         
         Ok(LsResponse {
-            uri: args.uri,
+            uri,
             total: result_entries.len(),
             entries: result_entries,
         })

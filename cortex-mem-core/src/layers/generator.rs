@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 /// Abstract (L0) generator
 /// 
-/// Generates a 1-2 sentence summary (~100 tokens) from content
+/// Generates a 1-2 sentence summary (~100 tokens) from content using LLM
 pub struct AbstractGenerator;
 
 impl AbstractGenerator {
@@ -12,9 +12,7 @@ impl AbstractGenerator {
         Self
     }
     
-    /// Generate abstract from content using LLM
-    /// 
-    /// Uses optimized prompt based on OpenViking design
+    /// Generate abstract from content using LLM (mandatory)
     pub async fn generate_with_llm(&self, content: &str, llm: &Arc<dyn LLMClient>) -> Result<String> {
         let system = r#"You are an expert at creating concise abstracts.
 Your goal is to generate single-sentence summaries that capture the core essence of content for quick relevance checking.
@@ -25,41 +23,15 @@ Keep abstracts under 100 tokens. Be direct and informative."#;
         llm.complete_with_system(system, &prompt).await
     }
     
-    /// Generate abstract from content (fallback without LLM)
-    pub async fn generate(&self, content: &str) -> Result<String> {
-        // Simple implementation: take first paragraph or first 200 chars
-        let abstract_text = if content.chars().count() <= 200 {
-            content.to_string()
-        } else {
-            // Find first paragraph or take first 200 chars
-            let first_para = content
-                .lines()
-                .take_while(|line| !line.is_empty())
-                .collect::<Vec<_>>()
-                .join(" ");
-            
-            if first_para.chars().count() <= 200 {
-                first_para
-            } else {
-                // Use char indices to avoid splitting UTF-8 characters
-                let truncated: String = first_para.chars().take(197).collect();
-                format!("{}...", truncated)
-            }
-        };
-        
-        Ok(abstract_text)
-    }
-    
     /// Estimate token count (rough approximation)
     pub fn estimate_tokens(text: &str) -> usize {
-        // Simple estimation: ~4 chars per token for English, ~1.5 for Chinese
         text.len() / 3
     }
 }
 
 /// Overview (L1) generator
 /// 
-/// Generates structured overview (~500-2000 tokens) from content
+/// Generates structured overview (~500-2000 tokens) from content using LLM
 pub struct OverviewGenerator;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -75,9 +47,7 @@ impl OverviewGenerator {
         Self
     }
     
-    /// Generate overview from content using LLM
-    /// 
-    /// Uses optimized prompt based on OpenViking design
+    /// Generate overview from content using LLM (mandatory)
     pub async fn generate_with_llm(&self, content: &str, llm: &Arc<dyn LLMClient>) -> Result<String> {
         let system = r#"You are an expert at creating structured overviews.
 Your goal is to provide comprehensive yet concise summaries (500-2000 tokens) that help users understand and make decisions about content.
@@ -87,86 +57,4 @@ Use clear markdown structure with sections for Summary, Core Topics, Key Points,
         
         llm.complete_with_system(system, &prompt).await
     }
-    
-    /// Generate overview from content (fallback without LLM)
-    pub async fn generate(&self, content: &str) -> Result<String> {
-        // Simple implementation: extract basic structure
-        let overview = Overview {
-            core_topics: Self::extract_topics(content),
-            key_points: Self::extract_key_points(content),
-            entities: Self::extract_entities(content),
-            summary: Self::create_summary(content),
-        };
-        
-        Ok(Self::format_overview(&overview))
-    }
-    
-    fn extract_topics(content: &str) -> Vec<String> {
-        // Simple: extract markdown headers
-        content
-            .lines()
-            .filter(|line| line.starts_with('#'))
-            .map(|line| line.trim_start_matches('#').trim().to_string())
-            .collect()
-    }
-    
-    fn extract_key_points(content: &str) -> Vec<String> {
-        // Simple: extract bullet points
-        content
-            .lines()
-            .filter(|line| line.trim().starts_with('-') || line.trim().starts_with('*'))
-            .map(|line| {
-                line.trim()
-                    .trim_start_matches('-')
-                    .trim_start_matches('*')
-                    .trim()
-                    .to_string()
-            })
-            .take(5)
-            .collect()
-    }
-    
-    fn extract_entities(_content: &str) -> Vec<String> {
-        // TODO: Implement entity extraction with LLM
-        Vec::new()
-    }
-    
-    fn create_summary(content: &str) -> String {
-        // Simple: take first few lines
-        content
-            .lines()
-            .take(3)
-            .collect::<Vec<_>>()
-            .join(" ")
-    }
-    
-    fn format_overview(overview: &Overview) -> String {
-        let mut md = String::from("# Overview\n\n");
-        
-        if !overview.summary.is_empty() {
-            md.push_str("## Summary\n\n");
-            md.push_str(&overview.summary);
-            md.push_str("\n\n");
-        }
-        
-        if !overview.core_topics.is_empty() {
-            md.push_str("## Core Topics\n\n");
-            for topic in &overview.core_topics {
-                md.push_str(&format!("- {}\n", topic));
-            }
-            md.push('\n');
-        }
-        
-        if !overview.key_points.is_empty() {
-            md.push_str("## Key Points\n\n");
-            for (i, point) in overview.key_points.iter().enumerate() {
-                md.push_str(&format!("{}. {}\n", i + 1, point));
-            }
-            md.push('\n');
-        }
-        
-        md
-    }
 }
-
-// 核心功能测试已迁移至 cortex-mem-tools/tests/core_functionality_tests.rs

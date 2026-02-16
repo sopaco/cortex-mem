@@ -33,78 +33,16 @@
 //! }
 //! ```
 //!
-//! ## 向量搜索示例
-//!
-//! ```rust,no_run
-//! #[cfg(feature = "vector-search")]
-//! use cortex_mem_core::{
-//!     QdrantConfig, QdrantVectorStore, VectorStore,
-//!     EmbeddingClient, EmbeddingConfig,
-//!     types::{Memory, MemoryMetadata, Filters},
-//! };
-//! use std::sync::Arc;
-//!
-//! #[tokio::main]
-//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     #[cfg(feature = "vector-search")]
-//!     {
-//!         // 初始化 Qdrant
-//!         let config = QdrantConfig {
-//!             url: "http://localhost:6334".to_string(),
-//!             collection_name: "cortex-mem".to_string(),
-//!             embedding_dim: Some(1536),
-//!             timeout_secs: 30,
-//!         };
-//!         let vector_store = Arc::new(QdrantVectorStore::new(&config).await?);
-//!
-//!         // 初始化 Embedding 客户端
-//!         let embedding_config = EmbeddingConfig::default();
-//!         let embedding_client = Arc::new(EmbeddingClient::new(embedding_config)?);
-//!
-//!         // 生成 embedding 并存储
-//!         let text = "This is a test memory";
-//!         let embedding = embedding_client.embed(text).await?;
-//!
-//!         let memory = Memory {
-//!             id: "mem-1".to_string(),
-//!             content: text.to_string(),
-//!             embedding,
-//!             created_at: chrono::Utc::now(),
-//!             updated_at: chrono::Utc::now(),
-//!             metadata: MemoryMetadata::default(),
-//!         };
-//!
-//!         vector_store.insert(&memory).await?;
-//!
-//!         // 搜索相似记忆
-//!         let query = "test";
-//!         let query_embedding = embedding_client.embed(query).await?;
-//!         let results = vector_store.search(
-//!             &query_embedding,
-//!             &Filters::default(),
-//!             10
-//!         ).await?;
-//!
-//!         println!("Found {} results", results.len());
-//!     }
-//!     Ok(())
-//! }
-//! ```
-//!
 //! ## 模块说明
 //!
 //! - [`filesystem`]: 文件系统操作和 URI 处理
 //! - [`session`]: 会话管理和消息处理
-//! - [`vector_store`]: 向量存储接口（需要 `vector-search` feature）
-//! - [`embedding`]: Embedding 生成客户端（需要 `vector-search` feature）
-//! - [`search`]: 向量搜索引擎（需要 `vector-search` feature）
+//! - [`vector_store`]: 向量存储接口
+//! - [`embedding`]: Embedding 生成客户端
+//! - [`search`]: 向量搜索引擎
 //! - [`automation`]: 自动化索引和提取
 //! - [`extraction`]: 记忆提取和分类
 //! - [`llm`]: LLM 客户端接口
-//!
-//! ## Feature Flags
-//!
-//! - `vector-search`: 启用向量搜索功能（需要 Qdrant）
 
 pub mod config;
 pub mod error;
@@ -114,52 +52,31 @@ pub mod types;
 pub mod automation;
 pub mod extraction;
 pub mod filesystem;
+pub mod init;
 pub mod layers;
 pub mod llm;
-pub mod retrieval;
-pub mod session;
-
-#[cfg(feature = "vector-search")]
-pub mod init;
-
-#[cfg(feature = "vector-search")]
-pub mod vector_store;
-
-#[cfg(feature = "vector-search")]
-pub mod embedding;
-
-#[cfg(feature = "vector-search")]
 pub mod search;
+pub mod session;
+pub mod vector_store;
+pub mod embedding;
 
 // Re-exports
 pub use config::*;
 pub use error::{Error, Result};
 pub use types::*;
 
-pub use automation::{AutoExtractConfig, AutoExtractor};
-pub use extraction::{ExtractionConfig, MemoryExtractor};
+pub use automation::{AutoExtractConfig, AutoExtractor, AutoIndexer, FsWatcher, IndexStats, IndexerConfig, SyncConfig, SyncManager, SyncStats, WatcherConfig};
+pub use extraction::ExtractionConfig;
+// Note: MemoryExtractor is also exported from session module
 pub use filesystem::{CortexFilesystem, FilesystemOperations};
 pub use llm::LLMClient;
+pub use search::{SearchOptions, VectorSearchEngine};
 pub use session::{
     Message, MessageRole, Participant, ParticipantManager, SessionConfig, SessionManager,
+    MemoryExtractor, ExtractedMemories, PreferenceMemory, EntityMemory, EventMemory, CaseMemory,
 };
-
-#[cfg(feature = "vector-search")]
-pub use automation::{AutoIndexer, FsWatcher, IndexStats, IndexerConfig, WatcherConfig};
-
-#[cfg(feature = "vector-search")]
-pub use automation::{SyncConfig, SyncManager, SyncStats};
-
-pub use retrieval::{RetrievalEngine, RetrievalOptions, RetrievalResult, SearchResult};
-
-#[cfg(feature = "vector-search")]
-pub use vector_store::{QdrantVectorStore, VectorStore};
-
-#[cfg(feature = "vector-search")]
+pub use vector_store::{QdrantVectorStore, VectorStore, uri_to_vector_id, parse_vector_id};
 pub use embedding::{EmbeddingClient, EmbeddingConfig};
-
-#[cfg(feature = "vector-search")]
-pub use search::{SearchOptions, VectorSearchEngine};
 
 // Session-related re-exports
 pub use session::message::MessageStorage;

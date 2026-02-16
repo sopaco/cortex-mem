@@ -67,34 +67,9 @@ pub fn create_memory_tools(operations: Arc<MemoryOperations>) -> MemoryTools {
     MemoryTools::new(operations)
 }
 
-/// Create memory tools with tenant isolation (recommended)
-pub async fn create_memory_tools_with_tenant(
-    data_dir: impl AsRef<std::path::Path>,
-    tenant_id: impl Into<String>,
-) -> Result<MemoryTools, Box<dyn std::error::Error>> {
-    let operations = MemoryOperations::with_tenant(
-        data_dir.as_ref().to_str().unwrap(),
-        tenant_id
-    ).await?;
-    Ok(MemoryTools::new(Arc::new(operations)))
-}
-
-/// Create memory tools with tenant isolation and LLM support (recommended for high-quality L0/L1)
-pub async fn create_memory_tools_with_tenant_and_llm(
-    data_dir: impl AsRef<std::path::Path>,
-    tenant_id: impl Into<String>,
-    llm_client: Arc<dyn LLMClient>,
-) -> Result<MemoryTools, Box<dyn std::error::Error>> {
-    let operations = MemoryOperations::with_tenant_and_llm(
-        data_dir.as_ref().to_str().unwrap(),
-        tenant_id,
-        llm_client,
-    ).await?;
-    Ok(MemoryTools::new(Arc::new(operations)))
-}
-
-/// Create memory tools with tenant isolation, LLM support, and vector search (full-featured)
-#[cfg(feature = "vector-search")]
+/// Create memory tools with full features (LLM + Vector Search)
+/// 
+/// This is the primary constructor that requires all dependencies.
 pub async fn create_memory_tools_with_tenant_and_vector(
     data_dir: impl AsRef<std::path::Path>,
     tenant_id: impl Into<String>,
@@ -103,8 +78,10 @@ pub async fn create_memory_tools_with_tenant_and_vector(
     qdrant_collection: &str,
     embedding_api_base_url: &str,
     embedding_api_key: &str,
+    embedding_model_name: &str,
+    embedding_dim: Option<usize>,
 ) -> Result<MemoryTools, Box<dyn std::error::Error>> {
-    let operations = MemoryOperations::with_tenant_and_vector(
+    let operations = MemoryOperations::new(
         data_dir.as_ref().to_str().unwrap(),
         tenant_id,
         llm_client,
@@ -112,6 +89,8 @@ pub async fn create_memory_tools_with_tenant_and_vector(
         qdrant_collection,
         embedding_api_base_url,
         embedding_api_key,
+        embedding_model_name,
+        embedding_dim,
     ).await?;
     Ok(MemoryTools::new(Arc::new(operations)))
 }

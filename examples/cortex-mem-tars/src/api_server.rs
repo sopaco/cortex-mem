@@ -154,7 +154,6 @@ async fn retrieve_memory(
     // 使用新的 search API
     let search_args = cortex_mem_tools::SearchArgs {
         query: query_text,
-        engine: Some("keyword".to_string()),
         recursive: Some(true),
         return_layers: Some(vec!["L2".to_string()]),
         scope: bot_id.map(|id| format!("cortex://threads/{}", id)),
@@ -217,7 +216,6 @@ async fn list_memory(
     // 使用新的 search API
     let search_args = cortex_mem_tools::SearchArgs {
         query: "".to_string(),  // 空查询列出所有
-        engine: Some("keyword".to_string()),
         recursive: Some(true),
         return_layers: Some(vec!["L2".to_string()]),  // 返回完整内容
         scope: bot_id.map(|id| format!("cortex://threads/{}", id)),

@@ -4,16 +4,26 @@ use std::path::{Path, PathBuf};
 
 /// Cortex URI representing a memory resource
 ///
-/// Format: `cortex://{dimension}/{id}/{category}/{subcategory}/{resource}?{params}`
+/// Simplified URI structure (OpenViking-aligned):
 ///
-/// Examples:
-/// - `cortex://session/thread_abc123/timeline/2026-02/03/10_00.md`
-/// - `cortex://agents/bot_001/memories/facts/oauth_knowledge.md`
-/// - `cortex://users/user_001/preferences/communication_style.md`
+/// ```text
+/// cortex://
+/// ├── resources/{resource_name}/
+/// ├── user/preferences/{name}.md
+/// ├── user/entities/{name}.md
+/// ├── user/events/{name}.md
+/// ├── agent/cases/{name}.md
+/// ├── agent/skills/{name}.md
+/// └── session/{session_id}/timeline/{date}/{time}.md
+/// ```
+///
+/// Key changes from v1:
+/// - No user_id/agent_id in URI (tenant isolation at storage level)
+/// - user dimension: preferences/entities/events categories
+/// - agent dimension: cases/skills categories
 #[derive(Debug, Clone, PartialEq)]
 pub struct CortexUri {
     pub dimension: Dimension,
-    pub id: String,
     pub category: String,
     pub subcategory: Option<String>,
     pub resource: Option<String>,
@@ -22,15 +32,49 @@ pub struct CortexUri {
 
 impl CortexUri {
     /// Create a new CortexUri
-    pub fn new(dimension: Dimension, id: String) -> Self {
+    pub fn new(dimension: Dimension) -> Self {
         Self {
             dimension,
-            id,
             category: String::new(),
             subcategory: None,
             resource: None,
             params: HashMap::new(),
         }
+    }
+
+    /// Create user preferences URI
+    pub fn user_preferences(name: &str) -> String {
+        format!("cortex://user/preferences/{}.md", name)
+    }
+
+    /// Create user entities URI
+    pub fn user_entities(name: &str) -> String {
+        format!("cortex://user/entities/{}.md", name)
+    }
+
+    /// Create user events URI
+    pub fn user_events(name: &str) -> String {
+        format!("cortex://user/events/{}.md", name)
+    }
+
+    /// Create agent cases URI
+    pub fn agent_cases(name: &str) -> String {
+        format!("cortex://agent/cases/{}.md", name)
+    }
+
+    /// Create agent skills URI
+    pub fn agent_skills(name: &str) -> String {
+        format!("cortex://agent/skills/{}.md", name)
+    }
+
+    /// Create session URI
+    pub fn session(session_id: &str) -> String {
+        format!("cortex://session/{}", session_id)
+    }
+
+    /// Create session timeline URI
+    pub fn session_timeline(session_id: &str, _date: &str, time: &str) -> String {
+        format!("cortex://session/{}/timeline/{}.md", session_id, time)
     }
 
     /// Convert URI to file system path
@@ -39,11 +83,6 @@ impl CortexUri {
 
         // Add dimension
         path.push(self.dimension.as_str());
-
-        // Add id (only if not empty)
-        if !self.id.is_empty() {
-            path.push(&self.id);
-        }
 
         // Add category
         if !self.category.is_empty() {
@@ -65,12 +104,12 @@ impl CortexUri {
 
     /// Get directory URI (without resource)
     pub fn directory_uri(&self) -> String {
-        let mut uri = format!(
-            "cortex://{}/{}/{}",
-            self.dimension.as_str(),
-            self.id,
-            self.category
-        );
+        let mut uri = format!("cortex://{}", self.dimension.as_str());
+
+        if !self.category.is_empty() {
+            uri.push('/');
+            uri.push_str(&self.category);
+        }
 
         if let Some(ref sub) = self.subcategory {
             uri.push('/');
@@ -81,8 +120,8 @@ impl CortexUri {
     }
 
     /// Convert to full URI string
-    pub fn to_string(&self) -> String {
-        let mut uri = format!("cortex://{}/{}", self.dimension.as_str(), self.id);
+    pub fn to_uri_string(&self) -> String {
+        let mut uri = format!("cortex://{}", self.dimension.as_str());
 
         if !self.category.is_empty() {
             uri.push('/');
@@ -126,8 +165,7 @@ impl UriParser {
     ///
     /// let uri = UriParser::parse("cortex://session/abc123/timeline").unwrap();
     /// assert_eq!(uri.dimension, cortex_mem_core::Dimension::Session);
-    /// assert_eq!(uri.id, "abc123");
-    /// assert_eq!(uri.category, "timeline");
+    /// assert_eq!(uri.category, "abc123");
     /// ```
     pub fn parse(uri: &str) -> Result<CortexUri> {
         // 1. Validate scheme
@@ -153,27 +191,24 @@ impl UriParser {
         let dimension = Dimension::from_str(parts[0])
             .ok_or_else(|| Error::InvalidDimension(parts[0].to_string()))?;
 
-        // If only dimension is provided, use empty string for id
-        let id = parts.get(1).map(|s| s.to_string()).unwrap_or_default();
-        let category = parts.get(2).map(|s| s.to_string()).unwrap_or_default();
+        // Parse category, subcategory, and resource
+        // New structure: cortex://{dimension}/{category}/{subcategory}/{resource}
+        let category = parts.get(1).map(|s| s.to_string()).unwrap_or_default();
 
-        // Determine subcategory and resource
-        // If parts.len() == 3: just category, no subcategory/resource
-        // If parts.len() == 4: could be category/subcategory OR category/resource
-        // If parts.len() > 4: category/subcategory/resource...
-        let (subcategory, resource) = if parts.len() <= 3 {
+        let (subcategory, resource) = if parts.len() <= 2 {
             (None, None)
-        } else if parts.len() == 4 {
+        } else if parts.len() == 3 {
             // If last part has extension, it's a file (resource)
-            if parts[3].contains('.') {
-                (None, Some(parts[3].to_string()))
+            if parts[2].contains('.') {
+                (None, Some(parts[2].to_string()))
             } else {
-                // Otherwise it's a subcategory
-                (Some(parts[3].to_string()), None)
+                (Some(parts[2].to_string()), None)
             }
         } else {
-            // parts.len() > 4: category/subcategory/resource/...
-            (Some(parts[3].to_string()), Some(parts[4..].join("/")))
+            // parts.len() > 3: category/subcategory/resource/...
+            let sub = parts[2].to_string();
+            let res = parts[3..].join("/");
+            (Some(sub), Some(res))
         };
 
         // 4. Parse query params
@@ -181,7 +216,6 @@ impl UriParser {
 
         Ok(CortexUri {
             dimension,
-            id,
             category,
             subcategory,
             resource,

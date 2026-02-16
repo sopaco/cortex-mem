@@ -71,7 +71,6 @@ pub struct FileMetadata {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchArgs {
     pub query: String,
-    pub engine: Option<String>,         // "keyword" | "vector" | "hybrid"
     pub recursive: Option<bool>,        // 是否递归搜索
     pub return_layers: Option<Vec<String>>,  // ["L0", "L1", "L2"]
     pub scope: Option<String>,          // 搜索范围 URI

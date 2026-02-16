@@ -13,13 +13,10 @@ pub enum SearchEngine {
     /// Keyword-based search (fast, offline)
     Keyword,
     /// Vector-based semantic search (slow, accurate, requires vector-search feature)
-    #[cfg(feature = "vector-search")]
     Vector,
     /// Hybrid search combining keyword and vector (best accuracy, requires vector-search feature)
-    #[cfg(feature = "vector-search")]
     Hybrid,
     /// Layered semantic search (fastest vector search, requires vector-search feature)
-    #[cfg(feature = "vector-search")]
     Layered,
 }
 
@@ -27,11 +24,8 @@ impl SearchEngine {
     pub fn as_str(&self) -> &'static str {
         match self {
             SearchEngine::Keyword => "keyword",
-            #[cfg(feature = "vector-search")]
             SearchEngine::Vector => "vector",
-            #[cfg(feature = "vector-search")]
             SearchEngine::Hybrid => "hybrid",
-            #[cfg(feature = "vector-search")]
             SearchEngine::Layered => "layered",
         }
     }

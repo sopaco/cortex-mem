@@ -1,5 +1,3 @@
-#![cfg(feature = "vector-search")]
-
 use crate::{
     embedding::EmbeddingClient,
     filesystem::{CortexFilesystem, FilesystemOperations},
@@ -45,7 +43,6 @@ pub struct IndexStats {
 /// 1. 监听新消息并自动生成embedding
 /// 2. 批量索引现有消息
 /// 3. 增量更新索引
-#[cfg(feature = "vector-search")]
 pub struct AutoIndexer {
     filesystem: Arc<CortexFilesystem>,
     embedding: Arc<EmbeddingClient>,
@@ -53,7 +50,6 @@ pub struct AutoIndexer {
     config: IndexerConfig,
 }
 
-#[cfg(feature = "vector-search")]
 impl AutoIndexer {
     /// 创建新的自动索引器
     pub fn new(
@@ -78,6 +74,7 @@ impl AutoIndexer {
         let embedding = self.embedding.embed(&message.content).await?;
 
         // 2. 创建Memory对象
+        let uri = format!("cortex://session/{}/messages/{}", thread_id, message.id);
         let memory = crate::types::Memory {
             id: message.id.clone(),
             content: message.content.clone(),
@@ -85,6 +82,7 @@ impl AutoIndexer {
             created_at: message.created_at,
             updated_at: message.created_at,
             metadata: crate::types::MemoryMetadata {
+                uri: Some(uri),
                 user_id: None,
                 agent_id: None,
                 run_id: Some(thread_id.to_string()),
@@ -169,6 +167,7 @@ impl AutoIndexer {
                 Ok(embeddings) => {
                     // 为每个消息创建Memory并存储
                     for (message, embedding) in chunk.iter().zip(embeddings.iter()) {
+                        let uri = format!("cortex://session/{}/messages/{}", thread_id, message.id);
                         let memory = crate::types::Memory {
                             id: message.id.clone(),
                             content: message.content.clone(),
@@ -176,6 +175,7 @@ impl AutoIndexer {
                             created_at: message.created_at,
                             updated_at: message.created_at,
                             metadata: crate::types::MemoryMetadata {
+                                uri: Some(uri),
                                 user_id: None,
                                 agent_id: None,
                                 run_id: Some(thread_id.to_string()),

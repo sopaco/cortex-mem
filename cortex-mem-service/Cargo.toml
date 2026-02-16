@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 # Workspace dependencies
-cortex-mem-core = { path = "../cortex-mem-core", features = ["vector-search"] }
+cortex-mem-core = { path = "../cortex-mem-core" }
 cortex-mem-config = { path = "../cortex-mem-config" }
 tokio = { workspace = true }
 serde = { workspace = true }
@@ -38,4 +38,3 @@ futures = { workspace = true }
 
 [features]
 default = []
-vector-search = ["cortex-mem-core/vector-search"]

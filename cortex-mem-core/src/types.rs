@@ -92,6 +92,7 @@ pub struct FileMetadata {
 /// Memory metadata (for V1 compatibility)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryMetadata {
+    pub uri: Option<String>,  // Original URI for reference
     pub user_id: Option<String>,
     pub agent_id: Option<String>,
     pub run_id: Option<String>,
@@ -122,6 +123,70 @@ impl MemoryType {
             "Semantic" => MemoryType::Semantic,
             "Episodic" => MemoryType::Episodic,
             _ => MemoryType::Conversational, // Default fallback
+        }
+    }
+}
+
+/// User memory category (OpenViking-aligned)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum UserMemoryCategory {
+    /// User profile (appendable)
+    Profile,
+    /// User preferences by topic
+    Preferences,
+    /// Entity memories (people, projects)
+    Entities,
+    /// Event records (decisions, milestones)
+    Events,
+}
+
+impl UserMemoryCategory {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            UserMemoryCategory::Profile => "profile",
+            UserMemoryCategory::Preferences => "preferences",
+            UserMemoryCategory::Entities => "entities",
+            UserMemoryCategory::Events => "events",
+        }
+    }
+    
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "profile" => Some(UserMemoryCategory::Profile),
+            "preferences" => Some(UserMemoryCategory::Preferences),
+            "entities" => Some(UserMemoryCategory::Entities),
+            "events" => Some(UserMemoryCategory::Events),
+            _ => None,
+        }
+    }
+}
+
+/// Agent memory category (OpenViking-aligned)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum AgentMemoryCategory {
+    /// Problem + solution cases
+    Cases,
+    /// Skills
+    Skills,
+    /// Instructions
+    Instructions,
+}
+
+impl AgentMemoryCategory {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AgentMemoryCategory::Cases => "cases",
+            AgentMemoryCategory::Skills => "skills",
+            AgentMemoryCategory::Instructions => "instructions",
+        }
+    }
+    
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "cases" => Some(AgentMemoryCategory::Cases),
+            "skills" => Some(AgentMemoryCategory::Skills),
+            "instructions" => Some(AgentMemoryCategory::Instructions),
+            _ => None,
         }
     }
 }

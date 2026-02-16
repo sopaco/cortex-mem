@@ -189,19 +189,13 @@ impl Tool for SearchTool {
         async {
             ToolDefinition {
                 name: Self::NAME.to_string(),
-                description: "智能搜索记忆，支持关键词/向量/混合检索和递归搜索".to_string(),
+                description: "智能向量搜索记忆，支持递归搜索和分层返回".to_string(),
                 parameters: json!({
                     "type": "object",
                     "properties": {
                         "query": {
                             "type": "string",
                             "description": "搜索查询"
-                        },
-                        "engine": {
-                            "type": "string",
-                            "enum": ["keyword", "vector", "hybrid"],
-                            "description": "检索引擎类型（keyword=关键词, vector=向量, hybrid=混合）",
-                            "default": "keyword"
                         },
                         "recursive": {
                             "type": "boolean",

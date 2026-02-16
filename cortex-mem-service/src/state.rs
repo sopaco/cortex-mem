@@ -1,8 +1,5 @@
-use cortex_mem_core::{CortexFilesystem, LLMClient, SessionManager};
+use cortex_mem_core::{CortexFilesystem, LLMClient, SessionManager, QdrantVectorStore, EmbeddingClient};
 use std::sync::Arc;
-
-#[cfg(feature = "vector-search")]
-use cortex_mem_core::{QdrantVectorStore, EmbeddingClient};
 
 /// Application state shared across all handlers
 #[derive(Clone)]
@@ -10,9 +7,7 @@ pub struct AppState {
     pub filesystem: Arc<CortexFilesystem>,
     pub session_manager: Arc<tokio::sync::RwLock<SessionManager>>,
     pub llm_client: Option<Arc<dyn LLMClient>>,
-    #[cfg(feature = "vector-search")]
     pub vector_store: Option<Arc<QdrantVectorStore>>,
-    #[cfg(feature = "vector-search")]
     pub embedding_client: Option<Arc<EmbeddingClient>>,
 }
 
@@ -31,17 +26,14 @@ impl AppState {
         // Initialize LLM client (optional, based on env or config)
         let llm_client = Self::init_llm_client()?;
 
-        // Initialize vector store and embedding client (optional, feature-gated)
-        #[cfg(feature = "vector-search")]
+        // Initialize vector store and embedding client (optional)
         let (vector_store, embedding_client) = Self::init_vector_search().await?;
 
         Ok(Self {
             filesystem,
             session_manager,
             llm_client,
-            #[cfg(feature = "vector-search")]
             vector_store,
-            #[cfg(feature = "vector-search")]
             embedding_client,
         })
     }
@@ -70,7 +62,6 @@ impl AppState {
         }
     }
 
-    #[cfg(feature = "vector-search")]
     async fn init_vector_search() -> anyhow::Result<(Option<Arc<QdrantVectorStore>>, Option<Arc<EmbeddingClient>>)> {
         // Try to load config from file first, then fall back to environment variables
         let config_result = cortex_mem_config::Config::load("config.toml");

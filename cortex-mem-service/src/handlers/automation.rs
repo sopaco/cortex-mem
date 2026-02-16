@@ -79,8 +79,8 @@ pub async fn trigger_extraction(
 
     // Optionally save to user/agent memories
     if req.auto_save {
-        // TODO: Save to cortex://users/{user_id}/memories/
-        // TODO: Save to cortex://agents/{agent_id}/memories/
+        // TODO: Save to cortex://user/memories/
+        // TODO: Save to cortex://agent/memories/
         tracing::info!("Auto-save not yet implemented");
     }
 
@@ -99,7 +99,6 @@ pub async fn trigger_extraction(
 }
 
 /// Trigger indexing for a specific thread
-#[cfg(feature = "vector-search")]
 pub async fn trigger_indexing(
     State(state): State<Arc<AppState>>,
     Path(thread_id): Path<String>,
@@ -145,18 +144,7 @@ pub async fn trigger_indexing(
     Ok(Json(ApiResponse::success(response)))
 }
 
-#[cfg(not(feature = "vector-search"))]
-pub async fn trigger_indexing(
-    _state: State<Arc<AppState>>,
-    _thread_id: Path<String>,
-) -> Result<Json<ApiResponse<serde_json::Value>>> {
-    Err(AppError::BadRequest(
-        "Vector search feature not enabled. Rebuild with --features vector-search".to_string()
-    ))
-}
-
 /// Index all threads in the filesystem
-#[cfg(feature = "vector-search")]
 pub async fn trigger_indexing_all(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>> {
@@ -189,7 +177,7 @@ pub async fn trigger_indexing_all(
     );
     
     // List all threads
-    let threads_uri = "cortex://threads";
+    let threads_uri = "cortex://session";
     let entries = state.filesystem.list(threads_uri).await?;
     
     let mut total_indexed = 0;
@@ -223,13 +211,4 @@ pub async fn trigger_indexing_all(
     });
     
     Ok(Json(ApiResponse::success(response)))
-}
-
-#[cfg(not(feature = "vector-search"))]
-pub async fn trigger_indexing_all(
-    _state: State<Arc<AppState>>,
-) -> Result<Json<ApiResponse<serde_json::Value>>> {
-    Err(AppError::BadRequest(
-        "Vector search feature not enabled. Rebuild with --features vector-search".to_string()
-    ))
 }

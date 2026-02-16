@@ -1,14 +1,11 @@
-use crate::{FilesystemOperations, Result};
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "vector-search")]
 use crate::{
     embedding::EmbeddingClient,
     filesystem::CortexFilesystem,
-    vector_store::{QdrantVectorStore, VectorStore},
+    vector_store::{QdrantVectorStore, VectorStore, uri_to_vector_id},
+    ContextLayer,
+    FilesystemOperations, Result,
 };
-
-#[cfg(feature = "vector-search")]
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 /// Search options
@@ -48,15 +45,13 @@ pub struct SearchResult {
     pub content: Option<String>,
 }
 
-/// Vector search engine (requires vector-search feature)
-#[cfg(feature = "vector-search")]
+/// Vector search engine
 pub struct VectorSearchEngine {
     qdrant: Arc<QdrantVectorStore>,
     embedding: Arc<EmbeddingClient>,
     filesystem: Arc<CortexFilesystem>,
 }
 
-#[cfg(feature = "vector-search")]
 impl VectorSearchEngine {
     pub fn new(
         qdrant: Arc<QdrantVectorStore>,
@@ -96,8 +91,12 @@ impl VectorSearchEngine {
                 scored_mem.memory.content.clone()
             };
 
+            // Use metadata.uri if available, otherwise fall back to id
+            let uri = scored_mem.memory.metadata.uri.clone()
+                .unwrap_or_else(|| scored_mem.memory.id.clone());
+
             results.push(SearchResult {
-                uri: scored_mem.memory.id.clone(),
+                uri,
                 score: scored_mem.score,
                 snippet,
                 content: Some(scored_mem.memory.content),
@@ -146,15 +145,16 @@ impl VectorSearchEngine {
         let mut l1_candidates = Vec::new();
 
         for l0_result in l0_results {
-            // Extract base URI (remove #L0 suffix)
-            let base_uri = l0_result.memory.id.trim_end_matches("#L0");
-            let l1_id = format!("{}#L1", base_uri);
+            // Get base URI from metadata
+            let base_uri = l0_result.memory.metadata.uri.clone()
+                .unwrap_or_else(|| l0_result.memory.id.clone());
+            let l1_id = uri_to_vector_id(&base_uri, ContextLayer::L1Overview);
 
             // Try to get L1 layer
             if let Ok(Some(l1_memory)) = self.qdrant.get(&l1_id).await {
                 let l1_score = Self::cosine_similarity(&query_vec, &l1_memory.embedding);
                 if l1_score >= options.threshold {
-                    l1_candidates.push((base_uri.to_string(), l0_result.score, l1_score));
+                    l1_candidates.push((base_uri, l0_result.score, l1_score));
                 }
             }
         }
@@ -181,7 +181,7 @@ impl VectorSearchEngine {
                         continue;
                     }
 
-                    let l2_id = format!("{}#L2", entry.uri);
+                    let l2_id = uri_to_vector_id(&entry.uri, ContextLayer::L2Detail);
                     if let Ok(Some(l2_memory)) = self.qdrant.get(&l2_id).await {
                         let l2_score = Self::cosine_similarity(&query_vec, &l2_memory.embedding);
 
@@ -212,7 +212,7 @@ impl VectorSearchEngine {
         Ok(final_results)
     }
 
-    /// Calculate cosine similarity between two vectors (helper method)
+    /// Calculate cosine similarity between two vectors
     fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
         if a.len() != b.len() {
             return 0.0;
@@ -254,14 +254,14 @@ impl VectorSearchEngine {
         }
     }
 
-    /// Recursive directory search (inspired by OpenViking)
+    /// Recursive directory search (OpenViking style)
     pub async fn recursive_search(
         &self,
         query: &str,
         root_uri: &str,
         options: &SearchOptions,
     ) -> Result<Vec<SearchResult>> {
-        // 1. Analyze intent (future: use LLM for better intent analysis)
+        // 1. Analyze intent
         let _intent = self.analyze_intent(query).await?;
 
         // 2. Initial positioning - find high-score directories
@@ -302,8 +302,7 @@ impl VectorSearchEngine {
         _root_uri: &str,
         options: &SearchOptions,
     ) -> Result<Vec<SearchResult>> {
-        // For now, use semantic search to find relevant files/dirs
-        // Future: can be optimized with directory-level embeddings
+        // Use semantic search to find relevant files/dirs
         self.semantic_search(query, options).await
     }
 
@@ -316,7 +315,7 @@ impl VectorSearchEngine {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<SearchResult>>> + Send + 'a>>
     {
         Box::pin(async move {
-            let entries = self.filesystem.as_ref().list(dir_uri).await?;
+            let entries = self.filesystem.list(dir_uri).await?;
             let mut results = Vec::new();
 
             for entry in entries {
@@ -334,7 +333,7 @@ impl VectorSearchEngine {
                     results.extend(sub_results);
                 } else if entry.name.ends_with(".md") {
                     // Search in file
-                    if let Ok(content) = self.filesystem.as_ref().read(&entry.uri).await {
+                    if let Ok(content) = self.filesystem.read(&entry.uri).await {
                         if self.content_matches(query, &content) {
                             let score = self.calculate_relevance(query, &content).await?;
                             if score >= options.threshold {
@@ -357,7 +356,7 @@ impl VectorSearchEngine {
     /// Check if URI is a directory
     async fn is_directory(&self, uri: &str) -> Result<bool> {
         // Try to list - if successful, it's a directory
-        match self.filesystem.as_ref().list(uri).await {
+        match self.filesystem.list(uri).await {
             Ok(_) => Ok(true),
             Err(_) => Ok(false),
         }
@@ -386,22 +385,4 @@ impl VectorSearchEngine {
 struct QueryIntent {
     query: String,
     keywords: Vec<String>,
-}
-
-/// Calculate cosine similarity between two vectors (used by VectorSearchEngine and tests)
-#[allow(dead_code)]
-fn cosine_similarity(a: &[f32], b: &[f32]) -> f32 {
-    if a.len() != b.len() {
-        return 0.0;
-    }
-
-    let dot_product: f32 = a.iter().zip(b.iter()).map(|(x, y)| x * y).sum();
-    let magnitude_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
-    let magnitude_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
-
-    if magnitude_a == 0.0 || magnitude_b == 0.0 {
-        0.0
-    } else {
-        dot_product / (magnitude_a * magnitude_b)
-    }
 }

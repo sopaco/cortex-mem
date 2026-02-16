@@ -69,20 +69,16 @@ pub struct AddMessageRequest {
     pub content: String,
 }
 
-/// Search mode
+/// Search mode (always uses vector search)
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
 pub enum SearchMode {
-    Filesystem,  // File system full-text search
-    #[cfg(feature = "vector-search")]
-    Vector,      // Vector semantic search
-    #[cfg(feature = "vector-search")]
-    Hybrid,      // Hybrid search (both)
+    Vector,  // Vector semantic search (default and only mode)
 }
 
 impl Default for SearchMode {
     fn default() -> Self {
-        SearchMode::Filesystem
+        SearchMode::Vector
     }
 }
 
