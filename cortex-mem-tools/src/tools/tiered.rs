@@ -36,11 +36,21 @@ impl MemoryOperations {
     pub async fn get_read(&self, uri: &str) -> Result<ReadResponse> {
         let content = self.filesystem.read(uri).await?;
         
-        // TODO: Get actual metadata from filesystem
-        let metadata = Some(FileMetadata {
-            created_at: chrono::Utc::now(),
-            updated_at: chrono::Utc::now(),
-        });
+        // Get actual metadata from filesystem
+        let metadata = match self.filesystem.metadata(uri).await {
+            Ok(fs_meta) => Some(FileMetadata {
+                created_at: fs_meta.created_at,
+                updated_at: fs_meta.updated_at,
+            }),
+            Err(_) => {
+                // Fallback to current time if metadata cannot be retrieved
+                let now = chrono::Utc::now();
+                Some(FileMetadata {
+                    created_at: now,
+                    updated_at: now,
+                })
+            }
+        };
         
         Ok(ReadResponse {
             uri: uri.to_string(),

@@ -96,6 +96,7 @@ impl MemoryOperations {
     // ==================== Internal Methods ====================
     
     /// Vector search using VectorSearchEngine
+    /// Uses layered semantic search (L0->L1->L2) for optimal retrieval
     async fn vector_search(&self, args: &SearchArgs) -> Result<Vec<RawSearchResult>> {
         let search_options = SearchOptions {
             limit: args.limit.unwrap_or(10),
@@ -104,9 +105,9 @@ impl MemoryOperations {
             recursive: args.recursive.unwrap_or(true),
         };
         
-        let results = self.vector_engine.recursive_search(
+        // Use layered semantic search for L0/L1/L2 tiered retrieval
+        let results = self.vector_engine.layered_semantic_search(
             &args.query,
-            args.scope.as_deref().unwrap_or("cortex://session"),
             &search_options
         ).await?;
         

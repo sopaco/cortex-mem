@@ -1,7 +1,10 @@
 use crate::{CortexFilesystem, FilesystemOperations, MessageStorage, ParticipantManager, Result};
+use crate::llm::LLMClient;
+use crate::session::extraction::MemoryExtractor;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tracing::{info, warn};
 
 /// Session status
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -144,12 +147,22 @@ impl Default for SessionConfig {
     }
 }
 
+/// Statistics for memory extraction
+#[derive(Debug, Clone, Default)]
+pub struct ExtractionStats {
+    pub preferences: usize,
+    pub entities: usize,
+    pub events: usize,
+    pub cases: usize,
+}
+
 /// Session manager
 pub struct SessionManager {
     filesystem: Arc<CortexFilesystem>,
     message_storage: MessageStorage,
     participant_manager: ParticipantManager,
-    _config: SessionConfig,
+    config: SessionConfig,
+    llm_client: Option<Arc<dyn LLMClient>>,
 }
 
 impl SessionManager {
@@ -162,7 +175,26 @@ impl SessionManager {
             filesystem,
             message_storage,
             participant_manager,
-            _config: config,
+            config,
+            llm_client: None,
+        }
+    }
+    
+    /// Create a new session manager with LLM client for memory extraction
+    pub fn new_with_llm(
+        filesystem: Arc<CortexFilesystem>, 
+        config: SessionConfig,
+        llm_client: Arc<dyn LLMClient>
+    ) -> Self {
+        let message_storage = MessageStorage::new(filesystem.clone());
+        let participant_manager = ParticipantManager::new();
+        
+        Self {
+            filesystem,
+            message_storage,
+            participant_manager,
+            config,
+            llm_client: Some(llm_client),
         }
     }
     
@@ -200,9 +232,68 @@ impl SessionManager {
         metadata.close();
         self.update_session(&metadata).await?;
         
-        // TODO: Trigger memory extraction if auto_extract_on_close is enabled
+        // Trigger memory extraction if auto_extract_on_close is enabled and LLM client is available
+        if self.config.auto_extract_on_close {
+            if let Some(ref llm_client) = self.llm_client {
+                info!("Auto-extracting memories for session: {}", thread_id);
+                
+                match self.extract_and_save_memories(thread_id, llm_client.clone()).await {
+                    Ok(stats) => {
+                        info!(
+                            "Memory extraction completed for session {}: {} preferences, {} entities, {} events, {} cases",
+                            thread_id, stats.preferences, stats.entities, stats.events, stats.cases
+                        );
+                    }
+                    Err(e) => {
+                        warn!("Failed to extract memories for session {}: {}", thread_id, e);
+                    }
+                }
+            } else {
+                warn!("Memory extraction skipped for session {}: LLM client not configured", thread_id);
+            }
+        }
         
         Ok(metadata)
+    }
+    
+    /// Extract and save memories from a session
+    async fn extract_and_save_memories(
+        &self, 
+        thread_id: &str, 
+        llm_client: Arc<dyn LLMClient>
+    ) -> Result<ExtractionStats> {
+        // Get all message URIs from the session timeline
+        let message_uris = self.message_storage.list_messages(thread_id).await?;
+        
+        if message_uris.is_empty() {
+            info!("No messages found in session {}, skipping extraction", thread_id);
+            return Ok(ExtractionStats::default());
+        }
+        
+        // Read message contents
+        let mut messages = Vec::new();
+        for uri in &message_uris {
+            match self.filesystem.read(uri).await {
+                Ok(content) => messages.push(content),
+                Err(e) => warn!("Failed to read message {}: {}", uri, e),
+            }
+        }
+        
+        // Extract memories using LLM
+        let extractor = MemoryExtractor::new(llm_client, self.filesystem.clone());
+        let extracted = extractor.extract(&messages).await?;
+        
+        let stats = ExtractionStats {
+            preferences: extracted.preferences.len(),
+            entities: extracted.entities.len(),
+            events: extracted.events.len(),
+            cases: extracted.cases.len(),
+        };
+        
+        // Save extracted memories
+        extractor.save_memories(&extracted).await?;
+        
+        Ok(stats)
     }
     
     /// Archive a session

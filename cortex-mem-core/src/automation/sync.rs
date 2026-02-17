@@ -99,18 +99,18 @@ impl SyncManager {
 
         let mut total_stats = SyncStats::default();
 
-        // 同步用户记忆
+        // 同步用户记忆 (preferences, entities, events)
         if self.config.sync_users {
             let stats = self
-                .sync_directory("cortex://users", MemoryType::Semantic)
+                .sync_directory("cortex://user", MemoryType::Semantic)
                 .await?;
             total_stats.add(&stats);
         }
 
-        // 同步Agent记忆
+        // 同步Agent记忆 (cases, skills)
         if self.config.sync_agents {
             let stats = self
-                .sync_directory("cortex://agents", MemoryType::Semantic)
+                .sync_directory("cortex://agent", MemoryType::Semantic)
                 .await?;
             total_stats.add(&stats);
         }
@@ -121,13 +121,13 @@ impl SyncManager {
             total_stats.add(&stats);
         }
 
-        // 同步全局记忆
+        // 同步资源
         if self.config.sync_global {
-            // global目录可能不存在，如果存在则同步
-            if let Ok(entries) = self.filesystem.list("cortex://global").await {
+            // resources目录可能不存在，如果存在则同步
+            if let Ok(entries) = self.filesystem.list("cortex://resources").await {
                 if !entries.is_empty() {
                     let stats = self
-                        .sync_directory("cortex://global", MemoryType::Semantic)
+                        .sync_directory("cortex://resources", MemoryType::Semantic)
                         .await?;
                     total_stats.add(&stats);
                 }
@@ -244,13 +244,18 @@ impl SyncManager {
         self.vector_store.insert(&l2_memory).await?;
         debug!("L2 indexed: {}", uri);
 
-        // 2. 尝试读取并索引L0 abstract
-        let abstract_uri = Self::get_layer_uri(uri, "L0");
-        if let Ok(l0_content) = self.filesystem.read(&abstract_uri).await {
-            let l0_id = uri_to_vector_id(uri, ContextLayer::L0Abstract);
+        // 2. 尝试读取并索引L0 abstract (目录级别)
+        // 对于 timeline 文件，L0/L1 是目录级别的
+        // 例如: cortex://session/abc/timeline/10_00.md 的 L0 是 cortex://session/abc/timeline/.abstract.md
+        // 向量 ID 应该基于目录 URI: cortex://session/abc/timeline
+        let (dir_uri, layer_file_uri) = Self::get_layer_info(uri, "L0");
+        if let Ok(l0_content) = self.filesystem.read(&layer_file_uri).await {
+            // 使用目录 URI 生成向量 ID，确保同一目录下的所有文件共享同一个 L0/L1 向量
+            let l0_id = uri_to_vector_id(&dir_uri, ContextLayer::L0Abstract);
             if !self.is_indexed(&l0_id).await? {
                 let l0_embedding = self.embedding.embed(&l0_content).await?;
-                let l0_metadata = self.parse_metadata(uri, memory_type.clone(), "L0")?;
+                // 元数据使用目录 URI
+                let l0_metadata = self.parse_metadata(&dir_uri, memory_type.clone(), "L0")?;
 
                 let l0_memory = Memory {
                     id: l0_id,
@@ -261,17 +266,17 @@ impl SyncManager {
                     metadata: l0_metadata,
                 };
                 self.vector_store.insert(&l0_memory).await?;
-                debug!("L0 indexed: {}", abstract_uri);
+                debug!("L0 indexed for directory {}: {}", dir_uri, layer_file_uri);
             }
         }
 
-        // 3. 尝试读取并索引L1 overview
-        let overview_uri = Self::get_layer_uri(uri, "L1");
-        if let Ok(l1_content) = self.filesystem.read(&overview_uri).await {
-            let l1_id = uri_to_vector_id(uri, ContextLayer::L1Overview);
+        // 3. 尝试读取并索引L1 overview (目录级别)
+        let (dir_uri, layer_file_uri) = Self::get_layer_info(uri, "L1");
+        if let Ok(l1_content) = self.filesystem.read(&layer_file_uri).await {
+            let l1_id = uri_to_vector_id(&dir_uri, ContextLayer::L1Overview);
             if !self.is_indexed(&l1_id).await? {
                 let l1_embedding = self.embedding.embed(&l1_content).await?;
-                let l1_metadata = self.parse_metadata(uri, memory_type.clone(), "L1")?;
+                let l1_metadata = self.parse_metadata(&dir_uri, memory_type.clone(), "L1")?;
 
                 let l1_memory = Memory {
                     id: l1_id,
@@ -282,24 +287,38 @@ impl SyncManager {
                     metadata: l1_metadata,
                 };
                 self.vector_store.insert(&l1_memory).await?;
-                debug!("L1 indexed: {}", overview_uri);
+                debug!("L1 indexed for directory {}: {}", dir_uri, layer_file_uri);
             }
         }
 
         Ok(true)
     }
 
-    /// 获取分层文件URI
-    fn get_layer_uri(base_uri: &str, layer: &str) -> String {
-        let dir = base_uri
+    /// 获取分层信息 (目录 URI 和层文件 URI)
+    /// 
+    /// 对于 timeline 文件:
+    /// - 输入: cortex://session/abc/timeline/10_00.md
+    /// - L0 输出: (cortex://session/abc/timeline, cortex://session/abc/timeline/.abstract.md)
+    /// 
+    /// 对于 user/agent 记忆:
+    /// - 输入: cortex://user/preferences/language.md
+    /// - L0 输出: (cortex://user/preferences/language.md, cortex://user/preferences/.abstract.md)
+    fn get_layer_info(file_uri: &str, layer: &str) -> (String, String) {
+        let dir = file_uri
             .rsplit_once('/')
             .map(|(dir, _)| dir)
-            .unwrap_or(base_uri);
-        match layer {
+            .unwrap_or(file_uri);
+        
+        let layer_file_uri = match layer {
             "L0" => format!("{}/.abstract.md", dir),
             "L1" => format!("{}/.overview.md", dir),
-            _ => base_uri.to_string(),
-        }
+            _ => file_uri.to_string(),
+        };
+        
+        // 目录 URI 用于向量 ID 生成
+        // 对于 timeline，目录 URI 是文件所在的目录
+        // 对于 user/agent，目录 URI 也是文件所在的目录
+        (dir.to_string(), layer_file_uri)
     }
 
     /// 检查文件是否已索引

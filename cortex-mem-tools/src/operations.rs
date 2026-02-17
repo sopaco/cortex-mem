@@ -85,13 +85,14 @@ impl MemoryOperations {
         let embedding_client = Arc::new(EmbeddingClient::new(embedding_config)?);
         tracing::info!("Embedding client initialized");
 
-        // Create vector search engine
-        let vector_engine = Arc::new(VectorSearchEngine::new(
+        // Create vector search engine with LLM support for query rewriting
+        let vector_engine = Arc::new(VectorSearchEngine::with_llm(
             vector_store.clone(),
             embedding_client.clone(),
             filesystem.clone(),
+            llm_client.clone(),
         ));
-        tracing::info!("Vector search engine created");
+        tracing::info!("Vector search engine created with LLM support for query rewriting");
 
         // Auto-sync existing content to vector database (in background)
         let sync_manager = SyncManager::new(

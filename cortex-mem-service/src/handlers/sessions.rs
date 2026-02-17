@@ -46,7 +46,6 @@ pub async fn create_session(
 }
 
 /// List all sessions
-#[allow(dead_code)]
 pub async fn list_sessions(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<ApiResponse<Vec<SessionResponse>>>> {

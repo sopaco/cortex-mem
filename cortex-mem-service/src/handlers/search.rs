@@ -1,4 +1,4 @@
-use axum::{extract::State, Json};
+use axum::{Json, extract::State};
 use std::sync::Arc;
 
 use crate::{
@@ -7,75 +7,72 @@ use crate::{
     state::AppState,
 };
 
-/// Search endpoint using vector search
+/// Search endpoint using layered vector search (L0/L1/L2)
 pub async fn search(
     State(state): State<Arc<AppState>>,
     Json(req): Json<SearchRequest>,
 ) -> Result<Json<ApiResponse<Vec<SearchResultResponse>>>> {
     let limit = req.limit.unwrap_or(10);
-    let min_score = req.min_score.unwrap_or(0.0);
+    let min_score = req.min_score.unwrap_or(0.5);
 
-    let results = search_vector(&state, &req.query, req.thread.as_deref(), limit, min_score).await?;
+    let results = search_layered(&state, &req.query, req.thread.as_deref(), limit, min_score).await?;
 
     Ok(Json(ApiResponse::success(results)))
 }
 
-/// Vector search implementation
-async fn search_vector(
+/// Layered semantic search using L0/L1/L2 tiered retrieval
+/// 
+/// This implementation uses VectorSearchEngine::layered_semantic_search for
+/// consistency with cortex-mem-tools search behavior.
+async fn search_layered(
     state: &AppState,
     query: &str,
     thread: Option<&str>,
     limit: usize,
     min_score: f32,
 ) -> Result<Vec<SearchResultResponse>> {
-    use cortex_mem_core::{Filters, VectorStore};
+    use cortex_mem_core::SearchOptions;
 
-    // Check if vector store is available
-    let vector_store = state.vector_store.as_ref().ok_or_else(|| {
-        AppError::BadRequest("Vector search not available. Qdrant not configured.".to_string())
+    // Check if vector engine is available
+    let vector_engine = state.vector_engine.as_ref().ok_or_else(|| {
+        AppError::BadRequest("Vector search not available. Qdrant and Embedding service must be configured.".to_string())
     })?;
 
-    // Check if embedding client is available
-    let embedding_client = state.embedding_client.as_ref().ok_or_else(|| {
-        AppError::BadRequest(
-            "Vector search not available. Embedding service not configured.".to_string(),
-        )
-    })?;
+    // Build search options
+    let mut options = SearchOptions {
+        limit,
+        threshold: min_score,
+        root_uri: None,
+        recursive: true,
+    };
 
-    // Generate query embedding
-    let query_embedding = embedding_client
-        .embed(query)
-        .await
-        .map_err(|e| AppError::Internal(format!("Failed to generate embedding: {}", e)))?;
-
-    // Build filters
-    let mut filters = Filters::default();
+    // Set scope based on thread parameter
     if let Some(thread_id) = thread {
-        filters.run_id = Some(thread_id.to_string());
+        options.root_uri = Some(format!("cortex://session/{}", thread_id));
     }
 
-    // Search in vector store
-    let scored_memories = vector_store
-        .search_with_threshold(&query_embedding, &filters, limit, Some(min_score))
+    // Use layered semantic search (L0 -> L1 -> L2)
+    let search_results = vector_engine
+        .layered_semantic_search(query, &options)
         .await
-        .map_err(|e| AppError::Internal(format!("Vector search failed: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Layered search failed: {}", e)))?;
 
     // Convert to response format
-    let results: Vec<SearchResultResponse> = scored_memories
+    let results: Vec<SearchResultResponse> = search_results
         .into_iter()
-        .map(|scored| {
-            let snippet = if scored.memory.content.len() > 200 {
-                format!("{}...", &scored.memory.content[..200])
+        .map(|result| {
+            let snippet = if result.snippet.len() > 200 {
+                format!("{}...", &result.snippet.chars().take(200).collect::<String>())
             } else {
-                scored.memory.content.clone()
+                result.snippet
             };
 
             SearchResultResponse {
-                uri: scored.memory.id.clone(),
-                score: scored.score,
+                uri: result.uri,
+                score: result.score,
                 snippet,
-                content: Some(scored.memory.content),
-                source: "vector".to_string(),
+                content: result.content,
+                source: "layered_vector".to_string(),
             }
         })
         .collect();

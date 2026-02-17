@@ -1,11 +1,11 @@
 use crate::{
+    Result,
     extraction::{
         ExtractedMemories, ExtractedUserInfo, MemoryExtractor, UserInfoCategory, UserProfile,
     },
     filesystem::CortexFilesystem,
     llm::LLMClient,
-    session::{manager::SessionMetadata, SessionManager},
-    Result,
+    session::{SessionManager, manager::SessionMetadata},
 };
 use std::sync::Arc;
 use tracing::{info, warn};
@@ -52,7 +52,6 @@ pub struct AutoExtractStats {
 /// 3. 支持增量更新
 pub struct AutoExtractor {
     filesystem: Arc<CortexFilesystem>,
-    #[allow(dead_code)]
     llm: Arc<dyn LLMClient>,
     extractor: MemoryExtractor,
     config: AutoExtractConfig,

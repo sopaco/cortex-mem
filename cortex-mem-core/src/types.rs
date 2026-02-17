@@ -224,6 +224,8 @@ pub struct Filters {
     pub entities: Option<Vec<String>>,
     pub min_importance: Option<f32>,
     pub max_importance: Option<f32>,
+    /// URI prefix filter for scope-based searching
+    pub uri_prefix: Option<String>,
     pub custom: HashMap<String, serde_json::Value>,
 }
 

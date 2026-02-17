@@ -1,4 +1,4 @@
-use cortex_mem_core::{CortexFilesystem, LLMClient, SessionManager, QdrantVectorStore, EmbeddingClient};
+use cortex_mem_core::{CortexFilesystem, LLMClient, SessionManager, QdrantVectorStore, EmbeddingClient, VectorSearchEngine};
 use std::sync::Arc;
 
 /// Application state shared across all handlers
@@ -9,6 +9,8 @@ pub struct AppState {
     pub llm_client: Option<Arc<dyn LLMClient>>,
     pub vector_store: Option<Arc<QdrantVectorStore>>,
     pub embedding_client: Option<Arc<EmbeddingClient>>,
+    /// Vector search engine with L0/L1/L2 layered search support
+    pub vector_engine: Option<Arc<VectorSearchEngine>>,
 }
 
 impl AppState {
@@ -29,12 +31,34 @@ impl AppState {
         // Initialize vector store and embedding client (optional)
         let (vector_store, embedding_client) = Self::init_vector_search().await?;
 
+        // Initialize vector search engine for layered search with optional LLM support
+        let vector_engine = match (&vector_store, &embedding_client, &llm_client) {
+            (Some(vs), Some(ec), Some(llm)) => {
+                Some(Arc::new(VectorSearchEngine::with_llm(
+                    vs.clone(),
+                    ec.clone(),
+                    filesystem.clone(),
+                    llm.clone(),
+                )))
+            }
+            (Some(vs), Some(ec), None) => {
+                // Without LLM, query rewriting will be disabled
+                Some(Arc::new(VectorSearchEngine::new(
+                    vs.clone(),
+                    ec.clone(),
+                    filesystem.clone(),
+                )))
+            }
+            _ => None,
+        };
+
         Ok(Self {
             filesystem,
             session_manager,
             llm_client,
             vector_store,
             embedding_client,
+            vector_engine,
         })
     }
 

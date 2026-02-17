@@ -299,10 +299,9 @@ model = "text-embedding-3-small"
 
 ### 7.1 建议优化
 
-1. **URI 路径兼容层** - 为旧的 URI 格式提供自动转换
-2. **记忆提取触发机制** - 在 SessionManager 中集成自动提取
-3. **profile.json 迁移** - 将旧的用户 profile 迁移到新的分类结构
-4. **索引优化** - 在 SyncManager 中使用新的向量 ID 格式
+1. **记忆提取触发机制** - 在 SessionManager 中集成自动提取
+2. **profile.json 迁移** - 将旧的用户 profile 迁移到新的分类结构
+3. **索引优化** - 在 SyncManager 中使用新的向量 ID 格式
 
 ### 7.2 测试覆盖
 

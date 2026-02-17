@@ -5,7 +5,7 @@ use qdrant_client::{
         Condition, CreateCollection, DeletePoints, Distance, FieldCondition, Filter, GetPoints,
         Match, PointId, PointStruct, PointsIdsList, PointsSelector, Range, ScoredPoint,
         ScrollPoints, SearchPoints, UpsertPoints, VectorParams, VectorsConfig, condition, r#match,
-        point_id, points_selector, vectors_config,
+        point_id, points_selector, vectors_config, vectors_output,
     },
 };
 use std::collections::HashMap;
@@ -514,9 +514,23 @@ impl QdrantVectorStore {
             .ok_or_else(|| Error::Other("Missing content field".to_string()))?
             .to_string();
 
-        // For now, we'll use a dummy embedding since parsing vectors is complex
-        let embedding_dim = self.embedding_dim.unwrap_or(1024); // Default fallback
-        let embedding = vec![0.0; embedding_dim];
+        // Extract embedding from point vectors (VectorsOutput type from ScoredPoint)
+        let embedding = point.vectors.as_ref()
+            .and_then(|v| v.vectors_options.as_ref())
+            .and_then(|opts| match opts {
+                vectors_output::VectorsOptions::Vector(vec) => Some(vec.data.clone()),
+                vectors_output::VectorsOptions::Vectors(named) => {
+                    // For named vectors, try to get the default "" vector first
+                    named.vectors.get("").cloned()
+                        .or_else(|| named.vectors.values().next().cloned())
+                        .map(|v| v.data)
+                }
+            })
+            .unwrap_or_else(|| {
+                let dim = self.embedding_dim.unwrap_or(1024);
+                warn!("No embedding found in point, using zero vector of dimension {}", dim);
+                vec![0.0; dim]
+            });
 
         let created_at = payload
             .get("created_at")

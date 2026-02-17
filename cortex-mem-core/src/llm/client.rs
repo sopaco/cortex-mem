@@ -163,20 +163,18 @@ impl LLMClientImpl {
     pub async fn extract_memories(&self, prompt: &str) -> Result<MemoryExtractionResponse> {
         let response: String = self.complete(prompt).await?;
         
-        // Debug: print raw LLM response
-        eprintln!("\n[DEBUG] LLM Raw Response:");
-        eprintln!("{}", response);
-        eprintln!("[DEBUG] Response length: {} chars\n", response.len());
+        // Extract JSON from response (handles markdown code blocks)
+        let json_str = Self::extract_json_from_response(&response);
         
         // Try to parse as structured response first
-        if let Ok(extracted) = serde_json::from_str::<MemoryExtractionResponse>(&response) {
-            eprintln!("[DEBUG] Successfully parsed as MemoryExtractionResponse");
+        if let Ok(extracted) = serde_json::from_str::<MemoryExtractionResponse>(json_str) {
+            tracing::debug!("Successfully parsed MemoryExtractionResponse");
             return Ok(extracted);
         }
         
         // Try to parse as just an array of facts (fallback)
-        if let Ok(facts) = serde_json::from_str::<Vec<ExtractedFactRaw>>(&response) {
-            eprintln!("[DEBUG] Parsed as facts array, found {} facts", facts.len());
+        if let Ok(facts) = serde_json::from_str::<Vec<ExtractedFactRaw>>(json_str) {
+            tracing::debug!("Parsed as facts array, found {} facts", facts.len());
             return Ok(MemoryExtractionResponse {
                 facts,
                 decisions: Vec::new(),
@@ -185,8 +183,8 @@ impl LLMClientImpl {
         }
         
         // Try to parse as just an array of decisions (fallback)
-        if let Ok(decisions) = serde_json::from_str::<Vec<ExtractedDecisionRaw>>(&response) {
-            eprintln!("[DEBUG] Parsed as decisions array, found {} decisions", decisions.len());
+        if let Ok(decisions) = serde_json::from_str::<Vec<ExtractedDecisionRaw>>(json_str) {
+            tracing::debug!("Parsed as decisions array, found {} decisions", decisions.len());
             return Ok(MemoryExtractionResponse {
                 facts: Vec::new(),
                 decisions,
@@ -195,8 +193,8 @@ impl LLMClientImpl {
         }
         
         // Try to parse as just an array of entities (fallback)
-        if let Ok(entities) = serde_json::from_str::<Vec<ExtractedEntityRaw>>(&response) {
-            eprintln!("[DEBUG] Parsed as entities array, found {} entities", entities.len());
+        if let Ok(entities) = serde_json::from_str::<Vec<ExtractedEntityRaw>>(json_str) {
+            tracing::debug!("Parsed as entities array, found {} entities", entities.len());
             return Ok(MemoryExtractionResponse {
                 facts: Vec::new(),
                 decisions: Vec::new(),
@@ -216,6 +214,50 @@ impl LLMClientImpl {
     /// Get the underlying rig Client
     pub fn client(&self) -> &Client {
         &self.client
+    }
+
+    /// Extract JSON from LLM response, handling markdown code blocks
+    fn extract_json_from_response(response: &str) -> &str {
+        let trimmed = response.trim();
+        
+        // If response is wrapped in ```json ... ``` or ``` ... ```
+        if trimmed.starts_with("```json") {
+            if let Some(json_start) = trimmed.find('\n') {
+                let rest = &trimmed[json_start + 1..];
+                if let Some(end) = rest.find("```") {
+                    return rest[..end].trim();
+                }
+                return rest.trim();
+            }
+        } else if trimmed.starts_with("```") {
+            if let Some(json_start) = trimmed.find('\n') {
+                let rest = &trimmed[json_start + 1..];
+                if let Some(end) = rest.find("```") {
+                    return rest[..end].trim();
+                }
+                return rest.trim();
+            }
+        }
+        
+        // Try to find JSON object boundaries
+        if let Some(start) = trimmed.find('{') {
+            let mut depth = 0;
+            for (i, c) in trimmed[start..].char_indices() {
+                match c {
+                    '{' => depth += 1,
+                    '}' => {
+                        depth -= 1;
+                        if depth == 0 {
+                            return &trimmed[start..start + i + 1];
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        
+        // Return as-is if no special handling needed
+        trimmed
     }
 }
 
@@ -248,13 +290,16 @@ impl LLMClient for LLMClientImpl {
     async fn extract_memories(&self, prompt: &str) -> Result<MemoryExtractionResponse> {
         let response: String = self.complete(prompt).await?;
         
+        // Extract JSON from response (handles markdown code blocks)
+        let json_str = Self::extract_json_from_response(&response);
+        
         // Try to parse as structured response first
-        if let Ok(extracted) = serde_json::from_str::<MemoryExtractionResponse>(&response) {
+        if let Ok(extracted) = serde_json::from_str::<MemoryExtractionResponse>(json_str) {
             return Ok(extracted);
         }
         
         // Try to parse as just an array of facts (fallback)
-        if let Ok(facts) = serde_json::from_str::<Vec<ExtractedFactRaw>>(&response) {
+        if let Ok(facts) = serde_json::from_str::<Vec<ExtractedFactRaw>>(json_str) {
             return Ok(MemoryExtractionResponse {
                 facts,
                 decisions: Vec::new(),
@@ -263,7 +308,7 @@ impl LLMClient for LLMClientImpl {
         }
         
         // Try to parse as just an array of decisions (fallback)
-        if let Ok(decisions) = serde_json::from_str::<Vec<ExtractedDecisionRaw>>(&response) {
+        if let Ok(decisions) = serde_json::from_str::<Vec<ExtractedDecisionRaw>>(json_str) {
             return Ok(MemoryExtractionResponse {
                 facts: Vec::new(),
                 decisions,
@@ -272,7 +317,7 @@ impl LLMClient for LLMClientImpl {
         }
         
         // Try to parse as just an array of entities (fallback)
-        if let Ok(entities) = serde_json::from_str::<Vec<ExtractedEntityRaw>>(&response) {
+        if let Ok(entities) = serde_json::from_str::<Vec<ExtractedEntityRaw>>(json_str) {
             return Ok(MemoryExtractionResponse {
                 facts: Vec::new(),
                 decisions: Vec::new(),
@@ -289,35 +334,101 @@ impl LLMClient for LLMClientImpl {
     }
 
     async fn extract_structured_facts(&self, prompt: &str) -> Result<crate::llm::extractor_types::StructuredFactExtraction> {
-        // Simplified implementation - just return empty facts for now
-        // TODO: Implement proper extraction using rig's extractor API
-        let response = self.complete(prompt).await?;
+        // Build a structured extraction prompt that guides the LLM to return valid JSON
+        let extraction_prompt = format!(
+            r#"Extract factual information from the text below.
+
+## Instructions
+1. Identify all factual statements that can be verified
+2. Focus on concrete facts, not opinions or speculations
+3. Each fact should be a single, atomic statement
+
+## Output Format
+Return ONLY a valid JSON object with this exact structure:
+{{
+  "facts": ["fact 1", "fact 2", "fact 3"]
+}}
+
+If no facts are found, return: {{"facts": []}}
+
+## Text to Analyze
+{}
+
+## Response (JSON only)"#,
+            prompt
+        );
+
+        let response = self.complete(&extraction_prompt).await?;
+        
+        // Try to extract JSON from the response
+        let json_str = Self::extract_json_from_response(&response);
         
         // Try to parse as structured facts
-        if let Ok(facts) = serde_json::from_str::<crate::llm::extractor_types::StructuredFactExtraction>(&response) {
-            return Ok(facts);
+        match serde_json::from_str::<crate::llm::extractor_types::StructuredFactExtraction>(json_str) {
+            Ok(facts) => Ok(facts),
+            Err(e) => {
+                tracing::warn!("Failed to parse structured facts: {}. Response: {}", e, json_str);
+                // Fallback: return empty extraction
+                Ok(crate::llm::extractor_types::StructuredFactExtraction {
+                    facts: vec![],
+                })
+            }
         }
-        
-        // Fallback: return empty extraction
-        Ok(crate::llm::extractor_types::StructuredFactExtraction {
-            facts: vec![],
-        })
     }
 
     async fn extract_detailed_facts(&self, prompt: &str) -> Result<crate::llm::extractor_types::DetailedFactExtraction> {
-        // Simplified implementation - just return empty facts for now
-        // TODO: Implement proper extraction using rig's extractor API
-        let response = self.complete(prompt).await?;
+        // Build a detailed extraction prompt
+        let extraction_prompt = format!(
+            r#"Extract detailed factual information from the text below.
+
+## Instructions
+1. Identify all factual statements that can be verified
+2. For each fact, determine:
+   - content: The factual statement
+   - importance: A score from 0.0 to 1.0 (how important/relevant is this fact)
+   - category: One of "personal", "work", "preference", "event", "knowledge", "other"
+   - entities: List of named entities mentioned (people, places, organizations, etc.)
+   - source_role: Either "user", "assistant", or "system" (who stated this fact)
+
+## Output Format
+Return ONLY a valid JSON object with this exact structure:
+{{
+  "facts": [
+    {{
+      "content": "The factual statement",
+      "importance": 0.8,
+      "category": "personal",
+      "entities": ["John", "New York"],
+      "source_role": "user"
+    }}
+  ]
+}}
+
+If no facts are found, return: {{"facts": []}}
+
+## Text to Analyze
+{}
+
+## Response (JSON only)"#,
+            prompt
+        );
+
+        let response = self.complete(&extraction_prompt).await?;
+        
+        // Try to extract JSON from the response
+        let json_str = Self::extract_json_from_response(&response);
         
         // Try to parse as detailed facts
-        if let Ok(facts) = serde_json::from_str::<crate::llm::extractor_types::DetailedFactExtraction>(&response) {
-            return Ok(facts);
+        match serde_json::from_str::<crate::llm::extractor_types::DetailedFactExtraction>(json_str) {
+            Ok(facts) => Ok(facts),
+            Err(e) => {
+                tracing::warn!("Failed to parse detailed facts: {}. Response: {}", e, json_str);
+                // Fallback: return empty extraction
+                Ok(crate::llm::extractor_types::DetailedFactExtraction {
+                    facts: vec![],
+                })
+            }
         }
-        
-        // Fallback: return empty extraction
-        Ok(crate::llm::extractor_types::DetailedFactExtraction {
-            facts: vec![],
-        })
     }
 
     fn model_name(&self) -> &str {

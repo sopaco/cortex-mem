@@ -188,16 +188,16 @@ impl MemoryMcpService {
             }
         };
 
-        // Use VectorSearchEngine for semantic search
+        // Use VectorSearchEngine for layered semantic search (L0/L1/L2)
         let options = SearchOptions {
             limit,
-            threshold: 0.3,
+            threshold: 0.5,  // Consistent with other usage modes
             root_uri: Some(scope_uri.clone()),
             recursive: true,
         };
 
         match self.operations.vector_engine()
-            .semantic_search(&params.0.query, &options).await 
+            .layered_semantic_search(&params.0.query, &options).await 
         {
             Ok(results) => {
                 let search_results: Vec<SearchResultItem> = results
