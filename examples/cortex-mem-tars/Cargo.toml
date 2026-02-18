@@ -11,7 +11,7 @@ cortex-mem-tools = { path = "../../cortex-mem-tools" }
 cortex-mem-rig = { path = "../../cortex-mem-rig" }
 
 # LLM framework
-rig-core = "0.23"
+rig-core = { workspace = true }
 
 # TUI
 ratatui = "0.29"

@@ -24,7 +24,7 @@ tracing = "0.1"
 async-trait = "0.1"
 
 # Rig framework
-rig-core = "0.23"
+rig-core = { workspace = true }
 
 # Local dependencies
 cortex-mem-core = { path = "../cortex-mem-core" }
