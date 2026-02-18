@@ -64,8 +64,10 @@ a:hover {
 	font-size: 1.25rem;
 }
 
-.brand-icon {
-	font-size: 1.5rem;
+.brand-logo {
+	height: 32px;
+	width: 32px;
+	object-fit: contain;
 }
 
 .brand-text {
