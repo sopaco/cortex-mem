@@ -7,9 +7,10 @@ use cortex_mem_core::{
     FilesystemOperations,
     SessionConfig, 
     SessionManager,
-    automation::{SyncConfig, SyncManager},
+    automation::{SyncConfig, SyncManager, AutoExtractor, AutoExtractConfig},  // 🆕 添加AutoExtractor
     embedding::{EmbeddingClient, EmbeddingConfig},
     vector_store::QdrantVectorStore,
+    events::EventBus,  // 🆕 添加EventBus
 };
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -25,6 +26,7 @@ pub struct MemoryOperations {
     pub(crate) session_manager: Arc<RwLock<SessionManager>>,
     pub(crate) layer_manager: Arc<LayerManager>,
     pub(crate) vector_engine: Arc<VectorSearchEngine>,
+    pub(crate) auto_extractor: Option<Arc<AutoExtractor>>,  // 🆕 AutoExtractor用于退出时提取
 }
 
 impl MemoryOperations {
@@ -36,6 +38,16 @@ impl MemoryOperations {
     /// Get the vector search engine
     pub fn vector_engine(&self) -> &Arc<VectorSearchEngine> {
         &self.vector_engine
+    }
+    
+    /// 🆕 Get the session manager
+    pub fn session_manager(&self) -> &Arc<RwLock<SessionManager>> {
+        &self.session_manager
+    }
+    
+    /// 🆕 Get the auto extractor (for manual extraction on exit)
+    pub fn auto_extractor(&self) -> Option<&Arc<AutoExtractor>> {
+        self.auto_extractor.as_ref()
     }
 
     /// Create from data directory with tenant isolation, LLM support, and vector search
@@ -52,11 +64,21 @@ impl MemoryOperations {
         embedding_model_name: &str,
         embedding_dim: Option<usize>,
     ) -> Result<Self> {
-        let filesystem = Arc::new(CortexFilesystem::with_tenant(data_dir, tenant_id));
+        let tenant_id = tenant_id.into();
+        let filesystem = Arc::new(CortexFilesystem::with_tenant(data_dir, &tenant_id));
         filesystem.initialize().await?;
 
+        // 🆕 创建EventBus用于自动化
+        let (event_bus, mut event_rx) = EventBus::new();
+
         let config = SessionConfig::default();
-        let session_manager = SessionManager::new(filesystem.clone(), config);
+        // 🆕 使用with_llm_and_events创建SessionManager
+        let session_manager = SessionManager::with_llm_and_events(
+            filesystem.clone(),
+            config,
+            llm_client.clone(),
+            event_bus.clone(),
+        );
         let session_manager = Arc::new(RwLock::new(session_manager));
 
         // LLM-enabled LayerManager for high-quality L0/L1 generation
@@ -94,6 +116,52 @@ impl MemoryOperations {
         ));
         tracing::info!("Vector search engine created with LLM support for query rewriting");
 
+        // 🆕 创建AutoExtractor用于退出时提取（带user_id）
+        let auto_extract_config = AutoExtractConfig {
+            min_message_count: 5,
+            extract_on_close: true,
+            save_user_memories: true,
+            save_agent_memories: true,
+        };
+        let auto_extractor = Arc::new(AutoExtractor::with_user_id(
+            filesystem.clone(),
+            llm_client.clone(),
+            auto_extract_config,
+            &tenant_id,  // 使用tenant_id作为user_id
+        ));
+        
+        // 🆕 启动后台监听器处理SessionClosed事件
+        let extractor_clone = auto_extractor.clone();
+        tokio::spawn(async move {
+            tracing::info!("Starting AutoExtractor event listener for tenant {}", tenant_id);
+            while let Some(event) = event_rx.recv().await {
+                if let cortex_mem_core::CortexEvent::Session(session_event) = event {
+                    match session_event {
+                        cortex_mem_core::SessionEvent::Closed { session_id } => {
+                            tracing::info!("Session closed event received: {}", session_id);
+                            match extractor_clone.extract_session(&session_id).await {
+                                Ok(stats) => {
+                                    tracing::info!(
+                                        "Extraction completed for session {}: {:?}",
+                                        session_id,
+                                        stats
+                                    );
+                                }
+                                Err(e) => {
+                                    tracing::error!(
+                                        "Extraction failed for session {}: {}",
+                                        session_id,
+                                        e
+                                    );
+                                }
+                            }
+                        }
+                        _ => {}  // 忽略其他事件
+                    }
+                }
+            }
+        });
+
         // Auto-sync existing content to vector database (in background)
         let sync_manager = SyncManager::new(
             filesystem.clone(),
@@ -126,6 +194,7 @@ impl MemoryOperations {
             session_manager,
             layer_manager,
             vector_engine,
+            auto_extractor: Some(auto_extractor),  // 🆕
         })
     }
 

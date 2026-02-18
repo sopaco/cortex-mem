@@ -78,9 +78,6 @@ pub async fn trigger_extraction(
     let response = serde_json::json!({
         "thread_id": thread_id,
         "message_count": messages.len(),
-        "facts_count": extraction_result.facts.len(),
-        "decisions_count": extraction_result.decisions.len(),
-        "entities_count": extraction_result.entities.len(),
         "facts": extraction_result.facts,
         "decisions": extraction_result.decisions,
         "entities": extraction_result.entities,
@@ -90,23 +87,36 @@ pub async fn trigger_extraction(
 }
 
 /// Trigger indexing for a specific thread
+/// 
+/// 🔧 Note: Manual indexing handlers are deprecated in favor of unified auto-indexing
+/// CortexMem already handles automatic indexing when sessions are closed.
+/// This endpoint is kept for backward compatibility and debugging purposes.
 pub async fn trigger_indexing(
     State(state): State<Arc<AppState>>,
     Path(thread_id): Path<String>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>> {
-    use cortex_mem_core::{AutoIndexer, IndexerConfig};
-    
-    // Check if vector store is available
-    let vector_store = state.vector_store.as_ref()
-        .ok_or_else(|| AppError::BadRequest(
-            "Vector store not configured. Check Qdrant configuration.".to_string()
-        ))?;
+    use cortex_mem_core::{AutoIndexer, IndexerConfig, CortexFilesystem};
     
     // Check if embedding client is available
     let embedding_client = state.embedding_client.as_ref()
         .ok_or_else(|| AppError::BadRequest(
             "Embedding service not configured.".to_string()
         ))?;
+    
+    // 🆕 Create QdrantVectorStore (required for AutoIndexer)
+    let qdrant_store = match state.create_qdrant_store().await {
+        Ok(store) => Arc::new(store),
+        Err(e) => return Err(AppError::BadRequest(
+            format!("Failed to create Qdrant store: {}", e)
+        )),
+    };
+    
+    // 🆕 Create tenant-aware filesystem
+    let filesystem = if let Some(tenant_root) = state.current_tenant_root.read().await.as_ref() {
+        Arc::new(CortexFilesystem::new(tenant_root.to_string_lossy().as_ref()))
+    } else {
+        state.filesystem.clone()
+    };
     
     // Create indexer
     let config = IndexerConfig {
@@ -116,9 +126,9 @@ pub async fn trigger_indexing(
     };
     
     let indexer = AutoIndexer::new(
-        state.filesystem.clone(),
+        filesystem,
         embedding_client.clone(),
-        vector_store.clone(),
+        qdrant_store,
         config,
     );
     
@@ -130,28 +140,42 @@ pub async fn trigger_indexing(
         "indexed": stats.total_indexed,
         "skipped": stats.total_skipped,
         "errors": stats.total_errors,
+        "note": "Manual indexing is deprecated. CortexMem handles automatic indexing when sessions are closed.",
     });
     
     Ok(Json(ApiResponse::success(response)))
 }
 
 /// Index all threads in the filesystem
+/// 
+/// 🔧 Note: Manual indexing handlers are deprecated in favor of unified auto-indexing
+/// CortexMem already handles automatic indexing when sessions are closed.
+/// This endpoint is kept for backward compatibility and debugging purposes.
 pub async fn trigger_indexing_all(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>> {
-    use cortex_mem_core::{AutoIndexer, IndexerConfig, FilesystemOperations};
-    
-    // Check if vector store is available
-    let vector_store = state.vector_store.as_ref()
-        .ok_or_else(|| AppError::BadRequest(
-            "Vector store not configured.".to_string()
-        ))?;
+    use cortex_mem_core::{AutoIndexer, IndexerConfig, FilesystemOperations, CortexFilesystem};
     
     // Check if embedding client is available
     let embedding_client = state.embedding_client.as_ref()
         .ok_or_else(|| AppError::BadRequest(
             "Embedding service not configured.".to_string()
         ))?;
+    
+    // 🆕 Create QdrantVectorStore (required for AutoIndexer)
+    let qdrant_store = match state.create_qdrant_store().await {
+        Ok(store) => Arc::new(store),
+        Err(e) => return Err(AppError::BadRequest(
+            format!("Failed to create Qdrant store: {}", e)
+        )),
+    };
+    
+    // 🆕 Create tenant-aware filesystem
+    let filesystem = if let Some(tenant_root) = state.current_tenant_root.read().await.as_ref() {
+        Arc::new(CortexFilesystem::new(tenant_root.to_string_lossy().as_ref()))
+    } else {
+        state.filesystem.clone()
+    };
     
     // Create indexer
     let config = IndexerConfig {
@@ -161,15 +185,15 @@ pub async fn trigger_indexing_all(
     };
     
     let indexer = AutoIndexer::new(
-        state.filesystem.clone(),
+        filesystem.clone(),
         embedding_client.clone(),
-        vector_store.clone(),
+        qdrant_store,
         config,
     );
     
     // List all threads
     let threads_uri = "cortex://session";
-    let entries = state.filesystem.list(threads_uri).await?;
+    let entries = filesystem.list(threads_uri).await?;
     
     let mut total_indexed = 0;
     let mut total_errors = 0;
@@ -187,7 +211,7 @@ pub async fn trigger_indexing_all(
                     threads_processed += 1;
                 }
                 Err(e) => {
-                    tracing::warn!("Failed to index thread {}: {}", thread_id, e);
+                    tracing::error!("Failed to index thread {}: {}", thread_id, e);
                     total_errors += 1;
                 }
             }
@@ -199,6 +223,7 @@ pub async fn trigger_indexing_all(
         "total_indexed": total_indexed,
         "total_skipped": total_skipped,
         "total_errors": total_errors,
+        "note": "Manual indexing is deprecated. CortexMem handles automatic indexing when sessions are closed.",
     });
     
     Ok(Json(ApiResponse::success(response)))

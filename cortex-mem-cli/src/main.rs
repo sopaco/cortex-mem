@@ -60,7 +60,7 @@ enum Commands {
         limit: usize,
 
         /// Minimum relevance score (0.0-1.0)
-        #[arg(short = 's', long, default_value = "0.3")]
+        #[arg(short = 's', long, default_value = "0.4")]
         min_score: f32,
 
         /// Search scope: "session", "user", or "agent"
@@ -167,7 +167,8 @@ async fn main() -> Result<()> {
         &config.embedding.api_key,
         &config.embedding.model_name,
         config.qdrant.embedding_dim,
-    ).await?;
+    )
+    .await?;
 
     if cli.verbose {
         eprintln!("LLM model: {}", model_name);
@@ -178,13 +179,34 @@ async fn main() -> Result<()> {
 
     // Execute command
     match cli.command {
-        Commands::Add { thread, role, content } => {
+        Commands::Add {
+            thread,
+            role,
+            content,
+        } => {
             add::execute(operations, &thread, &role, &content).await?;
         }
-        Commands::Search { query, thread, limit, min_score, scope } => {
-            search::execute(operations, &query, thread.as_deref(), limit, min_score, &scope).await?;
+        Commands::Search {
+            query,
+            thread,
+            limit,
+            min_score,
+            scope,
+        } => {
+            search::execute(
+                operations,
+                &query,
+                thread.as_deref(),
+                limit,
+                min_score,
+                &scope,
+            )
+            .await?;
         }
-        Commands::List { uri, include_abstracts } => {
+        Commands::List {
+            uri,
+            include_abstracts,
+        } => {
             list::execute(operations, uri.as_deref(), include_abstracts).await?;
         }
         Commands::Get { uri, abstract_only } => {

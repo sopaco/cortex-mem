@@ -1,6 +1,7 @@
 use crate::{CortexFilesystem, FilesystemOperations, MessageStorage, ParticipantManager, Result};
 use crate::llm::LLMClient;
 use crate::session::extraction::MemoryExtractor;
+use crate::events::{EventBus, SessionEvent, CortexEvent};  // 🆕 导入事件类型
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -163,6 +164,7 @@ pub struct SessionManager {
     participant_manager: ParticipantManager,
     config: SessionConfig,
     llm_client: Option<Arc<dyn LLMClient>>,
+    event_bus: Option<EventBus>,  // 🆕 事件总线（可选）
 }
 
 impl SessionManager {
@@ -177,6 +179,7 @@ impl SessionManager {
             participant_manager,
             config,
             llm_client: None,
+            event_bus: None,  // 🆕 默认不启用事件
         }
     }
     
@@ -195,6 +198,46 @@ impl SessionManager {
             participant_manager,
             config,
             llm_client: Some(llm_client),
+            event_bus: None,  // 🆕 默认不启用事件
+        }
+    }
+    
+    /// 🆕 Create session manager with event bus for automation
+    pub fn with_event_bus(
+        filesystem: Arc<CortexFilesystem>,
+        config: SessionConfig,
+        event_bus: EventBus,
+    ) -> Self {
+        let message_storage = MessageStorage::new(filesystem.clone());
+        let participant_manager = ParticipantManager::new();
+        
+        Self {
+            filesystem,
+            message_storage,
+            participant_manager,
+            config,
+            llm_client: None,
+            event_bus: Some(event_bus),
+        }
+    }
+    
+    /// 🆕 Create session manager with LLM and event bus
+    pub fn with_llm_and_events(
+        filesystem: Arc<CortexFilesystem>,
+        config: SessionConfig,
+        llm_client: Arc<dyn LLMClient>,
+        event_bus: EventBus,
+    ) -> Self {
+        let message_storage = MessageStorage::new(filesystem.clone());
+        let participant_manager = ParticipantManager::new();
+        
+        Self {
+            filesystem,
+            message_storage,
+            participant_manager,
+            config,
+            llm_client: Some(llm_client),
+            event_bus: Some(event_bus),
         }
     }
     
@@ -206,6 +249,13 @@ impl SessionManager {
         let metadata_uri = format!("cortex://session/{}/.session.json", thread_id);
         let metadata_json = serde_json::to_string_pretty(&metadata)?;
         self.filesystem.write(&metadata_uri, &metadata_json).await?;
+        
+        // 🆕 发布会话创建事件
+        if let Some(ref bus) = self.event_bus {
+            let _ = bus.publish(CortexEvent::Session(SessionEvent::Created {
+                session_id: thread_id.to_string(),
+            }));
+        }
         
         Ok(metadata)
     }
@@ -251,6 +301,13 @@ impl SessionManager {
             } else {
                 warn!("Memory extraction skipped for session {}: LLM client not configured", thread_id);
             }
+        }
+        
+        // 🆕 发布会话关闭事件
+        if let Some(ref bus) = self.event_bus {
+            let _ = bus.publish(CortexEvent::Session(SessionEvent::Closed {
+                session_id: thread_id.to_string(),
+            }));
         }
         
         Ok(metadata)
@@ -324,6 +381,33 @@ impl SessionManager {
     /// Get participant manager
     pub fn participant_manager(&mut self) -> &mut ParticipantManager {
         &mut self.participant_manager
+    }
+    
+    /// 🆕 Add a message to a session (convenience method that also publishes events)
+    pub async fn add_message(
+        &self,
+        thread_id: &str,
+        role: crate::session::MessageRole,
+        content: String,
+    ) -> Result<crate::session::Message> {
+        use crate::session::Message;
+        
+        // Create message
+        let message = Message::new(role, content);
+        let message_id = message.id.clone();
+        
+        // Save message
+        self.message_storage.save_message(thread_id, &message).await?;
+        
+        // 🆕 发布消息添加事件
+        if let Some(ref bus) = self.event_bus {
+            let _ = bus.publish(CortexEvent::Session(SessionEvent::MessageAdded {
+                session_id: thread_id.to_string(),
+                message_id: message_id.clone(),
+            }));
+        }
+        
+        Ok(message)
     }
 }
 

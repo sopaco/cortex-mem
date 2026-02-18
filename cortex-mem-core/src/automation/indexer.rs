@@ -3,6 +3,7 @@ use crate::{
     filesystem::{CortexFilesystem, FilesystemOperations},
     session::Message,
     vector_store::{QdrantVectorStore, VectorStore},
+    ContextLayer,
     Result,
 };
 use std::sync::Arc;
@@ -35,6 +36,14 @@ pub struct IndexStats {
     pub total_indexed: usize,
     pub total_skipped: usize,
     pub total_errors: usize,
+}
+
+/// Timeline层索引统计
+#[derive(Debug, Clone, Default)]
+struct TimelineLayerStats {
+    l0_indexed: usize,
+    l1_indexed: usize,
+    errors: usize,
 }
 
 /// 自动索引管理器
@@ -217,6 +226,20 @@ impl AutoIndexer {
             stats.total_indexed, stats.total_skipped, stats.total_errors
         );
 
+        // 🆕 Phase 1: Index L0/L1 layers for timeline directories
+        info!("Indexing timeline L0/L1 layers for thread: {}", thread_id);
+        match self.index_timeline_layers(thread_id).await {
+            Ok(layer_stats) => {
+                info!("Timeline layers indexed: {} L0, {} L1", 
+                      layer_stats.l0_indexed, layer_stats.l1_indexed);
+                stats.total_indexed += layer_stats.l0_indexed + layer_stats.l1_indexed;
+                stats.total_errors += layer_stats.errors;
+            }
+            Err(e) => {
+                warn!("Failed to index timeline layers: {}", e);
+            }
+        }
+
         Ok(stats)
     }
 
@@ -272,8 +295,27 @@ impl AutoIndexer {
                         .await?;
                 } else if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
                     if let Ok(content) = self.filesystem.as_ref().read(&entry.uri).await {
+                        // 🆕 先尝试解析为标准markdown格式
                         if let Some(message) = self.parse_message_markdown(&content) {
                             messages.push(message);
+                        } else {
+                            // 🆕 如果解析失败，将整个文件内容作为消息处理（兼容TARS等生成的纯文本）
+                            // 从文件名和路径提取信息
+                            let message_id = entry.name.trim_end_matches(".md").to_string();
+                            
+                            // 从entry.modified获取时间戳
+                            let timestamp = entry.modified;
+                            
+                            messages.push(Message {
+                                id: message_id,
+                                role: crate::session::MessageRole::User, // 默认为User
+                                content: content.trim().to_string(),
+                                timestamp,
+                                created_at: timestamp,
+                                metadata: None,
+                            });
+                            
+                            debug!("Collected plain text message from {}", entry.uri);
                         }
                     }
                 }
@@ -346,5 +388,148 @@ impl AutoIndexer {
         let mut hasher = DefaultHasher::new();
         content.hash(&mut hasher);
         format!("{:x}", hasher.finish())
+    }
+
+    /// 🆕 索引timeline目录的L0/L1层
+    /// 
+    /// 该方法会递归扫描timeline目录结构，为每个包含.abstract.md和.overview.md的目录
+    /// 生成L0/L1层的向量索引
+    async fn index_timeline_layers(&self, thread_id: &str) -> Result<TimelineLayerStats> {
+        let mut stats = TimelineLayerStats::default();
+        let timeline_base = format!("cortex://session/{}/timeline", thread_id);
+        
+        // 递归收集所有timeline目录
+        let directories = self.collect_timeline_directories(&timeline_base).await?;
+        info!("Found {} timeline directories to index", directories.len());
+        
+        for dir_uri in directories {
+            // 索引L0 Abstract
+            let l0_file_uri = format!("{}/.abstract.md", dir_uri);
+            if let Ok(l0_content) = self.filesystem.as_ref().read(&l0_file_uri).await {
+                match self.index_layer(&dir_uri, &l0_content, ContextLayer::L0Abstract).await {
+                    Ok(indexed) => {
+                        if indexed {
+                            stats.l0_indexed += 1;
+                            debug!("Indexed L0 for {}", dir_uri);
+                        }
+                    }
+                    Err(e) => {
+                        warn!("Failed to index L0 for {}: {}", dir_uri, e);
+                        stats.errors += 1;
+                    }
+                }
+            }
+            
+            // 索引L1 Overview
+            let l1_file_uri = format!("{}/.overview.md", dir_uri);
+            if let Ok(l1_content) = self.filesystem.as_ref().read(&l1_file_uri).await {
+                match self.index_layer(&dir_uri, &l1_content, ContextLayer::L1Overview).await {
+                    Ok(indexed) => {
+                        if indexed {
+                            stats.l1_indexed += 1;
+                            debug!("Indexed L1 for {}", dir_uri);
+                        }
+                    }
+                    Err(e) => {
+                        warn!("Failed to index L1 for {}: {}", dir_uri, e);
+                        stats.errors += 1;
+                    }
+                }
+            }
+        }
+        
+        Ok(stats)
+    }
+    
+    /// 收集timeline目录结构中的所有目录URI
+    async fn collect_timeline_directories(&self, base_uri: &str) -> Result<Vec<String>> {
+        let mut directories = Vec::new();
+        self.collect_directories_recursive(base_uri, &mut directories).await?;
+        Ok(directories)
+    }
+    
+    /// 递归收集目录
+    fn collect_directories_recursive<'a>(
+        &'a self,
+        uri: &'a str,
+        directories: &'a mut Vec<String>,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + 'a>> {
+        Box::pin(async move {
+            match self.filesystem.as_ref().list(uri).await {
+                Ok(entries) => {
+                    // 检查当前目录是否包含.abstract.md或.overview.md
+                    let has_layers = entries.iter().any(|e| {
+                        e.name == ".abstract.md" || e.name == ".overview.md"
+                    });
+                    
+                    if has_layers {
+                        directories.push(uri.to_string());
+                    }
+                    
+                    // 递归处理子目录
+                    for entry in entries {
+                        if entry.is_directory && !entry.name.starts_with('.') {
+                            self.collect_directories_recursive(&entry.uri, directories).await?;
+                        }
+                    }
+                    Ok(())
+                }
+                Err(e) => {
+                    debug!("Failed to list {}: {}", uri, e);
+                    Ok(())
+                }
+            }
+        })
+    }
+    
+    /// 索引单个层（L0或L1）
+    /// 
+    /// 返回: Ok(true)表示已索引, Ok(false)表示已存在跳过
+    async fn index_layer(
+        &self,
+        dir_uri: &str,
+        content: &str,
+        layer: ContextLayer,
+    ) -> Result<bool> {
+        use crate::vector_store::{uri_to_vector_id, VectorStore};
+        
+        // 生成向量ID（基于目录URI，不是文件URI）
+        let vector_id = uri_to_vector_id(dir_uri, layer);
+        
+        // 检查是否已索引
+        if let Ok(Some(_)) = self.vector_store.as_ref().get(&vector_id).await {
+            debug!("Layer {:?} already indexed for {}", layer, dir_uri);
+            return Ok(false);
+        }
+        
+        // 生成embedding
+        let embedding = self.embedding.embed(content).await?;
+        
+        // 创建Memory对象
+        let memory = crate::types::Memory {
+            id: vector_id,
+            content: content.to_string(),
+            embedding,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+            metadata: crate::types::MemoryMetadata {
+                uri: Some(dir_uri.to_string()), // 关键：存储目录URI而非文件URI
+                user_id: None,
+                agent_id: None,
+                run_id: None,
+                actor_id: None,
+                role: None,
+                memory_type: crate::types::MemoryType::Conversational,
+                hash: self.calculate_hash(content),
+                importance_score: 0.5,
+                entities: vec![],
+                topics: vec![],
+                custom: std::collections::HashMap::new(),
+            },
+        };
+        
+        // 存储到Qdrant
+        self.vector_store.as_ref().insert(&memory).await?;
+        Ok(true)
     }
 }

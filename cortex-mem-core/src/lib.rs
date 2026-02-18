@@ -46,13 +46,14 @@
 
 pub mod config;
 pub mod error;
+pub mod events;  // 🆕 事件系统
 pub mod logging;
 pub mod types;
 
 pub mod automation;
 pub mod extraction;
 pub mod filesystem;
-pub mod init;
+pub mod builder;  // 🆕 统一初始化API
 pub mod layers;
 pub mod llm;
 pub mod search;
@@ -63,9 +64,11 @@ pub mod embedding;
 // Re-exports
 pub use config::*;
 pub use error::{Error, Result};
+pub use events::{CortexEvent, EventBus, FilesystemEvent, SessionEvent};  // 🆕 导出事件类型
 pub use types::*;
 
-pub use automation::{AutoExtractConfig, AutoExtractor, AutoIndexer, FsWatcher, IndexStats, IndexerConfig, SyncConfig, SyncManager, SyncStats, WatcherConfig};
+pub use automation::{AutoExtractConfig, AutoExtractor, AutoIndexer, AutomationConfig, AutomationManager, FsWatcher, IndexStats, IndexerConfig, SyncConfig, SyncManager, SyncStats, WatcherConfig};
+pub use builder::{CortexMem, CortexMemBuilder};  // 🆕 导出统一API
 pub use extraction::ExtractionConfig;
 // Note: MemoryExtractor is also exported from session module
 pub use filesystem::{CortexFilesystem, FilesystemOperations};

@@ -20,7 +20,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use cortex_mem_tools::MemoryOperations;
-use cortex_mem_core::automation::{AutoExtractor, AutoExtractConfig};
+// 🔧 移除未使用的导入
+// use cortex_mem_core::automation::{AutoExtractor, AutoExtractConfig};
 
 /// 应用程序
 #[allow(dead_code)]
@@ -31,7 +32,7 @@ pub struct App {
     current_bot: Option<BotConfig>,
     rig_agent: Option<RigAgent<CompletionModel>>,
     tenant_operations: Option<Arc<MemoryOperations>>,  // 租户隔离的 operations
-    auto_extractor: Option<Arc<AutoExtractor>>,  // 会话记忆自动提取器
+    // 🔧 auto_extractor已移除 - 由CortexMem统一管理
     current_session_id: Option<String>,  // 当前会话ID
     infrastructure: Option<Arc<Infrastructure>>,
     user_id: String,
@@ -97,7 +98,7 @@ impl App {
             current_bot: None,
             rig_agent: None,
             tenant_operations: None,  // 初始化为 None，在选择 Bot 时创建
-            auto_extractor: None,  // 初始化为 None，在创建 tenant_operations 后创建
+            // 🔧 auto_extractor已移除 - 由CortexMem统一管理
             current_session_id: None,  // 初始化为 None，在开始对话时创建
             infrastructure,
             user_id: "tars_user".to_string(),
@@ -501,29 +502,8 @@ impl App {
                             // 保存租户 operations
                             self.tenant_operations = Some(tenant_ops.clone());
                             
-                            // 创建 AutoExtractor（使用租户的 filesystem）
-                            if let Some(infrastructure) = &self.infrastructure {
-                                let llm_config = cortex_mem_core::llm::LLMConfig {
-                                    api_base_url: infrastructure.config().llm.api_base_url.clone(),
-                                    api_key: infrastructure.config().llm.api_key.clone(),
-                                    model_efficient: infrastructure.config().llm.model_efficient.clone(),
-                                    temperature: 0.1,
-                                    max_tokens: 4096,
-                                };
-                                if let Ok(llm_client) = cortex_mem_core::llm::LLMClientImpl::new(llm_config) {
-                                    let llm_client = Arc::new(llm_client);
-                                    let filesystem = tenant_ops.filesystem().clone();
-                                    let auto_extract_config = AutoExtractConfig::default();
-                                    let auto_extractor = AutoExtractor::with_user_id(
-                                        filesystem,
-                                        llm_client,
-                                        auto_extract_config,
-                                        &self.user_id,  // 传入 tars_user
-                                    );
-                                    self.auto_extractor = Some(Arc::new(auto_extractor));
-                                    log::info!("✅ 已创建会话记忆自动提取器 (user_id: {})", self.user_id);
-                                }
-                            }
+                            // 🔧 移除AutoExtractor创建逻辑 - 已由CortexMem统一管理
+                            // 原有的auto_extractor创建代码已移除
                             
                             // 从租户 operations 提取用户基本信息
                             let user_info = match extract_user_basic_info(
@@ -824,29 +804,8 @@ impl App {
                         Ok((rig_agent, tenant_ops)) => {
                             self.tenant_operations = Some(tenant_ops.clone());
                             
-                            // 创建 AutoExtractor（使用租户的 filesystem）
-                            if let Some(infrastructure) = &self.infrastructure {
-                                let llm_config = cortex_mem_core::llm::LLMConfig {
-                                    api_base_url: infrastructure.config().llm.api_base_url.clone(),
-                                    api_key: infrastructure.config().llm.api_key.clone(),
-                                    model_efficient: infrastructure.config().llm.model_efficient.clone(),
-                                    temperature: 0.1,
-                                    max_tokens: 4096,
-                                };
-                                if let Ok(llm_client) = cortex_mem_core::llm::LLMClientImpl::new(llm_config) {
-                                    let llm_client = Arc::new(llm_client);
-                                    let filesystem = tenant_ops.filesystem().clone();
-                                    let auto_extract_config = AutoExtractConfig::default();
-                                    let auto_extractor = AutoExtractor::with_user_id(
-                                        filesystem,
-                                        llm_client,
-                                        auto_extract_config,
-                                        &self.user_id,  // 传入 tars_user
-                                    );
-                                    self.auto_extractor = Some(Arc::new(auto_extractor));
-                                    log::info!("✅ 已创建会话记忆自动提取器 (user_id: {})", self.user_id);
-                                }
-                            }
+                            // 🔧 移除AutoExtractor创建逻辑 - 已由CortexMem统一管理
+                            // 原有的auto_extractor创建代码已移除
 
                             self.rig_agent = Some(rig_agent);
                             log::info!("已创建带记忆功能的真实 Agent");
@@ -1179,30 +1138,47 @@ impl App {
     pub async fn on_exit(&mut self) -> Result<()> {
         log::info!("🚪 开始退出流程...");
         
-        // 如果有 auto_extractor 和 current_session_id，触发自动提取
-        if let (Some(extractor), Some(session_id)) = (&self.auto_extractor, &self.current_session_id) {
-            log::info!("🧠 开始自动提取会话记忆...");
+        // 🔧 直接使用AutoExtractor同步提取（不依赖事件监听器）
+        // 这样可以确保提取完成后再退出程序
+        if let (Some(tenant_ops), Some(session_id)) = (&self.tenant_operations, &self.current_session_id) {
+            log::info!("🧠 开始提取会话记忆...");
             
-            match extractor.extract_session(session_id).await {
-                Ok(stats) => {
-                    log::info!(
-                        "✅ 记忆提取完成：{} 个事实，{} 个决策，{} 个实体",
-                        stats.facts_extracted,
-                        stats.decisions_extracted,
-                        stats.entities_extracted
-                    );
-                    log::info!(
-                        "📝 已保存：{} 条用户记忆，{} 条 Agent 记忆",
-                        stats.user_memories_saved,
-                        stats.agent_memories_saved
-                    );
+            // 方式1: 直接调用AutoExtractor（如果MemoryOperations暴露了）
+            if let Some(auto_extractor) = tenant_ops.auto_extractor() {
+                match auto_extractor.extract_session(session_id).await {
+                    Ok(stats) => {
+                        log::info!(
+                            "✅ 记忆提取完成：{} 个事实，{} 个决策，{} 个实体",
+                            stats.facts_extracted,
+                            stats.decisions_extracted,
+                            stats.entities_extracted
+                        );
+                        log::info!(
+                            "📝 已保存：{} 条用户记忆，{} 条 Agent 记忆",
+                            stats.user_memories_saved,
+                            stats.agent_memories_saved
+                        );
+                    }
+                    Err(e) => {
+                        log::warn!("⚠️ 记忆提取失败: {}", e);
+                    }
                 }
-                Err(e) => {
-                    log::warn!("⚠️ 记忆提取失败: {}", e);
-                }
+            } else {
+                log::warn!("⚠️ AutoExtractor 未初始化");
             }
+            
+            // 方式2: 关闭会话（可选，可能重复提取）
+            // let session_manager = tenant_ops.session_manager().clone();
+            // match session_manager.write().await.close_session(session_id).await {
+            //     Ok(_) => {
+            //         log::info!("✅ 会话已关闭");
+            //     }
+            //     Err(e) => {
+            //         log::warn!("⚠️ 会话关闭失败: {}", e);
+            //     }
+            // }
         } else {
-            log::info!("ℹ️ 无需提取记忆（未配置提取器或无会话）");
+            log::info!("ℹ️ 无需处理会话（未配置租户或无会话）");
         }
         
         log::info!("👋 退出流程完成");

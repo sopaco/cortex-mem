@@ -186,15 +186,24 @@ impl VectorSearchEngine {
         if intent.rewritten_query.is_some() {
             info!("Query rewritten: '{}' -> '{}'", query, search_query);
         }
-        info!("Query intent: {:?}, keywords: {:?}", intent.intent_type, intent.keywords);
+        info!(
+            "Query intent: {:?}, keywords: {:?}",
+            intent.intent_type, intent.keywords
+        );
+
+        // 🆕 自适应阈值：根据查询类型动态调整
+        let adaptive_threshold = Self::adaptive_l0_threshold(query, &intent.intent_type);
 
         // Generate query embedding once (use rewritten query if available)
         let query_vec = self.embedding.embed(search_query).await?;
 
         // Stage 1: L0 fast positioning - search .abstract.md
-        info!("Stage 1: Scanning L0 abstract layer");
+        info!(
+            "Stage 1: Scanning L0 abstract layer with threshold {}",
+            adaptive_threshold
+        );
         let mut l0_filters = crate::types::Filters::with_layer("L0");
-        
+
         // Add URI prefix filter for scope-based searching
         if let Some(scope) = &options.root_uri {
             l0_filters.uri_prefix = Some(scope.clone());
@@ -202,27 +211,107 @@ impl VectorSearchEngine {
 
         let l0_results = self
             .qdrant
-            .search_with_threshold(&query_vec, &l0_filters, options.limit * 3, Some(0.5))
+            .search_with_threshold(
+                &query_vec,
+                &l0_filters,
+                options.limit * 3,
+                Some(adaptive_threshold),
+            )
             .await?;
-        
+
         // Apply URI prefix filter (application-level filtering for reliability)
         let scope_prefix = options.root_uri.as_ref();
-        let l0_results: Vec<_> = l0_results.into_iter().filter(|result| {
-            if let Some(prefix) = scope_prefix {
-                if let Some(uri) = &result.memory.metadata.uri {
-                    return uri.starts_with(prefix);
+        let l0_results: Vec<_> = l0_results
+            .into_iter()
+            .filter(|result| {
+                if let Some(prefix) = scope_prefix {
+                    if let Some(uri) = &result.memory.metadata.uri {
+                        return uri.starts_with(prefix);
+                    }
                 }
-            }
-            true
-        }).collect();
+                true
+            })
+            .collect();
 
+        // 🆕 增强降级检索策略
         if l0_results.is_empty() {
-            warn!("No L0 results found, falling back to full search");
-            return self.semantic_search(query, options).await;
+            warn!(
+                "No L0 results found at threshold {}, trying fallback strategies",
+                adaptive_threshold
+            );
+
+            // 策略1: 降低阈值重试（对于实体查询可能已经是0.4了，尝试更低）
+            let relaxed_threshold = if adaptive_threshold <= 0.4 {
+                0.3 // 对于已经很低的阈值，尝试0.3
+            } else {
+                adaptive_threshold - 0.3 // 否则降低0.3
+            };
+
+            info!(
+                "Fallback strategy 1: Retrying L0 with relaxed threshold {}",
+                relaxed_threshold
+            );
+            let relaxed_results = self
+                .qdrant
+                .search_with_threshold(
+                    &query_vec,
+                    &l0_filters,
+                    options.limit * 5,
+                    Some(relaxed_threshold),
+                )
+                .await?;
+
+            let relaxed_results: Vec<_> = relaxed_results
+                .into_iter()
+                .filter(|result| {
+                    if let Some(prefix) = scope_prefix {
+                        if let Some(uri) = &result.memory.metadata.uri {
+                            return uri.starts_with(prefix);
+                        }
+                    }
+                    true
+                })
+                .collect();
+
+            if !relaxed_results.is_empty() {
+                info!(
+                    "Found {} results with relaxed threshold, continuing with layered search",
+                    relaxed_results.len()
+                );
+                // 使用降低阈值后的结果继续L1/L2流程
+                // 重新执行L1/L2阶段（代码复用，赋值给l0_results后继续）
+                let l0_results = relaxed_results;
+                return self
+                    .continue_layered_search(query, &query_vec, l0_results, options)
+                    .await;
+            } else {
+                // 策略2: 完全降级到语义搜索（跳过L0，直接全量L2检索）
+                warn!(
+                    "No results even with relaxed threshold, falling back to full semantic search"
+                );
+                return self.semantic_search(query, options).await;
+            }
         }
 
-        info!("Found {} L0 candidates after scope filtering", l0_results.len());
+        info!(
+            "Found {} L0 candidates after scope filtering",
+            l0_results.len()
+        );
 
+        self.continue_layered_search(query, &query_vec, l0_results, options)
+            .await
+    }
+
+    /// 🆕 继续执行分层检索的L1/L2阶段
+    ///
+    /// 这个方法被提取出来，以便在降级重试后复用
+    async fn continue_layered_search(
+        &self,
+        query: &str,
+        query_vec: &[f32],
+        l0_results: Vec<crate::types::ScoredMemory>,
+        options: &SearchOptions,
+    ) -> Result<Vec<SearchResult>> {
         // Stage 2: L1 deep exploration - search .overview.md in candidate directories
         info!("Stage 2: Exploring L1 overview layer");
         let mut candidates = Vec::new(); // (dir_uri, l0_score, l1_score, is_timeline)
@@ -235,12 +324,12 @@ impl VectorSearchEngine {
                 .uri
                 .clone()
                 .unwrap_or_else(|| l0_result.memory.id.clone());
-            
+
             // Extract directory URI from L0 file URI
             // L0 file: cortex://session/xxx/timeline/.abstract.md
             // Directory: cortex://session/xxx/timeline
             let (dir_uri, is_timeline) = Self::extract_directory_from_l0_uri(&l0_uri);
-            
+
             // Generate L1 ID from directory URI (not file URI!)
             let l1_id = uri_to_vector_id(&dir_uri, ContextLayer::L1Overview);
 
@@ -249,10 +338,13 @@ impl VectorSearchEngine {
                 Self::cosine_similarity(&query_vec, &l1_memory.embedding)
             } else {
                 // L1 not found - use L0 score as approximation (weighted lower)
-                warn!("L1 layer not found for {}, using L0 score as fallback", dir_uri);
+                warn!(
+                    "L1 layer not found for {}, using L0 score as fallback",
+                    dir_uri
+                );
                 l0_result.score * 0.8 // Slightly reduce score when L1 is missing
             };
-            
+
             // Only add if combined threshold is likely to be met
             if l0_result.score >= options.threshold * 0.5 || l1_score >= options.threshold * 0.5 {
                 candidates.push((dir_uri, l0_result.score, l1_score, is_timeline));
@@ -273,14 +365,17 @@ impl VectorSearchEngine {
                         // Skip directories and hidden files (but allow .abstract.md and .overview.md for metadata)
                         if entry.is_directory
                             || !entry.name.ends_with(".md")
-                            || (entry.name.starts_with('.') && !entry.name.ends_with(".abstract.md") && !entry.name.ends_with(".overview.md"))
+                            || (entry.name.starts_with('.')
+                                && !entry.name.ends_with(".abstract.md")
+                                && !entry.name.ends_with(".overview.md"))
                         {
                             continue;
                         }
 
                         let l2_id = uri_to_vector_id(&entry.uri, ContextLayer::L2Detail);
                         if let Ok(Some(l2_memory)) = self.qdrant.get(&l2_id).await {
-                            let l2_score = Self::cosine_similarity(&query_vec, &l2_memory.embedding);
+                            let l2_score =
+                                Self::cosine_similarity(&query_vec, &l2_memory.embedding);
 
                             // Combined scoring: 0.2*L0 + 0.3*L1 + 0.5*L2
                             let combined_score = l0_score * 0.2 + l1_score * 0.3 + l2_score * 0.5;
@@ -303,7 +398,7 @@ impl VectorSearchEngine {
                 if let Ok(Some(l2_memory)) = self.qdrant.get(&l2_id).await {
                     let l2_score = Self::cosine_similarity(&query_vec, &l2_memory.embedding);
                     let combined_score = l0_score * 0.2 + l1_score * 0.3 + l2_score * 0.5;
-                    
+
                     if combined_score >= options.threshold {
                         final_results.push(SearchResult {
                             uri: dir_uri.clone(),
@@ -340,21 +435,23 @@ impl VectorSearchEngine {
         );
         Ok(final_results)
     }
-    
+
     /// Extract directory URI from L0 metadata URI
-    /// 
+    ///
     /// Since we now store directory URI in metadata.uri during indexing,
     /// this function is simplified to handle both old and new formats.
-    /// 
+    ///
     /// Returns (directory_uri, is_timeline)
     fn extract_directory_from_l0_uri(l0_uri: &str) -> (String, bool) {
         // New format: metadata.uri is already the directory URI
         // e.g., "cortex://session/abc/timeline" for timeline
         // e.g., "cortex://user/preferences" for user memories
-        
+
         // Check if this looks like a directory URI (no file extension)
-        let is_directory = !l0_uri.ends_with(".md") || l0_uri.contains("/.abstract.md") || l0_uri.contains("/.overview.md");
-        
+        let is_directory = !l0_uri.ends_with(".md")
+            || l0_uri.contains("/.abstract.md")
+            || l0_uri.contains("/.overview.md");
+
         if is_directory {
             // Handle .abstract.md suffix (old format or layer file path)
             if l0_uri.ends_with("/.abstract.md") {
@@ -368,13 +465,13 @@ impl VectorSearchEngine {
             // Already a directory URI
             return (l0_uri.to_string(), l0_uri.contains("/timeline"));
         }
-        
+
         // It's a file URI, extract parent directory
         if let Some(pos) = l0_uri.rfind('/') {
             let dir = &l0_uri[..pos];
             return (dir.to_string(), dir.contains("/timeline"));
         }
-        
+
         (l0_uri.to_string(), false)
     }
 
@@ -403,18 +500,19 @@ impl VectorSearchEngine {
         if let Some(byte_pos_in_lower) = content_lower.find(&query_lower) {
             // Calculate character position in content_lower
             let char_pos = content_lower[..byte_pos_in_lower].chars().count();
-            
+
             // Since content and content_lower have the same number of characters
             // (case conversion doesn't change char count), we can use the same char_pos
             // to locate the position in original content
             let query_char_len = query.chars().count();
-            
+
             // Calculate start and end in char indices
             let start_char = char_pos.saturating_sub(100);
             let end_char = (char_pos + query_char_len + 100).min(content.chars().count());
-            
+
             // Extract snippet using char indices from original content
-            let snippet: String = content.chars()
+            let snippet: String = content
+                .chars()
                 .skip(start_char)
                 .take(end_char - start_char)
                 .collect();
@@ -435,7 +533,7 @@ impl VectorSearchEngine {
     }
 
     /// Analyze query intent and optionally rewrite/expand the query
-    /// 
+    ///
     /// If LLM client is available, uses it for intelligent query rewriting.
     /// Otherwise, falls back to simple keyword extraction.
     async fn analyze_intent(&self, query: &str) -> Result<QueryIntent> {
@@ -477,39 +575,134 @@ impl VectorSearchEngine {
     /// Detect intent type from query patterns
     fn detect_intent_type(query: &str) -> QueryIntentType {
         let lower = query.to_lowercase();
-        
+
         // Temporal patterns
-        if lower.contains("when") || lower.contains("recent") || lower.contains("latest") 
-           || lower.contains("yesterday") || lower.contains("last") || lower.contains("ago") {
+        if lower.contains("when")
+            || lower.contains("recent")
+            || lower.contains("latest")
+            || lower.contains("yesterday")
+            || lower.contains("last")
+            || lower.contains("ago")
+        {
             return QueryIntentType::Temporal;
         }
-        
+
         // Factual patterns
-        if lower.starts_with("what is") || lower.starts_with("who is") 
-           || lower.starts_with("how to") || lower.starts_with("define") {
+        if lower.starts_with("what is")
+            || lower.starts_with("who is")
+            || lower.starts_with("how to")
+            || lower.starts_with("define")
+        {
             return QueryIntentType::Factual;
         }
-        
+
         // Relational patterns
-        if lower.contains(" vs ") || lower.contains(" versus ") 
-           || lower.contains("compared to") || lower.contains("difference between")
-           || lower.contains("related to") || lower.contains("connected with") {
+        if lower.contains(" vs ")
+            || lower.contains(" versus ")
+            || lower.contains("compared to")
+            || lower.contains("difference between")
+            || lower.contains("related to")
+            || lower.contains("connected with")
+        {
             return QueryIntentType::Relational;
         }
-        
+
         // Search patterns
-        if lower.starts_with("find") || lower.starts_with("search") 
-           || lower.starts_with("show me") || lower.starts_with("list") {
+        if lower.starts_with("find")
+            || lower.starts_with("search")
+            || lower.starts_with("show me")
+            || lower.starts_with("list")
+        {
             return QueryIntentType::Search;
         }
-        
+
         QueryIntentType::General
+    }
+
+    /// 🆕 判断查询是否可能是实体查询（人名、地名、组织名等）
+    ///
+    /// 实体查询的特征：
+    /// - 查询很短（通常2-4个字符/词）
+    /// - 不包含问句词、连接词等
+    /// - 可能是人名、地名、专有名词
+    fn is_likely_entity_query(query: &str) -> bool {
+        let trimmed = query.trim();
+        let char_count = trimmed.chars().count();
+        let word_count = trimmed.split_whitespace().count();
+
+        // 规则1: 中文人名查询（2-4个汉字，无其他内容）
+        if char_count >= 2 && char_count <= 4 && word_count == 1 {
+            let all_cjk = trimmed.chars().all(|c| {
+                // 检查是否为CJK（中日韩）字符
+                ('\u{4E00}'..='\u{9FFF}').contains(&c)
+                    || ('\u{3400}'..='\u{4DBF}').contains(&c)
+                    || ('\u{F900}'..='\u{FAFF}').contains(&c)
+            });
+            if all_cjk {
+                return true;
+            }
+        }
+
+        // 规则2: 英文短查询（1-2个单词，无疑问词）
+        if word_count <= 2 && char_count <= 20 {
+            let lower = trimmed.to_lowercase();
+            let question_words = [
+                "what", "when", "where", "who", "why", "how", "is", "are", "do", "does",
+            ];
+            let has_question = question_words
+                .iter()
+                .any(|w| lower.split_whitespace().any(|word| word == *w));
+
+            if !has_question {
+                // 首字母大写的可能是专有名词
+                let first_char_upper = trimmed.chars().next().map_or(false, |c| c.is_uppercase());
+                if first_char_upper {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    /// 🆕 根据查询意图自适应计算L0阈值
+    ///
+    /// 不同查询类型使用不同阈值：
+    /// - 实体查询: 0.4 (降低阈值，因为L0摘要可能丢失实体)
+    /// - 事实性问题: 0.4
+    /// - 主题探索/一般查询: 0.5 (默认)
+    fn adaptive_l0_threshold(query: &str, intent_type: &QueryIntentType) -> f32 {
+        // 优先检查是否是实体查询
+        if Self::is_likely_entity_query(query) {
+            info!("Detected entity query, using lowered threshold 0.4");
+            return 0.4;
+        }
+
+        // 根据意图类型调整
+        match intent_type {
+            QueryIntentType::Factual => {
+                info!("Factual query detected, using threshold 0.4");
+                0.4
+            }
+            QueryIntentType::Temporal => {
+                info!("Temporal query detected, using threshold 0.45");
+                0.45
+            }
+            QueryIntentType::Search | QueryIntentType::Relational => {
+                info!("Search/Relational query, using threshold 0.4");
+                0.4
+            }
+            QueryIntentType::General => {
+                info!("General query, using default threshold 0.5");
+                0.5
+            }
+        }
     }
 
     /// Rewrite query using LLM for better semantic matching
     async fn rewrite_query_with_llm(&self, llm: &dyn LLMClient, query: &str) -> Result<String> {
         let prompt = format!(
-            r#"You are a query rewriting assistant for a semantic search system. 
+            r#"You are a query rewriting assistant for a semantic search system.
 Your task is to rewrite the user's query to improve retrieval accuracy.
 
 Rules:
@@ -527,14 +720,9 @@ Rewritten query:"#,
         );
 
         let response = llm.complete(&prompt).await?;
-        
+
         // Clean up the response
-        let rewritten = response
-            .trim()
-            .lines()
-            .next()
-            .unwrap_or(query)
-            .to_string();
+        let rewritten = response.trim().lines().next().unwrap_or(query).to_string();
 
         // If the rewrite is too different or empty, return original
         if rewritten.is_empty() || rewritten.len() > query.len() * 3 {
