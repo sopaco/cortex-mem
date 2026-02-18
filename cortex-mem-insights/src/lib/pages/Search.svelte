@@ -239,15 +239,21 @@
     cursor: pointer;
   }
 
-  .result-content {
+  /* Use more specific selector to override global styles */
+  details.result-details pre.result-content {
+    display: block;
     margin-top: 0.5rem;
     padding: 0.75rem;
     background: var(--bg-dark);
     border-radius: 8px;
     font-size: 0.75rem;
     color: var(--text-secondary);
-    overflow-x: auto;
+    max-height: 500px;
+    overflow: auto;
     white-space: pre-wrap;
-    word-break: break-all;
+    word-wrap: break-word;
+    /* Reset global styles */
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: unset;
   }
 </style>

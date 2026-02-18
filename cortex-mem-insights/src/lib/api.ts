@@ -99,7 +99,7 @@ class ApiClient {
     const searchRequest = {
       query: keyword,
       limit: limit,
-      min_score: 0.5,
+      min_score: 0.3,  // 🆕 降低到0.3以支持实体查询（如"杨雪"）
       thread: scope === 'all' ? null : scope === 'user' ? 'user' : 'system'
     };
     
