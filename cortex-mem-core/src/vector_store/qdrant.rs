@@ -30,14 +30,20 @@ impl QdrantVectorStore {
     /// 
     /// If `embedding_dim` is set in config, this will automatically ensure
     /// the collection exists (creating it if necessary).
+    /// 
+    /// 🆕 If `tenant_id` is set in config, the collection name will be suffixed
+    /// with "_<tenant_id>" for tenant isolation.
     pub async fn new(config: &QdrantConfig) -> Result<Self> {
         let client = Qdrant::from_url(&config.url)
             .build()
             .map_err(|e| Error::VectorStore(e))?;
 
+        // 🆕 Use tenant-aware collection name
+        let collection_name = config.get_collection_name();
+
         let store = Self {
             client,
-            collection_name: config.collection_name.clone(),
+            collection_name,
             embedding_dim: config.embedding_dim,
         };
 
@@ -50,6 +56,8 @@ impl QdrantVectorStore {
     }
 
     /// Create a new Qdrant vector store with auto-detected embedding dimension
+    /// 
+    /// 🆕 Supports tenant isolation through config.tenant_id
     pub async fn new_with_llm_client(
         config: &QdrantConfig,
         _llm_client: &dyn crate::llm::LLMClient,
@@ -58,9 +66,12 @@ impl QdrantVectorStore {
             .build()
             .map_err(|e| Error::VectorStore(e))?;
 
+        // 🆕 Use tenant-aware collection name
+        let collection_name = config.get_collection_name();
+
         let store = Self {
             client,
-            collection_name: config.collection_name.clone(),
+            collection_name,
             embedding_dim: config.embedding_dim,
         };
 

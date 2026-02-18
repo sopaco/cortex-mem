@@ -16,11 +16,14 @@ pub struct AppState {
     pub vector_store: Option<Arc<dyn cortex_mem_core::vector_store::VectorStore>>,
     pub embedding_client: Option<Arc<EmbeddingClient>>,
     /// Vector search engine with L0/L1/L2 layered search support
-    pub vector_engine: Option<Arc<VectorSearchEngine>>,
+    /// 🆕 使用RwLock支持租户切换时重新创建
+    pub vector_engine: Arc<RwLock<Option<Arc<VectorSearchEngine>>>>,
     /// Base data directory
     pub data_dir: PathBuf,
     /// Current tenant root directory (if set)
     pub current_tenant_root: Arc<RwLock<Option<PathBuf>>>,
+    /// 🆕 Current tenant ID (for recreating tenant-specific vector store)
+    pub current_tenant_id: Arc<RwLock<Option<String>>>,
 }
 
 impl AppState {
@@ -113,9 +116,10 @@ impl AppState {
             llm_client,
             vector_store,
             embedding_client,
-            vector_engine,
+            vector_engine: Arc::new(RwLock::new(vector_engine)),  // 🆕 包装在RwLock中
             data_dir,
             current_tenant_root: Arc::new(RwLock::new(None)),
+            current_tenant_id: Arc::new(RwLock::new(None)),  // 🆕 初始化租户ID
         })
     }
     
@@ -165,6 +169,7 @@ impl AppState {
                 collection_name: config.qdrant.collection_name,
                 embedding_dim: config.qdrant.embedding_dim,
                 timeout_secs: config.qdrant.timeout_secs,
+                tenant_id: None,  // 🆕 初始化时不设置租户ID（global）
             };
             
             Ok((llm_client, Some(embedding_config), Some(qdrant_config)))
@@ -230,6 +235,7 @@ impl AppState {
                         .ok()
                         .and_then(|s| s.parse().ok()),
                     timeout_secs: 30,
+                    tenant_id: None,  // 🆕 初始化时不设置租户ID（global）
                 })
             } else {
                 tracing::warn!("Qdrant not configured");
@@ -265,6 +271,7 @@ impl AppState {
     }
     
     /// Switch to a different tenant
+    /// 🆕 Recreates VectorSearchEngine with tenant-specific collection
     pub async fn switch_tenant(&self, tenant_id: &str) -> anyhow::Result<()> {
         // Try both possible tenant locations
         let possible_paths = vec![
@@ -285,23 +292,73 @@ impl AppState {
         // Update current tenant root
         let mut current = self.current_tenant_root.write().await;
         *current = Some(tenant_root.clone());
+        drop(current);
+        
+        // 🆕 Update current tenant ID
+        let mut current_id = self.current_tenant_id.write().await;
+        *current_id = Some(tenant_id.to_string());
+        drop(current_id);
         
         tracing::info!("Switched to tenant root: {:?}", tenant_root);
+        
+        // 🆕 Recreate VectorSearchEngine with tenant-specific collection
+        if let (Some(ec), Some(llm)) = (&self.embedding_client, &self.llm_client) {
+            let (_, _, qdrant_cfg_opt) = Self::load_configs()?;
+            if let Some(mut qdrant_cfg) = qdrant_cfg_opt {
+                // 🆕 Set tenant ID in config
+                qdrant_cfg.tenant_id = Some(tenant_id.to_string());
+                
+                if let Ok(qdrant_store) = cortex_mem_core::QdrantVectorStore::new(&qdrant_cfg).await {
+                    let qdrant_arc = Arc::new(qdrant_store);
+                    
+                    // 🆕 Create tenant-specific filesystem
+                    let tenant_filesystem = Arc::new(CortexFilesystem::new(
+                        tenant_root.to_string_lossy().as_ref()
+                    ));
+                    
+                    let new_vector_engine = Arc::new(VectorSearchEngine::with_llm(
+                        qdrant_arc,
+                        ec.clone(),
+                        tenant_filesystem,
+                        llm.clone(),
+                    ));
+                    
+                    // 🆕 Update vector_engine
+                    let mut engine = self.vector_engine.write().await;
+                    *engine = Some(new_vector_engine);
+                    
+                    tracing::info!("✅ VectorSearchEngine recreated for tenant: {} with collection: {}", 
+                        tenant_id, qdrant_cfg.get_collection_name());
+                }
+            }
+        }
         
         Ok(())
     }
     
     /// 🆕 Helper method to create QdrantVectorStore for manual indexing
     /// This is needed because AutoIndexer requires concrete QdrantVectorStore type
+    /// 
+    /// 🆕 Supports tenant-specific collection
     pub async fn create_qdrant_store(&self) -> anyhow::Result<cortex_mem_core::QdrantVectorStore> {
+        // Get current tenant ID
+        let tenant_id = self.current_tenant_id.read().await.clone();
+        
         // Try to load config from file first, then fall back to environment variables
         if let Ok(config) = cortex_mem_config::Config::load("config.toml") {
-            let qdrant_config = QdrantConfig {
+            let mut qdrant_config = QdrantConfig {
                 url: config.qdrant.url,
                 collection_name: config.qdrant.collection_name,
                 embedding_dim: config.qdrant.embedding_dim,
                 timeout_secs: config.qdrant.timeout_secs,
+                tenant_id: None,  // 🆕 初始化为None
             };
+            
+            // 🆕 Set tenant ID if available
+            if let Some(tid) = tenant_id {
+                qdrant_config.tenant_id = Some(tid);
+            }
+            
             cortex_mem_core::QdrantVectorStore::new(&qdrant_config).await.map_err(|e| anyhow::anyhow!(e))
         } else if let (Ok(url), Ok(collection)) = (
             std::env::var("QDRANT_URL"),
@@ -314,6 +371,7 @@ impl AppState {
                     .ok()
                     .and_then(|s| s.parse().ok()),
                 timeout_secs: 30,
+                tenant_id,  // 🆕 使用当前租户ID
             };
             cortex_mem_core::QdrantVectorStore::new(&qdrant_config).await.map_err(|e| anyhow::anyhow!(e))
         } else {

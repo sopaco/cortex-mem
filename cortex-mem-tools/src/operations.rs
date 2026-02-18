@@ -7,7 +7,10 @@ use cortex_mem_core::{
     FilesystemOperations,
     SessionConfig, 
     SessionManager,
-    automation::{SyncConfig, SyncManager, AutoExtractor, AutoExtractConfig},  // 🆕 添加AutoExtractor
+    automation::{
+        SyncConfig, SyncManager, AutoExtractor, AutoExtractConfig,
+        AutoIndexer, IndexerConfig, AutomationManager, AutomationConfig,  // 🆕 添加AutoIndexer等
+    },
     embedding::{EmbeddingClient, EmbeddingConfig},
     vector_store::QdrantVectorStore,
     events::EventBus,  // 🆕 添加EventBus
@@ -63,13 +66,14 @@ impl MemoryOperations {
         embedding_api_key: &str,
         embedding_model_name: &str,
         embedding_dim: Option<usize>,
+        user_id: Option<String>,  // 🆕 添加user_id参数
     ) -> Result<Self> {
         let tenant_id = tenant_id.into();
         let filesystem = Arc::new(CortexFilesystem::with_tenant(data_dir, &tenant_id));
         filesystem.initialize().await?;
 
         // 🆕 创建EventBus用于自动化
-        let (event_bus, mut event_rx) = EventBus::new();
+        let (event_bus, mut event_rx_main) = EventBus::new();
 
         let config = SessionConfig::default();
         // 🆕 使用with_llm_and_events创建SessionManager
@@ -91,9 +95,10 @@ impl MemoryOperations {
             collection_name: qdrant_collection.to_string(),
             embedding_dim,
             timeout_secs: 30,
+            tenant_id: Some(tenant_id.clone()),  // 🆕 设置租户ID
         };
         let vector_store = Arc::new(QdrantVectorStore::new(&qdrant_config).await?);
-        tracing::info!("Qdrant connected successfully");
+        tracing::info!("Qdrant connected successfully, collection: {}", qdrant_config.get_collection_name());
 
         // Initialize Embedding client
         tracing::info!("Initializing Embedding client with model: {}", embedding_model_name);
@@ -116,6 +121,9 @@ impl MemoryOperations {
         ));
         tracing::info!("Vector search engine created with LLM support for query rewriting");
 
+        // 🆕 使用传入的user_id，如果没有则使用tenant_id
+        let actual_user_id = user_id.unwrap_or_else(|| tenant_id.clone());
+        
         // 🆕 创建AutoExtractor用于退出时提取（带user_id）
         let auto_extract_config = AutoExtractConfig {
             min_message_count: 5,
@@ -127,14 +135,65 @@ impl MemoryOperations {
             filesystem.clone(),
             llm_client.clone(),
             auto_extract_config,
-            &tenant_id,  // 使用tenant_id作为user_id
+            &actual_user_id,  // ✅ 使用实际的user_id
         ));
+        
+        // 🆕 创建AutoIndexer用于实时索引
+        let indexer_config = IndexerConfig {
+            auto_index: true,
+            batch_size: 10,
+            async_index: true,
+        };
+        let auto_indexer = Arc::new(AutoIndexer::new(
+            filesystem.clone(),
+            embedding_client.clone(),
+            vector_store.clone(),
+            indexer_config,
+        ));
+        
+        // 🆕 创建AutomationManager
+        let automation_config = AutomationConfig {
+            auto_index: true,
+            auto_extract: false,  // Extract由单独的监听器处理
+            index_on_message: true,  // ✅ 消息时自动索引
+            index_on_close: false,   // Session关闭时不索引（已经实时索引了）
+            index_batch_delay: 1,
+        };
+        let automation_manager = AutomationManager::new(
+            auto_indexer.clone(),
+            None,  // extractor由单独的监听器处理
+            automation_config,
+        );
+        
+        // 🆕 创建事件转发器（将主EventBus的事件转发给两个监听器）
+        let (tx_automation, rx_automation) = tokio::sync::mpsc::unbounded_channel();
+        let (tx_extractor, rx_extractor) = tokio::sync::mpsc::unbounded_channel();
+        
+        tokio::spawn(async move {
+            while let Some(event) = event_rx_main.recv().await {
+                // 转发给AutomationManager
+                let _ = tx_automation.send(event.clone());
+                // 转发给AutoExtractor监听器
+                let _ = tx_extractor.send(event);
+            }
+        });
+        
+        // 🆕 启动AutomationManager监听事件并自动索引
+        let tenant_id_for_automation = tenant_id.clone();
+        tokio::spawn(async move {
+            tracing::info!("Starting AutomationManager for tenant {}", tenant_id_for_automation);
+            if let Err(e) = automation_manager.start(rx_automation).await {
+                tracing::error!("AutomationManager stopped with error: {}", e);
+            }
+        });
         
         // 🆕 启动后台监听器处理SessionClosed事件
         let extractor_clone = auto_extractor.clone();
+        let tenant_id_clone = tenant_id.clone();
         tokio::spawn(async move {
-            tracing::info!("Starting AutoExtractor event listener for tenant {}", tenant_id);
-            while let Some(event) = event_rx.recv().await {
+            tracing::info!("Starting AutoExtractor event listener for tenant {}", tenant_id_clone);
+            let mut rx = rx_extractor;
+            while let Some(event) = rx.recv().await {
                 if let cortex_mem_core::CortexEvent::Session(session_event) = event {
                     match session_event {
                         cortex_mem_core::SessionEvent::Closed { session_id } => {

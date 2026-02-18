@@ -1,7 +1,7 @@
 // Storage Tools - Store content with automatic layer generation
 
 use crate::{Result, types::*, MemoryOperations};
-use cortex_mem_core::{Message, MessageRole, FilesystemOperations};
+use cortex_mem_core::{MessageRole, FilesystemOperations};
 use std::collections::HashMap;
 use chrono::Utc;
 
@@ -52,21 +52,32 @@ impl MemoryOperations {
                     args.thread_id.clone()
                 };
                 
-                let sm = self.session_manager.read().await;
+                let sm = self.session_manager.write().await;
                 
                 // Ensure session exists
                 if !sm.session_exists(&thread_id).await? {
-                    drop(sm);
-                    let sm_write = self.session_manager.write().await;
-                    sm_write.create_session(&thread_id).await?;
-                    drop(sm_write);
+                    sm.create_session(&thread_id).await?;
                 }
                 
-                let sm = self.session_manager.read().await;
+                // 🆕 使用add_message()发布事件，而不是直接调用save_message()
+                let message = sm.add_message(
+                    &thread_id,
+                    MessageRole::User,  // 默认使用User角色
+                    args.content.clone()
+                ).await?;
                 
-                // Create and save message
-                let message = Message::new(MessageRole::User, &args.content);
-                sm.message_storage().save_message(&thread_id, &message).await?
+                // 返回消息URI
+                let year_month = message.timestamp.format("%Y-%m").to_string();
+                let day = message.timestamp.format("%d").to_string();
+                let filename = format!(
+                    "{}_{}.md",
+                    message.timestamp.format("%H_%M_%S"),
+                    &message.id[..8]
+                );
+                format!(
+                    "cortex://session/{}/timeline/{}/{}/{}",
+                    thread_id, year_month, day, filename
+                )
             },
             _ => unreachable!(),
         };

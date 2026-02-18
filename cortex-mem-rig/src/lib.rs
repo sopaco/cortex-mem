@@ -80,6 +80,7 @@ pub async fn create_memory_tools_with_tenant_and_vector(
     embedding_api_key: &str,
     embedding_model_name: &str,
     embedding_dim: Option<usize>,
+    user_id: Option<String>,  // 🆕 添加user_id参数
 ) -> Result<MemoryTools, Box<dyn std::error::Error>> {
     let operations = MemoryOperations::new(
         data_dir.as_ref().to_str().unwrap(),
@@ -91,6 +92,7 @@ pub async fn create_memory_tools_with_tenant_and_vector(
         embedding_api_key,
         embedding_model_name,
         embedding_dim,
+        user_id,  // 🆕 传递user_id
     ).await?;
     Ok(MemoryTools::new(Arc::new(operations)))
 }

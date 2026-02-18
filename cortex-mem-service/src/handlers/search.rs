@@ -34,7 +34,8 @@ async fn search_layered(
     use cortex_mem_core::SearchOptions;
 
     // Check if vector engine is available
-    let vector_engine = state.vector_engine.as_ref().ok_or_else(|| {
+    let vector_engine_lock = state.vector_engine.read().await;
+    let vector_engine = vector_engine_lock.as_ref().ok_or_else(|| {
         AppError::BadRequest("Vector search not available. Qdrant and Embedding service must be configured.".to_string())
     })?;
 

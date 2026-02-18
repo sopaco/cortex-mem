@@ -56,7 +56,7 @@ pub async fn create_memory_agent(
     user_info: Option<&str>,
     bot_system_prompt: Option<&str>,
     agent_id: &str,
-    _user_id: &str,
+    user_id: &str,  // 🔧 移除下划线前缀
 ) -> Result<(RigAgent<CompletionModel>, Arc<MemoryOperations>), Box<dyn std::error::Error>> {
     // 创建 cortex LLMClient 用于 L0/L1 生成
     let llm_config = cortex_mem_core::llm::LLMConfig {
@@ -82,6 +82,7 @@ pub async fn create_memory_agent(
         &config.embedding.api_key,
         &config.embedding.model_name,
         config.qdrant.embedding_dim,
+        Some(user_id.to_string()),  // 🆕 传递真实的user_id
     )
     .await?;
 
