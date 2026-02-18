@@ -1,7 +1,4 @@
-use axum::{
-    Router,
-    routing::get,
-};
+use axum::{Router, routing::get};
 use clap::Parser;
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -10,11 +7,11 @@ use tower_http::trace::TraceLayer;
 use tracing::{info, level_filters::LevelFilter};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-mod state;
-mod routes;
+mod error;
 mod handlers;
 mod models;
-mod error;
+mod routes;
+mod state;
 
 use state::AppState;
 
@@ -32,7 +29,7 @@ struct Cli {
     host: String,
 
     /// Server port
-    #[arg(short, long, default_value_t = 8080)]
+    #[arg(short, long, default_value_t = 8085)]
     port: u16,
 
     /// Enable verbose logging
@@ -55,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
         .with(
             tracing_subscriber::fmt::layer()
                 .with_target(false)
-                .with_level(true)
+                .with_level(true),
         )
         .with(log_level)
         .init();

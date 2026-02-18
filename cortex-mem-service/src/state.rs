@@ -1,5 +1,7 @@
 use cortex_mem_core::{CortexFilesystem, LLMClient, SessionManager, QdrantVectorStore, EmbeddingClient, VectorSearchEngine};
+use std::path::PathBuf;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 /// Application state shared across all handlers
 #[derive(Clone)]
@@ -11,13 +13,20 @@ pub struct AppState {
     pub embedding_client: Option<Arc<EmbeddingClient>>,
     /// Vector search engine with L0/L1/L2 layered search support
     pub vector_engine: Option<Arc<VectorSearchEngine>>,
+    /// Base data directory
+    pub data_dir: PathBuf,
+    /// Current tenant root directory (if set)
+    pub current_tenant_root: Arc<RwLock<Option<PathBuf>>>,
 }
 
 impl AppState {
     /// Create new application state
     pub async fn new(data_dir: &str) -> anyhow::Result<Self> {
-        // Initialize filesystem
-        let filesystem = Arc::new(CortexFilesystem::new(data_dir));
+        let data_dir = PathBuf::from(data_dir);
+        
+        // Initialize filesystem with cortex subdirectory
+        let cortex_dir = data_dir.join("cortex");
+        let filesystem = Arc::new(CortexFilesystem::new(cortex_dir.to_string_lossy().as_ref()));
         filesystem.initialize().await?;
 
         // Initialize session manager with default config
@@ -59,7 +68,60 @@ impl AppState {
             vector_store,
             embedding_client,
             vector_engine,
+            data_dir,
+            current_tenant_root: Arc::new(RwLock::new(None)),
         })
+    }
+    
+    /// List all available tenants
+    pub async fn list_tenants(&self) -> Vec<String> {
+        // Try both possible tenant locations
+        let possible_paths = vec![
+            self.data_dir.join("tenants"),
+            self.data_dir.join("cortex").join("tenants"),
+        ];
+        
+        let mut tenants = vec![];
+        for tenants_path in possible_paths {
+            if tenants_path.exists() {
+                if let Ok(entries) = std::fs::read_dir(&tenants_path) {
+                    for entry in entries.flatten() {
+                        if entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
+                            tenants.push(entry.file_name().to_string_lossy().to_string());
+                        }
+                    }
+                }
+            }
+        }
+        
+        tenants
+    }
+    
+    /// Switch to a different tenant
+    pub async fn switch_tenant(&self, tenant_id: &str) -> anyhow::Result<()> {
+        // Try both possible tenant locations
+        let possible_paths = vec![
+            self.data_dir.join("tenants").join(tenant_id),
+            self.data_dir.join("cortex").join("tenants").join(tenant_id),
+        ];
+        
+        let mut tenant_root = None;
+        for path in possible_paths {
+            if path.exists() {
+                tenant_root = Some(path);
+                break;
+            }
+        }
+        
+        let tenant_root = tenant_root.ok_or_else(|| anyhow::anyhow!("Tenant {} not found", tenant_id))?;
+        
+        // Update current tenant root
+        let mut current = self.current_tenant_root.write().await;
+        *current = Some(tenant_root.clone());
+        
+        tracing::info!("Switched to tenant root: {:?}", tenant_root);
+        
+        Ok(())
     }
 
     fn init_llm_client() -> anyhow::Result<Option<Arc<dyn LLMClient>>> {

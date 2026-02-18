@@ -61,6 +61,11 @@ impl CortexFilesystem {
         self.tenant_id.as_deref()
     }
     
+    /// Set the tenant ID dynamically (for runtime tenant switching)
+    pub fn set_tenant(&mut self, tenant_id: Option<impl Into<String>>) {
+        self.tenant_id = tenant_id.map(|id| id.into());
+    }
+    
     /// Initialize the filesystem structure
     pub async fn initialize(&self) -> Result<()> {
         // Get the base directory (with or without tenant)

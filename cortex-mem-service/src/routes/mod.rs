@@ -5,6 +5,7 @@ mod filesystem;
 mod sessions;
 mod search;
 mod automation;
+mod tenants;
 
 pub fn api_routes() -> Router<std::sync::Arc<AppState>> {
     Router::new()
@@ -16,4 +17,6 @@ pub fn api_routes() -> Router<std::sync::Arc<AppState>> {
         .nest("/search", search::routes())
         // Automation routes
         .nest("/automation", automation::routes())
+        // Tenant routes
+        .nest("/tenants", tenants::routes())
 }
