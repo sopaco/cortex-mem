@@ -1,7 +1,7 @@
 /// 统一初始化API模块
 /// 提供Builder模式的一站式初始化接口
-
 use crate::{
+    Result,
     automation::{AutoExtractor, AutoIndexer, AutomationConfig, AutomationManager, IndexerConfig},
     embedding::{EmbeddingClient, EmbeddingConfig},
     events::EventBus,
@@ -9,7 +9,6 @@ use crate::{
     llm::LLMClient,
     session::{SessionConfig, SessionManager},
     vector_store::{QdrantVectorStore, VectorStore},
-    Result,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -38,49 +37,51 @@ impl CortexMemBuilder {
             session_config: SessionConfig::default(),
         }
     }
-    
+
     /// 配置Embedding服务
     pub fn with_embedding(mut self, config: EmbeddingConfig) -> Self {
         self.embedding_config = Some(config);
         self
     }
-    
+
     /// 配置Qdrant向量数据库
     pub fn with_qdrant(mut self, config: crate::config::QdrantConfig) -> Self {
         self.qdrant_config = Some(config);
         self
     }
-    
+
     /// 配置LLM客户端
     pub fn with_llm(mut self, llm_client: Arc<dyn LLMClient>) -> Self {
         self.llm_client = Some(llm_client);
         self
     }
-    
+
     /// 🆕 配置自动化行为
     pub fn with_automation(mut self, config: AutomationConfig) -> Self {
         self.automation_config = config;
         self
     }
-    
+
     /// 配置会话管理
     pub fn with_session_config(mut self, config: SessionConfig) -> Self {
         self.session_config = config;
         self
     }
-    
+
     /// 🎯 构建完整的cortex-mem实例
     pub async fn build(self) -> Result<CortexMem> {
-        info!("Building CortexMem with automation enabled: {}", 
-              self.automation_config.auto_index || self.automation_config.auto_extract);
-        
+        info!(
+            "Building Cortex Memory with automation enabled: {}",
+            self.automation_config.auto_index || self.automation_config.auto_extract
+        );
+
         // 1. 初始化文件系统
         let filesystem = Arc::new(CortexFilesystem::new(
-            self.data_dir.to_string_lossy().as_ref()
+            self.data_dir.to_string_lossy().as_ref(),
         ));
         filesystem.initialize().await?;
         info!("Filesystem initialized at: {:?}", self.data_dir);
-        
+
         // 2. 初始化Embedding客户端（可选）
         let embedding = if let Some(cfg) = self.embedding_config {
             match EmbeddingClient::new(cfg) {
@@ -93,7 +94,7 @@ impl CortexMemBuilder {
         } else {
             None
         };
-        
+
         // 3. 初始化Qdrant向量存储（可选）
         let vector_store: Option<Arc<dyn VectorStore>> = if let Some(ref cfg) = self.qdrant_config {
             match QdrantVectorStore::new(cfg).await {
@@ -109,11 +110,11 @@ impl CortexMemBuilder {
         } else {
             None
         };
-        
+
         // 4. 创建事件总线
         let (event_bus, event_rx) = EventBus::new();
         let event_bus = Arc::new(event_bus);
-        
+
         // 5. 创建SessionManager（带事件总线）
         let session_manager = if let Some(ref llm) = self.llm_client {
             SessionManager::with_llm_and_events(
@@ -129,18 +130,21 @@ impl CortexMemBuilder {
                 event_bus.as_ref().clone(),
             )
         };
-        
+
         // 6. 创建AutomationManager（如果配置了）
-        let automation_handle = if self.automation_config.auto_index || self.automation_config.auto_extract {
+        let automation_handle = if self.automation_config.auto_index
+            || self.automation_config.auto_extract
+        {
             // 需要同时有embedding和qdrant_config才能创建AutoIndexer
-            if let (Some(emb), Some(cfg)) = (&embedding, &self.qdrant_config) {  // 🔧 移除ref
+            if let (Some(emb), Some(cfg)) = (&embedding, &self.qdrant_config) {
+                // 🔧 移除ref
                 // 创建AutoIndexer
                 let indexer_config = IndexerConfig {
                     auto_index: true,
                     batch_size: 10,
                     async_index: false,
                 };
-                
+
                 // 重新创建QdrantVectorStore用于AutoIndexer
                 let qdrant_store = QdrantVectorStore::new(cfg).await?;
                 let indexer = Arc::new(AutoIndexer::new(
@@ -149,9 +153,11 @@ impl CortexMemBuilder {
                     Arc::new(qdrant_store),
                     indexer_config,
                 ));
-                
+
                 // 创建AutoExtractor（如果有LLM）
-                let extractor = if let (Some(llm), true) = (&self.llm_client, self.automation_config.auto_extract) {
+                let extractor = if let (Some(llm), true) =
+                    (&self.llm_client, self.automation_config.auto_extract)
+                {
                     Some(Arc::new(AutoExtractor::new(
                         filesystem.clone(),
                         llm.clone(),
@@ -160,14 +166,10 @@ impl CortexMemBuilder {
                 } else {
                     None
                 };
-                
+
                 // 启动AutomationManager
-                let manager = AutomationManager::new(
-                    indexer,
-                    extractor,
-                    self.automation_config,
-                );
-                
+                let manager = AutomationManager::new(indexer, extractor, self.automation_config);
+
                 // 在后台启动
                 info!("Starting AutomationManager in background");
                 let handle = tokio::spawn(async move {
@@ -175,7 +177,7 @@ impl CortexMemBuilder {
                         error!("AutomationManager failed: {}", e);
                     }
                 });
-                
+
                 Some(handle)
             } else {
                 warn!("Automation disabled: missing embedding or qdrant configuration");
@@ -184,7 +186,7 @@ impl CortexMemBuilder {
         } else {
             None
         };
-        
+
         Ok(CortexMem {
             filesystem,
             session_manager: Arc::new(RwLock::new(session_manager)),
@@ -213,36 +215,36 @@ impl CortexMem {
     pub fn session_manager(&self) -> Arc<RwLock<SessionManager>> {
         self.session_manager.clone()
     }
-    
+
     /// 获取文件系统
     pub fn filesystem(&self) -> Arc<CortexFilesystem> {
         self.filesystem.clone()
     }
-    
+
     /// 获取Embedding客户端
     pub fn embedding(&self) -> Option<Arc<EmbeddingClient>> {
         self.embedding.clone()
     }
-    
+
     /// 获取向量存储
     pub fn vector_store(&self) -> Option<Arc<dyn VectorStore>> {
         self.vector_store.clone()
     }
-    
+
     /// 获取LLM客户端
     pub fn llm_client(&self) -> Option<Arc<dyn LLMClient>> {
         self.llm_client.clone()
     }
-    
+
     /// 优雅关闭
     pub async fn shutdown(self) -> Result<()> {
         info!("Shutting down CortexMem...");
-        
+
         if let Some(handle) = self.automation_handle {
             handle.abort();
             info!("Automation manager stopped");
         }
-        
+
         Ok(())
     }
 }

@@ -80,10 +80,14 @@ impl CortexFilesystem {
         // Create root directory
         fs::create_dir_all(&base_dir).await?;
         
-        // Create dimension directories (OpenViking style: resources, user, agent, session)
-        for dimension in &["resources", "user", "agent", "session"] {
-            let dir = base_dir.join(dimension);
-            fs::create_dir_all(dir).await?;
+        // 🆕 只有在tenant模式下才创建维度目录
+        // Non-tenant模式（如cortex-mem-service全局实例）不应创建这些目录
+        if self.tenant_id.is_some() {
+            // Create dimension directories (OpenViking style: resources, user, agent, session)
+            for dimension in &["resources", "user", "agent", "session"] {
+                let dir = base_dir.join(dimension);
+                fs::create_dir_all(dir).await?;
+            }
         }
         
         Ok(())
