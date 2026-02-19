@@ -90,9 +90,10 @@ pub async fn create_memory_agent(
     let tenant_operations = memory_tools.operations().clone();
 
     // 创建 Rig LLM 客户端用于 Agent 对话
-    let llm_client = Client::builder(&config.llm.api_key)
+    let llm_client = Client::builder()
+        .api_key(&config.llm.api_key)
         .base_url(&config.llm.api_base_url)
-        .build();
+        .build()?;
 
     // 构建 system prompt（OpenViking 风格）
     let base_system_prompt = if let Some(info) = user_info {
@@ -275,10 +276,10 @@ pub async fn create_memory_agent(
     };
 
     // 构建带有 OpenViking 风格记忆工具的 agent
+    use rig::client::CompletionClient;
     let completion_model = llm_client
-        .completion_model(&config.llm.model_efficient)
-        .completions_api()
-        .into_agent_builder()
+        .completions_api()  // Use completions API to get CompletionModel
+        .agent(&config.llm.model_efficient)
         .preamble(&system_prompt)
         // 搜索工具（最常用）
         .tool(memory_tools.search_tool())
@@ -446,7 +447,7 @@ impl AgentChatHandler {
                 match item {
                     Ok(stream_item) => {
                         match stream_item {
-                            MultiTurnStreamItem::StreamItem(content) => {
+                            MultiTurnStreamItem::StreamAssistantItem(content) => {
                                 use rig::streaming::StreamedAssistantContent;
                                 match content {
                                     StreamedAssistantContent::Text(text_content) => {
@@ -456,7 +457,7 @@ impl AgentChatHandler {
                                             break;
                                         }
                                     }
-                                    StreamedAssistantContent::ToolCall(_) => {
+                                    StreamedAssistantContent::ToolCall { .. } => {
                                         log::debug!("调用工具中...");
                                     }
                                     _ => {}

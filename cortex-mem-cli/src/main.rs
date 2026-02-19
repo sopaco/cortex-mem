@@ -167,6 +167,7 @@ async fn main() -> Result<()> {
         &config.embedding.api_key,
         &config.embedding.model_name,
         config.qdrant.embedding_dim,
+        None,  // user_id parameter
     )
     .await?;
 

@@ -98,14 +98,15 @@ pub struct LLMClientImpl {
 impl LLMClientImpl {
     /// Create a new LLM client
     /// 
-    /// Note: For rig-core 0.29+, we use Client::new() and then configure the client
-    /// with custom base URL through environment variables or client methods
+    /// Note: For rig-core 0.31.0, we use Client::builder() pattern
+    /// with custom base URL configuration through .base_url() method
     pub fn new(config: LLMConfig) -> Result<Self> {
-        // Using Client::builder pattern from rig-core 0.23
-        // This matches the pattern used in examples/cortex-mem-tars
-        let client = Client::builder(&config.api_key)
+        // Using Client::builder pattern - compatible with rig-core 0.31.0
+        let client = Client::builder()
+            .api_key(&config.api_key)
             .base_url(&config.api_base_url)
-            .build();
+            .build()
+            .map_err(|e| crate::Error::Llm(format!("Failed to build OpenAI client: {:?}", e)))?;
 
         Ok(Self { client, config })
     }
@@ -119,13 +120,16 @@ impl LLMClientImpl {
     /// 
     /// This is the recommended way to interact with LLMs in rig-core.
     /// Returns an Agent that can handle streaming and tool calls.
+    /// 
+    /// Note: In rig-core 0.31.0, the default agent uses ResponsesCompletionModel.
+    /// We use .completions_api() to get the traditional CompletionModel.
     pub async fn create_agent(&self, system_prompt: &str) -> Result<rig::agent::Agent<rig::providers::openai::CompletionModel>> {
         use rig::client::CompletionClient;
         
-        let agent = self.client
-            .completion_model(&self.config.model_efficient)
-            .completions_api()
-            .into_agent_builder()
+        // Clone the client to avoid moving out of self
+        let agent = self.client.clone()
+            .completions_api()  // Use completions API to get CompletionModel
+            .agent(&self.config.model_efficient)
             .preamble(system_prompt)
             .build();
             
