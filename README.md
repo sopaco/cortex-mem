@@ -83,7 +83,7 @@ Powered by Rust and LLMs, Cortex Memory analyzes conversations, deduces facts, a
 
 - <strong>File-System Based Storage:</strong> Memory content stored as markdown files using the `cortex://` virtual URI scheme, enabling version control compatibility and portability.
 - <strong>Intelligent Memory Extraction:</strong> Automatically extracts structured memories (facts, decisions, entities) from conversations using LLM-powered analysis with confidence scoring.
-- <strong>Vector-Based Semantic Search:</strong> High-performance similarity search via Qdrant with metadata filtering across dimensions (user/agent/session), using weighted scoring (0.2×L0 + 0.3×L1 + 0.5×L2).
+- <strong>Vector-Based Semantic Search:</strong> High-performance similarity search via Qdrant with metadata filtering across dimensions (user/agent/session), using weighted scoring.
 - <strong>Multi-Modal Access:</strong> Interact through REST API, CLI, MCP protocol, or direct Rust library integration.
 - <strong>Three-Tier Memory Hierarchy:</strong> Progressive disclosure system (L0 Abstract → L1 Overview → L2 Detail) optimizes LLM context window usage with lazy generation.
 - <strong>Session Management:</strong> Track conversation timelines, participants, and message history with automatic indexing and event-driven processing.
@@ -286,7 +286,7 @@ For more details on running the evaluation, see the [lomoco-evaluation README](e
 
 # 🧠 How It Works
 
-Cortex Memory uses a sophisticated pipeline to process and manage memories, centered around a **hybrid storage architecture** combining filesystem durability with vector-based semantic search.
+Cortex Memory uses a sophisticated pipeline to process and manage memories, centered around a **hybrid storage architecture** combining **virtual-filesystem** durability with vector-based **semantic search**.
 
 ```mermaid
 flowchart TB
@@ -359,12 +359,12 @@ Cortex Memory implements a **progressive disclosure** system with three abstract
 | **L1 (Overview)** | Structured summary with key points and entities | ~500-2000 tokens | Context refinement (30% weight) |
 | **L2 (Detail)** | Full conversation content | Variable | Precise matching (50% weight) |
 
-This tiered approach optimizes LLM context window usage by loading only the necessary detail level. The search engine uses **weighted scoring** combining all three layers: `FinalScore = (0.2 × L0) + (0.3 × L1) + (0.5 × L2)`.
+This tiered approach optimizes LLM context window usage by loading only the necessary detail level. The search engine uses **weighted scoring** combining all three layers `L0/L1/L2`.
 
 # 🖥 Getting Started
 
 ### Prerequisites
-- [**Rust**](https://www.rust-lang.org) (version 1.75 or later)
+- [**Rust**](https://www.rust-lang.org) (version 1.86 or later)
 - [**Qdrant**](https://qdrant.tech/) vector database (version 1.7+)
 - An **OpenAI-compatible** LLM API endpoint (for memory extraction and analysis)
 - An **OpenAI-compatible** Embedding API endpoint (for vector search)
@@ -404,7 +404,7 @@ embedding_dim = 1536              # Embedding dimension (e.g., 1536 for text-emb
 [llm]
 api_base_url = "https://api.openai.com/v1" # Base URL of your LLM provider
 api_key = "${OPENAI_API_KEY}"              # API key (supports env variable)
-model_efficient = "gpt-4o-mini"            # Model for extraction and classification
+model_efficient = "gpt-5-mini"            # Model for extraction and classification
 model_reasoning = "o1-preview"             # Model for complex reasoning (optional)
 temperature = 0.7                          # Sampling temperature for LLM responses
 max_tokens = 8192                          # Max tokens for LLM generation
