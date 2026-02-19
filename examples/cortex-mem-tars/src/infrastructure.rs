@@ -1,55 +1,70 @@
 use anyhow::{Context, Result};
 use cortex_mem_config::Config;
-use cortex_mem_core::memory::MemoryManager;
-use cortex_mem_rig::llm::OpenAILLMClient;
-use cortex_mem_rig::vector_store::qdrant::QdrantVectorStore;
+use cortex_mem_tools::MemoryOperations;
 use std::sync::Arc;
 
-/// 基础设施管理器，负责初始化和管理 LLM 客户端、向量存储和记忆管理器
+/// Infrastructure manager - manages memory operations and configuration
 pub struct Infrastructure {
-    pub memory_manager: Arc<MemoryManager>,
-    pub config: Config,
+    operations: Arc<MemoryOperations>,
+    config: Config,
 }
 
 impl Infrastructure {
-    /// 创建新的基础设施
+    /// Create new infrastructure from configuration
+    /// NOTE: This creates a NON-TENANT instance for global infrastructure
+    /// Each bot should create its own tenant-isolated MemoryOperations
     pub async fn new(config: Config) -> Result<Self> {
         log::info!("正在初始化基础设施...");
 
-        // 初始化 LLM 客户端
-        let llm_client = OpenAILLMClient::new(&config.llm, &config.embedding)
-            .context("无法初始化 LLM 客户端")?;
-        log::info!("LLM 客户端初始化成功");
+        // Get data directory from config (which handles priorities correctly)
+        let data_dir = config.cortex.data_dir();
+        log::info!("使用数据目录: {}", data_dir);
+        log::info!("Qdrant 配置: url={}, collection={}, embedding_dim={:?}", 
+            config.qdrant.url, config.qdrant.collection_name, config.qdrant.embedding_dim);
 
-        // 初始化向量存储
-        let vector_store = QdrantVectorStore::new(&config.qdrant)
-            .await
-            .context("无法连接到 Qdrant 向量存储")?;
-        log::info!("Qdrant 向量存储连接成功");
+        // Get LLM configuration
+        let llm_config = cortex_mem_core::llm::LLMConfig {
+            api_base_url: config.llm.api_base_url.clone(),
+            api_key: config.llm.api_key.clone(),
+            model_efficient: config.llm.model_efficient.clone(),
+            temperature: 0.1,
+            max_tokens: 4096,
+        };
+        let llm_client: Arc<dyn cortex_mem_core::llm::LLMClient> = 
+            Arc::new(cortex_mem_core::llm::LLMClientImpl::new(llm_config)?);
 
-        // 初始化记忆管理器
-        let memory_config = config.memory.clone();
-        let memory_manager = Arc::new(MemoryManager::new(
-            Box::new(vector_store),
-            Box::new(llm_client),
-            memory_config,
-        ));
-        log::info!("记忆管理器初始化成功");
+        // 创建MemoryOperations（使用global租户）
+        let operations = MemoryOperations::new(
+            &data_dir,
+            "global",  // Use "global" as tenant ID for infrastructure
+            llm_client,
+            &config.qdrant.url,
+            &config.qdrant.collection_name,
+            &config.embedding.api_base_url,
+            &config.embedding.api_key,
+            &config.embedding.model_name,
+            config.qdrant.embedding_dim,
+            None,  // user_id = None，使用tenant_id作为user_id
+        )
+        .await
+        .context("Failed to initialize MemoryOperations")?;
 
-        log::info!("基础设施初始化完成");
+        log::info!("基础设施初始化成功（global 租户模式，仅用于基础设施）");
 
         Ok(Self {
-            memory_manager,
+            operations: Arc::new(operations),
             config,
         })
     }
 
-    /// 获取记忆管理器
-    pub fn memory_manager(&self) -> &Arc<MemoryManager> {
-        &self.memory_manager
+    /// Get memory operations (V2 API)
+    /// WARNING: This returns GLOBAL tenant operations
+    /// For bot-specific operations, create tenant-isolated operations
+    pub fn operations(&self) -> &Arc<MemoryOperations> {
+        &self.operations
     }
 
-    /// 获取配置
+    /// Get configuration
     pub fn config(&self) -> &Config {
         &self.config
     }

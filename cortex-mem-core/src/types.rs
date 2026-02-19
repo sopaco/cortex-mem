@@ -1,22 +1,98 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
 
-/// Core memory structure
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Memory {
-    pub id: String,
-    pub content: String,
-    pub embedding: Vec<f32>,
-    pub metadata: MemoryMetadata,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
+/// Dimension of memory storage
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Dimension {
+    /// Resource-specific memories (facts, knowledge)
+    Resources,
+    /// User-specific memories
+    User,
+    /// Agent-specific memories
+    Agent,
+    /// Session/conversation memories
+    Session,
 }
 
-/// Memory metadata for filtering and organization
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+impl Dimension {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Dimension::Resources => "resources",
+            Dimension::User => "user",
+            Dimension::Agent => "agent",
+            Dimension::Session => "session",
+        }
+    }
+    
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "resources" => Some(Dimension::Resources),
+            "user" => Some(Dimension::User),
+            "agent" => Some(Dimension::Agent),
+            "session" => Some(Dimension::Session),
+            // Legacy support
+            "agents" => Some(Dimension::Agent),
+            "users" => Some(Dimension::User),
+            "threads" => Some(Dimension::Session),
+            "global" => Some(Dimension::Resources),
+            _ => None,
+        }
+    }
+}
+
+/// Context layer for tiered loading
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ContextLayer {
+    /// L0: Abstract (~100 tokens)
+    L0Abstract,
+    /// L1: Overview (~500-2000 tokens)
+    L1Overview,
+    /// L2: Full detail
+    L2Detail,
+}
+
+impl ContextLayer {
+    pub fn filename(&self) -> &'static str {
+        match self {
+            ContextLayer::L0Abstract => ".abstract.md",
+            ContextLayer::L1Overview => ".overview.md",
+            ContextLayer::L2Detail => "",
+        }
+    }
+    
+    pub fn max_tokens(&self) -> usize {
+        match self {
+            ContextLayer::L0Abstract => 100,
+            ContextLayer::L1Overview => 2000,
+            ContextLayer::L2Detail => usize::MAX,
+        }
+    }
+}
+
+/// File entry
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileEntry {
+    pub uri: String,
+    pub name: String,
+    pub is_directory: bool,
+    pub size: u64,
+    pub modified: DateTime<Utc>,
+}
+
+/// File metadata
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileMetadata {
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub size: u64,
+    pub is_directory: bool,
+}
+
+/// Memory metadata (for V1 compatibility)
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MemoryMetadata {
+    pub uri: Option<String>,  // Original URI for reference
     pub user_id: Option<String>,
     pub agent_id: Option<String>,
     pub run_id: Option<String>,
@@ -30,273 +106,139 @@ pub struct MemoryMetadata {
     pub custom: HashMap<String, serde_json::Value>,
 }
 
-/// Types of memory supported by the system
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+/// Memory type (for V1 compatibility)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MemoryType {
-    /// Conversational memories from user interactions
     Conversational,
-    /// Procedural memories about how to do things
     Procedural,
-    /// Factual memories about entities and relationships
-    Factual,
-    /// Semantic memories about concepts and meanings
     Semantic,
-    /// Episodic memories about specific events and experiences
     Episodic,
-    /// Personal preferences and characteristics
-    Personal,
 }
 
 impl MemoryType {
-    /// Parse a string into a MemoryType enum
-    /// Defaults to Conversational for unrecognized types
-    pub fn parse(memory_type_str: &str) -> Self {
-        match memory_type_str.to_lowercase().as_str() {
-            "conversational" => MemoryType::Conversational,
-            "procedural" => MemoryType::Procedural,
-            "factual" => MemoryType::Factual,
-            "semantic" => MemoryType::Semantic,
-            "episodic" => MemoryType::Episodic,
-            "personal" => MemoryType::Personal,
-            _ => MemoryType::Conversational,
-        }
-    }
-
-    /// Parse a string into a MemoryType enum with Result
-    pub fn parse_with_result(memory_type_str: &str) -> Result<Self, String> {
-        match memory_type_str.to_lowercase().as_str() {
-            "conversational" => Ok(MemoryType::Conversational),
-            "procedural" => Ok(MemoryType::Procedural),
-            "factual" => Ok(MemoryType::Factual),
-            "semantic" => Ok(MemoryType::Semantic),
-            "episodic" => Ok(MemoryType::Episodic),
-            "personal" => Ok(MemoryType::Personal),
-            _ => Err(format!("Invalid memory type: {}", memory_type_str)),
+    pub fn parse(s: &str) -> Self {
+        match s {
+            "Conversational" => MemoryType::Conversational,
+            "Procedural" => MemoryType::Procedural,
+            "Semantic" => MemoryType::Semantic,
+            "Episodic" => MemoryType::Episodic,
+            _ => MemoryType::Conversational, // Default fallback
         }
     }
 }
 
-/// Memory search result with similarity score
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// User memory category (OpenViking-aligned)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum UserMemoryCategory {
+    /// User profile (appendable)
+    Profile,
+    /// User preferences by topic
+    Preferences,
+    /// Entity memories (people, projects)
+    Entities,
+    /// Event records (decisions, milestones)
+    Events,
+}
+
+impl UserMemoryCategory {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            UserMemoryCategory::Profile => "profile",
+            UserMemoryCategory::Preferences => "preferences",
+            UserMemoryCategory::Entities => "entities",
+            UserMemoryCategory::Events => "events",
+        }
+    }
+    
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "profile" => Some(UserMemoryCategory::Profile),
+            "preferences" => Some(UserMemoryCategory::Preferences),
+            "entities" => Some(UserMemoryCategory::Entities),
+            "events" => Some(UserMemoryCategory::Events),
+            _ => None,
+        }
+    }
+}
+
+/// Agent memory category (OpenViking-aligned)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum AgentMemoryCategory {
+    /// Problem + solution cases
+    Cases,
+    /// Skills
+    Skills,
+    /// Instructions
+    Instructions,
+}
+
+impl AgentMemoryCategory {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            AgentMemoryCategory::Cases => "cases",
+            AgentMemoryCategory::Skills => "skills",
+            AgentMemoryCategory::Instructions => "instructions",
+        }
+    }
+    
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "cases" => Some(AgentMemoryCategory::Cases),
+            "skills" => Some(AgentMemoryCategory::Skills),
+            "instructions" => Some(AgentMemoryCategory::Instructions),
+            _ => None,
+        }
+    }
+}
+
+/// Memory struct (for vector store)
+#[derive(Debug, Clone)]
+pub struct Memory {
+    pub id: String,
+    pub content: String,
+    pub embedding: Vec<f32>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub metadata: MemoryMetadata,
+}
+
+/// Scored memory (search result)
+#[derive(Debug, Clone)]
 pub struct ScoredMemory {
     pub memory: Memory,
     pub score: f32,
 }
 
-/// Memory operation result
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MemoryResult {
-    pub id: String,
-    pub memory: String,
-    pub event: MemoryEvent,
-    pub actor_id: Option<String>,
-    pub role: Option<String>,
-    pub previous_memory: Option<String>,
-}
-
-/// Types of memory operations
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum MemoryEvent {
-    Add,
-    Update,
-    Delete,
-    None,
-}
-
-/// Filters for memory search and retrieval
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+/// Filters for memory search
+#[derive(Debug, Clone, Default)]
 pub struct Filters {
     pub user_id: Option<String>,
     pub agent_id: Option<String>,
     pub run_id: Option<String>,
-    pub actor_id: Option<String>,
     pub memory_type: Option<MemoryType>,
-    pub min_importance: Option<f32>,
-    pub max_importance: Option<f32>,
     pub created_after: Option<DateTime<Utc>>,
     pub created_before: Option<DateTime<Utc>>,
     pub updated_after: Option<DateTime<Utc>>,
     pub updated_before: Option<DateTime<Utc>>,
-    pub entities: Option<Vec<String>>,
     pub topics: Option<Vec<String>>,
+    pub entities: Option<Vec<String>>,
+    pub min_importance: Option<f32>,
+    pub max_importance: Option<f32>,
+    /// URI prefix filter for scope-based searching
+    pub uri_prefix: Option<String>,
     pub custom: HashMap<String, serde_json::Value>,
 }
 
-/// Message structure for LLM interactions
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Message {
-    pub role: String,
-    pub content: String,
-    pub name: Option<String>,
-}
-
-/// Memory action determined by LLM
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MemoryAction {
-    pub id: Option<String>,
-    pub text: String,
-    pub event: MemoryEvent,
-    pub old_memory: Option<String>,
-}
-
-impl Memory {
-    pub fn new(content: String, embedding: Vec<f32>, metadata: MemoryMetadata) -> Self {
-        let now = Utc::now();
-        Self {
-            id: Uuid::new_v4().to_string(),
-            content,
-            embedding,
-            metadata,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-
-    pub fn update_content(&mut self, content: String, embedding: Vec<f32>) {
-        self.content = content;
-        self.embedding = embedding;
-        self.updated_at = Utc::now();
-        self.metadata.hash = Self::compute_hash(&self.content);
-    }
-
-    pub fn compute_hash(content: &str) -> String {
-        format!("{:x}", md5::compute(content.as_bytes()))
-    }
-}
-
-impl MemoryMetadata {
-    pub fn new(memory_type: MemoryType) -> Self {
-        Self {
-            user_id: None,
-            agent_id: None,
-            run_id: None,
-            actor_id: None,
-            role: None,
-            memory_type,
-            hash: String::new(),
-            importance_score: 0.5, // Default neutral importance
-            entities: Vec::new(),
-            topics: Vec::new(),
-            custom: HashMap::new(),
-        }
-    }
-
-    pub fn with_user_id(mut self, user_id: String) -> Self {
-        self.user_id = Some(user_id);
-        self
-    }
-
-    pub fn with_agent_id(mut self, agent_id: String) -> Self {
-        self.agent_id = Some(agent_id);
-        self
-    }
-
-    pub fn with_run_id(mut self, run_id: String) -> Self {
-        self.run_id = Some(run_id);
-        self
-    }
-
-    pub fn with_actor_id(mut self, actor_id: String) -> Self {
-        self.actor_id = Some(actor_id);
-        self
-    }
-
-    pub fn with_role(mut self, role: String) -> Self {
-        self.role = Some(role);
-        self
-    }
-
-    pub fn with_importance_score(mut self, score: f32) -> Self {
-        self.importance_score = score.clamp(0.0, 1.0);
-        self
-    }
-
-    pub fn with_entities(mut self, entities: Vec<String>) -> Self {
-        self.entities = entities;
-        self
-    }
-
-    pub fn with_topics(mut self, topics: Vec<String>) -> Self {
-        self.topics = topics;
-        self
-    }
-
-    pub fn add_entity(&mut self, entity: String) {
-        if !self.entities.contains(&entity) {
-            self.entities.push(entity);
-        }
-    }
-
-    pub fn add_topic(&mut self, topic: String) {
-        if !self.topics.contains(&topic) {
-            self.topics.push(topic);
-        }
-    }
-}
-
 impl Filters {
-    pub fn new() -> Self {
-        Self::default()
+    /// Add a custom filter field
+    pub fn add_custom(&mut self, key: &str, value: impl Into<serde_json::Value>) {
+        self.custom.insert(key.to_string(), value.into());
     }
-
-    pub fn for_user(user_id: &str) -> Self {
-        Self {
-            user_id: Some(user_id.to_string()),
-            ..Default::default()
-        }
-    }
-
-    pub fn for_agent(agent_id: &str) -> Self {
-        Self {
-            agent_id: Some(agent_id.to_string()),
-            ..Default::default()
-        }
-    }
-
-    pub fn for_run(run_id: &str) -> Self {
-        Self {
-            run_id: Some(run_id.to_string()),
-            ..Default::default()
-        }
-    }
-
-    pub fn with_memory_type(mut self, memory_type: MemoryType) -> Self {
-        self.memory_type = Some(memory_type);
-        self
+    
+    /// Create filters with a specific layer
+    pub fn with_layer(layer: &str) -> Self {
+        let mut filters = Self::default();
+        filters.add_custom("layer", layer);
+        filters
     }
 }
-
-impl Message {
-    pub fn user<S: Into<String>>(content: S) -> Self {
-        Self {
-            role: "user".to_string(),
-            content: content.into(),
-            name: None,
-        }
-    }
-
-    pub fn assistant<S: Into<String>>(content: S) -> Self {
-        Self {
-            role: "assistant".to_string(),
-            content: content.into(),
-            name: None,
-        }
-    }
-
-    pub fn system<S: Into<String>>(content: S) -> Self {
-        Self {
-            role: "system".to_string(),
-            content: content.into(),
-            name: None,
-        }
-    }
-
-    pub fn with_name<S: Into<String>>(mut self, name: S) -> Self {
-        self.name = Some(name.into());
-        self
-    }
-}
-
-// Optimization types
-mod optimization;
-pub use optimization::*;

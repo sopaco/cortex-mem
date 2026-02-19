@@ -1,12 +1,10 @@
-use crate::agent::{
-    ChatMessage, agent_reply_with_memory_retrieval_streaming, create_memory_agent,
-    extract_user_basic_info, store_conversations_batch,
-};
+use crate::agent::{AgentChatHandler, ChatMessage, create_memory_agent, extract_user_basic_info};
 use crate::config::{BotConfig, ConfigManager};
 use crate::infrastructure::Infrastructure;
 use crate::logger::LogManager;
 use crate::ui::{AppState, AppUi};
 use anyhow::{Context, Result};
+use cortex_mem_tools::MemoryOperations;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
@@ -20,15 +18,20 @@ use std::io;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
+// 🔧 移除未使用的导入
+// use cortex_mem_core::automation::{AutoExtractor, AutoExtractConfig};
 
 /// 应用程序
+#[allow(dead_code)]
 pub struct App {
-    #[allow(dead_code)]
     config_manager: ConfigManager,
     log_manager: Arc<LogManager>,
     ui: AppUi,
     current_bot: Option<BotConfig>,
     rig_agent: Option<RigAgent<CompletionModel>>,
+    tenant_operations: Option<Arc<MemoryOperations>>, // 租户隔离的 operations
+    // auto_extractor已移除 - 由Cortex Memory统一管理
+    current_session_id: Option<String>, // 当前会话ID
     infrastructure: Option<Arc<Infrastructure>>,
     user_id: String,
     user_info: Option<String>,
@@ -42,6 +45,7 @@ pub struct App {
     previous_state: Option<crate::ui::AppState>,
     external_message_sender: mpsc::UnboundedSender<String>,
     external_message_receiver: mpsc::UnboundedReceiver<String>,
+    enable_vector_search: bool, // ✅ 向量搜索标志
 }
 
 /// 应用消息类型
@@ -69,6 +73,7 @@ impl App {
         infrastructure: Option<Arc<Infrastructure>>,
         enable_audio_connect: bool,
         audio_connect_mode: String,
+        enable_vector_search: bool, // ✅ 新增参数
     ) -> Result<Self> {
         let mut ui = AppUi::new();
 
@@ -90,6 +95,9 @@ impl App {
             ui,
             current_bot: None,
             rig_agent: None,
+            tenant_operations: None, // 初始化为 None，在选择 Bot 时创建
+            // auto_extractor已移除 - 由Cortex Memory统一管理
+            current_session_id: None, // 初始化为 None，在开始对话时创建
             infrastructure,
             user_id: "tars_user".to_string(),
             user_info: None,
@@ -103,6 +111,7 @@ impl App {
             previous_state: Some(initial_state),
             external_message_sender: external_msg_tx,
             external_message_receiver: external_msg_rx,
+            enable_vector_search, // ✅ 存储向量搜索标志
         })
     }
 
@@ -110,6 +119,7 @@ impl App {
     pub async fn check_service_status(&mut self) -> Result<()> {
         use reqwest::Method;
 
+        // 重新启用 API 服务器
         if let Some(infrastructure) = &self.infrastructure {
             let api_base_url = &infrastructure.config().llm.api_base_url;
             // 拼接完整的 API 地址
@@ -332,67 +342,59 @@ impl App {
 
             // 检测状态变化（在事件处理之后）
 
-                        log::trace!("状态检查: previous_state={:?}, current_state={:?}", self.previous_state, self.ui.state);
+            log::trace!(
+                "状态检查: previous_state={:?}, current_state={:?}",
+                self.previous_state,
+                self.ui.state
+            );
 
+            if self.previous_state != Some(self.ui.state) {
+                log::info!(
+                    "🔄 状态变化: {:?} -> {:?}",
+                    self.previous_state,
+                    self.ui.state
+                );
 
+                // 如果从 BotSelection 或 PasswordInput 切换到 Chat，启动 API 服务器
 
-                        if self.previous_state != Some(self.ui.state) {
+                log::info!(
+                    "检查条件: previous_state == BotSelection: {}",
+                    self.previous_state == Some(crate::ui::AppState::BotSelection)
+                );
 
-                            log::info!("🔄 状态变化: {:?} -> {:?}", self.previous_state, self.ui.state);
+                log::info!(
+                    "检查条件: previous_state == PasswordInput: {}",
+                    self.previous_state == Some(crate::ui::AppState::PasswordInput)
+                );
 
+                log::info!(
+                    "检查条件: current_state == Chat: {}",
+                    self.ui.state == crate::ui::AppState::Chat
+                );
 
+                if (self.previous_state == Some(crate::ui::AppState::BotSelection)
+                    || self.previous_state == Some(crate::ui::AppState::PasswordInput))
+                    && self.ui.state == crate::ui::AppState::Chat
+                {
+                    log::info!("✨ 检测到进入聊天模式");
 
-                            // 如果从 BotSelection 或 PasswordInput 切换到 Chat，启动 API 服务器
+                    if let Some(bot) = self.ui.selected_bot().cloned() {
+                        log::info!("🤖 选中的机器人: {} (ID: {})", bot.name, bot.id);
 
-                            log::info!("检查条件: previous_state == BotSelection: {}",
+                        log::info!("即将调用 on_enter_chat_mode...");
 
-                                self.previous_state == Some(crate::ui::AppState::BotSelection));
+                        self.on_enter_chat_mode(&bot);
 
-                            log::info!("检查条件: previous_state == PasswordInput: {}",
+                        log::info!("on_enter_chat_mode 调用完成");
+                    } else {
+                        log::warn!("⚠️  没有选中的机器人");
+                    }
+                } else {
+                    log::info!("⏭️  状态变化不符合启动 API 服务器的条件");
+                }
 
-                                self.previous_state == Some(crate::ui::AppState::PasswordInput));
-
-                            log::info!("检查条件: current_state == Chat: {}",
-
-                                self.ui.state == crate::ui::AppState::Chat);
-
-
-
-                            if (self.previous_state == Some(crate::ui::AppState::BotSelection)
-
-                                || self.previous_state == Some(crate::ui::AppState::PasswordInput))
-
-                                && self.ui.state == crate::ui::AppState::Chat
-
-                            {
-
-                                log::info!("✨ 检测到进入聊天模式");
-
-                                if let Some(bot) = self.ui.selected_bot().cloned() {
-
-                                    log::info!("🤖 选中的机器人: {} (ID: {})", bot.name, bot.id);
-
-                                    log::info!("即将调用 on_enter_chat_mode...");
-
-                                    self.on_enter_chat_mode(&bot);
-
-                                    log::info!("on_enter_chat_mode 调用完成");
-
-                                } else {
-
-                                    log::warn!("⚠️  没有选中的机器人");
-
-                                }
-
-                            } else {
-
-                                log::info!("⏭️  状态变化不符合启动 API 服务器的条件");
-
-                            }
-
-                            self.previous_state = Some(self.ui.state);
-
-                        }
+                self.previous_state = Some(self.ui.state);
+            }
 
             if self.should_quit {
                 break;
@@ -475,44 +477,62 @@ impl App {
 
                 // 如果有基础设施，创建真实的带记忆的 Agent
                 if let Some(infrastructure) = &self.infrastructure {
-                    // 先提取用户基本信息（使用 bot.id 作为 agent_id）
-                    let user_info = match extract_user_basic_info(
-                        infrastructure.config(),
-                        infrastructure.memory_manager().clone(),
-                        &self.user_id,
-                        &bot.id,
-                    )
-                    .await
-                    {
-                        Ok(info) => {
-                            self.user_info = info.clone();
-                            info
-                        }
-                        Err(e) => {
-                            log::error!("提取用户基本信息失败: {}", e);
-                            None
-                        }
-                    };
-
-                    let memory_tool_config = cortex_mem_rig::tool::MemoryToolConfig {
-                        default_user_id: Some(self.user_id.clone()),
-                        default_agent_id: Some(bot.id.clone()),
-                        ..Default::default()
-                    };
-
+                    let config = infrastructure.config();
                     match create_memory_agent(
-                        infrastructure.memory_manager().clone(),
-                        memory_tool_config,
-                        infrastructure.config(),
-                        user_info.as_deref(),
+                        config.cortex.data_dir(),
+                        config,
+                        None, // user_info 稍后从租户 operations 提取
                         Some(bot.system_prompt.as_str()),
                         &bot.id,
+                        &self.user_id,
                     )
                     .await
                     {
-                        Ok(rig_agent) => {
-                            self.rig_agent = Some(rig_agent);
-                            log::info!("已创建带记忆功能的真实 Agent");
+                        Ok((rig_agent, tenant_ops)) => {
+                            // 保存租户 operations
+                            self.tenant_operations = Some(tenant_ops.clone());
+
+                            // 从租户 operations 提取用户基本信息
+                            let user_info =
+                                match extract_user_basic_info(tenant_ops, &self.user_id, &bot.id)
+                                    .await
+                                {
+                                    Ok(info) => {
+                                        self.user_info = info.clone();
+                                        info
+                                    }
+                                    Err(e) => {
+                                        log::error!("提取用户基本信息失败: {}", e);
+                                        None
+                                    }
+                                };
+
+                            // 如果有用户信息，需要重新创建 Agent（带用户信息）
+                            if user_info.is_some() {
+                                let config = infrastructure.config();
+                                match create_memory_agent(
+                                    config.cortex.data_dir(),
+                                    config,
+                                    user_info.as_deref(),
+                                    Some(bot.system_prompt.as_str()),
+                                    &bot.id,
+                                    &self.user_id,
+                                )
+                                .await
+                                {
+                                    Ok((agent_with_userinfo, _)) => {
+                                        self.rig_agent = Some(agent_with_userinfo);
+                                        log::info!("已创建带记忆功能的真实 Agent（含用户信息）");
+                                    }
+                                    Err(e) => {
+                                        log::error!("重新创建 Agent 失败: {}", e);
+                                        self.rig_agent = Some(rig_agent);
+                                    }
+                                }
+                            } else {
+                                self.rig_agent = Some(rig_agent);
+                                log::info!("已创建带记忆功能的真实 Agent");
+                            }
                         }
                         Err(e) => {
                             log::error!("创建真实 Agent 失败 {}", e);
@@ -543,7 +563,7 @@ impl App {
         if let Some(rig_agent) = &self.rig_agent {
             // 使用真实 Agent 进行流式响应
             // 构建历史对话（排除当前用户输入）
-            let current_conversations: Vec<(String, String)> = {
+            let _current_conversations: Vec<(String, String)> = {
                 let mut conversations = Vec::new();
                 let mut last_user_msg: Option<String> = None;
 
@@ -569,7 +589,6 @@ impl App {
                                 conversations.push((user_msg, msg.content.clone()));
                             }
                         }
-                        _ => {}
                     }
                 }
 
@@ -581,53 +600,52 @@ impl App {
                 conversations
             };
 
-            let infrastructure_clone = self.infrastructure.clone();
-            let rig_agent_clone = rig_agent.clone();
+            let _infrastructure_clone = self.infrastructure.clone();
+
+            // 创建 AgentChatHandler 并传入租户 memory operations 用于自动存储
+            let mut agent_handler = if let Some(tenant_ops) = &self.tenant_operations {
+                // 每次启动创建新的 session_id（如果还没有）
+                let session_id = self
+                    .current_session_id
+                    .get_or_insert_with(|| uuid::Uuid::new_v4().to_string())
+                    .clone();
+                AgentChatHandler::with_memory(rig_agent.clone(), tenant_ops.clone(), session_id)
+            } else {
+                AgentChatHandler::new(rig_agent.clone())
+            };
+
             let msg_tx = self.message_sender.clone();
             let user_input = input_text.to_string();
-            let user_id = self.user_id.clone();
             let user_input_for_stream = user_input.clone();
 
             tokio::spawn(async move {
-                let (stream_tx, mut stream_rx) = mpsc::unbounded_channel::<String>();
+                match agent_handler.chat_stream(&user_input).await {
+                    Ok(mut rx) => {
+                        let mut full_response = String::new();
 
-                let generation_task = tokio::spawn(async move {
-                    agent_reply_with_memory_retrieval_streaming(
-                        &rig_agent_clone,
-                        infrastructure_clone.unwrap().memory_manager().clone(),
-                        &user_input,
-                        &user_id,
-                        &current_conversations,
-                        stream_tx,
-                    )
-                    .await
-                });
+                        while let Some(chunk) = rx.recv().await {
+                            full_response.push_str(&chunk);
+                            if let Err(_) = msg_tx.send(AppMessage::StreamingChunk {
+                                user: user_input_for_stream.clone(),
+                                chunk,
+                            }) {
+                                break;
+                            }
+                        }
 
-                while let Some(chunk) = stream_rx.recv().await {
-                    if let Err(_) = msg_tx.send(AppMessage::StreamingChunk {
-                        user: user_input_for_stream.clone(),
-                        chunk,
-                    }) {
-                        break;
-                    }
-                }
-
-                match generation_task.await {
-                    Ok(Ok(full_response)) => {
                         let _ = msg_tx.send(AppMessage::StreamingComplete {
                             user: user_input_for_stream.clone(),
                             full_response,
                         });
                     }
-                    Ok(Err(e)) => {
-                        log::error!("生成回复失败: {}", e);
-                    }
                     Err(e) => {
-                        log::error!("任务执行失败: {}", e);
+                        log::error!("生成回复失败: {}", e);
                     }
                 }
             });
-        } else {
+        }
+
+        if self.infrastructure.is_none() {
             log::warn!("Agent 未初始化");
         }
 
@@ -680,57 +698,12 @@ impl App {
     }
 
     /// 退出时保存对话到记忆系统
+    /// 注意：此方法已被弃用，因为 AgentChatHandler 已在每轮对话后自动存储
+    /// 保留此方法仅用于兼容性或作为备用
+    #[deprecated(note = "AgentChatHandler 已自动存储对话，无需手动调用此方法")]
+    #[allow(dead_code)]
     pub async fn save_conversations_to_memory(&self) -> Result<()> {
-        if let Some(infrastructure) = &self.infrastructure {
-            let conversations: Vec<(String, String)> = {
-                let mut conversations = Vec::new();
-                let mut last_user_msg: Option<String> = None;
-
-                for msg in &self.ui.messages {
-                    match msg.role {
-                        crate::agent::MessageRole::User => {
-                            // 如果有未配对的 User 消息，先保存它（单独的 User 消息）
-                            if let Some(user_msg) = last_user_msg.take() {
-                                conversations.push((user_msg, String::new()));
-                            }
-                            last_user_msg = Some(msg.content.clone());
-                        }
-                        crate::agent::MessageRole::Assistant => {
-                            // 将 Assistant 消息与最近的 User 消息配对
-                            if let Some(user_msg) = last_user_msg.take() {
-                                conversations.push((user_msg, msg.content.clone()));
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-
-                // 如果最后一个消息是 User 消息，也加入对话历史
-                if let Some(user_msg) = last_user_msg {
-                    conversations.push((user_msg, String::new()));
-                }
-
-                conversations
-            };
-
-            // 只保存完整的对话对（用户和助手都有内容）
-            let conversations: Vec<(String, String)> = conversations
-                .into_iter()
-                .filter(|(user, assistant)| !user.is_empty() && !assistant.is_empty())
-                .collect();
-
-            if !conversations.is_empty() {
-                log::info!("正在保存 {} 条对话到记忆系统...", conversations.len());
-                store_conversations_batch(
-                    infrastructure.memory_manager().clone(),
-                    &conversations,
-                    &self.user_id,
-                )
-                .await
-                .map_err(|e| anyhow::anyhow!("保存对话到记忆系统失败: {}", e))?;
-                log::info!("对话保存完成");
-            }
-        }
+        log::warn!("save_conversations_to_memory 已被弃用，AgentChatHandler 已自动存储对话");
         Ok(())
     }
 
@@ -754,7 +727,6 @@ impl App {
                         None
                     }
                 }
-                _ => None,
             })
             .collect()
     }
@@ -783,8 +755,7 @@ impl App {
                 if let Some(infrastructure) = &self.infrastructure {
                     // 先提取用户基本信息（使用 bot.id 作为 agent_id）
                     let user_info = match extract_user_basic_info(
-                        infrastructure.config(),
-                        infrastructure.memory_manager().clone(),
+                        infrastructure.operations().clone(),
                         &self.user_id,
                         &bot.id,
                     )
@@ -800,23 +771,23 @@ impl App {
                         }
                     };
 
-                    let memory_tool_config = cortex_mem_rig::tool::MemoryToolConfig {
-                        default_user_id: Some(self.user_id.clone()),
-                        default_agent_id: Some(bot.id.clone()),
-                        ..Default::default()
-                    };
-
+                    let config = infrastructure.config();
                     match create_memory_agent(
-                        infrastructure.memory_manager().clone(),
-                        memory_tool_config,
-                        infrastructure.config(),
+                        config.cortex.data_dir(),
+                        config,
                         user_info.as_deref(),
                         Some(bot.system_prompt.as_str()),
                         &bot.id,
+                        &self.user_id,
                     )
                     .await
                     {
-                        Ok(rig_agent) => {
+                        Ok((rig_agent, tenant_ops)) => {
+                            self.tenant_operations = Some(tenant_ops.clone());
+
+                            // 🔧 移除AutoExtractor创建逻辑 - 已由Cortex Memory统一管理
+                            // 原有的auto_extractor创建代码已移除
+
                             self.rig_agent = Some(rig_agent);
                             log::info!("已创建带记忆功能的真实 Agent");
                         }
@@ -847,7 +818,7 @@ impl App {
         // 使用真实的带记忆的 Agent 进行流式响应
         if let Some(rig_agent) = &self.rig_agent {
             // 构建历史对话（排除当前用户输入）
-            let current_conversations: Vec<(String, String)> = {
+            let _current_conversations: Vec<(String, String)> = {
                 let mut conversations = Vec::new();
                 let mut last_user_msg: Option<String> = None;
 
@@ -873,7 +844,6 @@ impl App {
                                 conversations.push((user_msg, msg.content.clone()));
                             }
                         }
-                        _ => {}
                     }
                 }
 
@@ -885,49 +855,41 @@ impl App {
                 conversations
             };
 
-            let infrastructure_clone = self.infrastructure.clone();
-            let rig_agent_clone = rig_agent.clone();
+            // 创建 AgentChatHandler 并传入租户 memory operations 用于自动存储
+            let mut agent_handler = if let Some(tenant_ops) = &self.tenant_operations {
+                // 每次启动创建新的 session_id
+                let session_id = uuid::Uuid::new_v4().to_string();
+                AgentChatHandler::with_memory(rig_agent.clone(), tenant_ops.clone(), session_id)
+            } else {
+                AgentChatHandler::new(rig_agent.clone())
+            };
+
             let msg_tx = self.message_sender.clone();
             let user_input = content.clone();
-            let user_id = self.user_id.clone();
             let user_input_for_stream = user_input.clone();
 
             tokio::spawn(async move {
-                let (stream_tx, mut stream_rx) = mpsc::unbounded_channel::<String>();
+                match agent_handler.chat_stream(&user_input).await {
+                    Ok(mut rx) => {
+                        let mut full_response = String::new();
 
-                let generation_task = tokio::spawn(async move {
-                    agent_reply_with_memory_retrieval_streaming(
-                        &rig_agent_clone,
-                        infrastructure_clone.unwrap().memory_manager().clone(),
-                        &user_input,
-                        &user_id,
-                        &current_conversations,
-                        stream_tx,
-                    )
-                    .await
-                });
+                        while let Some(chunk) = rx.recv().await {
+                            full_response.push_str(&chunk);
+                            if let Err(_) = msg_tx.send(AppMessage::StreamingChunk {
+                                user: user_input_for_stream.clone(),
+                                chunk,
+                            }) {
+                                break;
+                            }
+                        }
 
-                while let Some(chunk) = stream_rx.recv().await {
-                    if let Err(_) = msg_tx.send(AppMessage::StreamingChunk {
-                        user: user_input_for_stream.clone(),
-                        chunk,
-                    }) {
-                        break;
-                    }
-                }
-
-                match generation_task.await {
-                    Ok(Ok(full_response)) => {
                         let _ = msg_tx.send(AppMessage::StreamingComplete {
                             user: user_input_for_stream.clone(),
                             full_response,
                         });
                     }
-                    Ok(Err(e)) => {
-                        log::error!("生成回复失败: {}", e);
-                    }
                     Err(e) => {
-                        log::error!("任务执行失败: {}", e);
+                        log::error!("生成回复失败: {}", e);
                     }
                 }
             });
@@ -1036,8 +998,11 @@ impl App {
     fn start_api_server(&self) {
         log::info!("🚀 尝试启动 API 服务器...");
         log::info!("   - enable_audio_connect: {}", self.enable_audio_connect);
-        log::info!("   - api_server_started: {}",
-            self.api_server_started.load(std::sync::atomic::Ordering::Relaxed));
+        log::info!(
+            "   - api_server_started: {}",
+            self.api_server_started
+                .load(std::sync::atomic::Ordering::Relaxed)
+        );
         log::info!("   - infrastructure: {}", self.infrastructure.is_some());
 
         if !self.enable_audio_connect {
@@ -1055,6 +1020,7 @@ impl App {
             return;
         }
 
+        // API 服务器已适配 V2 架构
         if let Some(infrastructure) = &self.infrastructure {
             let api_port = std::env::var("TARS_API_PORT")
                 .unwrap_or_else(|_| "18199".to_string())
@@ -1072,7 +1038,7 @@ impl App {
             log::info!("   - 当前机器人 ID: {:?}", current_bot_id);
 
             let api_state = crate::api_server::ApiServerState {
-                memory_manager: infrastructure.memory_manager().clone(),
+                operations: infrastructure.operations().clone(),
                 current_bot_id: self.current_bot_id.clone(),
                 audio_connect_mode: self.audio_connect_mode.clone(),
                 external_message_sender: Some(self.external_message_sender.clone()),
@@ -1146,6 +1112,59 @@ impl App {
         // 启动 API 服务器（如果启用了音频连接）
         log::info!("📡 准备启动 API 服务器...");
         self.start_api_server();
+    }
+
+    /// 退出时的清理工作，触发记忆提取
+    pub async fn on_exit(&mut self) -> Result<()> {
+        log::info!("🚪 开始退出流程...");
+
+        // 🔧 直接使用AutoExtractor同步提取（不依赖事件监听器）
+        // 这样可以确保提取完成后再退出程序
+        if let (Some(tenant_ops), Some(session_id)) =
+            (&self.tenant_operations, &self.current_session_id)
+        {
+            log::info!("🧠 开始提取会话记忆...");
+
+            // 方式1: 直接调用AutoExtractor（如果MemoryOperations暴露了）
+            if let Some(auto_extractor) = tenant_ops.auto_extractor() {
+                match auto_extractor.extract_session(session_id).await {
+                    Ok(stats) => {
+                        log::info!(
+                            "✅ 记忆提取完成：{} 个事实，{} 个决策，{} 个实体",
+                            stats.facts_extracted,
+                            stats.decisions_extracted,
+                            stats.entities_extracted
+                        );
+                        log::info!(
+                            "📝 已保存：{} 条用户记忆，{} 条 Agent 记忆",
+                            stats.user_memories_saved,
+                            stats.agent_memories_saved
+                        );
+                    }
+                    Err(e) => {
+                        log::warn!("⚠️ 记忆提取失败: {}", e);
+                    }
+                }
+            } else {
+                log::warn!("⚠️ AutoExtractor 未初始化");
+            }
+
+            // 方式2: 关闭会话（可选，可能重复提取）
+            // let session_manager = tenant_ops.session_manager().clone();
+            // match session_manager.write().await.close_session(session_id).await {
+            //     Ok(_) => {
+            //         log::info!("✅ 会话已关闭");
+            //     }
+            //     Err(e) => {
+            //         log::warn!("⚠️ 会话关闭失败: {}", e);
+            //     }
+            // }
+        } else {
+            log::info!("ℹ️ 无需处理会话（未配置租户或无会话）");
+        }
+
+        log::info!("👋 退出流程完成");
+        Ok(())
     }
 }
 

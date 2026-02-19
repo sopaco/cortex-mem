@@ -6,14 +6,17 @@ pub struct StoreMemoryRequest {
     /// 语音转录后的文本内容
     pub content: String,
     /// 固定值 "audio_listener"，标识来源为语音旁听服务
+    #[allow(dead_code)]
     pub source: String,
     /// 语音识别的时间戳，RFC 3339 格式
+    #[allow(dead_code)]
     pub timestamp: String,
     /// 说话人类型："user"（本人）或 "other"（他人）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub speaker_type: Option<String>,
     /// 说话人识别的置信度（0-1）
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[allow(dead_code)]
     pub speaker_confidence: Option<f32>,
 }
 

@@ -5,13 +5,19 @@
 <h1 align="center">Cortex Memory</h1>
 
 <p align="center">
-    <strong>🧠 The AI-native memory framework for building intelligent, context-aware applications 🧠</strong>
+    <a href="./README.md">English</a>
+    |
+    <a href="./README_zh.md">中文</a>
 </p>
-<p align="center">Built with Rust, Cortex Memory gives your AI agents a high-performance, persistent, and intelligent long-term memory.</p>
 
 <p align="center">
-  <a href="https://github.com/sopaco/cortex-mem/tree/main/litho.docs"><img alt="Litho Docs" src="https://img.shields.io/badge/Litho-Docs-green?logo=Gitbook&color=%23008a60">
-</a>
+    <strong>🧠 The AI-native memory framework for building intelligent, context-aware applications 🧠</strong>
+</p>
+<p align="center">Built with Rust, Cortex Memory is a high-performance, persistent, and intelligent long-term memory system that gives your AI agents the ability to remember, learn, and personalize interactions across sessions.</p>
+
+<p align="center">
+    <a href="https://github.com/sopaco/cortex-mem/tree/main/litho.docs/en"><img alt="Litho Docs" src="https://img.shields.io/badge/Litho-Docs-green?logo=Gitbook&color=%23008a60"/></a>
+    <a href="https://github.com/sopaco/cortex-mem/tree/main/litho.docs/zh"><img alt="Litho Docs" src="https://img.shields.io/badge/Litho-中文-green?logo=Gitbook&color=%23008a60"/></a>
   <a href="https://raw.githubusercontent.com/sopaco/cortex-mem/refs/heads/main/assets/benchmark/cortex_mem_vs_langmem.png"><img alt="Benchmark" src="https://img.shields.io/badge/Benchmark-Perfect-green?logo=speedtest&labelColor=%231150af&color=%2300b89f"></a>
   <a href="https://github.com/sopaco/cortex-mem/actions/workflows/rust.yml"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/sopaco/cortex-mem/rust.yml?label=Build"></a>
   <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg?label=LICENSE" /></a>
@@ -21,9 +27,9 @@
 
 # 👋 What is Cortex Memory?
 
-<strong>Cortex Memory</strong> is a complete, production-ready framework for giving your AI applications a long-term memory. It moves beyond simple chat history, providing an intelligent memory system that automatically extracts, organizes, and optimizes information to make your AI agents smarter and more personalized.
+**Cortex Memory** is a complete, production-ready framework for giving your AI applications a long-term memory. It moves beyond simple chat history, providing an intelligent memory system with a **hierarchical three-tier memory architecture** (L0 Abstract → L1 Overview → L2 Detail) that automatically extracts, organizes, and optimizes information to make your AI agents smarter and more personalized.
 
-Powered by Rust and LLMs, Cortex Memory analyzes conversations, deduces facts, and stores them in a structured, searchable knowledge base. This allows your agent to remember user preferences, past interactions, and key details, leading to more natural and context-aware conversations.
+Powered by Rust and LLMs, Cortex Memory analyzes conversations, deduces facts, and stores them in a structured, searchable knowledge base using **Qdrant vector database** for semantic search. This allows your agent to remember user preferences, past interactions, and key details, leading to more natural and context-aware conversations.
 
 <p align="center">
   <strong>Transform your stateless AI into an intelligent, context-aware partner.</strong>
@@ -81,13 +87,16 @@ Powered by Rust and LLMs, Cortex Memory analyzes conversations, deduces facts, a
 
 # 🌠 Features & Capabilities
 
-- <strong>Intelligent Fact Extraction:</strong> Automatically extracts key facts and insights from unstructured text using LLMs.
-- <strong>Memory Classification & Deduplication:</strong> Organizes memories and removes redundant information to keep the knowledge base clean and efficient.
-- <strong>Automated Memory Optimization:</strong> Periodically reviews, consolidates, and refines memories to improve relevance and reduce cost.
-- <strong>Vector-Based Semantic Search:</strong> Finds the most relevant memories using high-performance vector similarity search.
-- <strong>Multi-Modal Access:</strong> Interact with the memory system through a REST API, a command-line interface (CLI), or as a library in your Rust application.
-- <strong>Agent Framework Integration:</strong> Provides tools and adapters to easily plug into popular AI agent frameworks.
-- <strong>Web Dashboard:</strong> A dedicated web UI (`cortex-mem-insights`) for monitoring, analyzing, and visualizing the agent's memory.
+- <strong>File-System Based Storage:</strong> Memory content stored as markdown files using the `cortex://` virtual URI scheme, enabling version control compatibility and portability.
+- <strong>Intelligent Memory Extraction:</strong> Automatically extracts structured memories (facts, decisions, entities) from conversations using LLM-powered analysis with confidence scoring.
+- <strong>Vector-Based Semantic Search:</strong> High-performance similarity search via Qdrant with metadata filtering across dimensions (user/agent/session), using weighted scoring.
+- <strong>Multi-Modal Access:</strong> Interact through REST API, CLI, MCP protocol, or direct Rust library integration.
+- <strong>Three-Tier Memory Hierarchy:</strong> Progressive disclosure system (L0 Abstract → L1 Overview → L2 Detail) optimizes LLM context window usage with lazy generation.
+- <strong>Session Management:</strong> Track conversation timelines, participants, and message history with automatic indexing and event-driven processing.
+- <strong>Multi-Tenancy Support:</strong> Isolated memory spaces for different users and agents within a single deployment via tenant-aware collection naming.
+- <strong>Event-Driven Automation:</strong> File watchers and auto-indexers for background processing, synchronization, and profile enrichment.
+- <strong>Agent Framework Integration:</strong> Built-in support for Rig framework and Model Context Protocol (MCP).
+- <strong>Web Dashboard:</strong> Svelte 5 SPA (Insights) for monitoring, tenant management, and semantic search visualization.
 
 # 🌐 The Cortex Memory Ecosystem
 
@@ -96,78 +105,80 @@ Cortex Memory is a modular system composed of several crates, each with a specif
 ```mermaid
 graph TD
     subgraph "User Interfaces"
-        CLI["cortex-mem-cli"]
-        Insights["cortex-mem-insights"]
+        CLI["cortex-mem-cli<br/>Terminal Interface"]
+        Insights["cortex-mem-insights<br/>Web Dashboard"]
     end
 
     subgraph "APIs & Integrations"
-        Service["cortex-mem-service"]
-        MCP["cortex-mem-mcp"]
-        Rig["cortex-mem-rig"]
+        Service["cortex-mem-service<br/>REST API Server"]
+        MCP["cortex-mem-mcp<br/>MCP Server"]
+        Rig["cortex-mem-rig<br/>Rig Framework"]
     end
     
     subgraph "Core Engine"
-        Core["cortex-mem-core"]
+        Core["cortex-mem-core<br/>Business Logic"]
+        Tools["cortex-mem-tools<br/>Agent Tools"]
     end
 
     subgraph "External Services"
-        VectorDB[("Vector Database")]
-        LLM[("LLM Provider")]
+        VectorDB[("Qdrant<br/>Vector Database")]
+        LLM[("LLM Provider<br/>OpenAI/Azure/Local")]
     end
 
     %% Define Dependencies
-    Insights --> Service
+    Insights -->|REST API| Service
 
     CLI --> Core
     Service --> Core
-    MCP --> Core
-    Rig --> Core
+    MCP --> Tools
+    Rig --> Tools
+    Tools --> Core
     
     Core --> VectorDB
     Core --> LLM
 ```
 
-- <strong>`cortex-mem-core`</strong>: The heart of the system. It contains all the business logic for memory management, including extraction, optimization, and search.
-- <strong>`cortex-mem-service`</strong>: Exposes the core logic via a high-performance REST API, making it accessible to any programming language or system.
-- <strong>`cortex-mem-cli`</strong>: A command-line tool for developers and administrators to directly interact with the memory store for testing and management.
-- <strong>`cortex-mem-insights`</strong>: A web-based management tool that provides analytics and visualization of the agent's memory by consuming the `cortex-mem-service` API.
-- <strong>`cortex-mem-mcp` / `cortex-mem-rig`</strong>: Specialized adapter crates to integrate Cortex Memory as a "tool" within various AI agent frameworks.
-- <strong>`cortex-mem-config`</strong>: Shared configuration and type definitions used across the ecosystem.
+- <strong>`cortex-mem-core`</strong>: The heart of the system. Contains business logic for filesystem abstraction (`cortex://` URI), LLM client wrappers, embedding generation, Qdrant integration, session management, layer generation (L0/L1/L2), extraction engine, search engine, and automation orchestrator.
+- <strong>`cortex-mem-service`</strong>: High-performance REST API server (Axum-based) exposing all memory operations via `/api/v2/*` endpoints.
+- <strong>`cortex-mem-cli`</strong>: Command-line tool for developers and administrators to interact with the memory store directly.
+- <strong>`cortex-mem-insights`</strong>: Pure frontend Svelte 5 SPA for monitoring, analytics, and memory management through a web interface.
+- <strong>`cortex-mem-mcp`</strong>: Model Context Protocol server for integration with AI assistants (Claude Desktop, Cursor, etc.).
+- <strong>`cortex-mem-rig`</strong>: Integration layer with the rig-core agent framework for tool registration.
+- <strong>`cortex-mem-tools`</strong>: MCP tool schemas and operation wrappers for agent integration.
+- <strong>`cortex-mem-config`</strong>: Configuration management module handling TOML loading, environment variable resolution, and tenant-specific overrides.
 
-# 🖼️ Observability Tools​ Integration
+# 🖼️ Observability Dashboard
 
-Cortex Memory includes a powerful web-based dashboard (`cortex-mem-insights`) that provides real-time monitoring, analytics and management capabilities. Here's what you can expect to see:
+Cortex Memory includes a powerful web-based dashboard (`cortex-mem-insights`) that provides real-time monitoring, analytics and management capabilities. The dashboard is a pure frontend Svelte 5 SPA that connects to the `cortex-mem-service` REST API.
 
 <p align="center">
   <img src="./assets/snapshots/insights/snapshot_dashboard.png" alt="Cortex Memory Dashboard" width="800">
 </p>
 
 <p align="center">
-  <em><strong>Interactive Dashboard:</strong> Get an overview of memory usage, system health, and activity statistics</em>
+  <em><strong>Interactive Dashboard:</strong> Tenant overview, system health, and storage statistics at a glance</em>
 </p>
 
-<div style="text-align: center;">
-  <table style="width: 100%; margin: 0 auto;">
-    <tr>
-        <th style="width: 50%;"><strong>View and manage individual memory records</strong></th>
-        <th style="width: 50%;"><strong>Analyze and optimize memory quality</strong></th>
-    </tr>
-    <tr>
-      <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_memories.png" alt="snapshot-1" style="width: 100%; height: auto; display: block;"></td>
-      <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_optimization.png" alt="snapshot-2" style="width: 100%; height: auto; display: block;"></td>
-    </tr>
-    <tr>
-        <th style="width: 50%;"><strong>Monitor memory performance and activity</strong></th>
-        <th style="width: 50%;"><strong>Detailed insights and trends over time</strong></th>
-    </tr>
-    <tr>
-        <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_monitor.png" alt="snapshot-1" style="width: 100%; height: auto; display: block;"></td>
-        <td style="width: 50%;"><img src="./assets/snapshots/insights/snapshot_analytics.png" alt="snapshot-2" style="width: 100%; height: auto; display: block;"></td>
-    </tr>
-  </table>
-</div>
+### Key Features
 
-These visual tools help you understand how Cortex Memory is performing and how your AI agent's memory is evolving over time.
+- **Tenant Management**: View and switch between multiple tenants with isolated memory spaces
+- **Memory Browser**: Navigate the `cortex://` filesystem to view and manage memory files
+- **Semantic Search**: Perform natural language queries across the memory store
+- **Health Monitoring**: Real-time service status and LLM availability checks
+
+### Running the Dashboard
+
+```bash
+# Start the backend service first
+cortex-mem-service --data-dir ./cortex-data --port 8085
+
+# In another terminal, start the insights dashboard
+cd cortex-mem-insights
+bun install
+bun run dev
+```
+
+The dashboard will be available at `http://localhost:5173` and will proxy API requests to the backend service.
 
 # 🌟 Community Showcase: Cortex TARS
 
@@ -265,6 +276,7 @@ Cortex Memory has been rigorously evaluated against LangMem using the **LOCOMO d
 4. **Technical Advantages**: Cortex Memory's performance is attributed to:
    - Efficient **Rust-based implementation**
    - Powerful retrieval capabilities of **Qdrant vector database**
+   - **Three-tier memory hierarchy** (L0/L1/L2) with weighted scoring
    - Optimized memory management strategies
 
 ### Evaluation Framework
@@ -280,57 +292,100 @@ For more details on running the evaluation, see the [lomoco-evaluation README](e
 
 # 🧠 How It Works
 
-Cortex Memory uses a sophisticated pipeline to process and manage memories, orchestrated by the `MemoryManager` in `cortex-mem-core`.
-
+Cortex Memory uses a sophisticated pipeline to process and manage memories, centered around a **hybrid storage architecture** combining **virtual-filesystem** durability with vector-based **semantic search**.
 
 ```mermaid
-sequenceDiagram
-    participant App as Application
-    participant Service as cortex-mem-service
-    participant Manager as MemoryManager (Core)
-    participant Extractor as Fact Extractor (LLM)
-    participant VectorStore as Vector Database
-    participant Optimizer as Optimizer (LLM)
-
-    App->>Service: Add new text (e.g., chat log)
-    Service->>Manager: add_memory(text)
-    Manager->>Extractor: Extract facts from text
-    Extractor-->>Manager: Return structured facts
-    Manager->>VectorStore: Store new facts as vectors
-    
-    loop Periodically
-        Manager->>Optimizer: Start optimization plan
-        Optimizer->>VectorStore: Fetch related memories
-        Optimizer->>Optimizer: Consolidate & refine memories
-        Optimizer->>VectorStore: Update/archive old memories
+flowchart TB
+    subgraph Input["Input Layer"]
+        User[User Message]
+        Agent[Agent Message]
+        CLI[CLI Commands]
+        API[REST API]
+        MCP[MCP Protocol]
     end
 
-    App->>Service: Search for relevant info
-    Service->>Manager: search(query)
-    Manager->>VectorStore: Find similar vectors
-    VectorStore-->>Manager: Return relevant facts
-    Manager-->>Service: Return results
-    Service-->>App: Return relevant memories
+    subgraph Core["Core Engine (cortex-mem-core)"]
+        Session[Session Manager]
+        Extractor[Memory Extractor]
+        Indexer[Auto Indexer]
+        Search[Vector Search Engine]
+    end
+
+    subgraph Storage["Storage Layer"]
+        FS[(Filesystem<br/>cortex:// URI)]
+        Qdrant[(Qdrant<br/>Vector Index)]
+    end
+
+    subgraph External["External Services"]
+        LLM[LLM Provider<br/>Extraction & Analysis]
+        Embed[Embedding API<br/>Vector Generation]
+    end
+
+    User --> Session
+    Agent --> Session
+    CLI --> Core
+    API --> Core
+    MCP --> Core
+
+    Session -->|Store Messages| FS
+    Session -->|Trigger Extraction| Extractor
+    
+    Extractor -->|Analyze Content| LLM
+    Extractor -->|Store Memories| FS
+    
+    Indexer -->|Watch Changes| FS
+    Indexer -->|Generate Embeddings| Embed
+    Indexer -->|Index Vectors| Qdrant
+    
+    Search -->|Query Embedding| Embed
+    Search -->|Vector Search| Qdrant
+    Search -->|Retrieve Content| FS
 ```
+
+## Memory Architecture
+
+Cortex Memory organizes data using a **virtual filesystem** approach with the `cortex://` URI scheme:
+
+```
+cortex://{dimension}/{scope}/{category}/{id}
+```
+
+- **Dimension**: `user`, `agent`, `session`, or `resources`
+- **Scope**: Tenant or identifier
+- **Category**: `memories`, `profiles`, `entities`, `sessions`, etc.
+- **ID**: Unique memory identifier
+
+## Three-Tier Memory Hierarchy
+
+Cortex Memory implements a **progressive disclosure** system with three abstraction layers:
+
+| Layer | Purpose | Token Usage | Use Case |
+|-------|---------|-------------|----------|
+| **L0 (Abstract)** | Fast positioning, coarse-grained candidate selection | ~100 tokens | Initial screening (20% weight) |
+| **L1 (Overview)** | Structured summary with key points and entities | ~500-2000 tokens | Context refinement (30% weight) |
+| **L2 (Detail)** | Full conversation content | Variable | Precise matching (50% weight) |
+
+This tiered approach optimizes LLM context window usage by loading only the necessary detail level. The search engine uses **weighted scoring** combining all three layers `L0/L1/L2`.
 
 # 🖥 Getting Started
 
 ### Prerequisites
-- [**Rust**](https://www.rust-lang.org) (version 1.70 or later)
-- [**Qdrant**](https://qdrant.tech/) or another compatible vector database
-- An **OpenAI-compatible** LLM API endpoint
+- [**Rust**](https://www.rust-lang.org) (version 1.86 or later)
+- [**Qdrant**](https://qdrant.tech/) vector database (version 1.7+)
+- An **OpenAI-compatible** LLM API endpoint (for memory extraction and analysis)
+- An **OpenAI-compatible** Embedding API endpoint (for vector search)
 
 ### Installation
 The simplest way to get started is to use the CLI and Service binaries, which can be installed via `cargo`.
 ```sh
 # Install the CLI for command-line management
-cargo install cortex-mem-cli
+cargo install --path cortex-mem-cli
 
 # Install the REST API Service for application integration
-cargo install cortex-mem-service
+cargo install --path cortex-mem-service
 
-# Install the MCP server for specific agent framework integrations
-cargo install cortex-mem-mcp
+# Install the MCP server for AI assistant integrations
+cargo install --path cortex-mem-mcp
 ```
 
 ### Configuration
@@ -340,176 +395,237 @@ Here is a sample `config.toml` with explanations:
 
 ```toml
 # -----------------------------------------------------------------------------
-# HTTP Server Configuration (`cortex-mem-service` only)
-# -----------------------------------------------------------------------------
-[server]
-host = "0.0.0.0"       # IP address to bind the server to
-port = 8000            # Port for the HTTP server
-cors_origins = ["*"]   # Allowed origins for CORS (use ["*"] for permissive)
-
-# -----------------------------------------------------------------------------
 # Qdrant Vector Database Configuration
 # -----------------------------------------------------------------------------
 [qdrant]
-url = "http://localhost:6333" # URL of your Qdrant instance
-collection_name = "cortex-memory" # Name of the collection to use for memories
-timeout_secs = 5              # Timeout for Qdrant operations
-# embedding_dim is now auto-detected and no longer required here.
+url = "http://localhost:6334"     # URL of your Qdrant instance (gRPC port)
+http_url = "http://localhost:6333" # HTTP URL for REST API
+collection_name = "cortex-memory"  # Base name for collections (tenant suffix added)
+timeout_secs = 5                  # Timeout for Qdrant operations
+embedding_dim = 1536              # Embedding dimension (e.g., 1536 for text-embedding-3-small)
 
 # -----------------------------------------------------------------------------
-# LLM (Large Language Model) Configuration (for reasoning, summarization)
+# LLM (Large Language Model) Configuration (for reasoning, extraction)
 # -----------------------------------------------------------------------------
 [llm]
 api_base_url = "https://api.openai.com/v1" # Base URL of your LLM provider
-api_key = "sk-your-openai-api-key"        # API key for the LLM provider (sensitive)
-model_efficient = "gpt-5-mini"         # Model for simple tasks like classification
-temperature = 0.7                         # Sampling temperature for LLM responses
-max_tokens = 8192                         # Max tokens for LLM generation
+api_key = "${OPENAI_API_KEY}"              # API key (supports env variable)
+model_efficient = "gpt-5-mini"            # Model for extraction and classification
+model_reasoning = "o1-preview"             # Model for complex reasoning (optional)
+temperature = 0.7                          # Sampling temperature for LLM responses
+max_tokens = 8192                          # Max tokens for LLM generation
+timeout_secs = 60                           # Timeout for LLM requests
 
 # -----------------------------------------------------------------------------
 # Embedding Service Configuration
 # -----------------------------------------------------------------------------
 [embedding]
 api_base_url = "https://api.openai.com/v1" # Base URL of your embedding provider
-api_key = "sk-your-openai-api-key"        # API key for the embedding provider (sensitive)
-model_name = "text-embedding-3-small"     # Name of the embedding model to use
-batch_size = 16                           # Number of texts to embed in a single batch
-timeout_secs = 10                         # Timeout for embedding requests
+api_key = "${OPENAI_API_KEY}"              # API key (supports env variable)
+model_name = "text-embedding-3-small"      # Name of the embedding model to use
+batch_size = 32                            # Number of texts to embed in a single batch
+timeout_secs = 30                          # Timeout for embedding requests
 
 # -----------------------------------------------------------------------------
-# Memory Management Configuration
+# Cortex Data Directory Configuration
 # -----------------------------------------------------------------------------
-[memory]
-max_memories = 10000              # Max number of memories to keep in the store
-similarity_threshold = 0.65       # Threshold for considering memories similar
-max_search_results = 50           # Default max results for a search query
-auto_summary_threshold = 32768    # Token count threshold to trigger auto-summary
-auto_enhance = true               # Automatically enhance memories with metadata
-deduplicate = true                # Enable or disable memory deduplication
-merge_threshold = 0.75            # Similarity threshold for merging memories during optimization
-search_similarity_threshold = 0.50 # Minimum similarity for a memory to be included in search results
+[cortex]
+data_dir = "./cortex-data"  # Directory for storing memory files and sessions
 
 # -----------------------------------------------------------------------------
-# Logging Configuration
+# Automation Configuration
 # -----------------------------------------------------------------------------
-[logging]
-enabled = true                     # Enable or disable logging to a file
-log_directory = "logs"             # Directory to store log files
-level = "info"                     # Logging level (e.g., "info", "debug", "warn", "error")
+[automation]
+auto_index = true           # Enable automatic indexing on file changes
+auto_extract = true         # Enable automatic extraction on session close
+index_interval_secs = 5     # Polling interval for file watcher
+batch_delay_secs = 2       # Delay before processing batched changes
 ```
 
 # 🚀 Usage
 
 ### CLI (`cortex-mem-cli`)
 
-The CLI provides a powerful interface for direct interaction with the memory system. All commands require a `config.toml` file, which can be specified with `--config <path>`.
+The CLI provides a powerful interface for direct interaction with the memory system. All commands require a `config.toml` file, which can be specified with `--config <path>`. The `--tenant` flag allows multi-tenant isolation.
 
 #### Add a Memory
-Adds a new piece of information to the memory store.
+Adds a new message to a session thread, automatically storing it in the memory system.
 
 ```sh
-cortex-mem-cli add --content "The user is interested in Rust programming." --user-id "user123"
+cortex-mem-cli --config config.toml --tenant acme add --thread thread-123 --role user --content "The user is interested in Rust programming."
 ```
-- `--content <text>`: (Required) The text content of the memory.
-- `--user-id <id>`: An optional user ID to associate with the memory.
-- `--agent-id <id>`: An optional agent ID to associate with the memory.
+- `--thread <id>`: (Required) The thread/session ID.
+- `--role <role>`: Message role (user/assistant/system). Default: "user"
+- `--content <text>`: The text content of the message.
 
 #### Search for Memories
-Performs a semantic search on the memory store.
+Performs a semantic vector search across the memory store with weighted L0/L1/L2 scoring.
 
 ```sh
-cortex-mem-cli search --query "what are the user's hobbies?" --user-id "user123" --limit 5
+cortex-mem-cli --config config.toml --tenant acme search "what are the user's hobbies?" --thread thread-123 --limit 10
 ```
-- `--query <text>`: The natural language query for the search.
-- `--user-id <id>`: Filter memories by user ID.
-- `--agent-id <id>`: Filter memories by agent ID.
-- `--topics <t1,t2>`: Filter by a comma-separated list of topics.
-- `--keywords <k1,k2>`: Filter by a comma-separated list of keywords.
-- `--limit <n>`: The maximum number of results to return.
+- `query`: The natural language query for the search.
+- `--thread <id>`: Filter memories by thread ID.
+- `--limit <n>`: Maximum number of results. Default: 10
+- `--min-score <score>`: Minimum relevance score (0.0-1.0). Default: 0.3
+- `--scope <scope>`: Search scope: "session", "user", or "agent". Default: "session"
 
 #### List Memories
-Retrieves a list of memories based on metadata filters, without performing a semantic search.
+Retrieves a list of memories from a specific URI path.
 
 ```sh
-cortex-mem-cli list --user-id "user123" --limit 20
+cortex-mem-cli --config config.toml --tenant acme list --uri "cortex://session" --include-abstracts
 ```
-- Supports the same filters as `search` (`--user-id`, `--agent-id`, etc.), but does not use a `--query`.
+- `--uri <path>`: URI path to list (e.g., "cortex://session" or "cortex://user/preferences").
+- `--include-abstracts`: Include L0 abstracts in results.
+
+#### Get a Specific Memory
+Retrieves a specific memory by its URI.
+
+```sh
+cortex-mem-cli --config config.toml --tenant acme get "cortex://session/thread-123/memory-456.md"
+```
+- `uri`: The memory URI.
+- `--abstract-only`: Show L0 abstract instead of full content.
 
 #### Delete a Memory
-Removes a memory from the store by its unique ID.
+Removes a memory from the store by its URI.
 
 ```sh
-cortex-mem-cli delete <memory-id>
+cortex-mem-cli --config config.toml --tenant acme delete "cortex://session/thread-123/memory-456.md"
 ```
 
-#### Manage Optimization
-The CLI provides a full suite of tools to manage the memory optimization process.
+#### Session Management
+Manage conversation sessions.
 
 ```sh
-# Manually trigger a new optimization run
-cortex-mem-cli optimize start
+# List all sessions
+cortex-mem-cli --config config.toml --tenant acme session list
 
-# Check the status of a running or completed optimization job
-cortex-mem-cli optimize-status --job-id <job-id>
+# Create a new session
+cortex-mem-cli --config config.toml --tenant acme session create thread-456 --title "My Session"
 
-# View or update the optimization schedule and parameters
-cortex-mem-cli optimize-config --get
-cortex-mem-cli optimize-config --set --schedule "0 0 * * * *" --enabled
+# Close a session (triggers extraction)
+cortex-mem-cli --config config.toml --tenant acme session close thread-456
+```
+
+#### Sync and Stats
+Synchronize filesystem with vector store and display system statistics.
+
+```sh
+# Manual synchronization between filesystem and vector store
+cortex-mem-cli --config config.toml --tenant acme sync
+
+# Display system statistics
+cortex-mem-cli --config config.toml --tenant acme stats
 ```
 
 ### REST API (`cortex-mem-service`)
 
-The REST API allows you to integrate Cortex Memory into any application, regardless of the programming language.
+The REST API allows you to integrate Cortex Memory into any application, regardless of the programming language. The service runs on port 8085 by default.
 
 #### Starting the Service
 ```sh
-# Start the API server (will use configuration from config.toml)
-cortex-mem-service
+# Start the API server with default settings
+cortex-mem-service --data-dir ./cortex-data --host 127.0.0.1 --port 8085
+
+# Enable verbose logging
+cortex-mem-service -d ./cortex-data -h 127.0.0.1 -p 8085 --verbose
 ```
 
 #### API Endpoints
 
-Here are some of the primary endpoints available:
+**Health Check**
+- `GET /health`: Service liveness check
+- `GET /health/ready`: Readiness check (Qdrant, LLM connectivity)
 
-- `GET /health`: Health check for the service.
-- `POST /memories`: Create a new memory.
-- `GET /memories`: List memories with metadata filtering.
-- `POST /memories/search`: Perform a semantic search for memories.
-- `GET /memories/{id}`: Retrieve a single memory by its ID.
-- `PUT /memories/{id}`: Update a memory.
-- `DELETE /memories/{id}`: Delete a memory.
-- `POST /memories/batch/delete`: Delete a batch of memories.
-- `POST /memories/batch/update`: Update a batch of memories.
-- `POST /optimization`: Manually start an optimization job.
-- `GET /optimization/{job_id}`: Get the status of an optimization job.
+**Filesystem Operations**
+- `GET /api/v2/filesystem/list?uri=<path>`: List directory contents.
+- `GET /api/v2/filesystem/read/<path>`: Read file content.
+- `POST /api/v2/filesystem/write`: Write content to a file.
+- `GET /api/v2/filesystem/stats?uri=<path>`: Get directory statistics.
 
-#### Example: Create a Memory
+**Session Management**
+- `GET /api/v2/sessions`: List all sessions.
+- `POST /api/v2/sessions`: Create a new session.
+- `POST /api/v2/sessions/:thread_id/messages`: Add a message to a session.
+- `POST /api/v2/sessions/:thread_id/close`: Close a session and trigger memory extraction.
+
+**Semantic Search**
+- `POST /api/v2/search`: Perform semantic search across memories with weighted L0/L1/L2 scoring.
+
+**Automation**
+- `POST /api/v2/automation/extract/:thread_id`: Trigger memory extraction for a thread.
+- `POST /api/v2/automation/index/:thread_id`: Trigger vector indexing for a thread.
+- `POST /api/v2/automation/index-all`: Index all threads.
+- `POST /api/v2/automation/sync`: Manually trigger synchronization between filesystem and vector store.
+
+**Tenant Management**
+- `GET /api/v2/tenants/tenants`: List all available tenants.
+- `POST /api/v2/tenants/tenants/switch`: Switch active tenant context.
+- `GET /api/v2/tenants/{id}/stats`: Get per-tenant storage metrics.
+
+#### Example: Create a Session and Add Message
 
 ```bash
-curl -X POST http://localhost:8000/memories \
+# Create a new session
+curl -X POST http://localhost:8085/api/v2/sessions \
   -H "Content-Type: application/json" \
   -d '{
-    "content": "The user just signed up for the premium plan.",
-    "metadata": {
-      "user_id": "user-xyz-789",
-      "agent_id": "billing-bot-01"
-    }
+    "thread_id": "thread-123",
+    "title": "Support Conversation"
+  }'
+
+# Add a message to the session
+curl -X POST http://localhost:8085/api/v2/sessions/thread-123/messages \
+  -H "Content-Type: application/json" \
+  -d '{
+    "role": "user",
+    "content": "I just upgraded to the premium plan."
   }'
 ```
 
-#### Example: Search for Memories
+#### Example: Semantic Search
 
 ```bash
-curl -X POST http://localhost:8000/memories/search \
+curl -X POST http://localhost:8085/api/v2/search \
   -H "Content-Type: application/json" \
+  -H "X-Tenant-ID: acme" \
   -d '{
-    "query": "What is the user's current plan?",
-    "filters": {
-      "user_id": "user-xyz-789"
-    },
-    "limit": 3
+    "query": "What is the user's current subscription?",
+    "thread": "thread-123",
+    "scope": "session",
+    "limit": 5,
+    "min_score": 0.5
   }'
 ```
+
+#### Example: Trigger Memory Extraction
+
+```bash
+# Extract memories from a session (typically called when session is closed)
+curl -X POST http://localhost:8085/api/v2/automation/extract/thread-123 \
+  -H "Content-Type: application/json" \
+  -d '{ "auto_save": true }'
+```
+
+### Model Context Protocol (MCP) Server (`cortex-mem-mcp`)
+
+Cortex Memory provides an MCP server for integration with AI assistants like Claude Desktop, Cursor, or GitHub Copilot. The MCP server exposes memory tools through the stdio transport.
+
+```sh
+# Run the MCP server with configuration
+cortex-mem-mcp --config config.toml --tenant acme
+```
+
+The MCP server exposes the following tools:
+- **store_memory**: Store new facts or conversation summaries
+- **query_memory**: Search memory with natural language
+- **list_memories**: Enumerate available memories by URI prefix
+- **get_memory**: Retrieve a specific memory by URI
+- **delete_memory**: Remove a memory by URI
+
+Configure your AI assistant to use the MCP server by adding it to your assistant's configuration:
 
 # 🤝 Contribute
 We welcome all forms of contributions! Report bugs or submit feature requests through [GitHub Issues](https://github.com/sopaco/cortex-mem/issues).

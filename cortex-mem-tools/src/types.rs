@@ -1,243 +1,222 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use chrono::{DateTime, Utc};
+use serde_json::Value;
 
-/// Common data structure for memory operation payloads
+/// Operation result wrapper
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MemoryOperationPayload {
-    /// The content to store (for store operations)
-    pub content: Option<String>,
-
-    /// The query string (for search/query operations)
-    pub query: Option<String>,
-
-    /// Memory ID (for get operations)
-    pub memory_id: Option<String>,
-
-    /// User ID for filtering
-    pub user_id: Option<String>,
-
-    /// Agent ID for filtering
-    pub agent_id: Option<String>,
-
-    /// Type of memory
-    pub memory_type: Option<String>,
-
-    /// Topics to filter by
-    pub topics: Option<Vec<String>>,
-
-    /// Keywords to filter by
-    pub keywords: Option<Vec<String>>,
-
-    /// Maximum number of results
-    pub limit: Option<usize>,
-
-    /// Minimum salience/importance score
-    pub min_salience: Option<f64>,
-
-    /// Maximum number of results (alias for limit)
-    pub k: Option<usize>,
-
-    /// Additional metadata
-    pub metadata: Option<HashMap<String, serde_json::Value>>,
-
-    /// Time range filter: find memories created after this ISO 8601 datetime
-    pub created_after: Option<String>,
-
-    /// Time range filter: find memories created before this ISO 8601 datetime
-    pub created_before: Option<String>,
-}
-
-impl Default for MemoryOperationPayload {
-    fn default() -> Self {
-        Self {
-            content: None,
-            query: None,
-            memory_id: None,
-            user_id: None,
-            agent_id: None,
-            memory_type: None,
-            topics: None,
-            keywords: None,
-            limit: None,
-            min_salience: None,
-            k: None,
-            metadata: None,
-            created_after: None,
-            created_before: None,
-        }
-    }
-}
-
-/// Memory operation types supported by the tools
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum MemoryOperationType {
-    Store,
-    Query,
-    List,
-    Get,
-}
-
-/// Common response structure for memory operations
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MemoryOperationResponse {
-    /// Whether the operation was successful
+pub struct OperationResult<T> {
     pub success: bool,
-
-    /// Message describing the result
-    pub message: String,
-
-    /// Optional data payload
-    pub data: Option<serde_json::Value>,
-
-    /// Optional error details
+    pub data: Option<T>,
     pub error: Option<String>,
+    pub timestamp: DateTime<Utc>,
 }
 
-impl MemoryOperationResponse {
-    /// Create a successful response
-    pub fn success(message: impl Into<String>) -> Self {
+impl<T> OperationResult<T> {
+    pub fn success(data: T) -> Self {
         Self {
             success: true,
-            message: message.into(),
-            data: None,
-            error: None,
-        }
-    }
-
-    /// Create a successful response with data
-    pub fn success_with_data(message: impl Into<String>, data: serde_json::Value) -> Self {
-        Self {
-            success: true,
-            message: message.into(),
             data: Some(data),
             error: None,
+            timestamp: Utc::now(),
         }
     }
 
-    /// Create an error response
-    pub fn error(error: impl Into<String>) -> Self {
-        Self {
+    pub fn error(message: impl Into<String>) -> OperationResult<()> {
+        OperationResult {
             success: false,
-            message: "Operation failed".to_string(),
             data: None,
-            error: Some(error.into()),
+            error: Some(message.into()),
+            timestamp: Utc::now(),
         }
     }
 }
 
-/// Helper struct to extract query parameters
-pub struct QueryParams {
-    pub query: String,
-    pub limit: usize,
-    pub min_salience: Option<f64>,
-    pub memory_type: Option<String>,
-    pub topics: Option<Vec<String>>,
-    pub user_id: Option<String>,
-    pub agent_id: Option<String>,
-    pub created_after: Option<chrono::DateTime<chrono::Utc>>,
-    pub created_before: Option<chrono::DateTime<chrono::Utc>>,
+// ==================== OpenViking Style Types ====================
+
+/// L0 Abstract response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AbstractResponse {
+    pub uri: String,
+    pub abstract_text: String,
+    pub layer: String,  // "L0"
+    pub token_count: usize,
 }
 
-impl QueryParams {
-    pub fn from_payload(payload: &MemoryOperationPayload, default_limit: usize) -> crate::errors::MemoryToolsResult<Self> {
-        let query = payload.query.as_ref()
-            .ok_or_else(|| crate::errors::MemoryToolsError::InvalidInput("Query is required".to_string()))?
-            .clone();
-
-        let limit = payload.limit
-            .or(payload.k)
-            .unwrap_or(default_limit);
-
-        // Parse time range parameters
-        let created_after = payload.created_after.as_ref()
-            .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
-            .map(|dt| dt.with_timezone(&chrono::Utc));
-
-        let created_before = payload.created_before.as_ref()
-            .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
-            .map(|dt| dt.with_timezone(&chrono::Utc));
-
-        Ok(Self {
-            query,
-            limit,
-            min_salience: payload.min_salience,
-            memory_type: payload.memory_type.clone(),
-            topics: payload.topics.clone(),
-            user_id: payload.user_id.clone(),
-            agent_id: payload.agent_id.clone(),
-            created_after,
-            created_before,
-        })
-    }
+/// L1 Overview response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OverviewResponse {
+    pub uri: String,
+    pub overview_text: String,
+    pub layer: String,  // "L1"
+    pub token_count: usize,
 }
 
-/// Helper struct to extract store parameters
-pub struct StoreParams {
+/// L2 Read response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReadResponse {
+    pub uri: String,
     pub content: String,
-    pub user_id: String,
-    pub agent_id: Option<String>,
-    pub memory_type: String,
-    pub topics: Option<Vec<String>>,
+    pub layer: String,  // "L2"
+    pub token_count: usize,
+    pub metadata: Option<FileMetadata>,
 }
 
-impl StoreParams {
-    pub fn from_payload(payload: &MemoryOperationPayload, default_user_id: Option<String>, default_agent_id: Option<String>) -> crate::errors::MemoryToolsResult<Self> {
-        let content = payload.content.as_ref()
-            .ok_or_else(|| crate::errors::MemoryToolsError::InvalidInput("Content is required".to_string()))?
-            .clone();
-
-        let user_id = payload.user_id
-            .clone()
-            .or(default_user_id)
-            .ok_or_else(|| crate::errors::MemoryToolsError::InvalidInput("User ID is required".to_string()))?;
-
-        let agent_id = payload.agent_id.clone().or(default_agent_id);
-
-        let memory_type = payload.memory_type
-            .clone()
-            .unwrap_or_else(|| "conversational".to_string());
-
-        Ok(Self {
-            content,
-            user_id,
-            agent_id,
-            memory_type,
-            topics: payload.topics.clone(),
-        })
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileMetadata {
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
-/// Helper struct to extract filter parameters
-pub struct FilterParams {
+/// Search arguments
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchArgs {
+    pub query: String,
+    pub recursive: Option<bool>,        // 是否递归搜索
+    pub return_layers: Option<Vec<String>>,  // ["L0", "L1", "L2"]
+    pub scope: Option<String>,          // 搜索范围 URI
+    pub limit: Option<usize>,
+}
+
+/// Search result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchResult {
+    pub uri: String,
+    pub score: f32,
+    pub abstract_text: Option<String>,  // L0
+    pub overview_text: Option<String>,  // L1
+    pub content: Option<String>,        // L2
+}
+
+/// Search response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchResponse {
+    pub query: String,
+    pub results: Vec<SearchResult>,
+    pub total: usize,
+    pub engine_used: String,
+}
+
+/// Find arguments
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FindArgs {
+    pub query: String,
+    pub scope: Option<String>,
+    pub limit: Option<usize>,
+}
+
+/// Find result (simple, only L0)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FindResult {
+    pub uri: String,
+    pub abstract_text: String,
+}
+
+/// Find response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FindResponse {
+    pub query: String,
+    pub results: Vec<FindResult>,
+    pub total: usize,
+}
+
+/// List directory arguments
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LsArgs {
+    #[serde(default)]
+    pub uri: String,
+    pub recursive: Option<bool>,
+    pub include_abstracts: Option<bool>,
+}
+
+/// Directory entry
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LsEntry {
+    pub name: String,
+    pub uri: String,
+    pub is_directory: bool,
+    pub child_count: Option<usize>,
+    pub abstract_text: Option<String>,
+}
+
+/// List directory response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LsResponse {
+    pub uri: String,
+    pub entries: Vec<LsEntry>,
+    pub total: usize,
+}
+
+/// Explore arguments
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExploreArgs {
+    pub query: String,
+    pub start_uri: Option<String>,
+    pub max_depth: Option<usize>,
+    pub return_layers: Option<Vec<String>>,
+}
+
+/// Exploration path item
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExplorationPathItem {
+    pub uri: String,
+    pub relevance_score: f32,
+    pub abstract_text: Option<String>,
+}
+
+/// Explore response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExploreResponse {
+    pub query: String,
+    pub exploration_path: Vec<ExplorationPathItem>,
+    pub matches: Vec<SearchResult>,
+    pub total_explored: usize,
+    pub total_matches: usize,
+}
+
+/// Store arguments
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoreArgs {
+    pub content: String,
+    #[serde(default)]
+    pub thread_id: String,
+    pub metadata: Option<Value>,
+    pub auto_generate_layers: Option<bool>,
+    /// Storage scope: "session" (default), "user", or "agent"
+    #[serde(default = "default_scope")]
+    pub scope: String,
+    /// User ID for user scope storage (required when scope is "user")
+    #[serde(default)]
     pub user_id: Option<String>,
+    /// Agent ID for agent scope storage (required when scope is "agent")
+    #[serde(default)]
     pub agent_id: Option<String>,
-    pub memory_type: Option<String>,
-    pub limit: usize,
-    pub created_after: Option<chrono::DateTime<chrono::Utc>>,
-    pub created_before: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl FilterParams {
-    pub fn from_payload(payload: &MemoryOperationPayload, default_limit: usize) -> crate::errors::MemoryToolsResult<Self> {
-        let limit = payload.limit.or(payload.k).unwrap_or(default_limit);
+fn default_scope() -> String {
+    "session".to_string()
+}
 
-        // Parse time range parameters
-        let created_after = payload.created_after.as_ref()
-            .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
-            .map(|dt| dt.with_timezone(&chrono::Utc));
+/// Store response
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoreResponse {
+    pub uri: String,
+    pub layers_generated: std::collections::HashMap<String, String>,
+    pub success: bool,
+}
 
-        let created_before = payload.created_before.as_ref()
-            .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
-            .map(|dt| dt.with_timezone(&chrono::Utc));
+// Internal types
+#[derive(Debug, Clone)]
+pub(crate) struct RawSearchResult {
+    pub uri: String,
+    pub score: f32,
+}
 
-        Ok(Self {
-            user_id: payload.user_id.clone(),
-            agent_id: payload.agent_id.clone(),
-            memory_type: payload.memory_type.clone(),
-            limit,
-            created_after,
-            created_before,
-        })
-    }
+/// Session info
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionInfo {
+    pub thread_id: String,
+    pub status: String,
+    pub message_count: usize,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }

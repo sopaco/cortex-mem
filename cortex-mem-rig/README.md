@@ -1,260 +1,252 @@
-# Cortex Memory RIG Integration
+# Cortex Memory Rig
 
-This crate provides integration between the cortex-mem memory system and the RIG AI agent framework. It offers tools that AI agents can use to store, search, and retrieve memories.
+**Simplified Memory Tools for External Integrations**
 
-## Overview
+Cortex Memory V2的简化集成工具，提供基本的记忆操作功能，无需完整的Rig框架依赖。
 
-The cortex-mem-rig crate has been refactored to provide a consistent interface with cortex-mem-mcp. It now offers four distinct tools that mirror the MCP protocol tools:
+> **注意**: 这是V2的简化版本，移除了对`rig-core`的硬依赖。如果需要完整的Rig框架集成，请参考V1版本或自行适配。
 
-- `store_memory` - Store a new memory
-- `query_memory` - Search memories using semantic similarity
-- `list_memories` - List memories with optional filtering
-- `get_memory` - Retrieve a specific memory by ID
+---
 
-This design ensures that AI agents have a consistent experience whether they're using MCP or RIG to interface with the cortex-mem system.
+## 🎯 功能
 
-## Features
+- ✅ **存储消息** - 将消息保存到会话
+- ✅ **查询记忆** - 搜索相关记忆
+- ✅ **简化API** - 易于集成到任何Rust项目
+- ✅ **无框架依赖** - 不依赖rig-core或其他重型框架
 
-- **Tool-based Interface**: Four distinct tools with specific purposes
-- **Consistent with MCP**: Same function signatures and parameters as cortex-mem-mcp
-- **Semantic Search**: Advanced memory searching using vector embeddings
-- **Type-safe**: Fully type-safe Rust interface with structured parameters
-- **Error Handling**: Comprehensive error handling for all operations
-- **Backward Compatibility**: Maintains compatibility with existing code through a wrapper
+---
 
-## Quick Start
+## 📦 安装
 
-Add this to your `Cargo.toml`:
+在你的`Cargo.toml`中添加：
 
 ```toml
 [dependencies]
-cortex-mem-core = { version = "0.1" }
-cortex-mem-config = { version = "0.1" }
-cortex-mem-rig = { version = "0.1" }
-rig = { version = "0.1" }
-tokio = { version = "1" }
-tracing = "0.1"
-tracing-subscriber = "0.3"
+cortex-mem-rig = { path = "../cortex-mem-rig" }
+cortex-mem-tools = { path = "../cortex-mem-tools" }
 ```
 
-## Basic Usage
+---
 
-### Set up the memory system
+## 🚀 快速开始
+
+### 基本用法
 
 ```rust
-use std::sync::Arc;
-use cortex_mem_config::Config;
-use cortex_mem_core::{
-    init::initialize_memory_system,
-    memory::MemoryManager,
-};
-use cortex_mem_rig:: create_memory_tools;
+use cortex_mem_rig::{MemoryTools, StoreMemoryArgs, QueryMemoryArgs};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Load configuration
-    let config = Config::load("config.toml")?;
+    // 从数据目录创建工具
+    let tools = MemoryTools::from_data_dir("./cortex-data").await?;
     
-    // Initialize memory system
-    let (vector_store, llm_client) = initialize_memory_system(&config).await?;
+    // 存储消息
+    let store_args = StoreMemoryArgs {
+        thread_id: "my-session".to_string(),
+        role: "user".to_string(),
+        content: "Hello, how can I help you?".to_string(),
+    };
+    let result = tools.store_memory(store_args).await?;
+    println!("{}", result);
     
-    // Create memory manager
-    let memory_manager = Arc::new(MemoryManager::new(
-        vector_store,
-        llm_client,
-        config.memory.clone(),
-    ));
-    
-    // Create memory tools
-    let memory_tools = create_memory_tools(
-        memory_manager,
-        &config,
-        None, // Use default configuration
-    );
+    // 查询记忆
+    let query_args = QueryMemoryArgs {
+        query: "help".to_string(),
+        thread_id: Some("my-session".to_string()),
+        limit: Some(10),
+    };
+    let result = tools.query_memory(query_args).await?;
+    println!("{}", result);
     
     Ok(())
 }
 ```
 
-### Using the tools
+### 使用共享MemoryOperations
 
 ```rust
-use cortex_mem_rig::{
-    MemoryTools, StoreMemoryArgs, QueryMemoryArgs, 
-    ListMemoriesArgs, GetMemoryArgs
-};
+use cortex_mem_tools::MemoryOperations;
+use cortex_mem_rig::{MemoryTools, create_memory_tools};
+use std::sync::Arc;
 
-// Store a memory
-let store_args = StoreMemoryArgs {
-    content: "The user prefers working in the morning".to_string(),
-    user_id: Some("user123".to_string()),
-    agent_id: Some("agent456".to_string()),
-    memory_type: Some("personal".to_string()),
-    topics: Some(vec!["preferences".to_string()]),
-};
-
-let result = memory_tools.store_memory().call(store_args).await?;
-println!("Stored memory: {}", result.success);
-
-// Query memories
-let query_args = QueryMemoryArgs {
-    query: "What are the user's preferences?".to_string(),
-    k: Some(5),
-    memory_type: None,
-    min_salience: Some(0.5),
-    topics: Some(vec!["preferences".to_string()]),
-    user_id: Some("user123".to_string()),
-    agent_id: Some("agent456".to_string()),
-};
-
-let result = memory_tools.query_memory().call(query_args).await?;
-if let Some(data) = result.data {
-    println!("Found memories: {}", data);
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // 创建共享操作
+    let ops = Arc::new(MemoryOperations::from_data_dir("./cortex-data").await?);
+    
+    // 创建工具
+    let tools = create_memory_tools(ops.clone());
+    
+    // 也可以直接使用ops
+    let msg_id = ops.add_message("session", "user", "Hello").await?;
+    
+    Ok(())
 }
+```
 
-// List memories
-let list_args = ListMemoriesArgs {
+---
+
+## 📖 API文档
+
+### MemoryTools
+
+主要结构体。
+
+#### 创建
+
+```rust
+// 从数据目录创建
+let tools = MemoryTools::from_data_dir("./cortex-data").await?;
+
+// 从MemoryOperations创建
+let tools = MemoryTools::new(operations);
+
+// 使用create函数
+let tools = create_memory_tools(operations);
+```
+
+#### 操作
+
+```rust
+// 存储消息
+let result = tools.store_memory(StoreMemoryArgs {
+    thread_id: "session-id".to_string(),
+    role: "user".to_string(),
+    content: "message content".to_string(),
+}).await?;
+
+// 查询记忆
+let result = tools.query_memory(QueryMemoryArgs {
+    query: "search query".to_string(),
+    thread_id: Some("session-id".to_string()),
     limit: Some(10),
-    memory_type: Some("personal".to_string()),
-    user_id: Some("user123".to_string()),
-    agent_id: Some("agent456".to_string()),
-};
+}).await?;
 
-let result = memory_tools.list_memories().call(list_args).await?;
-if let Some(data) = result.data {
-    println!("Memories: {}", data);
-}
+// 获取底层操作接口
+let ops = tools.operations();
+```
 
-// Get a specific memory
-let get_args = GetMemoryArgs {
-    memory_id: "memory_123".to_string(),
-};
+### 类型
 
-let result = memory_tools.get_memory().call(get_args).await?;
-if let Some(data) = result.data {
-    println!("Memory: {}", data);
+#### StoreMemoryArgs
+
+```rust
+pub struct StoreMemoryArgs {
+    pub thread_id: String,    // 会话ID
+    pub role: String,          // 角色: "user" | "assistant" | "system"
+    pub content: String,       // 消息内容
 }
 ```
 
-## Configuration
-
-You can customize the memory tools with a `MemoryToolConfig`:
+#### QueryMemoryArgs
 
 ```rust
-use cortex_mem_rig::MemoryToolConfig;
-
-let config = MemoryToolConfig {
-    default_user_id: Some("default_user".to_string()),
-    default_agent_id: Some("default_agent".to_string()),
-    max_search_results: Some(20),
-    auto_enhance: Some(true),
-    search_similarity_threshold: Some(0.7),
-};
-
-let memory_tools = create_memory_tools(
-    memory_manager,
-    &global_config,
-    Some(config),
-);
+pub struct QueryMemoryArgs {
+    pub query: String,             // 搜索查询
+    pub thread_id: Option<String>, // 可选：限定会话
+    pub limit: Option<usize>,      // 可选：结果数量（默认10）
+}
 ```
 
-## Integration with RIG Agent Framework
+---
 
-The tools are designed to work seamlessly with the RIG AI agent framework:
+## 🔧 与Rig框架集成
+
+虽然这个版本不直接依赖`rig-core`，但你可以轻松集成到Rig框架中：
 
 ```rust
-use rig::agent::Agent;
-use rig::providers::openai;
+use rig::tool::Tool;
+use cortex_mem_rig::{MemoryTools, StoreMemoryArgs};
+use std::sync::Arc;
 
-// Create an agent with memory capabilities
-let agent = Agent::builder()
-    .model(openai::GPT_4_O) // Example model
-    .preamble("You are a helpful assistant with access to memories.")
-    .tool(memory_tools.store_memory())
-    .tool(memory_tools.query_memory())
-    .tool(memory_tools.list_memories())
-    .tool(memory_tools.get_memory())
-    .build();
+// 创建你自己的Tool包装器
+struct MyMemoryTool {
+    tools: Arc<MemoryTools>,
+}
 
-// The agent can now use these tools to interact with memories
+// 实现Rig的Tool trait
+impl Tool for MyMemoryTool {
+    // ... 实现细节
+}
 ```
 
-## API Reference
+---
 
-### Store Memory
+## 📝 测试
 
-Stores a new memory in the system.
+运行测试：
 
-**Parameters:**
-- `content` (required, string): The content of the memory
-- `user_id` (optional, string): User ID associated with the memory
-- `agent_id` (optional, string): Agent ID associated with the memory
-- `memory_type` (optional, string): Type of memory (conversational, procedural, factual, semantic, episodic, personal)
-- `topics` (optional, array of strings): Topics to associate with the memory
+```bash
+cargo test -p cortex-mem-rig
+```
 
-### Query Memory
+测试包含：
+- 存储消息测试
+- 查询记忆测试
+- 集成测试
 
-Searches memories using semantic similarity.
+---
 
-**Parameters:**
-- `query` (required, string): Query string for semantic search
-- `k` (optional, integer): Maximum number of results to return (default: 10)
-- `memory_type` (optional, string): Type of memory to filter by
-- `min_salience` (optional, number): Minimum salience/importance score threshold (0-1)
-- `topics` (optional, array of strings): Topics to filter memories by
-- `user_id` (optional, string): User ID to filter memories
-- `agent_id` (optional, string): Agent ID to filter memories
+## 🆚 与V1的区别
 
-### List Memories
+| 特性 | V1 | V2 (简化版) |
+|------|----|----|
+| Rig框架集成 | ✅ 完整集成 | ❌ 移除依赖 |
+| 核心功能 | ✅ | ✅ |
+| 独立使用 | ❌ 需要rig-core | ✅ 可独立使用 |
+| API复杂度 | 高 | 低 |
 
-Retrieves memories with optional filtering.
+**为什么简化？**
+- 移除对外部框架的硬依赖
+- 提供更灵活的集成方式
+- 降低编译时间和二进制大小
+- 允许用户自行选择集成方式
 
-**Parameters:**
-- `limit` (optional, integer): Maximum number of memories to return (default: 100, max: 1000)
-- `memory_type` (optional, string): Type of memory to filter by
-- `user_id` (optional, string): User ID to filter memories
-- `agent_id` (optional, string): Agent ID to filter memories
+---
 
-### Get Memory
+## 🔄 迁移指南
 
-Retrieves a specific memory by its exact ID.
-
-**Parameters:**
-- `memory_id` (required, string): Exact ID of the memory to retrieve
-
-## Migration from Previous Versions
-
-If you were using the old single-tool interface, you can still use the backward-compatible wrapper:
+如果你之前使用V1版本：
 
 ```rust
-// Old way (deprecated)
-use cortex_mem_rig::{create_memory_tool, MemoryTool};
+// V1
+let tools = MemoryTools::new(memory_manager, config);
+let result = tools.store_memory(payload).await?;
 
-let tool = create_memory_tool(memory_manager, &config, None);
-
-// New way (recommended)
-use cortex_mem_rig::create_memory_tools;
-
-let tools = create_memory_tools(memory_manager, &config, None);
+// V2
+let tools = MemoryTools::from_data_dir("./data").await?;
+let result = tools.store_memory(StoreMemoryArgs {
+    thread_id: "session".to_string(),
+    role: "user".to_string(),
+    content: "message".to_string(),
+}).await?;
 ```
 
-The old `MemoryTool` is still available but marked as deprecated. It now internally uses the new tool structure, so your existing code will continue to work, but you should migrate to the new interface for cleaner code and better type safety.
+主要变化：
+1. 不再依赖`MemoryManager`，改用`MemoryOperations`
+2. 参数从`payload`改为类型化的`Args`结构体
+3. 移除了MCP工具定义（已移至`cortex-mem-mcp`）
 
-## Examples
+---
 
-See the `examples` directory for complete working examples:
-- `memory_tools_example.rs`: Basic usage example with all tools
+## 📚 相关项目
 
-## Architecture
+- **cortex-mem-tools** - 底层操作库
+- **cortex-mem-core** - 核心功能
+- **cortex-mem-service** - HTTP REST API
+- **cortex-mem-mcp** - Claude Desktop集成
 
-The crate shares the core functionality with cortex-mem-mcp through the cortex-mem-tools crate:
+---
 
-1. `cortex-mem-tools`: Provides shared operations and tool definitions
-2. `cortex-mem-rig`: Implements RIG-specific tool interfaces
-3. `cortex-mem-mcp`: Implements MCP-specific tool interfaces
+## 🤝 贡献
 
-Both rig and mcp use the same underlying operations, ensuring consistent behavior across different AI frameworks.
+欢迎提交Issue和Pull Request！
 
-## License
+如果需要完整的Rig框架支持，请提交Feature Request。
 
-This project is licensed under the MIT License.
+---
+
+## 📄 许可证
+
+MIT License - 查看 [LICENSE](../LICENSE) 文件了解详情
