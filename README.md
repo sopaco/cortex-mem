@@ -29,7 +29,65 @@
 
 **Cortex Memory** is a complete, production-ready framework for giving your AI applications a long-term memory. It moves beyond simple chat history, providing an intelligent memory system with a **hierarchical three-tier memory architecture** (L0 Abstract → L1 Overview → L2 Detail) that automatically extracts, organizes, and optimizes information to make your AI agents smarter and more personalized.
 
-Powered by Rust and LLMs, Cortex Memory analyzes conversations, deduces facts, and stores them in a structured, searchable knowledge base using **Qdrant vector database** for semantic search. This allows your agent to remember user preferences, past interactions, and key details, leading to more natural and context-aware conversations.
+Cortex Memory uses a sophisticated pipeline to process and manage memories, centered around a **hybrid storage architecture** combining **virtual-filesystem** durability with vector-based **semantic search**.
+
+```mermaid
+flowchart TB
+    subgraph Input["Input Layer"]
+        User[User Message]
+        Agent[Agent Message]
+        CLI[CLI Commands]
+        API[REST API]
+        MCP[MCP Protocol]
+    end
+
+    subgraph Core["Core Engine (cortex-mem-core)"]
+        Session[Session Manager]
+        Extractor[Memory Extractor]
+        Indexer[Auto Indexer]
+        Search[Vector Search Engine]
+    end
+
+    subgraph Storage["Storage Layer"]
+        FS[(Filesystem<br/>cortex:// URI)]
+        Qdrant[(Qdrant<br/>Vector Index)]
+    end
+
+    subgraph External["External Services"]
+        LLM[LLM Provider<br/>Extraction & Analysis]
+        Embed[Embedding API<br/>Vector Generation]
+    end
+
+    User --> Session
+    Agent --> Session
+    CLI --> Core
+    API --> Core
+    MCP --> Core
+
+    Session -->|Store Messages| FS
+    Session -->|Trigger Extraction| Extractor
+    
+    Extractor -->|Analyze Content| LLM
+    Extractor -->|Store Memories| FS
+    
+    Indexer -->|Watch Changes| FS
+    Indexer -->|Generate Embeddings| Embed
+    Indexer -->|Index Vectors| Qdrant
+    
+    Search -->|Query Embedding| Embed
+    Search -->|Vector Search| Qdrant
+    Search -->|Retrieve Content| FS
+```
+
+**Cortex Memory** organizes data using a **virtual filesystem** approach with the `cortex://` URI scheme:
+
+```
+cortex://{dimension}/{scope}/{category}/{id}
+```
+
+<hr />
+
+# 😺 Why Use Cortex Memory?
 
 <p align="center">
   <strong>Transform your stateless AI into an intelligent, context-aware partner.</strong>
@@ -65,17 +123,6 @@ Powered by Rust and LLMs, Cortex Memory analyzes conversations, deduces facts, a
     </tr>
   </table>
 </div>
-
-<hr />
-
-# 😺 Why Use Cortex Memory?
-
-- <strong>Build Smarter Agents:</strong> Give your AI the ability to learn and remember, leading to more intelligent and useful interactions.
-- <strong>Enhance User Experience:</strong> Create personalized, context-aware experiences that delight users and build long-term engagement.
-- <strong>Automated Memory Management:</strong> Let the system handle the complexity of extracting, storing, and optimizing memories. No more manual data management.
-- <strong>High Performance & Scalability:</strong> Built with Rust, Cortex Memory is fast, memory-safe, and ready to scale with your application.
-- <strong>Flexible & Extensible:</strong> Integrate with your existing systems via a REST API, CLI, or direct library usage.
-- <strong>Insightful Analytics:</strong> Use the provided web dashboard to visualize and understand your agent's memory.
 
 🌟 <strong>For:</strong>
 - Developers building LLM-powered chatbots and agents.
