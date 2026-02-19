@@ -1,487 +1,381 @@
-**Technical Documentation: Session Management Domain**
-
-**Cortex-Mem System Architecture**  
-**Version**: 1.0  
-**Last Updated**: 2026-02-17 16:40:50 (UTC)
+ **Session Management Domain**
+**Technical Implementation Documentation**
 
 ---
 
-## 1. Executive Summary
+**Generation Time:** 2024-01-15T09:30:00Z  
+**System Version:** Cortex-Mem Core Infrastructure  
+**Domain Classification:** Core Business Domain  
+**Complexity Index:** 7.0/10  
 
-The **Session Management Domain** is a core business domain within the Cortex-Mem architecture responsible for comprehensive conversation lifecycle management. It provides the foundational infrastructure for organizing multi-turn conversations with full temporal context, persistent storage, and automated semantic indexing capabilities.
+---
 
-This domain implements a stateful session orchestration system that captures conversation timelines, manages participant roles, and triggers intelligent content processing pipelines upon session closure. By integrating with the Storage Infrastructure, LLM Integration, and Vector Search domains, it enables both temporal navigation and semantic retrieval of conversation history.
+## 1. Domain Overview
+
+The **Session Management Domain** is a foundational component of the Cortex-Mem architecture responsible for orchestrating conversation state, message persistence, and session lifecycle transitions. It serves as the primary interface for tracking temporal conversation threads, managing participant metadata, and triggering downstream memory extraction processes.
+
+As a core business domain, Session Management bridges the gap between ephemeral conversational interactions and persistent memory storage. It implements a hierarchical storage model that organizes messages chronologically while maintaining loose coupling between storage mechanisms, AI processing pipelines, and event-driven automation workflows.
+
+### 1.1 Domain Responsibilities
+
+- **Conversation State Management**: Tracking active, closed, and archived conversation sessions
+- **Temporal Message Organization**: Hierarchical indexing of messages by year, month, and day
+- **Lifecycle Event Emission**: Publishing `SessionEvent` notifications for system-wide reactivity
+- **Automated Memory Extraction**: Triggering AI-powered analysis upon session closure
+- **Participant Tracking**: Maintaining user and agent metadata across conversation threads
+
+### 1.2 Strategic Position
+
+The domain sits at the intersection of user interaction and automated memory processing. While the **Automation Management Domain** handles background indexing and the **Extraction Engine Domain** performs AI analysis, Session Management provides the structural foundation that determines when and how these processes trigger.
+
+---
+
+## 2. Architectural Components
+
+The Session Management Domain implements a modular architecture consisting of three specialized sub-modules, coordinated by a central controller:
+
+### 2.1 Component Structure
+
+```rust
+// Domain structure overview
+cortex-mem-core/src/session/
+├── mod.rs              // Domain exports and public interfaces
+├── manager.rs          // SessionManager: Lifecycle orchestration
+├── message.rs          // MessageStorage: Individual message handling
+└── timeline.rs         // TimelineGenerator: Temporal aggregation
+```
+
+### 2.2 Session Lifecycle Manager (`manager.rs`)
+
+The **SessionManager** acts as the domain controller, implementing the primary interface for session operations and state transitions.
 
 **Key Capabilities:**
-- Hierarchical session lifecycle management (Active → Closed → Archived)
-- Temporal message persistence with URI-based addressing (`cortex://session/`)
-- Automated vector indexing of conversation content to Qdrant
-- LLM-powered structured memory extraction (preferences, entities, events, cases)
-- Multi-party participant tracking with role-based categorization
+- **Session Creation**: Initializes new conversation threads with unique identifiers and participant metadata
+- **State Transitions**: Manages lifecycle states (Active → Closed → Archived)
+- **Event Coordination**: Publishes `SessionEvent::Created`, `SessionEvent::MessageAdded`, and `SessionEvent::Closed` via the EventBus
+- **Auto-Extraction Orchestration**: Conditionally triggers `MemoryExtractor` upon session closure when `auto_extract_on_close` is enabled
+
+**Primary Interface Methods:**
+```rust
+impl SessionManager {
+    pub async fn create_session(&self, thread_id: String) -> Result<SessionMetadata, SessionError>;
+    pub async fn add_message(&self, thread_id: &str, role: Role, content: &str) -> Result<Message, SessionError>;
+    pub async fn close_session(&self, thread_id: &str) -> Result<SessionMetadata, SessionError>;
+    pub async fn list_messages(&self, thread_id: &str) -> Result<Vec<Message>, SessionError>;
+}
+```
+
+### 2.3 Message Manager (`message.rs`)
+
+The **MessageStorage** component handles the persistence and retrieval of individual conversation messages, abstracting the filesystem operations required for markdown-based storage.
+
+**Key Capabilities:**
+- **Markdown Serialization**: Converts message objects to markdown format with embedded YAML frontmatter metadata
+- **URI Generation**: Constructs deterministic resource identifiers following the `cortex://` scheme
+- **CRUD Operations**: Async read/write operations for individual messages
+- **Metadata Extraction**: Parsing of message timestamps, roles, and content from filesystem storage
+
+**Storage Format:**
+```markdown
+---
+id: "msg_12345"
+role: "user"
+timestamp: "2024-01-15T09:30:00Z"
+thread_id: "thread_67890"
+---
+Message content in markdown format...
+```
+
+### 2.4 Timeline Manager (`timeline.rs`)
+
+The **TimelineGenerator** implements hierarchical indexing strategies that optimize message retrieval and navigation across large conversation histories.
+
+**Key Capabilities:**
+- **Hierarchical Indexing**: Automatic generation of daily (`index.md`), monthly, and yearly index files
+- **Temporal Aggregation**: Grouping messages by time periods for efficient browsing
+- **URI Resolution**: Mapping logical timeline queries to physical filesystem paths
+- **Pagination Support**: Cursor-based navigation through large message volumes
+
+**Directory Structure:**
+```
+cortex://session/{thread_id}/timeline/
+├── 2024-01/
+│   ├── 15/
+│   │   ├── 09_30_00_msg_001.md
+│   │   ├── 09_31_45_msg_002.md
+│   │   └── index.md          // Daily index
+│   └── index.md              // Monthly index
+└── index.md                  // Yearly index
+```
 
 ---
 
-## 2. Architecture Overview
+## 3. Data Model & Storage Architecture
 
-### 2.1 Domain Position
+### 3.1 URI Schema
 
-The Session Management Domain operates as a core business domain within the Cortex-Mem layered architecture, maintaining clear dependencies with infrastructure and sibling business domains:
+The domain implements a standardized resource addressing scheme using the `cortex://` protocol:
 
-```mermaid
-flowchart TB
-    subgraph SessionDomain["Session Management Domain"]
-        SM[Session Manager]
-        MS[Message Storage]
-        TG[Timeline Generator]
-        AI[Auto Indexer]
-        ME[Memory Extractor]
-        PM[Participant Manager]
-    end
-    
-    subgraph Dependencies["External Dependencies"]
-        FS[(Storage Infrastructure<br/>Filesystem Ops)]
-        LLM[LLM Integration Domain]
-        VS[Vector Search Domain]
-        MM[Memory Management Domain]
-    end
-    
-    SM -->|Persists Metadata| FS
-    MS -->|Writes Markdown| FS
-    TG -->|Generates Indexes| FS
-    AI -->|Vector Storage| VS
-    AI -->|Embeddings| LLM
-    ME -->|Extraction| LLM
-    ME -->|Saves Memories| MM
-    SM -->|Tracks| PM
-    
-    style SessionDomain fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+| Resource Type | URI Pattern | Example |
+|--------------|-------------|---------|
+| Session Root | `cortex://session/{thread_id}` | `cortex://session/thread_123` |
+| Timeline | `cortex://session/{id}/timeline/{YYYY-MM}/{DD}` | `cortex://session/thread_123/timeline/2024-01/15` |
+| Message | `cortex://session/{id}/timeline/{YYYY-MM}/{DD}/{HH_MM_SS}_{msg_id}.md` | `cortex://session/thread_123/timeline/2024-01/15/09_30_00_msg_001.md` |
+| Session Metadata | `cortex://session/{id}/.session.json` | `cortex://session/thread_123/.session.json` |
+
+### 3.2 Session Metadata Schema
+
+Session persistence utilizes JSON-based metadata files containing:
+
+```rust
+pub struct SessionMetadata {
+    pub thread_id: String,
+    pub status: SessionStatus,        // Active, Closed, Archived
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub closed_at: Option<DateTime<Utc>>,
+    pub participants: Vec<Participant>,
+    pub tags: Vec<String>,
+    pub auto_extract_on_close: bool,  // Feature flag for AI extraction
+    pub tenant_id: Option<String>,    // Multi-tenancy isolation
+}
 ```
 
-### 2.2 Component Hierarchy
+### 3.3 Message Structure
 
-| Component | Responsibility | Primary File |
-|-----------|---------------|--------------|
-| **Session Manager** | Lifecycle orchestration, state transitions, metadata management | `cortex-mem-core/src/session/manager.rs` |
-| **Message Storage** | Temporal persistence, markdown serialization, URI generation | `cortex-mem-core/src/session/message.rs` |
-| **Timeline Generator** | Hierarchical index generation (daily/monthly/yearly) | `cortex-mem-core/src/session/timeline.rs` |
-| **Auto Indexer** | Vector database indexing, batch processing, deduplication | `cortex-mem-core/src/automation/indexer.rs` |
-| **Memory Extractor** | LLM-powered structured extraction on session close | `cortex-mem-core/src/session/extraction.rs` |
-| **Participant Manager** | Multi-party participant registry and role assignment | `cortex-mem-core/src/session/participant.rs` |
+Individual messages are modeled as:
+
+```rust
+pub struct Message {
+    pub id: String,
+    pub thread_id: String,
+    pub role: Role,                   // User, Assistant, System
+    pub content: String,
+    pub timestamp: DateTime<Utc>,
+    pub metadata: HashMap<String, Value>,
+}
+```
 
 ---
 
-## 3. Core Workflows
+## 4. Core Business Workflows
 
-### 3.1 Session Lifecycle Management
+### 4.1 Session Creation Flow
 
-The session lifecycle follows a state machine pattern with three distinct states, persisted in `.session.json` metadata files:
+When initializing a new conversation thread:
 
-**State Transitions:**
-```
-Active → Closed → Archived
-```
+1. **Validation**: Verify tenant isolation and thread ID uniqueness
+2. **Metadata Initialization**: Create `SessionMetadata` with `status: Active`
+3. **Filesystem Provisioning**: Ensure directory structure exists under `cortex://session/{thread_id}/`
+4. **Persistence**: Write `.session.json` to filesystem
+5. **Event Publication**: Emit `SessionEvent::Created` via EventBus
 
-**Operational Flow:**
+**Code Path:** `SessionManager::create_session()` → `CortexFilesystem::write()`
+
+### 4.2 Message Addition Flow
+
+When appending a message to an active session:
+
+1. **URI Generation**: Construct resource path based on current UTC timestamp: `{HH_MM_SS}_{message_id}.md`
+2. **Markdown Serialization**: Convert message to markdown with YAML frontmatter
+3. **Filesystem Write**: Persist via `CortexFilesystem` abstraction
+4. **Index Updates**: Trigger `TimelineGenerator::generate_daily_index()` to update temporal indices
+5. **Event Emission**: Publish `SessionEvent::MessageAdded` for real-time indexing triggers
+
+**Code Path:** `SessionManager::add_message()` → `MessageStorage::save_message()` → `TimelineGenerator::generate_daily_index()`
+
+### 4.3 Session Closure & Memory Extraction Flow
+
+The closure workflow represents the critical handoff between conversational state management and automated knowledge extraction:
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant C as Client
-    participant SM as SessionManager
-    participant FS as CortexFilesystem
-    participant ME as MemoryExtractor
-    participant LLM as LLMClient
+    participant User
+    participant SessionManager
+    participant MessageStorage
+    participant MemoryExtractor
+    participant LLMClient
+    participant EventBus
+    participant Filesystem as CortexFilesystem
     
-    rect rgb(230, 245, 230)
-        Note over C,FS: Session Initialization
-        C->>SM: create_session(thread_id)
-        SM->>FS: write .session.json
-        Note right of FS: cortex://session/{thread_id}/<br/>.session.json
-        SM-->>C: SessionMetadata (Active)
-    end
+    User->>SessionManager: close_session(thread_id)
+    SessionManager->>Filesystem: read(.session.json)
+    SessionManager->>SessionManager: update status to Closed
+    SessionManager->>Filesystem: write(.session.json)
     
-    rect rgb(255, 243, 224)
-        Note over C,FS: Message Accumulation
-        loop Message Loop
-            C->>SM: append_message(role, content)
-            SM->>FS: write timeline/{YYYY-MM}/{DD}/{HH_MM_SS}_{id}.md
-        end
-    end
-    
-    rect rgb(227, 242, 253)
-        Note over C,LLM: Session Closure & Extraction
-        C->>SM: close_session(thread_id)
-        SM->>FS: update state to Closed
+    alt auto_extract_on_close == true
+        SessionManager->>MessageStorage: list_messages(thread_id)
+        MessageStorage->>Filesystem: list(cortex://.../timeline/...)
+        MessageStorage-->>SessionManager: [message URIs]
         
-        opt auto_extract_on_close enabled
-            SM->>ME: extract(messages)
-            ME->>LLM: analyze conversation
-            LLM-->>ME: structured JSON
-            ME->>FS: write to user/ & agent/ dimensions
-        end
+        SessionManager->>MemoryExtractor: extract(messages)
+        MemoryExtractor->>LLMClient: analyze conversation
+        LLMClient-->>MemoryExtractor: ExtractedMemories
         
-        SM-->>C: SessionMetadata (Closed)
+        MemoryExtractor->>Filesystem: save_preferences(), save_entities()
+        MemoryExtractor-->>SessionManager: ExtractionStats
     end
-```
-
-**Implementation Details:**
-- Session metadata is stored as JSON at `cortex://session/{thread_id}/.session.json`
-- State transitions are atomic filesystem operations
-- Closure triggers conditional memory extraction based on `SessionConfig.auto_extract_on_close` flag
-- Supports hierarchical organization through `parent_thread_id` for conversation threading
-
-### 3.2 Temporal Message Storage
-
-Messages are persisted using a hierarchical date-based directory structure that enables efficient temporal queries and manual navigation:
-
-**URI Schema:**
-```
-cortex://session/{thread_id}/timeline/{YYYY-MM}/{DD}/{HH_MM_SS}_{message_id}.md
-```
-
-**Storage Format:**
-Messages are serialized to Markdown with structured metadata headers:
-
-```markdown
----
-id: msg_001
-role: user
-timestamp: 2024-01-15T14:30:00Z
-thread_id: thread_abc123
----
-
-👤 **User** (2024-01-15 14:30)
-
-Message content here...
-```
-
-**Factory Methods:**
-The `MessageStorage` component provides role-specific factory methods:
-- `MessageStorage::user(content)` → Role::User
-- `MessageStorage::assistant(content)` → Role::Assistant  
-- `MessageStorage::system(content)` → Role::System
-
-### 3.3 Automated Vector Indexing
-
-The AutoIndexer implements a batch processing pipeline for semantic indexing of session content:
-
-**Indexing Workflow:**
-
-```mermaid
-flowchart LR
-    A[Scan Timeline<br/>Directory] --> B[Parse Markdown<br/>Messages]
-    B --> C[Deduplication<br/>Check VS]
-    C --> D[Batch Embedding<br/>Generation]
-    D --> E[Vector Store<br/>Insertion]
-    E --> F[Progress<br/>Callback]
     
-    style D fill:#e3f2fd,stroke:#1565c0
-    style E fill:#fff3e0,stroke:#ef6c00
+    SessionManager->>EventBus: publish(SessionEvent::Closed)
+    EventBus-->>AutomationManager: Trigger downstream processing
 ```
 
-**Technical Specifications:**
-- **Batch Size**: Configurable, default 10 messages per batch
-- **Deduplication**: Uses `scroll_ids()` queries to check existing vector IDs before processing
-- **Vector ID Format**: `cortex://session/{thread_id}/messages/{message_id}`
-- **Async Processing**: Non-blocking indexing with progress callbacks for UI feedback
-- **Content Extraction**: Parses markdown content, excluding metadata headers for embedding
+**Workflow Steps:**
 
-**Configuration:**
-```rust
-IndexerConfig {
-    auto_index: bool,      // Enable reactive indexing
-    batch_size: usize,     // Default: 10
-    async_index: bool,     // Background processing
-}
-```
+1. **State Transition**: Update `SessionMetadata.status` from `Active` to `Closed` and set `closed_at` timestamp
+2. **Conditional Extraction**: If `auto_extract_on_close` is enabled:
+   - Recursively read all `.md` messages from the session timeline
+   - Build LLM prompt with conversation context and existing profile data
+   - Invoke `MemoryExtractor` to identify facts, decisions, and entities
+   - Parse JSON response with fallback markdown extraction
+   - Filter by confidence threshold and deduplicate using LCS (Longest Common Subsequence) similarity
+   - Merge into user/agent profiles with category limits enforcement
+3. **Event Publication**: Emit `SessionEvent::Closed` to trigger:
+   - **Automation Management Domain**: Auto-indexing of finalized session
+   - **Profile Management Domain**: Profile persistence updates
+   - **Layer Management Domain**: L0/L1 summary generation for search optimization
 
-### 3.4 Structured Memory Extraction
-
-Upon session closure, the system can automatically extract structured memories using LLM analysis, implementing an OpenViking-style extraction pattern:
-
-**Extraction Categories:**
-1. **Preferences**: User preferences, likes/dislikes, settings
-2. **Entities**: Named entities, people, organizations, locations
-3. **Events**: Significant occurrences, milestones, decisions
-4. **Cases**: Agent-specific problem-solving patterns and solutions
-
-**Persistence Targets:**
-- Preferences → `cortex://user/preferences/`
-- Entities → `cortex://user/entities/`
-- Events → `cortex://user/events/`
-- Cases → `cortex://agent/cases/`
-
-**Process Flow:**
-1. Collect all messages from session timeline via recursive filesystem scan
-2. Build structured extraction prompt containing full conversation context
-3. LLM analyzes content and outputs JSON with categorized memories
-4. Parse response and generate embeddings for extracted items
-5. Persist to appropriate dimensional storage with metadata linking to source session
+**Code Path:** `SessionManager::close_session()` → `MemoryExtractor::extract_from_thread()` → `EventBus::send(SessionEvent::Closed)`
 
 ---
 
-## 4. Data Structures
+## 5. Implementation Details
 
-### 4.1 Core Types
+### 5.1 Asynchronous Architecture
 
-**SessionMetadata**
+The domain utilizes Rust's async/await paradigm for I/O-bound operations:
+
+- **Filesystem Operations**: All CRUD operations are async, utilizing `tokio::fs` for non-blocking file I/O
+- **Event Publishing**: Async channel-based event bus (`tokio::mpsc`) for decoupled communication
+- **LLM Integration**: Non-blocking HTTP client calls to external embedding/completion APIs
+
+**Example Pattern:**
 ```rust
-struct SessionMetadata {
-    thread_id: String,
-    state: SessionState,           // Active, Closed, Archived
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
-    closed_at: Option<DateTime<Utc>>,
-    participant_ids: Vec<String>,
-    message_count: usize,
-    tags: Vec<String>,
-    parent_thread_id: Option<String>,
-    auto_extract_on_close: bool,
+pub async fn add_message(&self, thread_id: &str, content: &str) -> Result<Message, Error> {
+    let message = Message::new(thread_id, content);
+    let uri = self.message_storage.save_message(&message).await?;
+    self.event_bus.send(SessionEvent::MessageAdded { uri }).await?;
+    Ok(message)
 }
 ```
 
-**Message**
+### 5.2 Serialization Strategy
+
+- **Messages**: Markdown format with YAML frontmatter (human-readable, version control friendly)
+- **Metadata**: JSON with serde for type-safe serialization
+- **Deterministic IDs**: URI-based vector IDs derived from content hash and path structure
+
+### 5.3 Error Handling
+
+Domain-specific errors are defined in `cortex-mem-core/src/error.rs`:
+
 ```rust
-struct Message {
-    id: String,
-    thread_id: String,
-    role: MessageRole,             // User, Assistant, System
-    content: String,
-    timestamp: DateTime<Utc>,
-    metadata: HashMap<String, Value>,
+pub enum SessionError {
+    NotFound(String),           // Thread ID does not exist
+    InvalidState(String),       // Operation on closed session
+    StorageError(Error),        // Filesystem I/O failure
+    SerializationError(Error),  // JSON/Markdown parsing failure
+    TenantMismatch(String),     // Cross-tenant access attempt
 }
 ```
 
-**Participant**
-```rust
-struct Participant {
-    id: String,
-    name: String,
-    role: ParticipantRole,         // User, Agent, System
-    metadata: ParticipantMetadata,
-}
-```
+### 5.4 Multi-Tenant Isolation
 
-### 4.2 Timeline Aggregation
+Session data is automatically scoped by `tenant_id`:
 
-The TimelineGenerator creates navigable index views at three aggregation levels:
-
-| Level | File | Content |
-|-------|------|---------|
-| **Daily** | `timeline/{YYYY-MM}/{DD}/index.md` | Chronological list of messages for specific day |
-| **Monthly** | `timeline/{YYYY-MM}/index.md` | Summary of days with message counts |
-| **Yearly** | `timeline/{YYYY}/index.md` | Overview of months with activity metrics |
+- **Filesystem**: Paths mapped to `/data/tenants/{tenant_id}/session/`
+- **Metadata**: `tenant_id` field persisted in `.session.json`
+- **Access Control**: All read operations filter by tenant context extracted from request headers or CLI arguments
 
 ---
 
-## 5. Integration Patterns
+## 6. Integration Points
 
-### 5.1 Dependency Injection
+### 6.1 Upstream Dependencies
 
-All components utilize Arc-based dependency injection for thread-safe async operations:
+**Core Infrastructure Domain:**
+- **CortexFilesystem**: Abstracts OS filesystem operations with `cortex://` URI resolution
+- **EventBus**: Async channel infrastructure for event publishing
+- **LLMClient**: OpenAI-compatible client for memory extraction (optional dependency via generics)
 
-```rust
-pub struct SessionManager {
-    filesystem: Arc<dyn CortexFilesystem>,
-    config: SessionConfig,
-    // Optional dependencies for advanced features
-    layer_manager: Option<Arc<dyn LayerManager>>,
-    llm_client: Option<Arc<dyn LLMClient>>,
-}
-```
+### 6.2 Downstream Consumers
 
-### 5.2 Interface Contracts
+**Automation Management Domain:**
+- Consumes `SessionEvent::Closed` to trigger auto-indexing workflows
+- Uses `SessionManager` to list messages for batch processing
 
-**CortexFilesystem Trait**
-All storage operations abstract through the filesystem interface:
-- `read(uri: &str) -> Result<String>`
-- `write(uri: &str, content: &str) -> Result<()>`
-- `list(dir_uri: &str) -> Result<Vec<String>>`
-- `exists(uri: &str) -> Result<bool>`
+**Extraction Engine Domain:**
+- `MemoryExtractor` processes conversation threads into structured memories
+- Updates `ProfileManager` with extracted facts and decisions
 
-**LLMClient Trait**
-Used for extraction workflows:
-- `complete(prompt: &str) -> Result<String>`
-- `complete_structured<T>(prompt: &str) -> Result<T>` where T: DeserializeOwned
+**Layer Management Domain:**
+- Generates L0 (abstract) and L1 (overview) summaries from L2 (raw) session content
+- Caches summaries in `cortex://session/{id}/.abstract.md` and `.overview.md`
 
-### 5.3 Cross-Domain Communication
-
-**With Storage Infrastructure Domain:**
-- All message content persisted via `FilesystemOperations`
-- URI resolution handled by `URIParser` (`cortex-mem-core/src/filesystem/uri.rs`)
-- Markdown serialization/deserialization in MessageStorage
-
-**With Vector Search Domain:**
-- AutoIndexer inserts to Qdrant via `VectorStore` trait
-- Uses `EmbeddingClient` for vector generation (1536-dimensional default)
-- Implements scroll-based deduplication before insertion
-
-**With LLM Integration Domain:**
-- MemoryExtractor utilizes `LLMClient` for content analysis
-- Prompt templates defined in `cortex-mem-core/src/llm/prompts.rs`
-- Structured extraction types in `cortex-mem-core/src/llm/extractor_types.rs`
+**Search Engine Domain:**
+- Queries timeline indexes for temporal filtering
+- Retrieves full message content for L2 layer search results
 
 ---
 
-## 6. Configuration
+## 7. Configuration & Usage
 
-### 6.1 Session Configuration
-
-```rust
-pub struct SessionConfig {
-    /// Automatically extract memories when session closes
-    pub auto_extract_on_close: bool,
-    
-    /// Enable vector indexing of messages
-    pub auto_index: bool,
-    
-    /// Batch size for indexing operations
-    pub index_batch_size: usize,
-    
-    /// Enable layered content generation (L0/L1)
-    pub enable_layer_generation: bool,
-}
-```
-
-### 6.2 Indexer Configuration
-
-Located in `cortex-mem-core/src/config.rs`:
+### 7.1 Initialization
 
 ```rust
-pub struct IndexerConfig {
-    pub auto_index: bool,
-    pub batch_size: usize,        // Default: 10
-    pub async_index: bool,
-    pub skip_existing: bool,      // Deduplication flag
-}
-```
-
----
-
-## 7. Usage Examples
-
-### 7.1 Creating and Managing a Session
-
-```rust
-use cortex_mem_core::session::{SessionManager, SessionConfig};
-use cortex_mem_core::filesystem::LocalFilesystem;
-
-// Initialize manager
-let fs = Arc::new(LocalFilesystem::new(data_dir));
-let config = SessionConfig {
-    auto_extract_on_close: true,
-    auto_index: true,
-    ..Default::default()
-};
-let manager = SessionManager::new(fs, config);
-
-// Create session
-let session = manager.create_session("user_123").await?;
-println!("Session created: {}", session.thread_id);
-
-// Add messages
-let message = manager
-    .create_message(&session.thread_id, MessageRole::User, "Hello, AI!")
-    .await?;
-```
-
-### 7.2 Manual Timeline Indexing
-
-```rust
-use cortex_mem_core::automation::AutoIndexer;
-
-let indexer = AutoIndexer::new(
+// With optional LLM client for auto-extraction
+let session_manager = SessionManager::new(
     filesystem.clone(),
-    embedding_client,
-    vector_store,
+    Some(llm_client),
+    Some(event_bus),
+    tenant_id
 );
-
-// Index specific thread
-let stats = indexer.index_thread("thread_abc123").await?;
-println!("Indexed: {}, Skipped: {}", stats.indexed, stats.skipped);
 ```
 
-### 7.3 URI Resolution
+### 7.2 Configuration Options
 
+| Option | Environment Variable | Default | Description |
+|--------|---------------------|---------|-------------|
+| `auto_extract_on_close` | `CORTEX_AUTO_EXTRACT` | `true` | Enable AI extraction on session close |
+| `session_timeout` | `CORTEX_SESSION_TIMEOUT` | `24h` | Automatic closure threshold for stale sessions |
+| `timeline_indexing` | `CORTEX_TIMELINE_INDEX` | `true` | Enable hierarchical index generation |
+
+### 7.3 Usage Patterns
+
+**Basic Session Management:**
 ```rust
-// Session metadata
-let meta_uri = format!("cortex://session/{}/.session.json", thread_id);
+// Create and manage a conversation
+let session = session_manager.create_session("thread_123".to_string()).await?;
+session_manager.add_message("thread_123", Role::User, "Hello").await?;
+session_manager.close_session("thread_123").await?; // Triggers extraction
+```
 
-// Specific message
-let msg_uri = format!(
-    "cortex://session/{}/timeline/{}/{}/{}_{}.md",
-    thread_id, "2024-01", "15", "14_30_00", "msg_001"
-);
+**Manual Timeline Navigation:**
+```rust
+// Access historical messages
+let messages = session_manager.list_messages("thread_123").await?;
+let daily_index = timeline_generator.get_daily_index("thread_123", "2024-01-15").await?;
 ```
 
 ---
 
 ## 8. Performance Considerations
 
-### 8.1 Concurrency Model
-- **Async/Await**: All I/O operations (filesystem, LLM calls) use Tokio async runtime
-- **Parallel Processing**: Message indexing and extraction run in background tasks
-- **Thread Safety**: Arc-based sharing ensures safe concurrent access to session state
-
-### 8.2 Storage Optimization
-- **Deduplication**: AutoIndexer checks vector store before re-indexing
-- **Batch Processing**: Configurable batch sizes prevent memory pressure during large session indexing
-- **Lazy Loading**: Session metadata loaded on-demand; message content streamed during extraction
-
-### 8.3 Caching Strategy
-- **Layer Cache**: Generated L0/L1 abstractions cached in filesystem (if LayerManager enabled)
-- **Index Caches**: Timeline indexes generated once and persisted as markdown
-- **Vector Cache**: Qdrant HNSW indices provide sub-millisecond similarity search
+- **Batch Processing**: Message listing operations utilize streaming iterators to handle large conversation histories
+- **Lazy Loading**: Timeline indexes are generated on-demand and cached to filesystem
+- **Event-Driven Decoupling**: Session closure returns immediately; extraction occurs asynchronously via Automation Manager
+- **Filesystem Optimization**: Hierarchical directory structure prevents single-directory file count limitations
 
 ---
 
-## 9. Error Handling
+## 9. Conclusion
 
-The domain implements comprehensive error handling for filesystem and network operations:
+The Session Management Domain provides the structural backbone for Cortex-Mem's persistent memory capabilities. By implementing a clear separation between message storage, temporal indexing, and lifecycle management—while maintaining tight integration with AI extraction pipelines—it enables both high-performance conversation tracking and sophisticated automated knowledge processing.
 
-| Error Type | Handling Strategy |
-|------------|------------------|
-| **Filesystem IO** | Propagates via `Result<T, SessionError>` with context |
-| **LLM Timeout** | Extraction continues with partial results; logged as warning |
-| **Vector Store Unavailable** | Indexing queued for retry; session operations continue |
-| **Parse Errors** | Markdown parsing failures logged; message skipped during indexing |
+The domain's adherence to the `cortex://` URI abstraction and event-driven architecture ensures compatibility with downstream automation workflows while maintaining flexibility for multi-tenant deployments and diverse interface integrations (CLI, HTTP, MCP).
 
----
-
-## 10. Appendix
-
-### 10.1 File Structure Reference
-
-```
-cortex-mem-core/src/session/
-├── mod.rs              # Public API exports
-├── manager.rs          # SessionManager implementation
-├── timeline.rs         # TimelineGenerator and aggregation
-├── message.rs          # Message struct and MessageStorage
-├── participant.rs      # Participant tracking
-└── extraction.rs       # MemoryExtractor implementation
-
-cortex-mem-core/src/automation/
-└── indexer.rs          # AutoIndexer implementation
-```
-
-### 10.2 URI Schema Reference
-
-| Resource | URI Pattern | Example |
-|----------|-------------|---------|
-| Session Metadata | `cortex://session/{id}/.session.json` | `cortex://session/abc/.session.json` |
-| Message | `cortex://session/{id}/timeline/{YYYY-MM}/{DD}/{HH_MM_SS}_{msg_id}.md` | `cortex://session/abc/timeline/2024-01/15/14_30_00_msg1.md` |
-| Daily Index | `cortex://session/{id}/timeline/{YYYY-MM}/{DD}/index.md` | `cortex://session/abc/timeline/2024-01/15/index.md` |
-| Monthly Index | `cortex://session/{id}/timeline/{YYYY-MM}/index.md` | `cortex://session/abc/timeline/2024-01/index.md` |
-
-### 10.3 Emoji Conventions in Markdown
-
-| Role | Emoji | Header Format |
-|------|-------|---------------|
-| User | 👤 | `👤 **User** (ISO Timestamp)` |
-| Assistant | 🤖 | `🤖 **Assistant** (ISO Timestamp)` |
-| System | ⚙️ | `⚙️ **System** (ISO Timestamp)` |
-
----
-
-**Document End**
+**Key Files Reference:**
+- `/cortex-mem-core/src/session/manager.rs` - Session lifecycle implementation
+- `/cortex-mem-core/src/session/message.rs` - Message storage abstraction
+- `/cortex-mem-core/src/session/timeline.rs` - Temporal indexing logic
+- `/cortex-mem-core/src/session/mod.rs` - Domain public interface exports

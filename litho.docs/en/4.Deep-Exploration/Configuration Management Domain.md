@@ -1,467 +1,372 @@
- **Configuration Management Domain Technical Documentation**
+**Configuration Management Domain**
 
-**Document Version**: 1.0  
-**System**: Cortex-Mem Full-Stack Memory Infrastructure  
-**Domain Type**: Infrastructure Domain  
-**Complexity Rating**: 5/10  
-**Criticality**: High (Cross-Cutting Concern)
+**Version:** 1.0  
+**Last Updated:** 2026-02-19 04:01:33 (UTC)  
+**Scope:** Technical implementation documentation for the configuration management infrastructure of the Cortex-Mem system.
 
 ---
 
 ## 1. Domain Overview
 
-The **Configuration Management Domain** serves as the foundational infrastructure layer for the Cortex-Mem ecosystem, providing centralized, type-safe configuration handling across all system components. As an **Infrastructure Domain** within the Clean Architecture paradigm, it bridges external configuration sources—such as TOML files, environment variables, and OS-specific directories—with internal application structures.
+The **Configuration Management Domain** serves as the foundational infrastructure component responsible for centralizing, loading, and distributing system configuration across all Cortex-Mem interfaces and core services. Implemented primarily in the `cortex-mem-config` crate with extensions in `cortex-mem-core`, this domain ensures consistent, type-safe configuration access across the CLI, HTTP API, MCP server, and web dashboard.
 
-This domain ensures consistent configuration semantics across heterogeneous deployment contexts, including command-line tools, HTTP services, Model Context Protocol (MCP) servers, and embedded library usage. By abstracting configuration resolution complexities, it enables zero-configuration startup scenarios while supporting sophisticated multi-tenant deployments.
+**Key Responsibilities:**
+- Hierarchical configuration loading (TOML files → Environment variables → Hard-coded defaults)
+- Cross-platform data directory resolution
+- Tenant-aware configuration scoping and isolation
+- Type-safe configuration structs with serialization/deserialization support
+- Configuration validation and error propagation
+
+**Architectural Classification:** Infrastructure Domain  
+**Importance Level:** 9/10 (Foundation for all system operations)  
+**Complexity:** 7/10 (Moderate complexity due to fallback hierarchies and multi-tenancy)
 
 ---
 
-## 2. Architectural Position & Responsibilities
+## 2. Architectural Context
 
-### 2.1 Architectural Classification
-- **Layer**: Infrastructure Layer (Hexagonal Architecture)
-- **Pattern**: Cross-Cutting Concern / Configuration Adapter
-- **Dependencies**: Minimal external dependencies (`directories`, `serde`, `toml`, `anyhow`)
-- **Dependents**: All application domains (Interface Layer, Memory Management, Vector Search, Storage Infrastructure)
+Within the Cortex-Mem workspace architecture, the Configuration Management Domain resides in the **Infrastructure Layer**, providing essential services to upper layers without business logic dependencies.
 
-### 2.2 Core Responsibilities
-1. **Type-Safe Configuration Mapping**: Translates external unstructured configuration (TOML, ENV) into compile-time validated Rust structures
-2. **Hierarchical Resolution**: Implements cascading configuration resolution (Environment Variables → Configuration Files → System Defaults → Hardcoded Defaults)
-3. **Cross-Platform Directory Management**: Resolves OS-specific data directories using the `directories` crate (e.g., `~/Library/Application Support/` on macOS, `%APPDATA%` on Windows, `~/.local/share/` on Linux)
-4. **Deployment Context Abstraction**: Provides uniform configuration interfaces regardless of execution context (CLI vs. Service vs. Library)
-
-### 2.3 Domain Relationships
 ```mermaid
-flowchart TD
-    subgraph Infrastructure[Infrastructure Layer]
-        CM[Configuration Management Domain]
-        SI[Storage Infrastructure]
-        AD[Automation Domain]
+graph TD
+    subgraph InfrastructureLayer["基础设施层"]
+        CONFIG["配置管理"]
     end
     
-    subgraph Application[Application Layer]
-        IL[Interface Layer Domain]
-        MI[Monitoring & Insights]
+    subgraph ApplicationLayer["应用层"]
+        CLI["命令行界面"]
+        SERVICE["服务"]
+        MCP["MCP"]
     end
     
-    subgraph Core[Core Domain Layer]
-        MM[Memory Management]
-        VS[Vector Search]
-        LLM[LLM Integration]
+    subgraph CoreLayer["核心领域层"]
+        CORE["核心业务逻辑"]
     end
     
-    IL -->|Reads Config| CM
-    SI -->|Uses| CM
-    AD -->|Uses| CM
-    MI -->|Uses| CM
-    MM -->|Uses| CM
-    VS -->|Uses| CM
-    LLM -->|Uses| CM
+    CLI -- "依赖" --> CONFIG
+    SERVICE -- "依赖" --> CONFIG
+    MCP -- "依赖" --> CONFIG
+    CORE -- "扩展" --> CONFIG
+    
+    CONFIG -- "使用" --> ENV["环境变量"]
+    CONFIG -- "使用" --> FS["文件系统"]
+    CONFIG -- "使用" --> PROJDIRS["系统路径"]
+```
+
+**Dependency Flow:**
+- **Upstream Dependencies:** `serde` (serialization), `anyhow` (error handling), `directories` (cross-platform paths), `std::env` (environment access)
+- **Downstream Consumers:** All application interfaces (CLI, HTTP, MCP), Core Infrastructure services (LLM client, Vector Store, Filesystem abstraction), and automation components
+
+---
+
+## 3. Core Components
+
+The domain is structured into three specialized sub-modules, each addressing distinct configuration concerns:
+
+### 3.1 Config Loader
+**Code Path:** `/cortex-mem-config/src/lib.rs`
+
+The primary entry point for configuration management, responsible for orchestrating the loading sequence from external sources into strongly-typed Rust structs.
+
+**Key Functions:**
+- `Config::load(path: &str) -> Result<Config>`: Main entry point for deserialization
+- `CortexConfig::default_data_dir() -> PathBuf`: Implements the three-tier directory resolution strategy
+- `EmbeddingConfig::default()`: Provides environment-aware default values
+
+**Implementation Pattern:**
+```rust
+// Hierarchical loading: File -> Env -> Defaults
+pub fn load(path: &str) -> anyhow::Result<Config> {
+    let content = fs::read_to_string(path)?;
+    let config: Config = toml::from_str(&content)?;
+    // Apply environment variable overrides and fallbacks
+    Ok(config.resolve_env())
+}
+```
+
+### 3.2 Multi-Tenant Configuration
+**Code Path:** `/cortex-mem-core/src/config.rs`
+
+Extends base configuration with tenant-scoping capabilities, enabling SaaS deployments where multiple tenants share a single instance while maintaining data isolation.
+
+**Key Functions:**
+- `QdrantConfig::with_tenant_id(tenant_id: &str)`: Applies tenant suffixes to collection names
+- `LLMConfig::from_env()`: Loads tenant-specific LLM credentials from environment variables
+
+### 3.3 Configuration Builder
+**Code Path:** `/cortex-mem-core/src/config.rs`
+
+Provides a fluent API for programmatic configuration construction, primarily used during system initialization and testing scenarios.
+
+**Key Functions:**
+- `QdrantConfig::builder()`: Initializes builder pattern for vector store configuration
+- `CortexMemBuilder`: Orchestrates dependency wiring based on configuration state
+
+---
+
+## 4. Configuration Resolution Strategy
+
+The domain implements a **cascading priority system** for configuration values, ensuring flexibility across deployment environments:
+
+| Priority | Source | Use Case |
+|----------|--------|----------|
+| 1 | CLI Arguments | Runtime overrides (e.g., `--data-dir`) |
+| 2 | Environment Variables | Containerized deployments, secrets management |
+| 3 | TOML Configuration File | Persistent environment-specific settings |
+| 4 | Application Defaults | Sensible fallbacks for local development |
+
+### 4.1 Data Directory Resolution Flow
+
+A critical function of this domain is resolving the data directory path using a robust fallback mechanism:
+
+```mermaid
+graph TD
+    A[Request data_dir] --> B{Environment Variable<br/>CORTEX_DATA_DIR set?}
+    B -->|Yes| C[Use Environment Value]
+    B -->|No| D{ProjectDirs available?}
+    D -->|Yes| E[Use System Data Directory<br/>com.cortex-mem.tars]
+    D -->|No| F[Use Local Fallback<br/>././.cortex]
+    C --> G[Return Resolved Path]
+    E --> G
+    F --> G
+```
+
+**Implementation Details:**
+```rust
+fn default_data_dir() -> PathBuf {
+    // Tier 1: Environment variable
+    if let Ok(dir) = env::var(\"CORTEX_DATA_DIR\") {
+        return PathBuf::from(dir);
+    }
+    
+    // Tier 2: System directories (cross-platform)
+    if let Some(proj_dirs) = ProjectDirs::from(\"com\", \"cortex-mem\", \"tars\") {
+        return proj_dirs.data_dir().join(\"cortex\");
+    }
+    
+    // Tier 3: Local fallback
+    PathBuf::from(\"././.cortex\")
+}
 ```
 
 ---
 
-## 3. Configuration Hierarchy & Schema
+## 5. Technical Implementation Details
 
-The domain implements a hierarchical configuration structure that mirrors the system's modular architecture:
+### 5.1 Type Safety and Serialization
 
-### 3.1 Root Configuration Structure (`Config`)
-The top-level configuration container aggregating all subsystem configurations:
+The domain leverages Rust's type system and `serde` to provide compile-time guarantees for configuration validity:
 
 ```rust
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
-    pub cortex: CortexConfig,      // Core system settings
-    pub qdrant: QdrantConfig,      // Vector database connection
-    pub embedding: EmbeddingConfig, // Text embedding service
-    pub llm: LLMConfig,            // Language model integration
-    pub server: ServerConfig,      // HTTP service settings
-    pub logging: LoggingConfig,    // Observability settings
+    pub cortex: CortexConfig,
+    pub embedding: EmbeddingConfig,
+    pub qdrant: QdrantConfig,
+    pub llm: LLMConfig,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CortexConfig {
+    pub data_dir: Option<PathBuf>,
+    pub auto_index: bool,
+    pub auto_extract: bool,
 }
 ```
 
-### 3.2 Subsystem Configurations
+**Key Features:**
+- **Strong Typing:** PathBuf for filesystem paths, URL types for endpoints
+- **Optional Fields:** `Option<T>` for non-mandatory configuration with default fallbacks
+- **Custom Deserializers:** Handling of environment variable interpolation within TOML strings
 
-#### **CortexConfig**
-Manages core system parameters and data directory resolution:
-- **Data Directory Resolution**: Implements three-tier fallback strategy:
-  1. `$CORTEX_DATA_DIR` environment variable
-  2. OS-specific application directory (`directories::ProjectDirs`)
-  3. Local fallback (`./.cortex`)
-- **Scope**: Defines the virtual filesystem root for `cortex://` URI scheme mapping
+### 5.2 Environment Variable Integration
 
-#### **QdrantConfig**
-Vector database connectivity parameters:
-- `url`: Qdrant service endpoint
-- `collection_name`: Vector collection identifier
-- `embedding_dim`: Dimensionality of stored vectors (default: 1536)
-- `api_key`: Optional authentication token
-
-#### **EmbeddingConfig**
-External embedding service integration (OpenAI-compatible):
-- `api_base_url`: Service endpoint (default: `https://api.openai.com/v1`)
-- `api_key`: Authentication credential
-- `model`: Model identifier (default: `text-embedding-3-small`)
-- `batch_size`: Processing batch optimization
-
-#### **LLMConfig**
-Language model provider configuration for content generation and extraction:
-- Provider-specific endpoints and authentication
-- Model selection parameters
-- Timeout and retry configurations
-
-#### **ServerConfig**
-HTTP REST API service parameters:
-- `host`: Bind address
-- `port`: Listen port
-- `cors_origins`: Cross-origin resource sharing policies
-
-#### **LoggingConfig**
-Observability infrastructure:
-- `enabled`: Boolean activation flag
-- `level`: Log verbosity (`error`, `warn`, `info`, `debug`, `trace`)
-- `log_directory`: Filesystem path for log file storage
-
----
-
-## 4. Technical Implementation
-
-### 4.1 Type-Safe Configuration Structures
-The implementation leverages Rust's type system and the `serde` ecosystem for compile-time configuration validation:
+Default implementations check specific environment variables to support 12-factor app methodology:
 
 ```rust
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Serialize, Deserialize, Default)]
-pub struct EmbeddingConfig {
-    #[serde(default = "default_api_base")]
-    pub api_base_url: String,
-    #[serde(default)]
-    pub api_key: String,
-    #[serde(default = "default_model")]
-    pub model: String,
-    #[serde(default = "default_batch_size")]
-    pub batch_size: usize,
-}
-```
-
-**Key Implementation Details**:
-- **`Default` Trait Implementations**: Enable partial configuration with sensible defaults filling missing values
-- **`serde(default)` Attributes**: Ensure backward compatibility when new fields are added
-- **`anyhow::Result` Error Handling**: Ergonomic error propagation for I/O and parsing failures
-
-### 4.2 Configuration Loading Mechanism
-
-#### **File-Based Loading** (`Config::load`)
-```rust
-impl Config {
-    pub fn load<P: AsRef<std::path::Path>>(path: P) -> anyhow::Result<Self> {
-        let content = std::fs::read_to_string(path)?;
-        let config: Config = toml::from_str(&content)?;
-        Ok(config)
+impl Default for EmbeddingConfig {
+    fn default() -> Self {
+        Self {
+            api_base_url: env::var(\"EMBEDDING_API_BASE_URL\")
+                .unwrap_or_else(|_| \"http://localhost:11434\".to_string()),
+            api_key: env::var(\"EMBEDDING_API_KEY\").ok(),
+            model: env::var(\"EMBEDDING_MODEL\")
+                .unwrap_or_else(|_| \"nomic-embed-text\".to_string()),
+        }
     }
 }
 ```
 
-**Process Flow**:
-1. **File System Read**: Loads TOML content via `std::fs::read_to_string`
-2. **Deserialization**: Parses TOML into typed structures using `toml::from_str`
-3. **Default Application**: Serde's default handling populates missing fields with predefined values
-4. **Validation**: Returns `anyhow::Result` for unified error handling
+### 5.3 Error Handling Strategy
 
-### 4.3 Smart Default Resolution
+The domain uses `anyhow::Result` for ergonomic error propagation, delegating validation to consumers while ensuring clear error contexts:
 
-#### **Data Directory Resolution Algorithm**
-The `CortexConfig::data_dir()` method implements environment-aware path resolution:
+- **IO Errors:** File not found, permission denied during TOML reading
+- **Parse Errors:** Invalid TOML syntax or type mismatches during deserialization
+- **Resolution Errors:** Unavailable system directories with exhausted fallbacks
 
-```rust
-impl CortexConfig {
-    pub fn data_dir(&self) -> PathBuf {
-        // Tier 1: Environment variable override
-        if let Ok(env_dir) = std::env::var("CORTEX_DATA_DIR") {
-            return PathBuf::from(env_dir);
-        }
-        
-        // Tier 2: OS-specific application directory
-        if let Some(proj_dirs) = ProjectDirs::from("com", "cortex-mem", "tars") {
-            return proj_dirs.data_dir().join("cortex");
-        }
-        
-        // Tier 3: Local project directory fallback
-        PathBuf::from("./.cortex")
-    }
-}
-```
-
-**Platform-Specific Paths**:
-- **macOS**: `~/Library/Application Support/com.cortex-mem.tars/cortex`
-- **Linux**: `~/.local/share/com.cortex-mem.tars/cortex`
-- **Windows**: `%APPDATA%\com\cortex-mem\tars\data\cortex`
-
-#### **Embedding Configuration Defaults**
-Environment-aware initialization for OpenAI-compatible services:
-- `EMBEDDING_API_BASE_URL` → `api_base_url` (fallback: `https://api.openai.com/v1`)
-- `EMBEDDING_API_KEY` → `api_key` (fallback: empty string)
-- `EMBEDDING_MODEL` → `model` (fallback: `text-embedding-3-small`)
-
-### 4.4 Configuration Manager Pattern
-For service contexts requiring dynamic configuration management, the domain supports a `ConfigManager` pattern (exemplified in `examples/cortex-mem-tars/src/config.rs`):
-
-**Responsibilities**:
-- **Orchestration**: Coordinates initialization of all configuration subsystems
-- **Directory Provisioning**: Ensures data directories exist via `fs::create_dir_all`
-- **Lazy Loading**: Defers configuration loading until first access
-- **Persistence Management**: Handles both TOML (cortex-mem configuration) and JSON (application-specific bot configurations) formats
-
-**Key Methods**:
-- `ConfigManager::new()`: Initializes configuration infrastructure, creates default config if missing
-- `ConfigManager::cortex_config()`: Returns immutable reference to core configuration
-- `ConfigManager::get_bots()`: Loads domain-specific configurations (JSON-based)
+**Note:** The domain intentionally performs minimal validation (e.g., existence of paths, reachability of endpoints), leaving semantic validation to the consuming services that possess the context for appropriate error handling.
 
 ---
 
-## 5. Configuration Resolution Workflow
+## 6. Multi-Tenancy Configuration
 
-The following sequence illustrates the complete configuration initialization process:
+The Configuration Management Domain enables tenant isolation through configuration scoping:
+
+### 6.1 Tenant ID Propagation
+
+Configuration objects maintain tenant context throughout the system lifecycle:
 
 ```mermaid
 sequenceDiagram
-    participant App as Application Entry
-    participant CM as ConfigManager
-    participant FS as File System
+    participant Client as CLI/HTTP/MCP
+    participant Config as Config Loader
+    participant Core as Core Services
+    
+    Client->>Config: Load config with --tenant flag
+    Config->>Config: Inject tenant_id into config context
+    Config-->>Client: Config with tenant scope
+    
+    Client->>Core: Initialize services
+    Core->>Core: Apply tenant suffix to collections<br/>(cortex-mem-{tenant_id})
+    Core->>Core: Scope filesystem paths<br/>(/data/tenants/{tenant_id}/)
+```
+
+### 6.2 Tenant-Aware Components
+
+- **Vector Storage:** `QdrantConfig::with_tenant_id()` suffixes collection names (e.g., `cortex-mem-acme-corp`)
+- **Filesystem:** All `cortex://` URIs are prefixed with tenant-specific base paths
+- **LLM Configuration:** Supports tenant-specific API keys and model endpoints for rate limiting or data residency requirements
+
+---
+
+## 7. Integration Patterns
+
+### 7.1 System Initialization Sequence
+
+During bootstrap, the domain participates in the system initialization workflow:
+
+```mermaid
+sequenceDiagram
+    participant Binary as Binary Entry Point
+    participant Config as Config Loader
     participant Env as Environment
-    participant CD as directories::ProjectDirs
+    participant ProjDirs as ProjectDirs
+    participant Core as Core Infrastructure
     
-    App->>CM: ConfigManager::new()
-    activate CM
+    Binary->>Config: Config::load(\"config.toml\")
+    Config->>FileSystem: read_file(\"config.toml\")
+    FileSystem-->>Config: TOML content
+    Config->>Config: Deserialize to Config struct
     
-    Note over CM: Phase 1: Directory Resolution
-    CM->>Env: var("CORTEX_DATA_DIR")
-    alt Environment Variable Set
-        Env-->>CM: Return custom path
-    else Not Set
-        CM->>CD: ProjectDirs::from("com", "cortex-mem", "tars")
-        CD-->>CM: OS-specific app dir
-        alt Project Dirs Available
-            CM->>CM: Use system directory
-        else Fallback
-            CM->>CM: Use ./.cortex
-        end
-    end
+    Config->>Env: get(\"CORTEX_DATA_DIR\")
+    Env-->>Config: None
     
-    CM->>FS: create_dir_all(config_path)
-    FS-->>CM: Directory ensured
+    Config->>ProjDirs: from(\"com\", \"cortex-mem\", \"tars\")
+    ProjDirs-->>Config: System directories
     
-    Note over CM: Phase 2: Configuration Loading
-    CM->>FS: config.toml exists?
-    alt Configuration Exists
-        FS-->>CM: true
-        CM->>FS: read_to_string(path)
-        FS-->>CM: TOML content
-        CM->>CM: toml::from_str() deserialization
-    else Default Initialization
-        FS-->>CM: false
-        CM->>CM: Generate default Config
-        Note right of CM: Apply environment<br/>variable overrides for<br/>EMBEDDING_* variables
-        CM->>CM: toml::to_string_pretty()
-        CM->>FS: write(config.toml, default_content)
-        FS-->>CM: File created
-    end
+    Config->>Config: Resolve final data_dir path
+    Config-->>Binary: Result<Config>
     
-    CM-->>App: ConfigManager instance
-    deactivate CM
+    Binary->>Core: Initialize with config
+```
+
+### 7.2 Consumer Usage Examples
+
+**CLI Interface:**
+```rust
+// CLI argument parsing overrides config values
+let cli = Cli::parse();
+let mut config = Config::load(&cli.config_path)?;
+if let Some(tenant) = cli.tenant {
+    config.cortex.tenant_id = Some(tenant);
+}
+```
+
+**HTTP Service:**
+```rust
+// Axum state initialization
+let config = Config::load(&env::var(\"CONFIG_PATH\").unwrap_or(\"config.toml\".to_string()))?;
+let app_state = AppState::from_config(config).await?;
 ```
 
 ---
 
-## 6. Integration Patterns
+## 8. Configuration Schema Reference
 
-### 6.1 CLI Applications
-Command-line tools utilize static configuration loading at startup:
+### 8.1 Core Configuration Structures
 
-```rust
-use cortex_mem_config::Config;
+| Struct | Purpose | Key Fields |
+|--------|---------|------------|
+| `Config` | Root configuration container | `cortex`, `embedding`, `qdrant`, `llm` |
+| `CortexConfig` | General system settings | `data_dir`, `auto_index`, `auto_extract`, `tenant_id` |
+| `EmbeddingConfig` | Vectorization service settings | `api_base_url`, `api_key`, `model`, `dimensions` |
+| `QdrantConfig` | Vector database connection | `url`, `collection_name`, `timeout`, `tenant_suffix` |
+| `LLMConfig` | Language model integration | `api_base`, `api_key`, `model`, `temperature` |
 
-fn main() -> anyhow::Result<()> {
-    let config_path = dirs::config_dir()
-        .expect("Cannot find config directory")
-        .join("cortex-mem/config.toml");
-    
-    let config = Config::load(&config_path)?;
-    
-    // Initialize subsystems with configuration
-    let memory_system = MemorySystem::new(config.cortex.data_dir())?;
-    let vector_store = QdrantClient::new(config.qdrant)?;
-    
-    Ok(())
-}
-```
+### 8.2 Sample Configuration (TOML)
 
-### 6.2 Service Deployment
-Long-running services employ the `ConfigManager` pattern for dynamic configuration:
+```toml
+[cortex]
+data_dir = \"/var/lib/cortex-mem\"
+auto_index = true
+auto_extract = true
 
-```rust
-pub struct ServiceState {
-    config_manager: Arc<ConfigManager>,
-    memory_engine: Arc<MemoryEngine>,
-}
+[embedding]
+api_base_url = \"http://localhost:11434\"
+model = \"nomic-embed-text\"
+dimensions = 768
 
-impl ServiceState {
-    pub async fn initialize() -> anyhow::Result<Self> {
-        let config_manager = ConfigManager::new().await?;
-        let cortex_config = config_manager.cortex_config();
-        
-        let memory_engine = MemoryEngine::builder()
-            .data_dir(cortex_config.data_dir())
-            .qdrant_config(cortex_config.qdrant.clone())
-            .build()
-            .await?;
-            
-        Ok(Self {
-            config_manager: Arc::new(config_manager),
-            memory_engine: Arc::new(memory_engine),
-        })
-    }
-}
-```
+[qdrant]
+url = \"http://localhost:6334\"
+collection_name = \"cortex-mem\"
 
-### 6.3 Library Context
-When used as a dependency in third-party applications, the domain supports programmatic configuration construction:
-
-```rust
-use cortex_mem_config::{Config, CortexConfig, EmbeddingConfig};
-
-// Zero-configuration default
-let config = Config::default();
-
-// Or programmatic construction
-let custom_config = Config {
-    cortex: CortexConfig {
-        data_dir: PathBuf::from("/custom/path"),
-        ..Default::default()
-    },
-    embedding: EmbeddingConfig {
-        model: "text-embedding-3-large".to_string(),
-        ..Default::default()
-    },
-    ..Default::default()
-};
+[llm]
+api_base = \"https://api.openai.com/v1\"
+model = \"gpt-4\"
+temperature = 0.7
 ```
 
 ---
 
-## 7. Environment Variable Reference
+## 9. Deployment Considerations
 
-The domain recognizes the following environment variables for runtime configuration:
+### 9.1 Environment-Specific Configurations
 
-| Variable | Scope | Description | Default |
-|----------|-------|-------------|---------|
-| `CORTEX_DATA_DIR` | Global | Root directory for memory storage and logs | OS-specific or `./.cortex` |
-| `EMBEDDING_API_BASE_URL` | Embedding | Base URL for embedding service | `https://api.openai.com/v1` |
-| `EMBEDDING_API_KEY` | Embedding | Authentication key for embedding API | Empty string |
-| `EMBEDDING_MODEL` | Embedding | Model identifier for embeddings | `text-embedding-3-small` |
-| `RUST_LOG` | Logging | Global log level filter (env_logger compatible) | `info` |
+- **Development:** Local fallback paths (`././.cortex`), local Ollama embeddings
+- **Production:** System directories, external Qdrant clusters, environment variable injection for secrets
+- **Containerized:** Docker volumes mounted at `CORTEX_DATA_DIR`, environment-only configuration for secrets
 
----
+### 9.2 Security Implications
 
-## 8. Implementation Best Practices
-
-### 8.1 Configuration Validation
-While the domain provides type safety, applications should implement semantic validation:
-
-```rust
-impl Config {
-    pub fn validate(&self) -> anyhow::Result<()> {
-        // Ensure data directory is writable
-        if !self.cortex.data_dir().exists() {
-            std::fs::create_dir_all(self.cortex.data_dir())?;
-        }
-        
-        // Validate embedding dimensions match Qdrant configuration
-        if self.embedding.model.contains("3-small") && self.qdrant.embedding_dim != 1536 {
-            anyhow::bail!("Embedding dimension mismatch: model produces 1536 dimensions but Qdrant configured for {}", 
-                self.qdrant.embedding_dim);
-        }
-        
-        Ok(())
-    }
-}
-```
-
-### 8.2 Secret Management
-For production deployments, avoid storing API keys in plain-text TOML files:
-
-```rust
-// Prioritize environment variables over file configuration
-impl EmbeddingConfig {
-    pub fn api_key(&self) -> String {
-        std::env::var("EMBEDDING_API_KEY")
-            .unwrap_or_else(|_| self.api_key.clone())
-    }
-}
-```
-
-### 8.3 Hot Reloading (Advanced)
-For services requiring configuration updates without restart, implement file watching:
-
-```rust
-use notify::{Watcher, RecursiveMode};
-
-pub struct HotReloadConfig {
-    inner: Arc<RwLock<Config>>,
-    _watcher: notify::RecommendedWatcher,
-}
-
-impl HotReloadConfig {
-    pub fn new(path: &Path) -> anyhow::Result<Self> {
-        let config = Config::load(path)?;
-        let inner = Arc::new(RwLock::new(config));
-        
-        let inner_clone = inner.clone();
-        let path_clone = path.to_owned();
-        
-        let mut watcher = notify::recommended_watcher(move |res: Result<notify::Event, _>| {
-            if let Ok(event) = res {
-                if event.kind.is_modify() {
-                    if let Ok(new_config) = Config::load(&path_clone) {
-                        let mut write_guard = inner_clone.write().unwrap();
-                        *write_guard = new_config;
-                        log::info!("Configuration reloaded");
-                    }
-                }
-            }
-        })?;
-        
-        watcher.watch(path.parent().unwrap(), RecursiveMode::NonRecursive)?;
-        
-        Ok(Self {
-            inner,
-            _watcher: watcher,
-        })
-    }
-    
-    pub fn get(&self) -> Config {
-        self.inner.read().unwrap().clone()
-    }
-}
-```
+- **Secret Management:** API keys should be provided via environment variables (`EMBEDDING_API_KEY`, `LLM_API_KEY`) rather than committed TOML files
+- **Tenant Isolation:** Ensure filesystem permissions restrict access to `/data/tenants/{tenant_id}/` directories
+- **Configuration Validation:** Consumers must validate that `data_dir` exists and is writable before initialization
 
 ---
 
-## 9. Conclusion
+## 10. Limitations and Extensibility
 
-The Configuration Management Domain provides the essential infrastructure foundation for the Cortex-Mem ecosystem, enabling consistent, type-safe configuration across diverse deployment scenarios. By implementing hierarchical resolution strategies and cross-platform directory management, it abstracts operational complexities while maintaining flexibility for both development and production environments.
+### 10.1 Current Limitations
 
-The domain's adherence to Rust's type system principles—combined with serde's serialization capabilities—ensures that configuration errors are caught at compile time or load time rather than runtime, significantly improving system reliability and operator experience.
+- **Validation Scope:** The domain does not validate connectivity to external services (Qdrant, LLM APIs) during load; this occurs during service initialization
+- **Hot Reload:** Configuration changes require process restart; no file-watching mechanism exists for dynamic reconfiguration
+- **Schema Evolution:** No built-in migration system for configuration schema changes between versions
 
-**Key Architectural Success Factors**:
-- **Zero-Configuration Startup**: Sensible defaults enable immediate system operation
-- **Environment Portability**: Seamless operation across development machines, containers, and cloud environments
-- **Type Safety**: Compile-time guarantees prevent configuration-related runtime failures
-- **Separation of Concerns**: Clean abstraction between external configuration sources and internal domain logic
+### 10.2 Extension Points
+
+- **Custom Providers:** Implement the `ConfigProvider` trait to support additional sources (etcd, Consul, AWS Parameter Store)
+- **Validation Layers:** Add middleware validation functions between loading and consumption
+- **Secrets Integration:** Extend to support secret management systems (HashiCorp Vault, AWS Secrets Manager) through custom deserializers
 
 ---
 
-**Related Documentation**:
-- [Storage Infrastructure Domain](./storage-infrastructure.md)
-- [Interface Layer Domain](./interface-layer.md)
-- [System Deployment Guide](./deployment.md)
+## 11. Conclusion
+
+The Configuration Management Domain provides a robust, type-safe foundation for Cortex-Mem's configuration needs, balancing flexibility (through environment variables and hierarchical fallbacks) with safety (through strong typing and structured error handling). Its design supports both single-tenant local development and multi-tenant production deployments, serving as the essential bridge between deployment environments and the system's core business logic.
+
+**Related Documentation:**
+- System Architecture Overview
+- Multi-Tenant Memory Management Process
+- System Initialization and Dependency Injection Process
+- Core Infrastructure Domain
