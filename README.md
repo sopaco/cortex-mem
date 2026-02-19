@@ -5,6 +5,12 @@
 <h1 align="center">Cortex Memory</h1>
 
 <p align="center">
+    <a href="./README.md">English</a>
+    |
+    <a href="./README_zh.md">中文</a>
+</p>
+
+<p align="center">
     <strong>🧠 The AI-native memory framework for building intelligent, context-aware applications 🧠</strong>
 </p>
 <p align="center">Built with Rust, Cortex Memory is a high-performance, persistent, and intelligent long-term memory system that gives your AI agents the ability to remember, learn, and personalize interactions across sessions.</p>
