@@ -16,11 +16,16 @@ Requirements:
 - Focus on the most important information for quick relevance checking
 - Use clear, direct language
 - Avoid filler words and unnecessary details
+- **CRITICAL: Use the SAME LANGUAGE as the input content**
+  - If content is in Chinese, write abstract in Chinese
+  - If content is in English, write abstract in English
+  - If content is in other languages, use that language
+  - Preserve the original linguistic and cultural context
 
 Content:
 {}
 
-Abstract (max 100 tokens):"#,
+Abstract (max 100 tokens, in the same language as the content):"#,
             content
         )
     }
@@ -55,11 +60,16 @@ Requirements:
 - Be comprehensive but concise
 - Focus on information useful for understanding and decision-making
 - Aim for ~500-2000 tokens total
+- **CRITICAL: Use the SAME LANGUAGE as the input content**
+  - If content is in Chinese, write overview in Chinese
+  - If content is in English, write overview in English
+  - If content is in other languages, use that language
+  - Preserve cultural references and linguistic nuances
 
 Content:
 {}
 
-Structured Overview:"#,
+Structured Overview (in the same language as the content):"#,
             content
         )
     }
