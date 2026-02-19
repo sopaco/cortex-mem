@@ -1,522 +1,533 @@
-# Cortex Memory Service V2
+# Cortex Memory HTTP Service
 
-**HTTP REST API service for Cortex Memory V2**
+`cortex-mem-service` 提供基于 Axum 框架的 HTTP REST API，是 Cortex Memory 系统与外部世界交互的主要桥梁。
 
-基于Cortex Memory V2核心库的HTTP REST API服务，提供完整的Web访问接口。
+## ✨ 功能特性
 
----
-
-## 🎯 特性
-
-- ✅ **RESTful API** - 符合REST规范的HTTP接口
-- ✅ **会话管理** - 创建、管理、关闭会话
-- ✅ **消息存储** - 保存和检索会话消息
-- ✅ **文件系统访问** - 浏览cortex://文件系统
-- ✅ **多模式搜索** - 支持文件系统、向量、混合搜索
-- ✅ **记忆提取** - 自动提取事实、决策、实体
-- ✅ **向量搜索** - 可选的语义相似度搜索（feature-gated）
-- ✅ **无需鉴权** - 简化部署，专注功能
-
----
-
-## 📦 安装
-
-### 基础安装（仅文件系统搜索）
-
-```bash
-cargo build --release -p cortex-mem-service
-```
-
-### 完整安装（包含向量搜索）
-
-```bash
-cargo build --release -p cortex-mem-service --features vector-search
-```
-
----
+- 🌐 **完整 API**: 覆盖 Cortex Memory 核心功能的完整 REST API
+- 🔄 **异步架构**: 基于 Tokio 异步运行时，支持高并发请求
+- 🔍 **多模式搜索**: 文件系统搜索、向量搜索、混合搜索
+- 📁 **文件系统访问**: 浏览和操作虚拟文件系统
+- 🧠 **记忆提取**: 通过 LLM 自动提取和结构化记忆
+- 🚀 **灵活部署**: 支持单节点和多租户配置
+- 📡 **OpenAPI**: 完整的 API 文档支持
+- 📊 **可观测性**: 集成日志、指标和健康检查
 
 ## 🚀 快速开始
 
-### 基础启动
+### 安装与启动
 
 ```bash
-# 使用默认配置启动（端口8080，数据目录./cortex-data）
-cargo run -p cortex-mem-service
+# 构建服务
+cd cortex-mem
+cargo build --release -p cortex-mem-service
 
-# 或使用已编译的二进制
+# 使用默认配置启动
 ./target/release/cortex-mem-service
+
+# 指定端口和数据目录
+./cortex-mem-service --port 3000 --data-dir /var/lib/cortex-data
 ```
 
-### 自定义配置
+### Docker 部署
 
 ```bash
-# 指定数据目录和端口
-cortex-mem-service --data-dir /path/to/data --port 3000
+# 构建镜像
+docker build -t cortex-mem-service -f docker/Dockerfile .
 
-# 启用详细日志
-cortex-mem-service --verbose
-
-# 查看所有选项
-cortex-mem-service --help
+# 运行容器
+docker run -d \
+  --name cortex-mem \
+  -p 8080:8080 \
+  -v $(pwd)/cortex-data:/app/cortex-data \
+  cortex-mem-service
 ```
 
-### 使用LLM功能（可选）
-
-如果需要使用记忆提取功能，需要设置环境变量：
-
-```bash
-export LLM_API_BASE_URL="https://api.openai.com/v1"
-export LLM_API_KEY="your-api-key"
-export LLM_MODEL="gpt-4"
-
-cortex-mem-service
-```
-
-### 启用向量搜索（可选）
-
-如果编译时启用了`vector-search` feature，可以配置Qdrant：
-
-```bash
-export QDRANT_URL="http://localhost:6333"
-export QDRANT_COLLECTION="cortex_memories"
-export QDRANT_EMBEDDING_DIM="1536"  # 可选，默认自动检测
-
-# 启动服务（需要先启动Qdrant）
-cortex-mem-service --features vector-search
-```
-
-**注意**:
-- 向量搜索需要运行Qdrant服务器
-- 如果未配置Qdrant，向量搜索会降级为文件系统搜索
-- 可以使用Docker快速启动Qdrant: `docker run -p 6333:6333 qdrant/qdrant`
-
----
-
-## 📡 API 端点
+## 📖 API 文档
 
 ### 健康检查
 
-```bash
+```http
 GET /health
 ```
 
-**响应**:
+响应示例：
 ```json
 {
   "status": "healthy",
-  "service": "cortex-mem-service",
+  "timestamp": "2024-01-15T14:30:00Z",
   "version": "2.0.0",
-  "llm_available": true,
-  "timestamp": "2026-02-04T15:30:00Z"
+  "dependencies": {
+    "llm": "connected",
+    "qdrant": "connected"
+  }
 }
 ```
-
----
 
 ### 会话管理
 
 #### 创建会话
 
-```bash
+```http
 POST /api/v2/sessions
 Content-Type: application/json
 
 {
-  "thread_id": "my-session-123",  // 可选，不提供则自动生成
-  "title": "我的第一个会话"      // 可选
+  "thread_id": "customer-support-123",
+  "title": "客户支持会话",
+  "participants": [
+    {
+      "id": "user-123",
+      "name": "张三",
+      "role": "user"
+    },
+    {
+      "id": "support-bot",
+      "name": "支持助手",
+      "role": "assistant"
+    }
+  ]
 }
 ```
 
-**响应**:
-```json
-{
-  "success": true,
-  "data": {
-    "thread_id": "my-session-123",
-    "status": "Active",
-    "message_count": 0,
-    "created_at": "2026-02-04T15:30:00Z",
-    "updated_at": "2026-02-04T15:30:00Z"
-  },
-  "timestamp": "2026-02-04T15:30:00Z"
-}
-```
+#### 获取会话详情
 
-#### 列出所有会话
-
-```bash
-GET /api/v2/sessions
-```
-
-#### 添加消息
-
-```bash
-POST /api/v2/sessions/{thread_id}/messages
-Content-Type: application/json
-
-{
-  "role": "user",  // user | assistant | system
-  "content": "Hello, this is my first message!"
-}
+```http
+GET /api/v2/sessions/{thread_id}
 ```
 
 #### 关闭会话
 
-```bash
+```http
 POST /api/v2/sessions/{thread_id}/close
 ```
 
----
+### 消息操作
 
-### 文件系统操作
+#### 添加消息
 
-#### 列出目录内容
-
-```bash
-GET /api/v2/filesystem?uri=cortex://threads
-```
-
-**响应**:
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "uri": "cortex://threads/my-session-123",
-      "name": "my-session-123",
-      "is_directory": true,
-      "size": 0,
-      "modified": "2026-02-04T15:30:00Z"
-    }
-  ]
-}
-```
-
-#### 读取文件内容
-
-```bash
-GET /api/v2/filesystem/read/threads/my-session-123/.session.json
-```
-
----
-
-### 搜索
-
-#### 多模式搜索
-
-支持3种搜索模式：**文件系统搜索**、**向量搜索**（需要feature）、**混合搜索**（需要feature）
-
-```bash
-POST /api/v2/search
+```http
+POST /api/v2/sessions/{thread_id}/messages
 Content-Type: application/json
 
 {
-  "query": "hello",
-  "mode": "filesystem",         // "filesystem" | "vector" | "hybrid", 默认: "filesystem"
-  "thread": "my-session-123",  // 可选，限制搜索范围
-  "limit": 10,                 // 可选，默认10
-  "min_score": 0.5             // 可选，默认0.0
-}
-```
-
-**响应**:
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "uri": "cortex://threads/my-session-123/timeline/2026-02/04/15_30_00_abc12345.md",
-      "score": 1.0,
-      "snippet": "...Hello, this is my first message!...",
-      "content": "# Message\n\n...",
-      "source": "filesystem"  // "filesystem" | "vector" | "hybrid"
-    }
-  ]
-}
-```
-
-**搜索模式说明**:
-
-| 模式 | 描述 | 需要Feature | 需要Qdrant |
-|------|------|------------|-----------|
-| `filesystem` | 全文关键词搜索 | ❌ | ❌ |
-| `vector` | 语义相似度搜索 | ✅ vector-search | ✅ |
-| `hybrid` | 结合两种搜索 | ✅ vector-search | ✅ |
-
-**注意**:
-- `filesystem`模式总是可用，基于文本匹配
-- `vector`和`hybrid`模式需要编译时启用`vector-search` feature
-- 如果未配置Qdrant，`vector`和`hybrid`会自动降级为`filesystem`模式
-
----
-
-### 自动化 - 记忆提取
-
-#### 提取会话记忆
-
-```bash
-POST /api/v2/automation/extract/{thread_id}
-Content-Type: application/json
-
-{
-  "auto_save": false  // 是否自动保存到用户/代理记忆
-}
-```
-
-**响应**:
-```json
-{
-  "success": true,
-  "data": {
-    "thread_id": "my-session-123",
-    "message_count": 5,
-    "facts_count": 3,
-    "decisions_count": 1,
-    "entities_count": 2,
-    "facts": [
-      {
-        "content": "User prefers dark mode",
-        "confidence": 0.9,
-        "source": "user stated preference"
-      }
-    ],
-    "decisions": [...],
-    "entities": [...]
+  "role": "user",
+  "content": "忘记密码了怎么办？",
+  "metadata": {
+    "tags": ["password", "help"]
   }
 }
 ```
 
-**注意**: 此功能需要配置LLM环境变量。
+#### 获取消息时间轴
 
----
-
-## 🔧 配置选项
-
-### 命令行参数
-
-| 参数 | 简写 | 默认值 | 说明 |
-|------|------|--------|------|
-| `--data-dir` | `-d` | `./cortex-data` | 数据存储目录 |
-| `--host` | - | `127.0.0.1` | 服务器监听地址 |
-| `--port` | `-p` | `8080` | 服务器监听端口 |
-| `--verbose` | `-v` | - | 启用详细日志 |
-
-### 环境变量（LLM相关）
-
-| 变量 | 说明 | 示例 |
-|------|------|------|
-| `LLM_API_BASE_URL` | LLM API基础URL | `https://api.openai.com/v1` |
-| `LLM_API_KEY` | LLM API密钥 | `sk-...` |
-| `LLM_MODEL` | LLM模型名称 | `gpt-4` |
-
----
-
-## 🌐 CORS支持
-
-服务默认启用permissive CORS策略，允许所有来源访问。适合开发和内部部署。
-
----
-
-## 📊 监控和日志
-
-### 日志级别
-
-- 默认: `INFO`
-- 详细模式 (`--verbose`): `DEBUG`
-
-### 日志示例
-
-```
-2026-02-04T15:30:00Z INFO Starting Cortex-Mem Service V2
-2026-02-04T15:30:00Z INFO Data directory: ./cortex-data
-2026-02-04T15:30:00Z INFO LLM client initialized
-2026-02-04T15:30:00Z INFO Server listening on http://127.0.0.1:8080
+```http
+GET /api/v2/sessions/{thread_id}/timeline?start=2024-01-01&end=2024-01-31
 ```
 
----
+### 文件系统操作
 
-## 🧪 测试
+#### 列出目录
 
-### 使用curl测试
-
-```bash
-# 健康检查
-curl http://localhost:8080/health
-
-# 创建会话
-curl -X POST http://localhost:8080/api/v2/sessions \
-  -H "Content-Type: application/json" \
-  -d '{"thread_id": "test-123", "title": "Test Session"}'
-
-# 添加消息
-curl -X POST http://localhost:8080/api/v2/sessions/test-123/messages \
-  -H "Content-Type: application/json" \
-  -d '{"role": "user", "content": "Hello!"}'
-
-# 搜索
-curl -X POST http://localhost:8080/api/v2/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "hello", "limit": 5}'
+```http
+GET /api/v2/filesystem?uri=cortex://threads&recursive=false
 ```
 
-### 使用Postman/Insomnia
+#### 读取文件内容
 
-导入以下基础URL开始测试：
+```http
+GET /api/v2/filesystem/read?uri=cortex://threads/support-123/.session.json
 ```
-http://localhost:8080
+
+#### 写入文件
+
+```http
+POST /api/v2/filesystem/write
+Content-Type: application/json
+
+{
+  "uri": "cortex://users/user-123/preferences.md",
+  "content": "# 用户偏好\n\n- 主题：深色\n- 语言：中文"
+}
 ```
 
----
+### 搜索
 
-## 📝 API响应格式
+#### 文件系统搜索
 
-所有API使用统一的响应格式：
+```http
+POST /api/v2/search
+Content-Type: application/json
 
-### 成功响应
+{
+  "query": "密码重置",
+  "mode": "filesystem",
+  "filters": {
+    "dimensions": ["session"],
+    "tenants": ["customer-support"],
+    "date_range": {
+      "start": "2024-01-01T00:00:00Z",
+      "end": "2024-01-31T23:59:59Z"
+    }
+  },
+  "limit": 10,
+  "offset": 0
+}
+```
 
+#### 向量搜索（需要 vector-search 功能）
+
+```http
+POST /api/v2/search
+Content-Type: application/json
+
+{
+  "query": "如何更改密码",
+  "mode": "vector",
+  "filters": {
+    "dimensions": ["user", "session"]
+  },
+  "limit": 5,
+  "min_score": 0.7
+}
+```
+
+#### 混合搜索
+
+```http
+POST /api/v2/search
+Content-Type: application/json
+
+{
+  "query": "账户设置",
+  "mode": "hybrid",
+  "filters": {
+    "dimensions": ["user", "resources"]
+  },
+  "limit": 15
+}
+```
+
+### 记忆提取
+
+#### 触发记忆提取
+
+```http
+POST /api/v2/automation/extract/{thread_id}
+Content-Type: application/json
+
+{
+  "auto_save": true,
+  "dimensions": ["user"],
+  "extraction_types": ["facts", "preferences", "decisions"]
+}
+```
+
+响应示例：
 ```json
 {
   "success": true,
-  "data": { ... },
-  "error": null,
-  "timestamp": "2026-02-04T15:30:00Z"
+  "data": {
+    "thread_id": "customer-support-123",
+    "facts_count": 5,
+    "preferences_count": 3,
+    "decisions_count": 2,
+    "entities_count": 7,
+    "extracted": {
+      "facts": [
+        {
+          "content": "用户忘记了登录密码",
+          "confidence": 0.95,
+          "category": "auth",
+          "source_uri": "cortex://threads/customer-support-123/timeline/2024/01/15/14_30_00_abc123.md"
+        }
+      ],
+      "preferences": [
+        {
+          "content": "希望通过电子邮件接收通知",
+          "confidence": 0.9,
+          "source": "user stated in conversation"
+        }
+      ],
+      "decisions": [
+        {
+          "content": "用户决定重置密码而不是联系管理员",
+          "confidence": 0.8,
+          "source": "user choice"
+        }
+      ]
+    },
+    "timestamp": "2024-01-15T14:30:00Z"
+  }
 }
 ```
 
-### 错误响应
+## ⚙️ 配置
+
+### 命令行参数
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `--port` | `8080` | 监听端口 |
+| `--host` | `127.0.0.1` | 绑定地址 |
+| `--data-dir` | `./cortex-data` | 数据目录 |
+| `--workers` | `CPU 核心数` | 工作线程数 |
+| `--log-level` | `info` | 日志级别 |
+| `--cors` | `*` | CORS 允许的源 |
+
+### 环境变量
+
+```bash
+# 数据存储
+export CORTEX_DATA_DIR="/var/lib/cortex-data"
+
+# 外部服务
+export QDRANT_URL="http://localhost:6333"
+export LLM_API_BASE_URL="https://api.openai.com/v1"
+export LLM_API_KEY="your-api-key"
+
+# 服务配置
+export CORTEX_SERVICE_PORT=8080
+export CORTEX_SERVICE_HOST="0.0.0.0"
+export RUST_LOG="cortex_service=debug"
+```
+
+### 配置文件
+
+可以创建 `config.toml` 文件进行详细配置：
+
+```toml
+[server]
+host = "127.0.0.1"
+port = 8080
+workers = 4
+max_connections = 1024
+
+[cors]
+allowed_origins = ["*"]
+allowed_methods = ["GET", "POST", "PUT", "DELETE"]
+allowed_headers = ["*"]
+
+[limits]
+max_body_size = "10MB"
+max_message_length = 10000
+search_limit = 100
+```
+
+## 🔧 运行模式
+
+### 开发模式
+
+```bash
+# 使用开发配置启动
+cargo run -p cortex-mem-service -- --data-dir ./dev-data --verbose
+
+# 启用自动重载（需要 watch）
+install-watch
+cargo watch -x 'run -p cortex-mem-service'
+```
+
+### 生产模式
+
+```bash
+# 优化构建
+cargo build --release -p cortex-mem-service
+
+# 使用 systemd 服务
+sudo systemctl start cortex-mem-service
+
+# 使用 PM2 管理
+pm2 start /path/to/cortex-mem-service --name cortex-mem
+```
+
+### 多租户模式
+
+```bash
+# 设置租户配置
+export CORTEX_MULTITENANT=true
+export CORTEX_DEFAULT_TENANT="default"
+
+# 启动服务
+./cortex-mem-service --multitenant --tenant-isolation
+```
+
+## 🧪 测试
+
+### 单元测试
+
+```bash
+# 运行所有测试
+cargo test -p cortex-mem-service
+
+# 运行集成测试
+cargo test -p cortex-mem-service --test '*_test'
+```
+
+### API 测试
+
+```bash
+# 使用提供的测试脚本
+./cortex-mem-service/test.sh
+
+# 使用 curl 测试
+curl -X GET http://localhost:8080/health
+
+# 使用 pytest 进行 API 测试
+cd tests/pytest
+python -m pytest api_tests.py
+```
+
+### 性能测试
+
+```bash
+# 使用 wrk 进行基准测试
+wrk -t12 -c400 -d30s http://localhost:8080/api/v2/search \
+  -s tests/search-post.lua
+
+# 使用 hey 进行简单负载测试
+hey -n 10000 -c 50 -m POST -d @tests/search-query.json \
+  http://localhost:8080/api/v2/search
+```
+
+## 📊 监控与可观测性
+
+### 日志记录
+
+服务使用 `tracing` 框架进行结构化日志：
 
 ```json
 {
-  "error": "Error message here",
-  "status": 404
+  "timestamp": "2024-01-15T14:30:00Z",
+  "level": "INFO",
+  "target": "cortex_service::handlers::search",
+  "message": "Search completed",
+  "fields": {
+    "query": "password reset",
+    "results_count": 42,
+    "duration_ms": 234,
+    "tenant_id": "customer-support"
+  }
 }
 ```
 
-HTTP状态码：
-- `200 OK` - 成功
-- `400 Bad Request` - 请求参数错误
-- `404 Not Found` - 资源不存在
-- `500 Internal Server Error` - 服务器内部错误
+### 健康检查
 
----
+```bash
+# 基础健康检查
+GET /health
+
+# 详细健康检查（包含依赖）
+GET /health/detailed
+```
+
+### 指标收集
+
+```bash
+# Prometheus 格式指标
+GET /metrics
+
+# 指标示例
+# TYPE cortex_duration_seconds histogram
+cortex_duration_seconds_bucket{le="1.0",endpoint="/api/v2/search"} 125
+cortex_duration_seconds_bucket{le="5.0",endpoint="/api/v2/search"} 98
+```
 
 ## 🔐 安全注意事项
 
-**⚠️ 重要**: 当前版本**不包含**任何鉴权或安全机制。
+### 当前限制
 
-**仅适用于**:
+⚠️ **重要**: 当前版本**不包含**认证和授权机制。
+
+适用于：
 - 本地开发环境
-- 内部网络部署
-- 受信任的环境
+- 受信任的内网环境
+- 前置代理已处理认证的部署
 
-**不适用于**:
-- 公网直接暴露
-- 多租户环境
-- 生产环境（除非有额外的安全层）
+### 安全最佳实践
 
-如需生产部署，建议：
-1. 使用反向代理（Nginx/Caddy）添加认证
-2. 使用VPN或内网访问
-3. 实施IP白名单
-
----
-
-## 🏗️ 架构
-
-```
-┌─────────────────┐
-│   HTTP Client   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Axum Router    │
-│  (CORS/Trace)   │
-└────────┬────────┘
-         │
-    ┌────┴────┬──────────┬──────────┐
-    ▼         ▼          ▼          ▼
-┌────────┐ ┌─────┐  ┌────────┐ ┌─────────┐
-│Sessions│ │Files│  │Search  │ │Automate │
-└───┬────┘ └──┬──┘  └───┬────┘ └────┬────┘
-    │         │          │           │
-    └─────────┴──────────┴───────────┘
-              │
-              ▼
-    ┌──────────────────┐
-    │ Cortex-Mem Core  │
-    │  - Filesystem    │
-    │  - Sessions      │
-    │  - Extraction    │
-    │  - Search        │
-    └──────────────────┘
+1. **使用反向代理**:
+```nginx
+location /api/ {
+  auth_basic "Cortex API";
+  auth_basic_user_file .htpasswd;
+  proxy_pass http://localhost:8080/api/;
+}
 ```
 
----
+2. **网络安全**:
+```bash
+# 使用限制性防火墙规则
+ufw allow from 10.0.0.0/8 to any port 8080
+```
 
-## 🛣️ Roadmap
+3. **数据加密**:
+```bash
+# 使用加密文件系统
+fscrypt encrypt directory
+```
 
-未来可能添加的功能：
-
-- [ ] WebSocket支持（实时消息推送）
-- [ ] 批量操作API
-- [ ] 导出/导入功能
-- [ ] 统计和分析API
-- [ ] GraphQL支持
-- [ ] 鉴权和权限管理（可选）
-
----
-
-## 🐛 故障排除
+## 🚨 常见问题
 
 ### 服务无法启动
 
-**问题**: `Error: Address already in use`  
-**解决**: 端口被占用，使用`--port`指定其他端口
-
+**问题**: `Address already in use`
+**解决**: 更换端口或终止占用进程
 ```bash
-cortex-mem-service --port 9090
+# 查找进程占用
+lsof -i :8080
+
+# 终止进程
+kill -9 <PID>
+
+# 或使用其他端口
+./cortex-mem-service --port 9090
 ```
 
-### LLM功能不可用
+### 搜索无结果
 
-**问题**: 记忆提取API返回错误  
-**解决**: 检查环境变量是否正确设置
-
+**问题**: Search returns empty results
+**解决**: 检查以下配置
 ```bash
-echo $LLM_API_BASE_URL
-echo $LLM_MODEL
-# API_KEY不应该echo出来，但确保已设置
+# 确保数据目录有效
+ls -la $CORTEX_DATA_DIR
+
+# 检查向量搜索配置（如果启用）
+curl -X GET http://localhost:6333/collections
+
+# 启用详细日志进行调试
+RUST_LOG=debug ./cortex-mem-service --verbose
 ```
 
-### 数据目录权限错误
+### CORS 错误
 
-**问题**: `Permission denied`  
-**解决**: 确保数据目录有读写权限
-
+**问题**: CORS policy error in browser
+**解决**: 配置允许的源
 ```bash
-chmod 755 ./cortex-data
+# 在生产环境指定具体源
+./cortex-mem-service --cors "https://app.example.com"
+
+# 或使用配置文件
+[server]
+cors_origins = ["https://app.example.com"]
 ```
 
----
+## 📚 更多资源
 
-## 📄 License
-
-MIT License - 与Cortex-Mem项目相同
-
----
+- [Cortex Memory 主文档](../README.md)
+- [核心库 API](../cortex-mem-core/README.md)
+- [架构文档](../../litho.docs/en)
+- [API 完整参考](docs/openapi.yaml)
+- [部署指南](docs/deployment.md)
 
 ## 🤝 贡献
 
-欢迎贡献！请参考主项目的贡献指南。
+欢迎贡献！请遵循以下步骤：
 
----
+1. Fork 项目
+2. 创建功能分支
+3. 编写测试
+4. 提交 PR
 
-## 📞 支持
+## 📄 许可证
 
-- GitHub Issues: [cortex-mem/issues](https://github.com/sopaco/cortex-mem/issues)
-- 文档: [主项目README](../README.md)
-
----
-
-**Built with ❤️ using Axum and Cortex-Mem V2**
+MIT 许可证 - 详见 [LICENSE](../../LICENSE) 文件
