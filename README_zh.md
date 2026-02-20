@@ -31,53 +31,9 @@
 
 Cortex Memory 使用复杂的流水线来处理和管理内存，核心是**混合存储架构**，结合了**虚拟文件系统**的持久性和基于向量的**语义搜索**。
 
-```mermaid
-flowchart TB
-    subgraph Input["输入层"]
-        User[用户消息]
-        Agent[代理消息]
-        CLI[CLI命令]
-        API[REST API]
-        MCP[MCP协议]
-    end
-
-    subgraph Core["核心引擎 (cortex-mem-core)"]
-        Session[会话管理器]
-        Extractor[内存提取器]
-        Indexer[自动索引器]
-        Search[向量搜索引擎]
-    end
-
-    subgraph Storage["存储层"]
-        FS[(文件系统<br/>cortex:// URI)]
-        Qdrant[(Qdrant<br/>向量索引)]
-    end
-
-    subgraph External["外部服务"]
-        LLM[LLM提供商<br/>提取与分析]
-        Embed[嵌入API<br/>向量生成]
-    end
-
-    User --> Session
-    Agent --> Session
-    CLI --> Core
-    API --> Core
-    MCP --> Core
-
-    Session -->|存储消息| FS
-    Session -->|触发提取| Extractor
-    
-    Extractor -->|分析内容| LLM
-    Extractor -->|存储内存| FS
-    
-    Indexer -->|监视变更| FS
-    Indexer -->|生成嵌入| Embed
-    Indexer -->|索引向量| Qdrant
-    
-    Search -->|查询嵌入| Embed
-    Search -->|向量搜索| Qdrant
-    Search -->|检索内容| FS
-```
+| 基于 **虚拟文件存储系统** 和 **渐进式记忆披露** 搜索架构 | 由 **Rust**与**AI** 驱动的 **高性能**、**高精准** 记忆检索召回能力 |
+| :--- | :--- |
+|![architecture_style_modern](./assets/intro/architecture_style_modern.jpg) | ![architecture_style_classic](./assets/benchmark/cortex_mem_vs_langmem_thin.jpg) |
 
 **Cortex Memory** 使用**虚拟文件系统**方法组织数据，采用 `cortex://` URI 方案：
 
