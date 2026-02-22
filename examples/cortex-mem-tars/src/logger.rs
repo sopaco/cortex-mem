@@ -80,8 +80,9 @@ struct SimpleLogger {
 }
 
 impl log::Log for SimpleLogger {
-    fn enabled(&self, _metadata: &Metadata) -> bool {
-        true
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        // 🔧 过滤TRACE和DEBUG日志，只保留INFO及以上级别
+        metadata.level() <= Level::Info
     }
 
     fn log(&self, record: &Record) {
