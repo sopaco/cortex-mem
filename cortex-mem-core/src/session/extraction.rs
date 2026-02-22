@@ -18,20 +18,28 @@ use std::sync::Arc;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExtractedMemories {
     /// User preferences extracted
+    #[serde(default)]
     pub preferences: Vec<PreferenceMemory>,
     /// Entities mentioned (people, projects)
+    #[serde(default)]
     pub entities: Vec<EntityMemory>,
     /// Events/decisions
+    #[serde(default)]
     pub events: Vec<EventMemory>,
     /// Agent cases (problem + solution)
+    #[serde(default)]
     pub cases: Vec<CaseMemory>,
     /// 🆕 Personal information (age, occupation, education, etc.)
+    #[serde(default)]
     pub personal_info: Vec<PersonalInfoMemory>,
     /// 🆕 Work history (companies, roles, durations)
+    #[serde(default)]
     pub work_history: Vec<WorkHistoryMemory>,
     /// 🆕 Relationships (family, friends, colleagues)
+    #[serde(default)]
     pub relationships: Vec<RelationshipMemory>,
     /// 🆕 Goals (career goals, personal goals)
+    #[serde(default)]
     pub goals: Vec<GoalMemory>,
 }
 
