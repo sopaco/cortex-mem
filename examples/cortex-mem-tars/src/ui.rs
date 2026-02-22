@@ -1327,9 +1327,27 @@ impl AppUi {
             all_lines.push(Line::from(""));
         }
 
-        // 计算滚动
-        let total_lines = all_lines.len();
-        let visible_lines = area.height.saturating_sub(2) as usize; // 减去边框
+        // 🔧 修复：手动计算wrap后的实际行数
+        // 遍历所有行，计算每行在给定宽度下会被换成几行
+        let available_width = content_area.width as usize;
+        let mut total_lines = 0;
+        
+        for line in &all_lines {
+            // 计算行的实际显示宽度（考虑中文等宽字符）
+            let line_text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
+            let line_width = unicode_width::UnicodeWidthStr::width(line_text.as_str());
+            
+            // 计算这一行会被wrap成几行
+            if line_width == 0 {
+                total_lines += 1;  // 空行也占一行
+            } else if available_width > 0 {
+                total_lines += (line_width + available_width - 1) / available_width;  // 向上取整
+            } else {
+                total_lines += 1;
+            }
+        }
+        
+        let visible_lines = content_area.height as usize;
         let max_scroll = total_lines.saturating_sub(visible_lines);
 
         // 如果启用了自动滚动，始终滚动到底部
@@ -1342,17 +1360,6 @@ impl AppUi {
             }
         }
 
-        // 应用选择高亮
-        let display_lines: Vec<Line> = if self.selection_active {
-            self.apply_selection_highlight(all_lines, self.scroll_offset, visible_lines)
-        } else {
-            all_lines
-                .into_iter()
-                .skip(self.scroll_offset)
-                .take(visible_lines)
-                .collect()
-        };
-
         // 渲染边框
         let title = "交互信息 (鼠标拖拽选择, Esc 清除选择)";
         let block = Block::default()
@@ -1360,10 +1367,20 @@ impl AppUi {
             .title(title);
         frame.render_widget(block, area);
 
-        // 渲染消息内容（在边框内部）
-        let paragraph = Paragraph::new(display_lines)
-            .wrap(Wrap { trim: false });
-        frame.render_widget(paragraph, content_area);
+        // 🔧 修复：使用Paragraph::scroll()方法而不是手动skip/take
+        // 这样Paragraph会正确处理wrap后的滚动
+        let paragraph_with_scroll = if self.selection_active {
+            // 选择模式下仍需要手动处理（因为需要高亮）
+            let display_lines = self.apply_selection_highlight(all_lines, self.scroll_offset, visible_lines);
+            Paragraph::new(display_lines).wrap(Wrap { trim: false })
+        } else {
+            // 正常模式使用Paragraph的内置滚动
+            Paragraph::new(all_lines)
+                .wrap(Wrap { trim: false })
+                .scroll((self.scroll_offset as u16, 0))  // 使用scroll方法
+        };
+        
+        frame.render_widget(paragraph_with_scroll, content_area);
 
         // 渲染滚动条
         if total_lines > visible_lines {
@@ -1371,8 +1388,10 @@ impl AppUi {
                 .begin_symbol(Some("↑"))
                 .end_symbol(Some("↓"));
 
+            // 🔧 修复：使用实际的total_lines（wrap后的行数）
             let mut scrollbar_state = ScrollbarState::new(total_lines)
-                .position(self.scroll_offset);
+                .position(self.scroll_offset)
+                .viewport_content_length(visible_lines);
 
             let scrollbar_area = area.inner(Margin {
                 vertical: 1,
@@ -1542,8 +1561,10 @@ impl AppUi {
             .begin_symbol(Some("↑"))
             .end_symbol(Some("↓"));
 
+        // 🔧 修复：正确设置ScrollbarState，包括viewport_content_length
         let mut scrollbar_state = ScrollbarState::new(self.log_lines.len())
-            .position(self.log_scroll_offset);
+            .position(self.log_scroll_offset)
+            .viewport_content_length(visible_lines);  // 关键：设置可见行数
 
         let scrollbar_area = area.inner(Margin {
             vertical: 1,
@@ -1610,8 +1631,10 @@ impl AppUi {
                 .begin_symbol(Some("↑"))
                 .end_symbol(Some("↓"));
 
+            // 🔧 修复：正确设置ScrollbarState，包括viewport_content_length
             let mut scrollbar_state = ScrollbarState::new(self.help_content.len())
-                .position(self.help_scroll_offset);
+                .position(self.help_scroll_offset)
+                .viewport_content_length(visible_lines);  // 关键：设置可见行数
 
             let scrollbar_area = modal_area.inner(Margin {
                 vertical: 1,
