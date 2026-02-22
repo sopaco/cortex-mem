@@ -56,9 +56,32 @@ impl MemoryOperations {
                 let message = {
                     let sm = self.session_manager.write().await;
                     
-                    // Ensure session exists
+                    // 🔧 Ensure session exists with user_id and agent_id
                     if !sm.session_exists(&thread_id).await? {
-                        sm.create_session(&thread_id).await?;
+                        // 使用create_session_with_ids传入user_id和agent_id
+                        sm.create_session_with_ids(
+                            &thread_id,
+                            args.user_id.clone().or_else(|| Some(self.default_user_id.clone())),
+                            args.agent_id.clone().or_else(|| Some(self.default_agent_id.clone())),
+                        ).await?;
+                    } else {
+                        // 🔧 如果session已存在但缺少user_id/agent_id，更新它
+                        if let Ok(mut metadata) = sm.load_session(&thread_id).await {
+                            let mut needs_update = false;
+                            
+                            if metadata.user_id.is_none() {
+                                metadata.user_id = args.user_id.clone().or_else(|| Some(self.default_user_id.clone()));
+                                needs_update = true;
+                            }
+                            if metadata.agent_id.is_none() {
+                                metadata.agent_id = args.agent_id.clone().or_else(|| Some(self.default_agent_id.clone()));
+                                needs_update = true;
+                            }
+                            
+                            if needs_update {
+                                let _ = sm.update_session(&metadata).await;
+                            }
+                        }
                     }
                     
                     // 🆕 使用add_message()发布事件，而不是直接调用save_message()

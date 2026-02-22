@@ -753,29 +753,12 @@ impl App {
 
                 // 如果有基础设施，创建真实的带记忆的 Agent
                 if let Some(infrastructure) = &self.infrastructure {
-                    // 先提取用户基本信息（使用 bot.id 作为 agent_id）
-                    let user_info = match extract_user_basic_info(
-                        infrastructure.operations().clone(),
-                        &self.user_id,
-                        &bot.id,
-                    )
-                    .await
-                    {
-                        Ok(info) => {
-                            self.user_info = info.clone();
-                            info
-                        }
-                        Err(e) => {
-                            log::error!("提取用户基本信息失败: {}", e);
-                            None
-                        }
-                    };
-
                     let config = infrastructure.config();
+                    // 🔧 先创建tenant_ops（带租户隔离和user_id）
                     match create_memory_agent(
                         config.cortex.data_dir(),
                         config,
-                        user_info.as_deref(),
+                        None, // user_info稍后提取
                         Some(bot.system_prompt.as_str()),
                         &bot.id,
                         &self.user_id,
@@ -783,13 +766,56 @@ impl App {
                     .await
                     {
                         Ok((rig_agent, tenant_ops)) => {
+                            // 保存租户 operations
                             self.tenant_operations = Some(tenant_ops.clone());
+                            
+                            // 🔧 使用租户隔离的operations提取用户信息（而非global operations）
+                            let user_info = match extract_user_basic_info(
+                                tenant_ops.clone(),
+                                &self.user_id,
+                                &bot.id,
+                            )
+                            .await
+                            {
+                                Ok(info) => {
+                                    self.user_info = info.clone();
+                                    info
+                                }
+                                Err(e) => {
+                                    log::error!("提取用户基本信息失败: {}", e);
+                                    None
+                                }
+                            };
 
-                            // 🔧 移除AutoExtractor创建逻辑 - 已由Cortex Memory统一管理
-                            // 原有的auto_extractor创建代码已移除
-
-                            self.rig_agent = Some(rig_agent);
-                            log::info!("已创建带记忆功能的真实 Agent");
+                            // 如果有用户信息，需要重新创建 Agent（带用户信息）
+                            if user_info.is_some() {
+                                let config = infrastructure.config();
+                                match create_memory_agent(
+                                    config.cortex.data_dir(),
+                                    config,
+                                    user_info.as_deref(),
+                                    Some(bot.system_prompt.as_str()),
+                                    &bot.id,
+                                    &self.user_id,
+                                )
+                                .await
+                                {
+                                    Ok((rig_agent_with_info, tenant_ops_with_info)) => {
+                                        self.tenant_operations = Some(tenant_ops_with_info);
+                                        self.rig_agent = Some(rig_agent_with_info);
+                                        log::info!("已创建带用户信息的 Agent");
+                                    }
+                                    Err(e) => {
+                                        log::error!("重新创建带用户信息的 Agent 失败: {}", e);
+                                        // 保持之前创建的Agent
+                                        self.rig_agent = Some(rig_agent);
+                                    }
+                                }
+                            } else {
+                                // 没有用户信息，使用首次创建的Agent
+                                self.rig_agent = Some(rig_agent);
+                                log::info!("已创建不带用户信息的 Agent");
+                            }
                         }
                         Err(e) => {
                             log::error!("创建真实 Agent 失败 {}", e);
