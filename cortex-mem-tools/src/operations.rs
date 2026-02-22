@@ -129,7 +129,7 @@ impl MemoryOperations {
         // 🔧 创建AutoExtractor(简化配置，移除了save_user_memories和save_agent_memories)
         let auto_extract_config = AutoExtractConfig {
             min_message_count: 5,
-            extract_on_close: true,
+            extract_on_close: true,  // 🔧 显式设置为true，确保会话关闭时自动提取记忆
         };
         let auto_extractor = Arc::new(AutoExtractor::with_user_id(
             filesystem.clone(),

@@ -18,6 +18,28 @@ use crate::api_models::{
     StoreMemoryRequest, StoreMemoryResponse,
 };
 
+/// 从URI中提取时间戳
+/// URI格式: cortex://session/{thread_id}/timeline/YYYY-MM/DD/HH_MM_SS_uuid.md
+fn extract_timestamp_from_uri(uri: &str) -> Option<String> {
+    // 提取路径中的时间部分
+    let parts: Vec<&str> = uri.split('/').collect();
+    if parts.len() >= 7 {
+        // YYYY-MM/DD/HH_MM_SS_uuid.md
+        let date_part = parts.get(parts.len() - 3)?;  // YYYY-MM
+        let day_part = parts.get(parts.len() - 2)?;   // DD
+        let time_file = parts.last()?;                 // HH_MM_SS_uuid.md
+        
+        // 解析时间文件名
+        let time_str = time_file.strip_suffix(".md")?.split('_').take(3).collect::<Vec<_>>().join(":");
+        
+        // 组合成ISO 8601格式
+        let datetime_str = format!("{}T{}T{}Z", date_part, day_part, time_str);
+        Some(datetime_str.replace("T", "-").replacen("-", "T", 2))
+    } else {
+        None
+    }
+}
+
 /// 查询记忆参数
 #[derive(Debug, Deserialize)]
 pub struct RetrieveMemoryQuery {
@@ -237,7 +259,7 @@ async fn list_memory(
                     id: result.uri.clone(),
                     content: result.content.unwrap_or_default(),
                     source: "cortex-mem".to_string(),
-                    timestamp: chrono::Utc::now().to_rfc3339(),  // TODO: 从 URI 解析时间戳
+                    timestamp: extract_timestamp_from_uri(&result.uri).unwrap_or_else(|| chrono::Utc::now().to_rfc3339()),
                     speaker_type: None,
                     speaker_confidence: None,
                     relevance: Some(result.score),

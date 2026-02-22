@@ -471,9 +471,11 @@ Return ONLY the JSON object. No additional text before or after."#,
         new_prefs
             .iter()
             .filter(|pref| {
+                // 🔧 改进：检查完整内容的相似度，而不仅仅是topic匹配
+                let pref_full_content = format!("{} {}", pref.topic, pref.preference);
                 let is_duplicate = existing_contents.iter().any(|existing| {
-                    self.is_similar_content(&pref.preference, existing)
-                        || self.is_similar_content(&pref.topic, existing)
+                    // 检查完整内容的相似度（而非简单的子串匹配）
+                    Self::calculate_similarity(&pref_full_content, existing) > 0.8
                 });
                 !is_duplicate
             })
@@ -490,9 +492,10 @@ Return ONLY the JSON object. No additional text before or after."#,
         new_entities
             .iter()
             .filter(|entity| {
+                // 🔧 改进：检查name+description的组合相似度
+                let entity_full_content = format!("{} {}", entity.name, entity.description);
                 let is_duplicate = existing_contents.iter().any(|existing| {
-                    self.is_similar_content(&entity.name, existing)
-                        || self.is_similar_content(&entity.description, existing)
+                    Self::calculate_similarity(&entity_full_content, existing) > 0.8
                 });
                 !is_duplicate
             })
@@ -509,9 +512,10 @@ Return ONLY the JSON object. No additional text before or after."#,
         new_events
             .iter()
             .filter(|event| {
+                // 🔧 改进：检查title+summary的组合相似度
+                let event_full_content = format!("{} {}", event.title, event.summary);
                 let is_duplicate = existing_contents.iter().any(|existing| {
-                    self.is_similar_content(&event.title, existing)
-                        || self.is_similar_content(&event.summary, existing)
+                    Self::calculate_similarity(&event_full_content, existing) > 0.8
                 });
                 !is_duplicate
             })
@@ -528,9 +532,10 @@ Return ONLY the JSON object. No additional text before or after."#,
         new_info
             .iter()
             .filter(|info| {
+                // 🔧 改进：检查category+content的组合相似度
+                let info_full_content = format!("{} {}", info.category, info.content);
                 let is_duplicate = existing_contents.iter().any(|existing| {
-                    self.is_similar_content(&info.content, existing)
-                        || self.is_similar_content(&info.category, existing)
+                    Self::calculate_similarity(&info_full_content, existing) > 0.8
                 });
                 !is_duplicate
             })
@@ -547,9 +552,10 @@ Return ONLY the JSON object. No additional text before or after."#,
         new_work
             .iter()
             .filter(|work| {
+                // 🔧 改进：检查company+role+description的组合相似度
+                let work_full_content = format!("{} {} {}", work.company, work.role, work.description);
                 let is_duplicate = existing_contents.iter().any(|existing| {
-                    self.is_similar_content(&work.company, existing)
-                        && self.is_similar_content(&work.role, existing)
+                    Self::calculate_similarity(&work_full_content, existing) > 0.8
                 });
                 !is_duplicate
             })
@@ -566,8 +572,10 @@ Return ONLY the JSON object. No additional text before or after."#,
         new_rels
             .iter()
             .filter(|rel| {
+                // 🔧 改进：检查person+relation_type+context的组合相似度
+                let rel_full_content = format!("{} {} {}", rel.person, rel.relation_type, rel.context);
                 let is_duplicate = existing_contents.iter().any(|existing| {
-                    self.is_similar_content(&rel.person, existing)
+                    Self::calculate_similarity(&rel_full_content, existing) > 0.8
                 });
                 !is_duplicate
             })
@@ -584,8 +592,10 @@ Return ONLY the JSON object. No additional text before or after."#,
         new_goals
             .iter()
             .filter(|goal| {
+                // 🔧 改进：检查goal+category的组合相似度
+                let goal_full_content = format!("{} {}", goal.goal, goal.category);
                 let is_duplicate = existing_contents.iter().any(|existing| {
-                    self.is_similar_content(&goal.goal, existing)
+                    Self::calculate_similarity(&goal_full_content, existing) > 0.8
                 });
                 !is_duplicate
             })

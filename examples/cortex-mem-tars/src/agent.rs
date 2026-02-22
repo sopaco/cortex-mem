@@ -176,6 +176,12 @@ pub async fn create_memory_agent(
   - cortex://session/ - 会话记录
 - 对话内容会自动保存到 session，你无需关心存储
 
+📍 **Agent经验召回**（重要）：
+你可以主动搜索之前处理过的类似问题的经验案例：
+- 使用 search(query="问题描述", scope="cortex://agent/{bot_id}/cases") 搜索相关经验
+- Agent cases 包含了之前遇到的问题、解决方案和经验教训
+- 遇到复杂问题时，优先搜索是否有相关经验可以借鉴
+
 用户基本信息：
 {info}
 
@@ -371,8 +377,11 @@ pub async fn extract_user_basic_info(
 
     // 🆕 读取 relationships/
     let relationships_uri = format!("cortex://user/{}/relationships", user_id);
-    if let Ok(entries) = operations.filesystem().list(&relationships_uri).await {
+    if let Ok(mut entries) = operations.filesystem().list(&relationships_uri).await {
         if !entries.is_empty() {
+            // 🔧 按修改时间排序，优先返回最新的记忆
+            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
+            
             context.push_str("### 人际关系\n");
             for entry in entries.iter().take(5) {  // 只取前5个关系
                 if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
@@ -391,8 +400,11 @@ pub async fn extract_user_basic_info(
 
     // 🆕 读取 goals/
     let goals_uri = format!("cortex://user/{}/goals", user_id);
-    if let Ok(entries) = operations.filesystem().list(&goals_uri).await {
+    if let Ok(mut entries) = operations.filesystem().list(&goals_uri).await {
         if !entries.is_empty() {
+            // 🔧 按修改时间排序，优先返回最新的目标
+            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
+            
             context.push_str("### 目标愿景\n");
             for entry in entries.iter().take(5) {  // 只取前5个目标
                 if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
@@ -411,8 +423,11 @@ pub async fn extract_user_basic_info(
 
     // 读取 entities/
     let entities_uri = format!("cortex://user/{}/entities", user_id);
-    if let Ok(entries) = operations.filesystem().list(&entities_uri).await {
+    if let Ok(mut entries) = operations.filesystem().list(&entities_uri).await {
         if !entries.is_empty() {
+            // 🔧 按修改时间排序，优先返回最新的实体
+            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
+            
             context.push_str("### 相关实体\n");
             for entry in entries.iter().take(5) {  // 只取前5个最重要的实体
                 if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
@@ -431,8 +446,11 @@ pub async fn extract_user_basic_info(
 
     // 读取 events/
     let events_uri = format!("cortex://user/{}/events", user_id);
-    if let Ok(entries) = operations.filesystem().list(&events_uri).await {
+    if let Ok(mut entries) = operations.filesystem().list(&events_uri).await {
         if !entries.is_empty() {
+            // 🔧 按修改时间排序，优先返回最新的事件
+            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
+            
             context.push_str("### 重要事件\n");
             for entry in entries.iter().take(3) {  // 只取前3个事件
                 if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
@@ -451,8 +469,11 @@ pub async fn extract_user_basic_info(
 
     // 🆕 读取 Agent记忆: cases/
     let cases_uri = format!("cortex://agent/{}/cases", _agent_id);
-    if let Ok(entries) = operations.filesystem().list(&cases_uri).await {
+    if let Ok(mut entries) = operations.filesystem().list(&cases_uri).await {
         if !entries.is_empty() {
+            // 🔧 按修改时间排序，优先返回最新的经验案例
+            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
+            
             context.push_str("### Agent经验案例\n");
             for entry in entries.iter().take(5) {  // 只取前5个案例
                 if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
