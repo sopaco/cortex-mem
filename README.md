@@ -31,7 +31,7 @@
 
 Cortex Memory uses a sophisticated pipeline to process and manage memories, centered around a **hybrid storage architecture** combining **virtual-filesystem** durability with vector-based **semantic search**.
 
-| Architecture Based on **Virtual File** System and **Layered Context Loading** | Blazing **Precise** and **Accurate** Memory Retrieval |
+| **Virtual File** System and **Layered Context Loading** | Blazing **Precise** and **Accurate** Memory Retrieval |
 | :--- | :--- |
 |![architecture_style_modern](./assets/intro/architecture_style_modern.jpg) | ![architecture_style_classic](./assets/benchmark/cortex_mem_vs_langmem_thin.jpg) |
 
