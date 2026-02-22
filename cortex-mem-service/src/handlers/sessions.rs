@@ -103,7 +103,7 @@ pub async fn add_message(
     metadata.update_message_count(metadata.message_count + 1);
     
     // Save updated metadata
-    let metadata_uri = format!("cortex://threads/{}/.session.json", thread_id);
+    let metadata_uri = format!("cortex://session/{}/.session.json", thread_id);
     let metadata_json = serde_json::to_string_pretty(&metadata)?;
     state.filesystem.write(&metadata_uri, &metadata_json).await?;
 

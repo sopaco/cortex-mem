@@ -29,6 +29,8 @@ pub struct SessionMetadata {
     pub tags: Vec<String>,
     pub title: Option<String>,
     pub description: Option<String>,
+    pub user_id: Option<String>, // 🆕 用户ID用于记忆隔离
+    pub agent_id: Option<String>, // 🆕 Agent ID用于记忆隔离
 }
 
 impl SessionMetadata {
@@ -46,7 +48,21 @@ impl SessionMetadata {
             tags: Vec::new(),
             title: None,
             description: None,
+            user_id: None,
+            agent_id: None,
         }
+    }
+    
+    /// Create new session metadata with user_id and agent_id
+    pub fn with_ids(
+        thread_id: impl Into<String>,
+        user_id: Option<String>,
+        agent_id: Option<String>,
+    ) -> Self {
+        let mut metadata = Self::new(thread_id);
+        metadata.user_id = user_id;
+        metadata.agent_id = agent_id;
+        metadata
     }
     
     /// Mark session as closed
@@ -155,6 +171,10 @@ pub struct ExtractionStats {
     pub entities: usize,
     pub events: usize,
     pub cases: usize,
+    pub personal_info: usize,  // 🆕 个人信息数量
+    pub work_history: usize,   // 🆕 工作经历数量
+    pub relationships: usize,  // 🆕 人际关系数量
+    pub goals: usize,          // 🆕 目标愿景数量
 }
 
 /// Session manager
@@ -242,8 +262,14 @@ impl SessionManager {
     }
     
     /// Create a new session
-    pub async fn create_session(&self, thread_id: &str) -> Result<SessionMetadata> {
-        let metadata = SessionMetadata::new(thread_id);
+    /// Create a new session with user_id and agent_id
+    pub async fn create_session_with_ids(
+        &self,
+        thread_id: &str,
+        user_id: Option<String>,
+        agent_id: Option<String>,
+    ) -> Result<SessionMetadata> {
+        let metadata = SessionMetadata::with_ids(thread_id, user_id, agent_id);
         
         // Save metadata to filesystem
         let metadata_uri = format!("cortex://session/{}/.session.json", thread_id);
@@ -258,6 +284,11 @@ impl SessionManager {
         }
         
         Ok(metadata)
+    }
+
+    /// Create a new session (deprecated - use create_session_with_ids)
+    pub async fn create_session(&self, thread_id: &str) -> Result<SessionMetadata> {
+        self.create_session_with_ids(thread_id, None, None).await
     }
     
     /// Load session metadata
@@ -282,6 +313,24 @@ impl SessionManager {
         metadata.close();
         self.update_session(&metadata).await?;
         
+        // 🆕 Generate timeline layers (L0/L1) for the entire session
+        if let Some(ref llm_client) = self.llm_client {
+            use crate::layers::manager::LayerManager;
+            
+            let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
+            let layer_manager = LayerManager::new(self.filesystem.clone(), llm_client.clone());
+            
+            info!("Generating session-level timeline layers for: {}", thread_id);
+            match layer_manager.generate_timeline_layers(&timeline_uri).await {
+                Ok(_) => {
+                    info!("✅ Successfully generated timeline layers for session: {}", thread_id);
+                }
+                Err(e) => {
+                    warn!("Failed to generate timeline layers for session {}: {}", thread_id, e);
+                }
+            }
+        }
+        
         // Trigger memory extraction if auto_extract_on_close is enabled and LLM client is available
         if self.config.auto_extract_on_close {
             if let Some(ref llm_client) = self.llm_client {
@@ -290,8 +339,16 @@ impl SessionManager {
                 match self.extract_and_save_memories(thread_id, llm_client.clone()).await {
                     Ok(stats) => {
                         info!(
-                            "Memory extraction completed for session {}: {} preferences, {} entities, {} events, {} cases",
-                            thread_id, stats.preferences, stats.entities, stats.events, stats.cases
+                            "Memory extraction completed for session {}: {} preferences, {} entities, {} events, {} cases, {} personal_info, {} work_history, {} relationships, {} goals",
+                            thread_id,
+                            stats.preferences,
+                            stats.entities,
+                            stats.events,
+                            stats.cases,
+                            stats.personal_info,
+                            stats.work_history,
+                            stats.relationships,
+                            stats.goals
                         );
                     }
                     Err(e) => {
@@ -327,6 +384,11 @@ impl SessionManager {
             return Ok(ExtractionStats::default());
         }
         
+        // 🔧 读取session metadata获取user_id和agent_id
+        let metadata = self.load_session(thread_id).await?;
+        let user_id = metadata.user_id.clone().unwrap_or_else(|| "default".to_string());
+        let agent_id = metadata.agent_id.clone().unwrap_or_else(|| "default".to_string());
+        
         // Read message contents
         let mut messages = Vec::new();
         for uri in &message_uris {
@@ -337,7 +399,12 @@ impl SessionManager {
         }
         
         // Extract memories using LLM
-        let extractor = MemoryExtractor::new(llm_client, self.filesystem.clone());
+        let extractor = MemoryExtractor::new(
+            llm_client,
+            self.filesystem.clone(),
+            user_id,
+            agent_id,
+        );
         let extracted = extractor.extract(&messages).await?;
         
         let stats = ExtractionStats {
@@ -345,6 +412,10 @@ impl SessionManager {
             entities: extracted.entities.len(),
             events: extracted.events.len(),
             cases: extracted.cases.len(),
+            personal_info: extracted.personal_info.len(),
+            work_history: extracted.work_history.len(),
+            relationships: extracted.relationships.len(),
+            goals: extracted.goals.len(),
         };
         
         // Save extracted memories
@@ -398,6 +469,11 @@ impl SessionManager {
         
         // Save message
         self.message_storage.save_message(thread_id, &message).await?;
+        
+        // 🔧 Update message count in session metadata
+        let mut metadata = self.load_session(thread_id).await?;
+        metadata.update_message_count(metadata.message_count + 1);
+        self.update_session(&metadata).await?;
         
         // 🆕 发布消息添加事件
         if let Some(ref bus) = self.event_bus {

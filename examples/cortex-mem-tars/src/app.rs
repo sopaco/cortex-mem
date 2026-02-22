@@ -753,29 +753,12 @@ impl App {
 
                 // 如果有基础设施，创建真实的带记忆的 Agent
                 if let Some(infrastructure) = &self.infrastructure {
-                    // 先提取用户基本信息（使用 bot.id 作为 agent_id）
-                    let user_info = match extract_user_basic_info(
-                        infrastructure.operations().clone(),
-                        &self.user_id,
-                        &bot.id,
-                    )
-                    .await
-                    {
-                        Ok(info) => {
-                            self.user_info = info.clone();
-                            info
-                        }
-                        Err(e) => {
-                            log::error!("提取用户基本信息失败: {}", e);
-                            None
-                        }
-                    };
-
                     let config = infrastructure.config();
+                    // 🔧 先创建tenant_ops（带租户隔离和user_id）
                     match create_memory_agent(
                         config.cortex.data_dir(),
                         config,
-                        user_info.as_deref(),
+                        None, // user_info稍后提取
                         Some(bot.system_prompt.as_str()),
                         &bot.id,
                         &self.user_id,
@@ -783,13 +766,56 @@ impl App {
                     .await
                     {
                         Ok((rig_agent, tenant_ops)) => {
+                            // 保存租户 operations
                             self.tenant_operations = Some(tenant_ops.clone());
+                            
+                            // 🔧 使用租户隔离的operations提取用户信息（而非global operations）
+                            let user_info = match extract_user_basic_info(
+                                tenant_ops.clone(),
+                                &self.user_id,
+                                &bot.id,
+                            )
+                            .await
+                            {
+                                Ok(info) => {
+                                    self.user_info = info.clone();
+                                    info
+                                }
+                                Err(e) => {
+                                    log::error!("提取用户基本信息失败: {}", e);
+                                    None
+                                }
+                            };
 
-                            // 🔧 移除AutoExtractor创建逻辑 - 已由Cortex Memory统一管理
-                            // 原有的auto_extractor创建代码已移除
-
-                            self.rig_agent = Some(rig_agent);
-                            log::info!("已创建带记忆功能的真实 Agent");
+                            // 如果有用户信息，需要重新创建 Agent（带用户信息）
+                            if user_info.is_some() {
+                                let config = infrastructure.config();
+                                match create_memory_agent(
+                                    config.cortex.data_dir(),
+                                    config,
+                                    user_info.as_deref(),
+                                    Some(bot.system_prompt.as_str()),
+                                    &bot.id,
+                                    &self.user_id,
+                                )
+                                .await
+                                {
+                                    Ok((rig_agent_with_info, tenant_ops_with_info)) => {
+                                        self.tenant_operations = Some(tenant_ops_with_info);
+                                        self.rig_agent = Some(rig_agent_with_info);
+                                        log::info!("已创建带用户信息的 Agent");
+                                    }
+                                    Err(e) => {
+                                        log::error!("重新创建带用户信息的 Agent 失败: {}", e);
+                                        // 保持之前创建的Agent
+                                        self.rig_agent = Some(rig_agent);
+                                    }
+                                }
+                            } else {
+                                // 没有用户信息，使用首次创建的Agent
+                                self.rig_agent = Some(rig_agent);
+                                log::info!("已创建不带用户信息的 Agent");
+                            }
                         }
                         Err(e) => {
                             log::error!("创建真实 Agent 失败 {}", e);
@@ -857,8 +883,11 @@ impl App {
 
             // 创建 AgentChatHandler 并传入租户 memory operations 用于自动存储
             let mut agent_handler = if let Some(tenant_ops) = &self.tenant_operations {
-                // 每次启动创建新的 session_id
-                let session_id = uuid::Uuid::new_v4().to_string();
+                // 🔧 使用或创建 session_id（保持一致）
+                let session_id = self
+                    .current_session_id
+                    .get_or_insert_with(|| uuid::Uuid::new_v4().to_string())
+                    .clone();
                 AgentChatHandler::with_memory(rig_agent.clone(), tenant_ops.clone(), session_id)
             } else {
                 AgentChatHandler::new(rig_agent.clone())
@@ -1118,47 +1147,22 @@ impl App {
     pub async fn on_exit(&mut self) -> Result<()> {
         log::info!("🚪 开始退出流程...");
 
-        // 🔧 直接使用AutoExtractor同步提取（不依赖事件监听器）
-        // 这样可以确保提取完成后再退出程序
+        // 🔧 修复：使用close_session代替直接调用extract_session
         if let (Some(tenant_ops), Some(session_id)) =
             (&self.tenant_operations, &self.current_session_id)
         {
-            log::info!("🧠 开始提取会话记忆...");
+            log::info!("🧠 开始关闭会话并提取记忆...");
 
-            // 方式1: 直接调用AutoExtractor（如果MemoryOperations暴露了）
-            if let Some(auto_extractor) = tenant_ops.auto_extractor() {
-                match auto_extractor.extract_session(session_id).await {
-                    Ok(stats) => {
-                        log::info!(
-                            "✅ 记忆提取完成：{} 个事实，{} 个决策，{} 个实体",
-                            stats.facts_extracted,
-                            stats.decisions_extracted,
-                            stats.entities_extracted
-                        );
-                        log::info!(
-                            "📝 已保存：{} 条用户记忆，{} 条 Agent 记忆",
-                            stats.user_memories_saved,
-                            stats.agent_memories_saved
-                        );
-                    }
-                    Err(e) => {
-                        log::warn!("⚠️ 记忆提取失败: {}", e);
-                    }
+            // 关闭会话（会触发timeline层生成和memory extraction）
+            let session_manager = tenant_ops.session_manager().clone();
+            match session_manager.write().await.close_session(session_id).await {
+                Ok(_) => {
+                    log::info!("✅ 会话已关闭，timeline层和记忆已提取");
                 }
-            } else {
-                log::warn!("⚠️ AutoExtractor 未初始化");
+                Err(e) => {
+                    log::warn!("⚠️ 会话关闭失败: {}", e);
+                }
             }
-
-            // 方式2: 关闭会话（可选，可能重复提取）
-            // let session_manager = tenant_ops.session_manager().clone();
-            // match session_manager.write().await.close_session(session_id).await {
-            //     Ok(_) => {
-            //         log::info!("✅ 会话已关闭");
-            //     }
-            //     Err(e) => {
-            //         log::warn!("⚠️ 会话关闭失败: {}", e);
-            //     }
-            // }
         } else {
             log::info!("ℹ️ 无需处理会话（未配置租户或无会话）");
         }
