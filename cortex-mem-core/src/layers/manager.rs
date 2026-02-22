@@ -1,4 +1,4 @@
-use crate::{ContextLayer, CortexFilesystem, FilesystemOperations, Result};
+use crate::{ContextLayer, CortexFilesystem, FilesystemOperations, Result, FileEntry};
 use crate::llm::LLMClient;
 use std::sync::Arc;
 
@@ -94,14 +94,26 @@ impl LayerManager {
         Ok(())
     }
     
-    /// Generate L0/L1 layers for a timeline directory
+    /// Generate L0/L1 layers for a timeline directory or session
+    /// 
+    /// If `timeline_uri` points to a session root (e.g., cortex://session/{id}/timeline),
+    /// aggregates ALL messages across all dates for comprehensive summary.
+    /// If it points to a specific date directory, only summarizes that day's messages.
     pub async fn generate_timeline_layers(&self, timeline_uri: &str) -> Result<()> {
         use tracing::{debug, info};
         
         info!("Generating timeline layers for {}", timeline_uri);
         
-        // 1. Read all messages in timeline
-        let entries = self.filesystem.list(timeline_uri).await?;
+        // Determine if this is a session-level or date-level timeline
+        let is_session_level = !timeline_uri.contains("/timeline/20"); // Session-level if no date path
+        
+        // 1. Read all messages in timeline (recursively if session-level)
+        let entries = if is_session_level {
+            self.collect_all_timeline_messages(timeline_uri).await?
+        } else {
+            self.filesystem.list(timeline_uri).await?
+        };
+        
         let mut messages = Vec::new();
         
         for entry in entries {
@@ -111,7 +123,7 @@ impl LayerManager {
             
             if entry.name.ends_with(".md") && !entry.is_directory {
                 match self.filesystem.read(&entry.uri).await {
-                    Ok(content) => messages.push((entry.uri, content)),
+                    Ok(content) => messages.push((entry.uri.clone(), content)),
                     Err(e) => debug!("Failed to read {}: {}", entry.uri, e),
                 }
             }
@@ -146,6 +158,38 @@ impl LayerManager {
         info!("Generated L1 overview: {}", overview_uri);
         
         Ok(())
+    }
+    
+    /// Recursively collect all message entries from timeline subdirectories
+    async fn collect_all_timeline_messages(&self, timeline_root: &str) -> Result<Vec<FileEntry>> {
+        let mut all_entries = Vec::new();
+        self.collect_messages_recursive(timeline_root, &mut all_entries).await?;
+        Ok(all_entries)
+    }
+    
+    fn collect_messages_recursive<'a>(
+        &'a self,
+        uri: &'a str,
+        entries: &'a mut Vec<FileEntry>,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + 'a>> {
+        Box::pin(async move {
+            let dir_entries = self.filesystem.list(uri).await?;
+            
+            for entry in dir_entries {
+                if entry.name.starts_with('.') {
+                    continue;
+                }
+                
+                if entry.is_directory {
+                    // Recurse into subdirectories
+                    self.collect_messages_recursive(&entry.uri, entries).await?;
+                } else if entry.name.ends_with(".md") {
+                    entries.push(entry);
+                }
+            }
+            
+            Ok(())
+        })
     }
     
     /// Get layer URI for a base URI

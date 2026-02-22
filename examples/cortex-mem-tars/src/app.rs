@@ -857,8 +857,11 @@ impl App {
 
             // 创建 AgentChatHandler 并传入租户 memory operations 用于自动存储
             let mut agent_handler = if let Some(tenant_ops) = &self.tenant_operations {
-                // 每次启动创建新的 session_id
-                let session_id = uuid::Uuid::new_v4().to_string();
+                // 🔧 使用或创建 session_id（保持一致）
+                let session_id = self
+                    .current_session_id
+                    .get_or_insert_with(|| uuid::Uuid::new_v4().to_string())
+                    .clone();
                 AgentChatHandler::with_memory(rig_agent.clone(), tenant_ops.clone(), session_id)
             } else {
                 AgentChatHandler::new(rig_agent.clone())
@@ -1118,47 +1121,22 @@ impl App {
     pub async fn on_exit(&mut self) -> Result<()> {
         log::info!("🚪 开始退出流程...");
 
-        // 🔧 直接使用AutoExtractor同步提取（不依赖事件监听器）
-        // 这样可以确保提取完成后再退出程序
+        // 🔧 修复：使用close_session代替直接调用extract_session
         if let (Some(tenant_ops), Some(session_id)) =
             (&self.tenant_operations, &self.current_session_id)
         {
-            log::info!("🧠 开始提取会话记忆...");
+            log::info!("🧠 开始关闭会话并提取记忆...");
 
-            // 方式1: 直接调用AutoExtractor（如果MemoryOperations暴露了）
-            if let Some(auto_extractor) = tenant_ops.auto_extractor() {
-                match auto_extractor.extract_session(session_id).await {
-                    Ok(stats) => {
-                        log::info!(
-                            "✅ 记忆提取完成：{} 个事实，{} 个决策，{} 个实体",
-                            stats.facts_extracted,
-                            stats.decisions_extracted,
-                            stats.entities_extracted
-                        );
-                        log::info!(
-                            "📝 已保存：{} 条用户记忆，{} 条 Agent 记忆",
-                            stats.user_memories_saved,
-                            stats.agent_memories_saved
-                        );
-                    }
-                    Err(e) => {
-                        log::warn!("⚠️ 记忆提取失败: {}", e);
-                    }
+            // 关闭会话（会触发timeline层生成和memory extraction）
+            let session_manager = tenant_ops.session_manager().clone();
+            match session_manager.write().await.close_session(session_id).await {
+                Ok(_) => {
+                    log::info!("✅ 会话已关闭，timeline层和记忆已提取");
                 }
-            } else {
-                log::warn!("⚠️ AutoExtractor 未初始化");
+                Err(e) => {
+                    log::warn!("⚠️ 会话关闭失败: {}", e);
+                }
             }
-
-            // 方式2: 关闭会话（可选，可能重复提取）
-            // let session_manager = tenant_ops.session_manager().clone();
-            // match session_manager.write().await.close_session(session_id).await {
-            //     Ok(_) => {
-            //         log::info!("✅ 会话已关闭");
-            //     }
-            //     Err(e) => {
-            //         log::warn!("⚠️ 会话关闭失败: {}", e);
-            //     }
-            // }
         } else {
             log::info!("ℹ️ 无需处理会话（未配置租户或无会话）");
         }

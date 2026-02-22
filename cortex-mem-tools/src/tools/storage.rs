@@ -52,19 +52,22 @@ impl MemoryOperations {
                     args.thread_id.clone()
                 };
                 
-                let sm = self.session_manager.write().await;
-                
-                // Ensure session exists
-                if !sm.session_exists(&thread_id).await? {
-                    sm.create_session(&thread_id).await?;
-                }
-                
-                // 🆕 使用add_message()发布事件，而不是直接调用save_message()
-                let message = sm.add_message(
-                    &thread_id,
-                    MessageRole::User,  // 默认使用User角色
-                    args.content.clone()
-                ).await?;
+                // 🔧 Fix: Release lock immediately after operations
+                let message = {
+                    let sm = self.session_manager.write().await;
+                    
+                    // Ensure session exists
+                    if !sm.session_exists(&thread_id).await? {
+                        sm.create_session(&thread_id).await?;
+                    }
+                    
+                    // 🆕 使用add_message()发布事件，而不是直接调用save_message()
+                    sm.add_message(
+                        &thread_id,
+                        MessageRole::User,  // 默认使用User角色
+                        args.content.clone()
+                    ).await?
+                }; // Lock is released here
                 
                 // 返回消息URI
                 let year_month = message.timestamp.format("%Y-%m").to_string();
@@ -87,9 +90,11 @@ impl MemoryOperations {
             self.filesystem.write(&uri, &args.content).await?;
         }
         
-        // Auto-generate layers if requested
+        // 🔧 Auto-generate layers if requested (ONLY for user and agent scope)
+        // Session scope: skip per-message layer generation to avoid overwriting
+        // Session-level layers will be generated when the session closes
         let layers_generated = HashMap::new();
-        if args.auto_generate_layers.unwrap_or(true) {
+        if args.auto_generate_layers.unwrap_or(true) && scope != "session" {
             // Use layer_manager to generate all layers
             if let Err(e) = self.layer_manager.generate_all_layers(&uri, &args.content).await {
                 tracing::warn!("Failed to generate layers for {}: {}", uri, e);

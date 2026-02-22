@@ -205,20 +205,39 @@ impl MessageStorage {
     pub async fn list_messages(&self, thread_id: &str) -> Result<Vec<String>> {
         let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
 
-        // Recursively list all .md files in timeline
+        // 🔧 Recursively list all .md files in timeline subdirectories
         let mut messages = Vec::new();
-
-        // This would need a recursive directory walk
-        // Simplified implementation for now
-        let entries = self.filesystem.list(&timeline_uri).await?;
-
-        for entry in entries {
-            if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
-                messages.push(entry.uri);
-            }
-        }
+        self.collect_message_uris_recursive(&timeline_uri, &mut messages).await?;
 
         Ok(messages)
+    }
+    
+    /// Recursively collect message URIs from timeline directory
+    fn collect_message_uris_recursive<'a>(
+        &'a self,
+        uri: &'a str,
+        result: &'a mut Vec<String>,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + 'a>> {
+        Box::pin(async move {
+            match self.filesystem.list(uri).await {
+                Ok(entries) => {
+                    for entry in entries {
+                        if entry.is_directory && !entry.name.starts_with('.') {
+                            // Recursively explore subdirectories
+                            self.collect_message_uris_recursive(&entry.uri, result).await?;
+                        } else if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                            // Add message file URI
+                            result.push(entry.uri.clone());
+                        }
+                    }
+                }
+                Err(e) => {
+                    // Directory might not exist yet, that's okay
+                    tracing::debug!("Failed to list directory {}: {}", uri, e);
+                }
+            }
+            Ok(())
+        })
     }
 
     /// Delete a message

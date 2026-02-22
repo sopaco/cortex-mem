@@ -6,7 +6,6 @@ use futures::StreamExt;
 use rig::agent::MultiTurnStreamItem;
 use rig::{
     agent::Agent as RigAgent,
-    client::CompletionClient,
     completion::Message,
     message::Text,
     providers::openai::{Client, CompletionModel},

@@ -178,7 +178,7 @@ impl SyncManager {
         })
     }
 
-    /// 同步目录（递归，用于threads）
+    /// 同步目录(递归,用于threads)
     fn sync_directory_recursive<'a>(
         &'a self,
         uri: &'a str,
@@ -187,12 +187,14 @@ impl SyncManager {
             let entries = self.filesystem.list(uri).await?;
             let mut stats = SyncStats::default();
 
-            // ✅ 新增: 如果是timeline目录,生成L0/L1层
-            if uri.contains("/timeline") && !uri.contains(".md") {
+            // ✅ Generate timeline layers ONLY at session root level (not subdirectories)
+            // This prevents overwriting session-level summaries with day-level summaries
+            let is_session_timeline_root = uri.ends_with("/timeline") && !uri.contains("/timeline/");
+            if is_session_timeline_root {
                 if let Err(e) = self.generate_timeline_layers(uri).await {
                     warn!("Failed to generate timeline layers for {}: {}", uri, e);
                 } else {
-                    info!("Generated timeline layers for {}", uri);
+                    info!("Generated session-level timeline layers for {}", uri);
                 }
             }
 

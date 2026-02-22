@@ -282,6 +282,24 @@ impl SessionManager {
         metadata.close();
         self.update_session(&metadata).await?;
         
+        // 🆕 Generate timeline layers (L0/L1) for the entire session
+        if let Some(ref llm_client) = self.llm_client {
+            use crate::layers::manager::LayerManager;
+            
+            let timeline_uri = format!("cortex://session/{}/timeline", thread_id);
+            let layer_manager = LayerManager::new(self.filesystem.clone(), llm_client.clone());
+            
+            info!("Generating session-level timeline layers for: {}", thread_id);
+            match layer_manager.generate_timeline_layers(&timeline_uri).await {
+                Ok(_) => {
+                    info!("✅ Successfully generated timeline layers for session: {}", thread_id);
+                }
+                Err(e) => {
+                    warn!("Failed to generate timeline layers for session {}: {}", thread_id, e);
+                }
+            }
+        }
+        
         // Trigger memory extraction if auto_extract_on_close is enabled and LLM client is available
         if self.config.auto_extract_on_close {
             if let Some(ref llm_client) = self.llm_client {
@@ -398,6 +416,11 @@ impl SessionManager {
         
         // Save message
         self.message_storage.save_message(thread_id, &message).await?;
+        
+        // 🔧 Update message count in session metadata
+        let mut metadata = self.load_session(thread_id).await?;
+        metadata.update_message_count(metadata.message_count + 1);
+        self.update_session(&metadata).await?;
         
         // 🆕 发布消息添加事件
         if let Some(ref bus) = self.event_bus {
