@@ -299,23 +299,46 @@ impl AutoIndexer {
                         if let Some(message) = self.parse_message_markdown(&content) {
                             messages.push(message);
                         } else {
-                            // 🆕 如果解析失败，将整个文件内容作为消息处理（兼容TARS等生成的纯文本）
-                            // 从文件名和路径提取信息
-                            let message_id = entry.name.trim_end_matches(".md").to_string();
+                            // 🔧 修复：从文件名正确提取message ID
+                            // 文件名格式：HH_MM_SS_<uuid前8字符>.md
+                            // 例如：15_10_18_28b538d8.md
+                            // 但这只是UUID的前8字符，我们需要从文件内容中提取完整UUID
+                            
+                            // 尝试从Markdown内容中手动提取ID（更宽松的解析）
+                            let message_id = if let Some(id) = Self::extract_id_from_content(&content) {
+                                id
+                            } else {
+                                // 如果仍然提取不到，尝试从文件名提取UUID部分
+                                // 文件名格式：HH_MM_SS_xxxxxxxx.md，取最后一部分作为ID片段
+                                let name_without_ext = entry.name.trim_end_matches(".md");
+                                let parts: Vec<&str> = name_without_ext.split('_').collect();
+                                if parts.len() >= 4 {
+                                    // 取最后一个部分（UUID前8字符）
+                                    // 但我们知道这不是完整UUID，所以给它一个警告
+                                    let partial_id = parts[parts.len() - 1];
+                                    warn!("Could not extract full UUID from {}, using partial ID: {}", entry.uri, partial_id);
+                                    // 跳过这个消息，因为部分ID无法用于向量存储
+                                    continue;
+                                } else {
+                                    warn!("Invalid filename format: {}", entry.name);
+                                    continue;
+                                }
+                            };
                             
                             // 从entry.modified获取时间戳
                             let timestamp = entry.modified;
                             
-                            messages.push(Message {
-                                id: message_id,
+                            let message = Message {
+                                id: message_id.clone(),  // 🔧 clone以便后续使用
                                 role: crate::session::MessageRole::User, // 默认为User
                                 content: content.trim().to_string(),
                                 timestamp,
                                 created_at: timestamp,
                                 metadata: None,
-                            });
+                            };
                             
-                            debug!("Collected plain text message from {}", entry.uri);
+                            debug!("Collected message from {} with ID: {}", entry.uri, message_id);
+                            messages.push(message);
                         }
                     }
                 }
@@ -333,32 +356,48 @@ impl AutoIndexer {
         let mut message_content = String::new();
         let mut id = String::new();
         let mut timestamp = chrono::Utc::now();
+        let mut in_content_section = false;
 
         for line in content.lines() {
-            if line.starts_with("# 👤 User") {
+            if line.starts_with("# 👤 User") || line.starts_with("# User") {
                 role = MessageRole::User;
-            } else if line.starts_with("# 🤖 Assistant") {
+            } else if line.starts_with("# 🤖 Assistant") || line.starts_with("# Assistant") {
                 role = MessageRole::Assistant;
-            } else if line.starts_with("# 🔧 System") {
+            } else if line.starts_with("# ⚙️ System") || line.starts_with("# System") {
                 role = MessageRole::System;
-            } else if line.starts_with("**ID**: `") {
+            } else if line.starts_with("**ID**:") {
+                // 🔧 修复：更宽松地提取ID，支持多种格式
                 if let Some(id_str) = line
-                    .strip_prefix("**ID**: `")
-                    .and_then(|s| s.strip_suffix("`"))
+                    .strip_prefix("**ID**:")
+                    .map(|s| s.trim())
+                    .and_then(|s| {
+                        // 移除可能的`符号
+                        s.trim_start_matches('`').trim_end_matches('`').trim().to_string().into()
+                    })
                 {
-                    id = id_str.to_string();
+                    if !id_str.is_empty() {
+                        id = id_str;
+                    }
                 }
-            } else if line.starts_with("**Timestamp**: ") {
-                if let Some(ts_str) = line.strip_prefix("**Timestamp**: ") {
+            } else if line.starts_with("**Timestamp**:") {
+                if let Some(ts_str) = line.strip_prefix("**Timestamp**:").map(|s| s.trim()) {
+                    // 尝试多种时间格式
                     if let Ok(parsed_ts) =
                         chrono::DateTime::parse_from_str(ts_str, "%Y-%m-%d %H:%M:%S %Z")
+                    {
+                        timestamp = parsed_ts.with_timezone(&chrono::Utc);
+                    } else if let Ok(parsed_ts) =
+                        chrono::DateTime::parse_from_str(ts_str, "%Y-%m-%d %H:%M:%S UTC")
                     {
                         timestamp = parsed_ts.with_timezone(&chrono::Utc);
                     }
                 }
             } else if line.starts_with("## Content") {
-                // 内容开始
-            } else if !line.starts_with('#') && !line.starts_with("**") && !line.trim().is_empty() {
+                in_content_section = true;
+            } else if line.starts_with("##") {
+                // 其他section开始，内容section结束
+                in_content_section = false;
+            } else if in_content_section && !line.trim().is_empty() {
                 if !message_content.is_empty() {
                     message_content.push('\n');
                 }
@@ -378,6 +417,28 @@ impl AutoIndexer {
         } else {
             None
         }
+    }
+
+    /// 🔧 新增：从Markdown内容中手动提取ID（更宽松的方式）
+    fn extract_id_from_content(content: &str) -> Option<String> {
+        for line in content.lines() {
+            if line.contains("**ID**:") || line.contains("ID:") {
+                // 尝试提取ID
+                if let Some(id_part) = line.split(':').nth(1) {
+                    let id = id_part
+                        .trim()
+                        .trim_matches('`')
+                        .trim()
+                        .to_string();
+                    
+                    // 验证是否是有效的UUID格式
+                    if uuid::Uuid::parse_str(&id).is_ok() {
+                        return Some(id);
+                    }
+                }
+            }
+        }
+        None
     }
 
     /// 计算内容哈希

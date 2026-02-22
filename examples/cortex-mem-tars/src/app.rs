@@ -192,8 +192,8 @@ impl App {
                 last_log_update = Instant::now();
             }
 
-            // 定期检查服务状态（每5秒）
-            if last_service_check.elapsed() > Duration::from_secs(5) {
+            // 定期检查服务状态
+            if last_service_check.elapsed() > Duration::from_secs(15) {
                 // 在后台检查服务状态，不阻塞主循环
                 let _ = self.check_service_status().await;
                 last_service_check = Instant::now();
@@ -768,7 +768,7 @@ impl App {
                         Ok((rig_agent, tenant_ops)) => {
                             // 保存租户 operations
                             self.tenant_operations = Some(tenant_ops.clone());
-                            
+
                             // 🔧 使用租户隔离的operations提取用户信息（而非global operations）
                             let user_info = match extract_user_basic_info(
                                 tenant_ops.clone(),
@@ -1155,7 +1155,12 @@ impl App {
 
             // 关闭会话（会触发timeline层生成和memory extraction）
             let session_manager = tenant_ops.session_manager().clone();
-            match session_manager.write().await.close_session(session_id).await {
+            match session_manager
+                .write()
+                .await
+                .close_session(session_id)
+                .await
+            {
                 Ok(_) => {
                     log::info!("✅ 会话已关闭，timeline层和记忆已提取");
                 }

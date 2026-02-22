@@ -286,6 +286,7 @@ pub async fn create_memory_agent(
         .completions_api()  // Use completions API to get CompletionModel
         .agent(&config.llm.model_efficient)
         .preamble(&system_prompt)
+        .default_max_turns(30)  // 🔧 设置默认max_turns为30，避免频繁触发MaxTurnError
         // 搜索工具（最常用）
         .tool(memory_tools.search_tool())
         .tool(memory_tools.find_tool())
@@ -644,7 +645,7 @@ impl AgentChatHandler {
 
             let mut stream = agent
                 .stream_chat(prompt_message, chat_history)
-                .multi_turn(20)
+                .multi_turn(30)  // 🔧 从20增加到30，减少触发MaxTurnError的可能性
                 .await;
 
             while let Some(item) = stream.next().await {
