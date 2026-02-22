@@ -70,18 +70,64 @@ pub async fn trigger_extraction(
         .await?;
 
     // Optionally save to user/agent memories
-    if req.auto_save {
-        // TODO: Save to cortex://user/memories/
-        // TODO: Save to cortex://agent/memories/
-        tracing::info!("Auto-save not yet implemented");
-    }
+    let entities_for_response = if req.auto_save {
+        // 🔧 修复: 使用MemoryExtractor保存提取的记忆
+        use cortex_mem_core::session::extraction::MemoryExtractor;
+        
+        // 从metadata获取user_id和agent_id，如果没有则使用默认值
+        let user_id = "default".to_string();  // TODO: 从请求或session metadata获取
+        let agent_id = "default".to_string();
+        
+        let memory_extractor = MemoryExtractor::new(
+            llm_client.clone(),
+            state.filesystem.clone(),
+            user_id,
+            agent_id,
+        );
+        
+        // 转换extraction_result为ExtractedMemories格式
+        use cortex_mem_core::session::extraction::{
+            ExtractedMemories, EntityMemory,
+        };
+        
+        // 先clone entities用于返回
+        let entities_clone = extraction_result.entities.clone();
+        
+        let extracted_memories = ExtractedMemories {
+            preferences: vec![],  // extraction_result不包含preferences
+            entities: extraction_result.entities.into_iter().map(|e| {
+                EntityMemory {
+                    name: e.name.clone(),
+                    entity_type: e.entity_type.clone(),
+                    description: e.description.unwrap_or_else(|| e.name.clone()),
+                    context: format!("Extracted from session {}", thread_id),
+                }
+            }).collect(),
+            events: vec![],  // extraction_result不包含events
+            cases: vec![],   // extraction_result不包含cases
+            personal_info: vec![],
+            work_history: vec![],
+            relationships: vec![],
+            goals: vec![],
+        };
+        
+        if let Err(e) = memory_extractor.save_memories(&extracted_memories).await {
+            tracing::warn!("Failed to auto-save memories: {}", e);
+        } else {
+            tracing::info!("Auto-saved {} entities to user/agent memories", extracted_memories.entities.len());
+        }
+        
+        entities_clone
+    } else {
+        extraction_result.entities
+    };
 
     let response = serde_json::json!({
         "thread_id": thread_id,
         "message_count": messages.len(),
         "facts": extraction_result.facts,
         "decisions": extraction_result.decisions,
-        "entities": extraction_result.entities,
+        "entities": entities_for_response,
     });
 
     Ok(Json(ApiResponse::success(response)))

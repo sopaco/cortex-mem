@@ -6,7 +6,6 @@ use futures::StreamExt;
 use rig::agent::MultiTurnStreamItem;
 use rig::{
     agent::Agent as RigAgent,
-    client::CompletionClient,
     completion::Message,
     message::Text,
     providers::openai::{Client, CompletionModel},
@@ -177,6 +176,12 @@ pub async fn create_memory_agent(
   - cortex://session/ - 会话记录
 - 对话内容会自动保存到 session，你无需关心存储
 
+📍 **Agent经验召回**（重要）：
+你可以主动搜索之前处理过的类似问题的经验案例：
+- 使用 search(query="问题描述", scope="cortex://agent/{bot_id}/cases") 搜索相关经验
+- Agent cases 包含了之前遇到的问题、解决方案和经验教训
+- 遇到复杂问题时，优先搜索是否有相关经验可以借鉴
+
 用户基本信息：
 {info}
 
@@ -281,6 +286,7 @@ pub async fn create_memory_agent(
         .completions_api()  // Use completions API to get CompletionModel
         .agent(&config.llm.model_efficient)
         .preamble(&system_prompt)
+        .default_max_turns(30)  // 🔧 设置默认max_turns为30，避免频繁触发MaxTurnError
         // 搜索工具（最常用）
         .tool(memory_tools.search_tool())
         .tool(memory_tools.find_tool())
@@ -303,57 +309,256 @@ pub async fn extract_user_basic_info(
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
     use cortex_mem_core::FilesystemOperations;
 
-    // 直接读取 profile.json 文件
-    let profile_uri = format!("cortex://user/{}/profile.json", user_id);
+    // 🔧 统一使用精细化记忆文件（移除profile.json支持）
+    tracing::info!("Loading user memories from granular files for user: {}", user_id);
+    
+    let mut context = String::new();
+    context.push_str("## 用户记忆\n\n");
+    let mut total_count = 0;
 
-    match operations.filesystem().read(&profile_uri).await {
-        Ok(json_str) => {
-            let profile: serde_json::Value = serde_json::from_str(&json_str)?;
-
-            let mut context = String::new();
-            context.push_str("## 用户记忆\n\n");
-
-            let categories = vec![
-                ("personal_info", "个人信息"),
-                ("work_history", "工作经历"),
-                ("preferences", "偏好习惯"),
-                ("relationships", "人际关系"),
-                ("goals", "目标愿景"),
-            ];
-
-            let mut total_count = 0;
-            for (key, label) in categories {
-                if let Some(items) = profile.get(key).and_then(|v| v.as_array()) {
-                    if !items.is_empty() {
-                        context.push_str(&format!("### {}\n", label));
-                        for item in items {
-                            if let Some(content) = item.get("content").and_then(|v| v.as_str()) {
-                                context.push_str(&format!("- {}\n", content));
-                                total_count += 1;
-                            }
+    // 🆕 读取 personal_info/
+    let personal_info_uri = format!("cortex://user/{}/personal_info", user_id);
+    if let Ok(entries) = operations.filesystem().list(&personal_info_uri).await {
+        if !entries.is_empty() {
+            context.push_str("### 个人信息\n");
+            for entry in entries {
+                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
+                        let summary = extract_markdown_summary(&content);
+                        if !summary.is_empty() {
+                            context.push_str(&format!("- {}\n", summary));
+                            total_count += 1;
                         }
-                        context.push_str("\n");
                     }
                 }
             }
-
-            if total_count == 0 {
-                tracing::info!("Profile exists but empty for user: {}", user_id);
-                return Ok(None);
-            }
-
-            tracing::info!(
-                "Loaded {} user memory items from profile.json for user: {}",
-                total_count,
-                user_id
-            );
-            Ok(Some(context))
-        }
-        Err(e) => {
-            tracing::info!("No user profile found for user {}: {}", user_id, e);
-            Ok(None)
+            context.push_str("\n");
         }
     }
+
+    // 🆕 读取 work_history/
+    let work_history_uri = format!("cortex://user/{}/work_history", user_id);
+    if let Ok(entries) = operations.filesystem().list(&work_history_uri).await {
+        if !entries.is_empty() {
+            context.push_str("### 工作经历\n");
+            for entry in entries {
+                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
+                        let summary = extract_markdown_summary(&content);
+                        if !summary.is_empty() {
+                            context.push_str(&format!("- {}\n", summary));
+                            total_count += 1;
+                        }
+                    }
+                }
+            }
+            context.push_str("\n");
+        }
+    }
+
+    // 读取 preferences/
+    let prefs_uri = format!("cortex://user/{}/preferences", user_id);
+    if let Ok(entries) = operations.filesystem().list(&prefs_uri).await {
+        if !entries.is_empty() {
+            context.push_str("### 偏好习惯\n");
+            for entry in entries {
+                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
+                        let summary = extract_markdown_summary(&content);
+                        if !summary.is_empty() {
+                            context.push_str(&format!("- {}\n", summary));
+                            total_count += 1;
+                        }
+                    }
+                }
+            }
+            context.push_str("\n");
+        }
+    }
+
+    // 🆕 读取 relationships/
+    let relationships_uri = format!("cortex://user/{}/relationships", user_id);
+    if let Ok(mut entries) = operations.filesystem().list(&relationships_uri).await {
+        if !entries.is_empty() {
+            // 🔧 按修改时间排序，优先返回最新的记忆
+            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
+            
+            context.push_str("### 人际关系\n");
+            for entry in entries.iter().take(5) {  // 只取前5个关系
+                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
+                        let summary = extract_markdown_summary(&content);
+                        if !summary.is_empty() {
+                            context.push_str(&format!("- {}\n", summary));
+                            total_count += 1;
+                        }
+                    }
+                }
+            }
+            context.push_str("\n");
+        }
+    }
+
+    // 🆕 读取 goals/
+    let goals_uri = format!("cortex://user/{}/goals", user_id);
+    if let Ok(mut entries) = operations.filesystem().list(&goals_uri).await {
+        if !entries.is_empty() {
+            // 🔧 按修改时间排序，优先返回最新的目标
+            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
+            
+            context.push_str("### 目标愿景\n");
+            for entry in entries.iter().take(5) {  // 只取前5个目标
+                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
+                        let summary = extract_markdown_summary(&content);
+                        if !summary.is_empty() {
+                            context.push_str(&format!("- {}\n", summary));
+                            total_count += 1;
+                        }
+                    }
+                }
+            }
+            context.push_str("\n");
+        }
+    }
+
+    // 读取 entities/
+    let entities_uri = format!("cortex://user/{}/entities", user_id);
+    if let Ok(mut entries) = operations.filesystem().list(&entities_uri).await {
+        if !entries.is_empty() {
+            // 🔧 按修改时间排序，优先返回最新的实体
+            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
+            
+            context.push_str("### 相关实体\n");
+            for entry in entries.iter().take(5) {  // 只取前5个最重要的实体
+                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
+                        let summary = extract_markdown_summary(&content);
+                        if !summary.is_empty() {
+                            context.push_str(&format!("- {}\n", summary));
+                            total_count += 1;
+                        }
+                    }
+                }
+            }
+            context.push_str("\n");
+        }
+    }
+
+    // 读取 events/
+    let events_uri = format!("cortex://user/{}/events", user_id);
+    if let Ok(mut entries) = operations.filesystem().list(&events_uri).await {
+        if !entries.is_empty() {
+            // 🔧 按修改时间排序，优先返回最新的事件
+            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
+            
+            context.push_str("### 重要事件\n");
+            for entry in entries.iter().take(3) {  // 只取前3个事件
+                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
+                        let summary = extract_markdown_summary(&content);
+                        if !summary.is_empty() {
+                            context.push_str(&format!("- {}\n", summary));
+                            total_count += 1;
+                        }
+                    }
+                }
+            }
+            context.push_str("\n");
+        }
+    }
+
+    // 🆕 读取 Agent记忆: cases/
+    let cases_uri = format!("cortex://agent/{}/cases", _agent_id);
+    if let Ok(mut entries) = operations.filesystem().list(&cases_uri).await {
+        if !entries.is_empty() {
+            // 🔧 按修改时间排序，优先返回最新的经验案例
+            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
+            
+            context.push_str("### Agent经验案例\n");
+            for entry in entries.iter().take(5) {  // 只取前5个案例
+                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
+                        let summary = extract_markdown_summary(&content);
+                        if !summary.is_empty() {
+                            context.push_str(&format!("- {}\n", summary));
+                            total_count += 1;
+                        }
+                    }
+                }
+            }
+            context.push_str("\n");
+        }
+    }
+
+    if total_count == 0 {
+        tracing::info!("No user memories found for user: {}", user_id);
+        return Ok(None);
+    }
+
+    tracing::info!(
+        "Loaded {} memory items from granular files for user: {}",
+        total_count,
+        user_id
+    );
+    Ok(Some(context))
+}
+
+/// 从markdown文件中提取关键摘要信息
+fn extract_markdown_summary(content: &str) -> String {
+    let mut summary = String::new();
+    let mut in_content = false;
+    
+    for line in content.lines() {
+        let trimmed = line.trim();
+        
+        // 跳过空行
+        if trimmed.is_empty() {
+            continue;
+        }
+        
+        // 提取标题（去掉#号）
+        if trimmed.starts_with('#') {
+            let title = trimmed.trim_start_matches('#').trim();
+            if !title.is_empty() && summary.is_empty() {
+                summary.push_str(title);
+            }
+        }
+        // 提取Description字段
+        else if trimmed.starts_with("**Description**:") || trimmed.starts_with("**描述**:") {
+            let desc = trimmed
+                .trim_start_matches("**Description**:")
+                .trim_start_matches("**描述**:")
+                .trim();
+            if !desc.is_empty() {
+                if !summary.is_empty() {
+                    summary.push_str(": ");
+                }
+                summary.push_str(desc);
+                break;  // 找到描述后就返回
+            }
+        }
+        // 提取普通内容行（不是markdown格式的）
+        else if !trimmed.starts_with("**") && !trimmed.starts_with("##") && !in_content {
+            if !summary.is_empty() {
+                summary.push_str(": ");
+            }
+            summary.push_str(trimmed);
+            in_content = true;
+            // 只取第一行内容
+            if summary.len() > 10 {
+                break;
+            }
+        }
+    }
+    
+    // 限制长度
+    if summary.len() > 200 {
+        summary.truncate(197);
+        summary.push_str("...");
+    }
+    
+    summary
 }
 
 /// Agent多轮对话处理器 - 支持流式输出和多轮工具调用
@@ -440,7 +645,7 @@ impl AgentChatHandler {
 
             let mut stream = agent
                 .stream_chat(prompt_message, chat_history)
-                .multi_turn(20)
+                .multi_turn(30)  // 🔧 从20增加到30，减少触发MaxTurnError的可能性
                 .await;
 
             while let Some(item) = stream.next().await {
@@ -491,8 +696,8 @@ impl AgentChatHandler {
                         scope: "session".to_string(),
                         metadata: None,
                         auto_generate_layers: Some(true),
-                        user_id: None,
-                        agent_id: None,
+                        user_id: Some("tars_user".to_string()),  // 🔧 传递user_id
+                        agent_id: None,  // 🔧 agent_id由tenant_id决定，这里不传
                     };
                     if let Err(e) = ops.store(user_store).await {
                         tracing::warn!("Failed to save user message: {}", e);
@@ -506,8 +711,8 @@ impl AgentChatHandler {
                         scope: "session".to_string(),
                         metadata: None,
                         auto_generate_layers: Some(true),
-                        user_id: None,
-                        agent_id: None,
+                        user_id: Some("tars_user".to_string()),  // 🔧 传递user_id
+                        agent_id: None,  // 🔧 agent_id由tenant_id决定，这里不传
                     };
                     if let Err(e) = ops.store(assistant_store).await {
                         tracing::warn!("Failed to save assistant message: {}", e);

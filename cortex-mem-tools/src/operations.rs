@@ -30,6 +30,8 @@ pub struct MemoryOperations {
     pub(crate) layer_manager: Arc<LayerManager>,
     pub(crate) vector_engine: Arc<VectorSearchEngine>,
     pub(crate) auto_extractor: Option<Arc<AutoExtractor>>,  // 🆕 AutoExtractor用于退出时提取
+    pub(crate) default_user_id: String,  // 🆕 默认user_id
+    pub(crate) default_agent_id: String, // 🆕 默认agent_id
 }
 
 impl MemoryOperations {
@@ -124,18 +126,16 @@ impl MemoryOperations {
         // 🆕 使用传入的user_id，如果没有则使用tenant_id
         let actual_user_id = user_id.unwrap_or_else(|| tenant_id.clone());
         
-        // 🆕 创建AutoExtractor用于退出时提取（带user_id）
+        // 🔧 创建AutoExtractor(简化配置，移除了save_user_memories和save_agent_memories)
         let auto_extract_config = AutoExtractConfig {
             min_message_count: 5,
-            extract_on_close: true,
-            save_user_memories: true,
-            save_agent_memories: true,
+            extract_on_close: true,  // 🔧 显式设置为true，确保会话关闭时自动提取记忆
         };
         let auto_extractor = Arc::new(AutoExtractor::with_user_id(
             filesystem.clone(),
             llm_client.clone(),
             auto_extract_config,
-            &actual_user_id,  // ✅ 使用实际的user_id
+            &actual_user_id,
         ));
         
         // 🆕 创建AutoIndexer用于实时索引
@@ -254,6 +254,8 @@ impl MemoryOperations {
             layer_manager,
             vector_engine,
             auto_extractor: Some(auto_extractor),  // 🆕
+            default_user_id: actual_user_id,  // 🆕 存储默认user_id
+            default_agent_id: tenant_id.clone(), // 🆕 使用tenant_id作为默认agent_id
         })
     }
 
@@ -266,8 +268,36 @@ impl MemoryOperations {
         if !sm.session_exists(thread_id).await? {
             drop(sm);
             let sm = self.session_manager.write().await;
-            sm.create_session(thread_id).await?;
+            // 🔧 使用create_session_with_ids创建session，传入默认的user_id和agent_id
+            sm.create_session_with_ids(
+                thread_id,
+                Some(self.default_user_id.clone()),
+                Some(self.default_agent_id.clone()),
+            ).await?;
             drop(sm);
+        } else {
+            // 🔧 Session存在，检查并更新user_id/agent_id（兼容旧session）
+            if let Ok(metadata) = sm.load_session(thread_id).await {
+                let needs_update = metadata.user_id.is_none() || metadata.agent_id.is_none();
+                
+                if needs_update {
+                    drop(sm);
+                    let sm = self.session_manager.write().await;
+                    
+                    // 重新加载并更新
+                    if let Ok(mut metadata) = sm.load_session(thread_id).await {
+                        if metadata.user_id.is_none() {
+                            metadata.user_id = Some(self.default_user_id.clone());
+                        }
+                        if metadata.agent_id.is_none() {
+                            metadata.agent_id = Some(self.default_agent_id.clone());
+                        }
+                        let _ = sm.update_session(&metadata).await;
+                        tracing::info!("Updated session {} with user_id and agent_id", thread_id);
+                    }
+                    drop(sm);
+                }
+            }
         }
 
         let sm = self.session_manager.read().await;
