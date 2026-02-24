@@ -121,7 +121,7 @@ cortex-mem list --dimension agent
 cortex-mem get <uri>
 
 # 示例
-cortex-mem get cortex://threads/tech-support/timeline/2024/01/15/14_30_00_abc123.md
+cortex-mem get cortex://session/tech-support/timeline/2024/01/15/14_30_00_abc123.md
 ```
 
 #### 删除消息

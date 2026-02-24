@@ -35,10 +35,23 @@ Cortex Memory 使用复杂的流水线来处理和管理内存，核心是**混�
 | :--- | :--- |
 |![architecture_style_modern](./assets/intro/architecture_style_modern.jpg) | ![architecture_style_classic](./assets/benchmark/cortex_mem_vs_langmem_thin.jpg) |
 
-**Cortex Memory** 使用**虚拟文件系统**方法组织数据，采用 `cortex://` URI 方案：
+**Cortex Memory** 使用**虚拟文件系统**方法组织数据,采用 `cortex://` URI 方案：
 
 ```
-cortex://{维度}/{范围}/{类别}/{ID}
+# 基本结构
+cortex://{维度}/{路径}
+
+# 维度说明
+session/    - 会话记忆（对话历史、时间线）
+user/       - 用户记忆（偏好、实体、事件）
+agent/      - Agent记忆（案例、技能）
+resources/  - 知识库资源
+
+# 示例
+cortex://session/{session_id}/timeline/{date}/{time}.md
+cortex://user/preferences/{name}.md
+cortex://agent/cases/{case_id}.md
+cortex://resources/{resource_name}/
 ```
 
 <hr />

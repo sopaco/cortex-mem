@@ -9,7 +9,7 @@ use crate::{
     models::{ApiResponse, SessionResponse, AddMessageRequest},
     state::AppState,
 };
-use cortex_mem_core::FilesystemOperations;
+use cortex_mem_core::{FilesystemOperations, session::SessionMetadata};
 
 /// Create a new session
 pub async fn create_session(
@@ -49,24 +49,48 @@ pub async fn create_session(
 pub async fn list_sessions(
     State(state): State<Arc<AppState>>,
 ) -> Result<Json<ApiResponse<Vec<SessionResponse>>>> {
-    // List all thread directories
-    let threads_uri = "cortex://threads";
-    let entries = state.filesystem.list(threads_uri).await?;
+    // Get tenant root if set
+    let tenant_root = state.current_tenant_root.read().await.clone();
+    
+    // Build the path
+    let session_path = if let Some(root) = tenant_root {
+        root.join("session")
+    } else {
+        state.data_dir.join("cortex").join("session")
+    };
+    
+    tracing::debug!("Listing sessions from: {:?}", session_path);
+    
+    if !session_path.exists() {
+        return Ok(Json(ApiResponse::success(vec![])));
+    }
 
     let mut sessions = Vec::new();
-    for entry in entries {
-        if entry.is_directory {
-            // Try to load session metadata
-            let thread_id = entry.name;
-            let session_mgr = state.session_manager.read().await;
-            if let Ok(metadata) = session_mgr.load_session(&thread_id).await {
-                sessions.push(SessionResponse {
-                    thread_id: metadata.thread_id,
-                    status: format!("{:?}", metadata.status),
-                    message_count: metadata.message_count,
-                    created_at: metadata.created_at,
-                    updated_at: metadata.updated_at,
-                });
+    if let Ok(dir) = std::fs::read_dir(&session_path) {
+        for entry in dir.flatten() {
+            if entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
+                let thread_id = entry.file_name().to_string_lossy().to_string();
+                
+                // Skip hidden directories
+                if thread_id.starts_with('.') {
+                    continue;
+                }
+                
+                // Try to load session metadata directly from file
+                let metadata_path = entry.path().join(".session.json");
+                if metadata_path.exists() {
+                    if let Ok(content) = std::fs::read_to_string(&metadata_path) {
+                        if let Ok(metadata) = serde_json::from_str::<SessionMetadata>(&content) {
+                            sessions.push(SessionResponse {
+                                thread_id: metadata.thread_id,
+                                status: format!("{:?}", metadata.status),
+                                message_count: metadata.message_count,
+                                created_at: metadata.created_at,
+                                updated_at: metadata.updated_at,
+                            });
+                        }
+                    }
+                }
             }
         }
     }

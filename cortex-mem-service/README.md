@@ -130,13 +130,13 @@ GET /api/v2/sessions/{thread_id}/timeline?start=2024-01-01&end=2024-01-31
 #### 列出目录
 
 ```http
-GET /api/v2/filesystem?uri=cortex://threads&recursive=false
+GET /api/v2/filesystem?uri=cortex://session&recursive=false
 ```
 
 #### 读取文件内容
 
 ```http
-GET /api/v2/filesystem/read?uri=cortex://threads/support-123/.session.json
+GET /api/v2/filesystem/read?uri=cortex://session/support-123/.session.json
 ```
 
 #### 写入文件
@@ -146,7 +146,7 @@ POST /api/v2/filesystem/write
 Content-Type: application/json
 
 {
-  "uri": "cortex://users/user-123/preferences.md",
+  "uri": "cortex://user/user-123/preferences.md",
   "content": "# 用户偏好\n\n- 主题：深色\n- 语言：中文"
 }
 ```
@@ -239,7 +239,7 @@ Content-Type: application/json
           "content": "用户忘记了登录密码",
           "confidence": 0.95,
           "category": "auth",
-          "source_uri": "cortex://threads/customer-support-123/timeline/2024/01/15/14_30_00_abc123.md"
+          "source_uri": "cortex://session/customer-support-123/timeline/2024/01/15/14_30_00_abc123.md"
         }
       ],
       "preferences": [

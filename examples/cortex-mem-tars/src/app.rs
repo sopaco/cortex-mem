@@ -46,7 +46,6 @@ pub struct App {
     previous_state: Option<crate::ui::AppState>,
     external_message_sender: mpsc::UnboundedSender<String>,
     external_message_receiver: mpsc::UnboundedReceiver<String>,
-    enable_vector_search: bool, // ✅ 向量搜索标志
     
     // 🎙️ 音频输入相关
     audio_input_enabled: bool,                                    // 是否启用语音输入
@@ -79,7 +78,6 @@ impl App {
         config_manager: ConfigManager,
         log_manager: Arc<LogManager>,
         infrastructure: Option<Arc<Infrastructure>>,
-        enable_vector_search: bool, // ✅ 参数
     ) -> Result<Self> {
         let mut ui = AppUi::new();
 
@@ -114,7 +112,6 @@ impl App {
             previous_state: Some(initial_state),
             external_message_sender: external_msg_tx,
             external_message_receiver: external_msg_rx,
-            enable_vector_search, // ✅ 存储向量搜索标志
             
             // 🎙️ 音频输入初始化
             audio_input_enabled: false,
@@ -750,46 +747,6 @@ impl App {
         self.ui.auto_scroll = true;
     }
 
-    /// 退出时保存对话到记忆系统
-    /// 注意：此方法已被弃用，因为 AgentChatHandler 已在每轮对话后自动存储
-    /// 保留此方法仅用于兼容性或作为备用
-    #[deprecated(note = "AgentChatHandler 已自动存储对话，无需手动调用此方法")]
-    #[allow(dead_code)]
-    pub async fn save_conversations_to_memory(&self) -> Result<()> {
-        log::warn!("save_conversations_to_memory 已被弃用，AgentChatHandler 已自动存储对话");
-        Ok(())
-    }
-
-    /// 获取所有对话
-    pub fn get_conversations(&self) -> Vec<(String, String)> {
-        self.ui
-            .messages
-            .iter()
-            .filter_map(|msg| match msg.role {
-                crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
-                crate::agent::MessageRole::System => None, // 系统消息不参与对话
-                crate::agent::MessageRole::Assistant => {
-                    if let Some(last) = self
-                        .ui
-                        .messages
-                        .iter()
-                        .rev()
-                        .find(|m| m.role == crate::agent::MessageRole::User)
-                    {
-                        Some((last.content.clone(), msg.content.clone()))
-                    } else {
-                        None
-                    }
-                }
-            })
-            .collect()
-    }
-
-    /// 获取用户ID
-    pub fn get_user_id(&self) -> String {
-        self.user_id.clone()
-    }
-
     /// 处理来自 API 的外部消息（模拟用户输入）
     pub async fn handle_external_message(&mut self, content: String) -> Result<()> {
         log::info!("收到外部消息: {}", content);
@@ -1188,9 +1145,32 @@ impl App {
             return Ok(());
         }
 
+        // 🔇 在关闭音频时临时重定向stderr，避免清理操作破坏TUI
+        #[cfg(unix)]
+        let _null_file = std::fs::File::create("/dev/null").ok();
+        #[cfg(windows)]
+        let _null_file = std::fs::File::create("NUL").ok();
+        
+        #[cfg(unix)]
+        let _temp_stderr_guard = _null_file.as_ref().and_then(|f| {
+            use std::os::unix::io::AsRawFd;
+            unsafe {
+                let saved = libc::dup(2);
+                if saved >= 0 {
+                    libc::dup2(f.as_raw_fd(), 2);
+                    Some(TempStderrGuard { saved })
+                } else {
+                    None
+                }
+            }
+        });
+
         // 1. 停止音频任务
         if let Some(handle) = self.audio_task_handle.take() {
             handle.abort();
+            
+            // 等待一小段时间，确保任务清理完成
+            tokio::time::sleep(Duration::from_millis(100)).await;
         }
 
         // 2. 清理接收器
@@ -1202,6 +1182,8 @@ impl App {
         self.ui.messages.push(ChatMessage::system("🔇 语音输入已关闭"));
 
         log::info!("🔇 语音输入已禁用");
+        
+        // _temp_stderr_guard 会在函数结束时恢复 stderr
         Ok(())
     }
 
@@ -1485,6 +1467,22 @@ impl Drop for StderrGuard {
         unsafe {
             libc::dup2(self.saved_stderr, 2);
             libc::close(self.saved_stderr);
+        }
+    }
+}
+
+// 临时stderr守卫（用于disable_audio_input）
+#[cfg(unix)]
+struct TempStderrGuard {
+    saved: i32,
+}
+
+#[cfg(unix)]
+impl Drop for TempStderrGuard {
+    fn drop(&mut self) {
+        unsafe {
+            libc::dup2(self.saved, 2);
+            libc::close(self.saved);
         }
     }
 }

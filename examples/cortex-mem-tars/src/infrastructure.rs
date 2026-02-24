@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 /// Infrastructure manager - manages memory operations and configuration
 pub struct Infrastructure {
-    operations: Arc<MemoryOperations>,
+    _operations: Arc<MemoryOperations>, // 保持生命周期，仅用于初始化
     config: Config,
 }
 
@@ -52,16 +52,9 @@ impl Infrastructure {
         log::info!("基础设施初始化成功（global 租户模式，仅用于基础设施）");
 
         Ok(Self {
-            operations: Arc::new(operations),
+            _operations: Arc::new(operations),
             config,
         })
-    }
-
-    /// Get memory operations (V2 API)
-    /// WARNING: This returns GLOBAL tenant operations
-    /// For bot-specific operations, create tenant-isolated operations
-    pub fn operations(&self) -> &Arc<MemoryOperations> {
-        &self.operations
     }
 
     /// Get configuration

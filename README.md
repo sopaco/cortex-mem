@@ -38,7 +38,20 @@ Cortex Memory uses a sophisticated pipeline to process and manage memories, cent
 **Cortex Memory** organizes data using a **virtual filesystem** approach with the `cortex://` URI scheme:
 
 ```
-cortex://{dimension}/{scope}/{category}/{id}
+# Basic Structure
+cortex://{dimension}/{path}
+
+# Dimensions
+session/    - Session memories (conversation history, timeline)
+user/       - User memories (preferences, entities, events)
+agent/      - Agent memories (cases, skills)
+resources/  - Knowledge base resources
+
+# Examples
+cortex://session/{session_id}/timeline/{date}/{time}.md
+cortex://user/preferences/{name}.md
+cortex://agent/cases/{case_id}.md
+cortex://resources/{resource_name}/
 ```
 
 <hr />

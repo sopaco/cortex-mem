@@ -9,10 +9,12 @@ use tokio::sync::RwLock;
 /// Application state shared across all handlers
 #[derive(Clone)]
 pub struct AppState {
+    #[allow(dead_code)]
     pub cortex: Arc<CortexMem>, // 🆕 统一自动索引实例
     pub filesystem: Arc<CortexFilesystem>,
     pub session_manager: Arc<tokio::sync::RwLock<SessionManager>>,
     pub llm_client: Option<Arc<dyn LLMClient>>,
+    #[allow(dead_code)]
     pub vector_store: Option<Arc<dyn cortex_mem_core::vector_store::VectorStore>>,
     pub embedding_client: Option<Arc<EmbeddingClient>>,
     /// Vector search engine with L0/L1/L2 layered search support
@@ -78,8 +80,8 @@ impl AppState {
 
         // Vector search engine由Cortex Memory管理，这里我们需要重新创建一个
         // 因为Cortex Memory内部没有暴露VectorSearchEngine
-        let vector_engine = if let (Some(vs), Some(ec)) = (&vector_store, &embedding_client) {
-            // 🔧 需要downcast到具体类型QdrantVectorStore
+        let vector_engine = if let (Some(_vs), Some(ec)) = (&vector_store, &embedding_client) {
+            // 需要downcast到具体类型QdrantVectorStore
             // 由于vs是trait对象，这里重新从配置创建
             let (_, _, qdrant_cfg_opt) = Self::load_configs()?;
             if let Some(qdrant_cfg) = qdrant_cfg_opt {
