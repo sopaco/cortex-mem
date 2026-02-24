@@ -88,9 +88,8 @@ impl log::Log for SimpleLogger {
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let message = format!("{}", record.args());
-            if let Err(e) = self.manager.write(record.level(), &message) {
-                eprintln!("日志写入失败: {}", e);
-            }
+            // 🔇 静默处理日志写入失败，避免干扰TUI
+            let _ = self.manager.write(record.level(), &message);
         }
     }
 

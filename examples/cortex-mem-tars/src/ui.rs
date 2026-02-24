@@ -154,6 +154,8 @@ pub struct AppUi {
     // 密码验证相关字段
     pub password_input: TextArea<'static>,
     pub pending_bot: Option<BotConfig>, // 等待密码验证的机器人
+    // 🎙️ 语音输入状态
+    pub audio_input_enabled: bool,
 }
 
 /// 机器人管理弹窗状态
@@ -176,18 +178,20 @@ pub enum BotInputField {
 /// 键盘事件处理结果
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyAction {
-    Continue,    // 继续运行
-    Quit,        // 退出程序
-    SendMessage, // 发送消息
-    ClearChat,   // 清空会话
-    ShowHelp,    // 显示帮助
-    ShowThemes,  // 显示主题选择
-    DumpChats,   // 导出会话到剪贴板
-    CreateBot,   // 创建机器人
-    EditBot,     // 编辑机器人
-    DeleteBot,   // 删除机器人
-    SaveBot,     // 保存机器人
-    CancelBot,   // 取消机器人操作
+    Continue,         // 继续运行
+    Quit,             // 退出程序
+    SendMessage,      // 发送消息
+    ClearChat,        // 清空会话
+    ShowHelp,         // 显示帮助
+    ShowThemes,       // 显示主题选择
+    DumpChats,        // 导出会话到剪贴板
+    CreateBot,        // 创建机器人
+    EditBot,          // 编辑机器人
+    DeleteBot,        // 删除机器人
+    SaveBot,          // 保存机器人
+    CancelBot,        // 取消机器人操作
+    EnableAudioInput, // 启用语音输入
+    DisableAudioInput,// 禁用语音输入
 }
 
 impl AppUi {
@@ -268,6 +272,7 @@ impl AppUi {
             active_input_field: BotInputField::Name,
             password_input,
             pending_bot: None,
+            audio_input_enabled: false, // 🎙️ 默认关闭语音输入
         }
     }
 
@@ -849,6 +854,7 @@ impl AppUi {
             let role_label = match message.role {
                 crate::agent::MessageRole::User => "[You]",
                 crate::agent::MessageRole::Assistant => "[AI]",
+                crate::agent::MessageRole::System => "[System]",
             };
             all_lines.push(role_label.to_string());
 
@@ -1126,6 +1132,23 @@ impl AppUi {
 
         // 创建简洁的标题文字
         let bot_name = self.selected_bot().map(|b| b.name.as_str()).unwrap_or("未知");
+        
+        // 🎙️ 添加语音输入状态指示
+        let audio_status = if self.audio_input_enabled {
+            Span::styled(
+                " [🎙️ 语音输入开启]",
+                Style::default()
+                    .fg(Color::Green)
+                    .add_modifier(Modifier::BOLD),
+            )
+        } else {
+            Span::styled(
+                " [🔇 语音输入关闭]",
+                Style::default()
+                    .fg(Color::DarkGray),
+            )
+        };
+        
         let title_line = Line::from(vec![
             Span::styled(
                 "Cortex TARS AI Program",
@@ -1139,6 +1162,7 @@ impl AppUi {
                     .fg(self.current_theme.accent_color)
                     .add_modifier(Modifier::BOLD),
             ),
+            audio_status, // 🎙️ 添加语音状态
         ]);
 
         let title = Paragraph::new(title_line)
@@ -1279,11 +1303,13 @@ impl AppUi {
             let role_label = match message.role {
                 crate::agent::MessageRole::User => "You",
                 crate::agent::MessageRole::Assistant => "TARS AI",
+                crate::agent::MessageRole::System => "System",
             };
 
             let role_color = match message.role {
                 crate::agent::MessageRole::User => self.current_theme.accent_color,
                 crate::agent::MessageRole::Assistant => self.current_theme.primary_color,
+                crate::agent::MessageRole::System => Color::Yellow,
             };
 
             // 格式化时间戳
@@ -1790,6 +1816,14 @@ impl AppUi {
                 log::info!("执行命令: /dump-chats");
                 Some(KeyAction::DumpChats)
             }
+            "/enable-audio-input" => {
+                log::info!("执行命令: /enable-audio-input");
+                Some(KeyAction::EnableAudioInput)
+            }
+            "/disable-audio-input" => {
+                log::info!("执行命令: /disable-audio-input");
+                Some(KeyAction::DisableAudioInput)
+            }
             _ => {
                 log::warn!("未知命令: {}", command);
                 None
@@ -1841,6 +1875,7 @@ Powered by Cortex Memory";
             let role = match message.role {
                 crate::agent::MessageRole::User => "You",
                 crate::agent::MessageRole::Assistant => "TARS AI",
+                crate::agent::MessageRole::System => "System",
             };
 
             let time_str = message.timestamp.format("%Y-%m-%d %H:%M:%S").to_string();

@@ -19,6 +19,7 @@ use tokio::sync::mpsc;
 pub enum MessageRole {
     User,
     Assistant,
+    System,
 }
 
 /// 聊天消息
@@ -44,6 +45,10 @@ impl ChatMessage {
 
     pub fn assistant(content: impl Into<String>) -> Self {
         Self::new(MessageRole::Assistant, content.into())
+    }
+    
+    pub fn system(content: impl Into<String>) -> Self {
+        Self::new(MessageRole::System, content.into())
     }
 }
 
@@ -624,6 +629,7 @@ impl AgentChatHandler {
                         },
                     )),
                 }),
+                MessageRole::System => None, // 系统消息不参与对话
             })
             .collect();
 
