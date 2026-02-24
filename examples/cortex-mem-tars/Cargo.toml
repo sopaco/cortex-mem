@@ -51,14 +51,15 @@ async-stream = "0.3"
 # HTTP client
 reqwest = { version = "0.12", features = ["json"] }
 
-# HTTP server
-axum = { version = "0.7", features = ["json"] }
-tower = "0.5"
-tower-http = { version = "0.5", features = ["cors", "trace"] }
-
 # Utilities
 uuid = { version = "1.10", features = ["v4"] }
 clipboard = "0.5"
 
 # CLI
 clap = { version = "4.5", features = ["derive"] }
+
+# Audio input
+cpal = "0.15"
+rubato = "0.15"
+whisper-rs = "0.12"
+libc = "0.2"

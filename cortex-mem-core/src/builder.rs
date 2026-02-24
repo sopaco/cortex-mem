@@ -206,6 +206,7 @@ pub struct CortexMem {
     pub embedding: Option<Arc<EmbeddingClient>>,
     pub vector_store: Option<Arc<dyn VectorStore>>,
     pub llm_client: Option<Arc<dyn LLMClient>>,
+    #[allow(dead_code)]
     event_bus: Arc<EventBus>,
     automation_handle: Option<tokio::task::JoinHandle<()>>,
 }

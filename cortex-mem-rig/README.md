@@ -119,7 +119,7 @@ impl Tool for AbstractTool {
 **示例使用**:
 ```rust
 let result = agent.prompt(
-    "获取cortex://users/user-123/preferences.md的摘要"
+    "获取cortex://user/user-123/preferences.md的摘要"
 ).await?;
 ```
 

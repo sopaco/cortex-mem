@@ -38,7 +38,20 @@ Cortex Memory uses a sophisticated pipeline to process and manage memories, cent
 **Cortex Memory** organizes data using a **virtual filesystem** approach with the `cortex://` URI scheme:
 
 ```
-cortex://{dimension}/{scope}/{category}/{id}
+# Basic Structure
+cortex://{dimension}/{path}
+
+# Dimensions
+session/    - Session memories (conversation history, timeline)
+user/       - User memories (preferences, entities, events)
+agent/      - Agent memories (cases, skills)
+resources/  - Knowledge base resources
+
+# Examples
+cortex://session/{session_id}/timeline/{date}/{time}.md
+cortex://user/preferences/{name}.md
+cortex://agent/cases/{case_id}.md
+cortex://resources/{resource_name}/
 ```
 
 <hr />
@@ -100,6 +113,83 @@ cortex://{dimension}/{scope}/{category}/{id}
 - <strong>Event-Driven Automation:</strong> File watchers and auto-indexers for background processing, synchronization, and profile enrichment.
 - <strong>Agent Framework Integration:</strong> Built-in support for Rig framework and Model Context Protocol (MCP).
 - <strong>Web Dashboard:</strong> Svelte 5 SPA (Insights) for monitoring, tenant management, and semantic search visualization.
+
+# 🧠 How It Works
+
+Cortex Memory uses a sophisticated pipeline to process and manage memories, centered around a **hybrid storage architecture** combining **virtual-filesystem** durability with vector-based **semantic search**.
+
+```mermaid
+flowchart TB
+    subgraph Input["Input Layer"]
+        User[User Message]
+        Agent[Agent Message]
+        CLI[CLI Commands]
+        API[REST API]
+        MCP[MCP Protocol]
+    end
+
+    subgraph Core["Core Engine (cortex-mem-core)"]
+        Session[Session Manager]
+        Extractor[Memory Extractor]
+        Indexer[Auto Indexer]
+        Search[Vector Search Engine]
+    end
+
+    subgraph Storage["Storage Layer"]
+        FS[(Filesystem<br/>cortex:// URI)]
+        Qdrant[(Qdrant<br/>Vector Index)]
+    end
+
+    subgraph External["External Services"]
+        LLM[LLM Provider<br/>Extraction & Analysis]
+        Embed[Embedding API<br/>Vector Generation]
+    end
+
+    User --> Session
+    Agent --> Session
+    CLI --> Core
+    API --> Core
+    MCP --> Core
+
+    Session -->|Store Messages| FS
+    Session -->|Trigger Extraction| Extractor
+    
+    Extractor -->|Analyze Content| LLM
+    Extractor -->|Store Memories| FS
+    
+    Indexer -->|Watch Changes| FS
+    Indexer -->|Generate Embeddings| Embed
+    Indexer -->|Index Vectors| Qdrant
+    
+    Search -->|Query Embedding| Embed
+    Search -->|Vector Search| Qdrant
+    Search -->|Retrieve Content| FS
+```
+
+## Memory Architecture
+
+Cortex Memory organizes data using a **virtual filesystem** approach with the `cortex://` URI scheme:
+
+```
+cortex://{dimension}/{scope}/{category}/{id}
+```
+
+- **Dimension**: `user`, `agent`, `session`, or `resources`
+- **Scope**: Tenant or identifier
+- **Category**: `memories`, `profiles`, `entities`, `sessions`, etc.
+- **ID**: Unique memory identifier
+
+## Three-Tier Memory Hierarchy
+
+Cortex Memory implements a **progressive disclosure** system with three abstraction layers:
+
+| Layer | Purpose | Token Usage | Use Case |
+|-------|---------|-------------|----------|
+| **L0 (Abstract)** | Fast positioning, coarse-grained candidate selection | ~100 tokens | Initial screening (20% weight) |
+| **L1 (Overview)** | Structured summary with key points and entities | ~500-2000 tokens | Context refinement (30% weight) |
+| **L2 (Detail)** | Full conversation content | Variable | Precise matching (50% weight) |
+
+This tiered approach optimizes LLM context window usage by loading only the necessary detail level. The search engine uses **weighted scoring** combining all three layers `L0/L1/L2`.
 
 # 🌐 The Cortex Memory Ecosystem
 
@@ -292,83 +382,6 @@ The benchmark uses a professional memory system evaluation framework located in 
 - **Multi-System Support**: Supports comparison between Cortex Memory, LangMem, and Simple RAG baselines
 
 For more details on running the evaluation, see the [lomoco-evaluation README](examples/lomoco-evaluation/README.md).
-
-# 🧠 How It Works
-
-Cortex Memory uses a sophisticated pipeline to process and manage memories, centered around a **hybrid storage architecture** combining **virtual-filesystem** durability with vector-based **semantic search**.
-
-```mermaid
-flowchart TB
-    subgraph Input["Input Layer"]
-        User[User Message]
-        Agent[Agent Message]
-        CLI[CLI Commands]
-        API[REST API]
-        MCP[MCP Protocol]
-    end
-
-    subgraph Core["Core Engine (cortex-mem-core)"]
-        Session[Session Manager]
-        Extractor[Memory Extractor]
-        Indexer[Auto Indexer]
-        Search[Vector Search Engine]
-    end
-
-    subgraph Storage["Storage Layer"]
-        FS[(Filesystem<br/>cortex:// URI)]
-        Qdrant[(Qdrant<br/>Vector Index)]
-    end
-
-    subgraph External["External Services"]
-        LLM[LLM Provider<br/>Extraction & Analysis]
-        Embed[Embedding API<br/>Vector Generation]
-    end
-
-    User --> Session
-    Agent --> Session
-    CLI --> Core
-    API --> Core
-    MCP --> Core
-
-    Session -->|Store Messages| FS
-    Session -->|Trigger Extraction| Extractor
-    
-    Extractor -->|Analyze Content| LLM
-    Extractor -->|Store Memories| FS
-    
-    Indexer -->|Watch Changes| FS
-    Indexer -->|Generate Embeddings| Embed
-    Indexer -->|Index Vectors| Qdrant
-    
-    Search -->|Query Embedding| Embed
-    Search -->|Vector Search| Qdrant
-    Search -->|Retrieve Content| FS
-```
-
-## Memory Architecture
-
-Cortex Memory organizes data using a **virtual filesystem** approach with the `cortex://` URI scheme:
-
-```
-cortex://{dimension}/{scope}/{category}/{id}
-```
-
-- **Dimension**: `user`, `agent`, `session`, or `resources`
-- **Scope**: Tenant or identifier
-- **Category**: `memories`, `profiles`, `entities`, `sessions`, etc.
-- **ID**: Unique memory identifier
-
-## Three-Tier Memory Hierarchy
-
-Cortex Memory implements a **progressive disclosure** system with three abstraction layers:
-
-| Layer | Purpose | Token Usage | Use Case |
-|-------|---------|-------------|----------|
-| **L0 (Abstract)** | Fast positioning, coarse-grained candidate selection | ~100 tokens | Initial screening (20% weight) |
-| **L1 (Overview)** | Structured summary with key points and entities | ~500-2000 tokens | Context refinement (30% weight) |
-| **L2 (Detail)** | Full conversation content | Variable | Precise matching (50% weight) |
-
-This tiered approach optimizes LLM context window usage by loading only the necessary detail level. The search engine uses **weighted scoring** combining all three layers `L0/L1/L2`.
 
 # 🖥 Getting Started
 

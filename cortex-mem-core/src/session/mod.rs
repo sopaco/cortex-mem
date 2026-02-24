@@ -4,7 +4,7 @@ pub mod timeline;
 pub mod participant;
 pub mod extraction;
 
-pub use manager::{SessionManager, SessionConfig};
+pub use manager::{SessionManager, SessionConfig, SessionMetadata, SessionStatus};
 
 // SessionStatus and SessionMetadata are available but not currently exported
 // pub use manager::{SessionMetadata, SessionStatus};

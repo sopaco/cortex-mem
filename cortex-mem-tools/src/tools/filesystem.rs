@@ -51,7 +51,7 @@ impl MemoryOperations {
 
     /// Explore memory space intelligently
     pub async fn explore(&self, args: ExploreArgs) -> Result<ExploreResponse> {
-        let start_uri = args.start_uri.unwrap_or("cortex://threads".to_string());
+        let start_uri = args.start_uri.unwrap_or("cortex://session".to_string());
         let max_depth = args.max_depth.unwrap_or(3);
         let return_layers = args.return_layers.unwrap_or(vec!["L0".to_string()]);
 

@@ -183,8 +183,14 @@ fn count_files_recursive(path: &std::path::Path) -> std::io::Result<(u64, u64)> 
         let entry_path = entry.path();
         let entry_name = entry.file_name();
         
-        // Skip hidden files/directories
-        if entry_name.to_string_lossy().starts_with('.') {
+        // Only skip '.' and '..' directories, but count hidden files (like .session.json)
+        let name = entry_name.to_string_lossy();
+        if name == "." || name == ".." {
+            continue;
+        }
+        
+        // Skip macOS .DS_Store files
+        if name == ".DS_Store" {
             continue;
         }
         

@@ -80,16 +80,16 @@ struct SimpleLogger {
 }
 
 impl log::Log for SimpleLogger {
-    fn enabled(&self, _metadata: &Metadata) -> bool {
-        true
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        // 🔧 过滤TRACE和DEBUG日志，只保留INFO及以上级别
+        metadata.level() <= Level::Info
     }
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             let message = format!("{}", record.args());
-            if let Err(e) = self.manager.write(record.level(), &message) {
-                eprintln!("日志写入失败: {}", e);
-            }
+            // 🔇 静默处理日志写入失败，避免干扰TUI
+            let _ = self.manager.write(record.level(), &message);
         }
     }
 

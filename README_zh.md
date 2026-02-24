@@ -35,10 +35,23 @@ Cortex Memory 使用复杂的流水线来处理和管理内存，核心是**混�
 | :--- | :--- | :--- |
 | ![Layered Context Loading](./assets/intro/highlight_style_modern.jpg) |![architecture_style_modern](./assets/intro/highlight_style_classic_2.jpg) | ![architecture_style_classic](./assets/benchmark/cortex_mem_vs_langmem_thin.jpg) |
 
-**Cortex Memory** 使用**虚拟文件系统**方法组织数据，采用 `cortex://` URI 方案：
+**Cortex Memory** 使用**虚拟文件系统**方法组织数据,采用 `cortex://` URI 方案：
 
 ```
-cortex://{维度}/{范围}/{类别}/{ID}
+# 基本结构
+cortex://{维度}/{路径}
+
+# 维度说明
+session/    - 会话记忆（对话历史、时间线）
+user/       - 用户记忆（偏好、实体、事件）
+agent/      - Agent记忆（案例、技能）
+resources/  - 知识库资源
+
+# 示例
+cortex://session/{session_id}/timeline/{date}/{time}.md
+cortex://user/preferences/{name}.md
+cortex://agent/cases/{case_id}.md
+cortex://resources/{resource_name}/
 ```
 
 <hr />
@@ -100,6 +113,84 @@ cortex://{维度}/{范围}/{类别}/{ID}
 - <strong>事件驱动自动化：</strong> 文件监视器和自动索引器用于后台处理、同步和配置文件丰富。
 - <strong>代理框架集成：</strong> 内置支持Rig框架和模型上下文协议（MCP）。
 - <strong>Web仪表板：</strong> Svelte 5 SPA（Insights）用于监控、租户管理和语义搜索可视化。
+
+# 🧠 工作原理
+
+Cortex Memory使用复杂的流水线来处理和管理内存，核心是**混合存储架构**，结合了**虚拟文件系统**的持久性和基于向量的**语义搜索**。
+
+```mermaid
+flowchart TB
+    subgraph Input["输入层"]
+        User[用户消息]
+        Agent[代理消息]
+        CLI[CLI命令]
+        API[REST API]
+        MCP[MCP协议]
+    end
+
+    subgraph Core["核心引擎 (cortex-mem-core)"]
+        Session[会话管理器]
+        Extractor[内存提取器]
+        Indexer[自动索引器]
+        Search[向量搜索引擎]
+    end
+
+    subgraph Storage["存储层"]
+        FS[(文件系统<br/>cortex:// URI)]
+        Qdrant[(Qdrant<br/>向量索引)]
+    end
+
+    subgraph External["外部服务"]
+        LLM[LLM提供商<br/>提取与分析]
+        Embed[嵌入API<br/>向量生成]
+    end
+
+    User --> Session
+    Agent --> Session
+    CLI --> Core
+    API --> Core
+    MCP --> Core
+
+    Session -->|存储消息| FS
+    Session -->|触发提取| Extractor
+    
+    Extractor -->|分析内容| LLM
+    Extractor -->|存储内存| FS
+    
+    Indexer -->|监视变更| FS
+    Indexer -->|生成嵌入| Embed
+    Indexer -->|索引向量| Qdrant
+    
+    Search -->|查询嵌入| Embed
+    Search -->|向量搜索| Qdrant
+    Search -->|检索内容| FS
+```
+
+## 内存架构
+
+Cortex Memory使用**虚拟文件系统**方法组织数据，采用`cortex://` URI方案：
+
+```
+cortex://{维度}/{范围}/{类别}/{ID}
+```
+
+- **维度**：`user`、`agent`、`session`或`resources`
+
+- **范围**：租户或标识符
+- **类别**：`memories`、`profiles`、`entities`、`sessions`等
+- **ID**：唯一内存标识符
+
+## 三级内存层次结构
+
+Cortex Memory实现了带有三个抽象层的**渐进式披露**系统：
+
+| 层级 | 目的 | 令牌使用 | 用例 |
+|-------|---------|-------------|----------|
+| **L0 (抽象层)** | 快速定位，粗粒度候选选择 | ~100 令牌 | 初步筛选（20%权重） |
+| **L1 (概览层)** | 带有关键点和实体的结构化摘要 | ~500-2000 令牌 | 上下文细化（30%权重） |
+| **L2 (详细层)** | 完整对话内容 | 可变 | 精确匹配（50%权重） |
+
+这种分层方法通过仅加载必要的细节级别来优化LLM上下文窗口使用。搜索引擎使用**加权评分**结合所有三个层次`L0/L1/L2`。
 
 # 🌐 Cortex Memory 生态系统
 
@@ -293,84 +384,6 @@ Cortex Memory已使用**LOCOMO数据集**（50个对话，150个问题）通过�
 - **多系统支持**：支持Cortex Memory、LangMem和简单RAG基线之间的比较
 
 有关运行评估的更多详细信息，请参阅[lomoco-evaluation README](examples/lomoco-evaluation/README.md)。
-
-# 🧠 工作原理
-
-Cortex Memory使用复杂的流水线来处理和管理内存，核心是**混合存储架构**，结合了**虚拟文件系统**的持久性和基于向量的**语义搜索**。
-
-```mermaid
-flowchart TB
-    subgraph Input["输入层"]
-        User[用户消息]
-        Agent[代理消息]
-        CLI[CLI命令]
-        API[REST API]
-        MCP[MCP协议]
-    end
-
-    subgraph Core["核心引擎 (cortex-mem-core)"]
-        Session[会话管理器]
-        Extractor[内存提取器]
-        Indexer[自动索引器]
-        Search[向量搜索引擎]
-    end
-
-    subgraph Storage["存储层"]
-        FS[(文件系统<br/>cortex:// URI)]
-        Qdrant[(Qdrant<br/>向量索引)]
-    end
-
-    subgraph External["外部服务"]
-        LLM[LLM提供商<br/>提取与分析]
-        Embed[嵌入API<br/>向量生成]
-    end
-
-    User --> Session
-    Agent --> Session
-    CLI --> Core
-    API --> Core
-    MCP --> Core
-
-    Session -->|存储消息| FS
-    Session -->|触发提取| Extractor
-    
-    Extractor -->|分析内容| LLM
-    Extractor -->|存储内存| FS
-    
-    Indexer -->|监视变更| FS
-    Indexer -->|生成嵌入| Embed
-    Indexer -->|索引向量| Qdrant
-    
-    Search -->|查询嵌入| Embed
-    Search -->|向量搜索| Qdrant
-    Search -->|检索内容| FS
-```
-
-## 内存架构
-
-Cortex Memory使用**虚拟文件系统**方法组织数据，采用`cortex://` URI方案：
-
-```
-cortex://{维度}/{范围}/{类别}/{ID}
-```
-
-- **维度**：`user`、`agent`、`session`或`resources`
-
-- **范围**：租户或标识符
-- **类别**：`memories`、`profiles`、`entities`、`sessions`等
-- **ID**：唯一内存标识符
-
-## 三级内存层次结构
-
-Cortex Memory实现了带有三个抽象层的**渐进式披露**系统：
-
-| 层级 | 目的 | 令牌使用 | 用例 |
-|-------|---------|-------------|----------|
-| **L0 (抽象层)** | 快速定位，粗粒度候选选择 | ~100 令牌 | 初步筛选（20%权重） |
-| **L1 (概览层)** | 带有关键点和实体的结构化摘要 | ~500-2000 令牌 | 上下文细化（30%权重） |
-| **L2 (详细层)** | 完整对话内容 | 可变 | 精确匹配（50%权重） |
-
-这种分层方法通过仅加载必要的细节级别来优化LLM上下文窗口使用。搜索引擎使用**加权评分**结合所有三个层次`L0/L1/L2`。
 
 # 🖥 入门指南
 
