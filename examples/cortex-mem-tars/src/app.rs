@@ -23,7 +23,6 @@ use tokio::sync::mpsc;
 
 // 音频相关导入
 use crate::audio_input;
-use crate::audio_vad;
 use crate::audio_transcription::{self, WhisperTranscriber};
 
 /// 应用程序
@@ -44,7 +43,6 @@ pub struct App {
     message_sender: mpsc::UnboundedSender<AppMessage>,
     message_receiver: mpsc::UnboundedReceiver<AppMessage>,
     pub current_bot_id: Arc<std::sync::RwLock<Option<String>>>,
-    api_server_started: std::sync::Arc<std::sync::atomic::AtomicBool>,
     previous_state: Option<crate::ui::AppState>,
     external_message_sender: mpsc::UnboundedSender<String>,
     external_message_receiver: mpsc::UnboundedReceiver<String>,
@@ -113,7 +111,6 @@ impl App {
             message_sender: msg_tx,
             message_receiver: msg_rx,
             current_bot_id: Arc::new(std::sync::RwLock::new(None)),
-            api_server_started: Arc::new(std::sync::atomic::AtomicBool::new(false)),
             previous_state: Some(initial_state),
             external_message_sender: external_msg_tx,
             external_message_receiver: external_msg_rx,

@@ -1,6 +1,4 @@
 mod agent;
-mod api_models;
-mod api_server;
 mod app;
 mod config;
 mod infrastructure;
@@ -9,7 +7,6 @@ mod ui;
 
 // 音频相关模块
 mod audio_input;
-mod audio_vad;
 mod audio_transcription;
 
 use anyhow::{Context, Result};
