@@ -1,5 +1,5 @@
 <p align="center">
-  <img height="200" src="./assets/blend_1_banner_800.jpg">
+  <img src="./assets/intro/TopBanner.webp">
 </p>
 
 <h1 align="center">Cortex Memory</h1>
@@ -31,9 +31,9 @@
 
 Cortex Memory 使用复杂的流水线来处理和管理内存，核心是**混合存储架构**，结合了**虚拟文件系统**的持久性和基于向量的**语义搜索**。
 
-| 基于 **虚拟文件存储系统** 和 **渐进式记忆披露** 搜索架构 | 由 **Rust**与**AI** 驱动的 **高性能**、**高精准** 记忆检索召回能力 |
-| :--- | :--- |
-|![architecture_style_modern](./assets/intro/architecture_style_modern.jpg) | ![architecture_style_classic](./assets/benchmark/cortex_mem_vs_langmem_thin.jpg) |
+| 高效能 **渐进式记忆披露** 搜索架构 | 基于 **虚拟文件系统** 的记忆架构 |  **高精准** 记忆检索召回能力 |
+| :--- | :--- | :--- |
+| ![Layered Context Loading](./assets/intro/highlight_style_modern.jpg) |![architecture_style_modern](./assets/intro/highlight_style_classic_2.jpg) | ![architecture_style_classic](./assets/benchmark/cortex_mem_vs_langmem_thin.jpg) |
 
 **Cortex Memory** 使用**虚拟文件系统**方法组织数据，采用 `cortex://` URI 方案：
 
