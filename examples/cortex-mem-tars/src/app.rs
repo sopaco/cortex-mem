@@ -1145,9 +1145,32 @@ impl App {
             return Ok(());
         }
 
+        // 🔇 在关闭音频时临时重定向stderr，避免清理操作破坏TUI
+        #[cfg(unix)]
+        let _null_file = std::fs::File::create("/dev/null").ok();
+        #[cfg(windows)]
+        let _null_file = std::fs::File::create("NUL").ok();
+        
+        #[cfg(unix)]
+        let _temp_stderr_guard = _null_file.as_ref().and_then(|f| {
+            use std::os::unix::io::AsRawFd;
+            unsafe {
+                let saved = libc::dup(2);
+                if saved >= 0 {
+                    libc::dup2(f.as_raw_fd(), 2);
+                    Some(TempStderrGuard { saved })
+                } else {
+                    None
+                }
+            }
+        });
+
         // 1. 停止音频任务
         if let Some(handle) = self.audio_task_handle.take() {
             handle.abort();
+            
+            // 等待一小段时间，确保任务清理完成
+            tokio::time::sleep(Duration::from_millis(100)).await;
         }
 
         // 2. 清理接收器
@@ -1159,6 +1182,8 @@ impl App {
         self.ui.messages.push(ChatMessage::system("🔇 语音输入已关闭"));
 
         log::info!("🔇 语音输入已禁用");
+        
+        // _temp_stderr_guard 会在函数结束时恢复 stderr
         Ok(())
     }
 
@@ -1442,6 +1467,22 @@ impl Drop for StderrGuard {
         unsafe {
             libc::dup2(self.saved_stderr, 2);
             libc::close(self.saved_stderr);
+        }
+    }
+}
+
+// 临时stderr守卫（用于disable_audio_input）
+#[cfg(unix)]
+struct TempStderrGuard {
+    saved: i32,
+}
+
+#[cfg(unix)]
+impl Drop for TempStderrGuard {
+    fn drop(&mut self) {
+        unsafe {
+            libc::dup2(self.saved, 2);
+            libc::close(self.saved);
         }
     }
 }
