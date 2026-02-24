@@ -1,72 +1,78 @@
 # Cortex TARS
 
 <p align="center">
-  <strong>🎧 Share Your Auditory Presence with AI — A Next-Gen Personal Agent Powered by Cortex Memory</strong>
+  <strong>🎧 基于 Cortex Memory 的交互式 AI 助手 — 终端用户界面版</strong>
 </p>
 
-Cortex TARS is a production-ready TUI (Terminal User Interface) application that brings **auditory presence** to your AI experience. Built on **Cortex Memory**, it's not just a chatbot — it's an intelligent AI assistant platform that can truly hear and remember your voice in the real world. Cortex TARS maintains deep links with your memory, capturing and preserving your auditory experiences through its extensible API capabilities.
+Cortex TARS 是一个基于 **Cortex Memory** 的生产级 TUI（终端用户界面）应用。它不仅是一个聊天机器人，更是一个具备语音输入和持久记忆功能的智能 AI 助手平台。
 
-## ✨ Key Features
+## ✨ 核心特性
 
-### 🎭 Multi-Agent Management
-Create and manage multiple AI personas, each with distinct personalities, system prompts, and specialized knowledge areas. Whether you need a coding assistant, a creative writing partner, or a productivity coach, Cortex TARS lets you run them all simultaneously.
+### 🤖 多 Agent 管理
+创建和管理多个 AI 机器人，每个机器人具有独特的个性、系统提示词和专业知识领域。无论是编程助手、写作伙伴还是生产力教练，都可以同时运行。
 
-### 💾 Persistent Role Memory
-Every agent maintains its own long-term memory, learning from interactions over time. Your coding assistant remembers your coding style and preferences; your writing coach adapts to your voice and goals. Powered by Cortex Memory's intelligent memory management.
+### 🧠 分层记忆系统
+- **L0 摘要层**：快速判断记忆相关性（~100 tokens）
+- **L1 概览层**：理解核心信息（~2000 tokens）
+- **L2 完整层**：获取完整内容
+- 基于 Qdrant 向量数据库的语义搜索
+- 租户隔离的记忆架构
 
-### 🔒 Memory Isolation
-Advanced memory architecture ensures complete isolation between agents and users. Each agent's knowledge base is separate, preventing cross-contamination while enabling personalized experiences across different contexts.
+### 🎤 语音输入
+- 实时麦克风音频捕获
+- Whisper 语音转录（中英文支持）
+- 音频增益和预处理
+- 静音检测和过滤
 
-### 🎨 Modern TUI Experience
-- **Beautiful Interface**: Built with ratatui for a polished, responsive terminal experience
-- **Multiple Themes**: Choose from 5 pre-built themes (Default, Dark, Forest, Ocean, Sunset)
-- **Markdown Support**: Rich text rendering with full Markdown syntax
-- **Stream Responses**: Real-time streaming AI responses for smooth conversations
-- **Message Export**: Export conversations to clipboard with a single command
+### 🎨 现代 TUI 体验
+- 基于 ratatui 的精美终端界面
+- 多个预设主题（Default、Dark、Forest、Ocean、Sunset）
+- Markdown 完整支持
+- AI 响应实时流式输出
+- 会话导出到剪贴板
 
-### 🔌 Extensible API Integration
-Cortex TARS provides a REST API server that enables external services to interact with the memory system:
+### 💾 记忆持久化
+- 退出时自动提取会话记忆
+- 支持向量搜索增强模式
+- 用户信息自动提取
 
-- **Store Mode**: External services can store information directly to the memory system
-- **Chat Mode**: External messages can be injected as user input for AI processing
-- **Health Check**: Monitor API service status
-- **Memory Retrieval**: Query and list stored memories programmatically
+## 📋 前置要求
 
-## 📋 Prerequisites
+- **Rust** 1.70+
+- **Qdrant** 向量数据库（用于记忆功能）
+- **OpenAI 兼容**的 LLM API 端点
+- **麦克风**（用于语音输入功能）
 
-- **Rust** 1.70 or later
-- **Qdrant** vector database (for memory functionality)
-- **OpenAI-compatible** LLM API endpoint
+## 🚀 安装
 
-## 🚀 Installation
-
-### Clone and Build
+### 克隆并构建
 
 ```bash
 cd examples/cortex-mem-tars
 cargo build --release
 ```
 
-The compiled binary will be available at `target/release/cortex-mem-tars`.
+编译后的二进制文件位于 `target/release/cortex-mem-tars`。
 
-## ⚙️ Configuration
+## ⚙️ 配置
 
-### 1. Create Configuration File
+### 1. 创建配置文件
 
-Copy the example configuration:
+复制示例配置：
 
 ```bash
 cp config.example.toml config.toml
 ```
 
-### 2. Edit Configuration
+### 2. 编辑配置
 
-Edit `config.toml` with your settings:
+编辑 `config.toml`：
 
 ```toml
 [qdrant]
 url = "http://localhost:6334"
 collection_name = "cortex_mem"
+embedding_dim = 1536
 timeout_secs = 30
 
 [llm]
@@ -82,284 +88,199 @@ api_key = "your-api-key-here"
 model_name = "text-embedding-3-small"
 batch_size = 100
 
-[memory]
-max_memories = 10000
-similarity_threshold = 0.65
-max_search_results = 50
-auto_enhance = true
-deduplicate = true
-
-[api]
+[server]
+host = "localhost"
 port = 8080
-api_key = "ANYTHING_YOU_LIKE"
-enable_cors = true
+cors_origins = ["*"]
+
+[cortex]
+data_dir = "./data"
 ```
 
-### 3. Start Qdrant
+### 3. 启动 Qdrant
 
 ```bash
-# Using Docker
+# 使用 Docker
 docker run -p 6334:6334 qdrant/qdrant
-
-# Or use local installation
-qdrant
 ```
 
-## 🎮 Usage
+## 🎮 使用方法
 
-### Basic Commands
+### 基本命令
 
 ```bash
-# Run with enhanced memory saving (saves conversations on exit)
+# 运行应用
+cortex-mem-tars
+
+# 启用增强记忆保存功能（退出时自动保存对话到记忆系统）
 cortex-mem-tars --enhance-memory-saver
 
-# Run with API server enabled for external integrations
-cortex-mem-tars --enable-audio-connect --audio-connect-mode store
-
-# Chat mode: external messages are treated as user input
-cortex-mem-tars --enable-audio-connect --audio-connect-mode chat
+# 启用 Qdrant 向量搜索功能
+cortex-mem-tars --enhance-vector-search
 ```
 
-### Keyboard Shortcuts
+### 键盘快捷键
 
-| Key | Action |
-|-----|--------|
-| `Enter` | Send message |
-| `Shift+Enter` | New line in input |
-| `Ctrl+C` | Clear current session |
-| `Ctrl+D` | Export conversation to clipboard |
-| `Ctrl+H` | Show help modal |
-| `Ctrl+T` | Open theme selector |
-| `Ctrl+B` | Open bot management |
-| `q` | Quit application (in bot selection) |
-| `Esc` | Close modal / Return to previous state |
+| 按键 | 功能 |
+|------|------|
+| `Enter` | 发送消息 |
+| `Shift+Enter` | 输入换行 |
+| `Ctrl+C` | 清空当前会话 |
+| `Ctrl+D` | 导出会话到剪贴板 |
+| `Ctrl+H` | 显示帮助 |
+| `Ctrl+T` | 打开主题选择器 |
+| `Ctrl+B` | 打开机器人管理 |
+| `Ctrl+A` | 启用语音输入 |
+| `q` | 退出应用（在机器人选择界面） |
+| `Esc` | 关闭弹窗 / 返回上一状态 |
 
-### Bot Management
+### 机器人管理
 
-Cortex TARS supports multiple AI bots with different personalities:
+1. **创建新机器人**：按 `Ctrl+B` → 选择"Create Bot"
+2. **设置机器人属性**：
+   - **Name**：显示名称
+   - **System Prompt**：机器人个性和行为指令
+   - **Password**：可选的访问密码
+3. **编辑/删除机器人**：通过机器人管理界面管理
 
-1. **Create a New Bot**: Press `Ctrl+B` → Select "Create Bot"
-2. **Set Bot Properties**:
-   - **Name**: Display name for the bot
-   - **System Prompt**: The bot's personality and behavior instructions
-   - **Password**: Optional access password for security
-3. **Edit/Delete Bots**: Manage existing bots through the bot management interface
+每个机器人维护独立记忆，确保知识和上下文完全分离。
 
-Each bot maintains its own independent memory, ensuring complete separation of knowledge and context.
+### 命令支持
 
-## 🔌 API Integration
+在聊天界面输入以下命令：
 
-Cortex TARS provides a REST API for external services to interact with the memory system.
-
-### API Endpoints
-
-#### Health Check
-```bash
-GET http://localhost:8080/api/memory/health
+```
+/help     - 显示帮助信息
+/theme    - 切换主题
+/clear    - 清空会话
+/dump     - 导出会话到剪贴板
 ```
 
-#### Store Memory (Store Mode)
-```bash
-POST http://localhost:8080/api/memory/store
-Content-Type: application/json
-
-{
-  "content": "The user mentioned they prefer Rust over Python",
-  "source": "audio_listener",
-  "timestamp": "2024-01-07T10:30:00Z",
-  "speaker_type": "user",
-  "speaker_confidence": 0.95
-}
-```
-
-#### Retrieve Memories
-```bash
-GET http://localhost:8080/api/memory/retrieve?query=user%20preferences&limit=5
-```
-
-#### List Memories
-```bash
-GET http://localhost:8080/api/memory/list?speaker_type=user&limit=10
-```
-
-### Request/Response Models
-
-**StoreMemoryRequest**:
-- `content` (string): Text content to store
-- `source` (string): Source identifier (e.g., "audio_listener")
-- `timestamp` (string): ISO 8601 timestamp
-- `speaker_type` (string): "user" or "other"
-- `speaker_confidence` (float): 0-1 confidence score
-
-**MemoryItem**:
-- `id` (string): Unique memory ID
-- `content` (string): Stored content
-- `timestamp` (string): When it was stored
-- `speaker_type` (string): Speaker identifier
-- `relevance` (float): Search relevance score
-
-## 🏗️ Architecture
+## 🏗️ 项目架构
 
 ```
 cortex-mem-tars/
 ├── src/
-│   ├── main.rs          # Application entry point
-│   ├── app.rs           # Core application logic
-│   ├── agent.rs         # AI agent with Cortex Memory integration
-│   ├── config.rs        # Configuration management
-│   ├── infrastructure.rs # LLM, vector store, memory manager setup
-│   ├── api_server.rs    # REST API server
-│   ├── api_models.rs    # API request/response models
-│   ├── logger.rs        # Logging system
-│   ├── ui.rs            # TUI interface and rendering
-│   └── lib.rs           # Library exports
-├── config.example.toml  # Configuration template
-└── README.md           # This file
+│   ├── main.rs              # 应用入口
+│   ├── app.rs               # 核心应用逻辑和事件处理
+│   ├── agent.rs             # AI Agent 与 Cortex Memory 集成
+│   ├── config.rs            # 配置管理和机器人配置
+│   ├── infrastructure.rs   # 基础设施（LLM、向量存储）
+│   ├── ui.rs                # TUI 界面和渲染
+│   ├── logger.rs            # 日志系统
+│   ├── audio_input.rs       # 麦克风音频捕获
+│   └── audio_transcription.rs # Whisper 语音转录
+├── config.example.toml      # 配置模板
+└── README.md
 ```
 
-## 🧠 How Memory Works
+## 🧠 记忆系统工作原理
 
-Cortex TARS leverages Cortex Memory's intelligent memory system:
+Cortex TARS 利用 Cortex Memory 的智能记忆系统：
 
-1. **Automatic Extraction**: The system automatically extracts key facts and insights from conversations
-2. **Semantic Storage**: Memories are stored as vectors for intelligent retrieval
-3. **Context Awareness**: The agent retrieves relevant memories before generating responses
-4. **Memory Optimization**: Periodic optimization consolidates and refines memories
-5. **Agent Isolation**: Each agent's memory is completely separate from others
+1. **自动提取**：系统自动从对话中提取关键事实和洞察
+2. **语义存储**：记忆以向量形式存储，支持智能检索
+3. **上下文感知**：Agent 在生成响应前检索相关记忆
+4. **记忆优化**：定期优化整合记忆
+5. **Agent 隔离**：每个 Agent 的记忆完全分离
 
-### Memory Flow
+### 记忆 URI 格式
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant TARS as Cortex TARS
-    participant Memory as Cortex Memory
-    participant LLM as LLM Service
-
-    User->>TARS: Send message
-    TARS->>Memory: Retrieve relevant memories
-    Memory-->>TARS: Return context
-    TARS->>LLM: Generate response with context
-    LLM-->>TARS: Stream response
-    TARS->>User: Display response
-    TARS->>Memory: Store conversation (if enabled)
+```
+cortex://user/{user_id}/          - 用户记忆目录
+cortex://user/{user_id}/profile.json - 用户档案
+cortex://agent/{agent_id}/       - Agent 记忆目录
+cortex://session/{session_id}/   - 特定会话
+cortex://resources/               - 知识库
 ```
 
-## 🔍 Advanced Features
+### 分层访问
 
-### Memory Enhancement
+- **search(query)**：智能搜索记忆，支持指定搜索范围和层级
+- **abstract(uri)**：获取 L0 摘要（快速判断相关性）
+- **overview(uri)**：获取 L1 概览（理解核心信息）
+- **read(uri)**：获取 L2 完整内容
+- **ls(uri)**：列出目录内容
 
-Enable enhanced memory saving to automatically store conversations:
+## 🔧 开发相关
 
-```bash
-cortex-mem-tars --enhance-memory-saver
-```
-
-This feature:
-- Saves entire conversation history to memory on exit
-- Preserves context across sessions
-- Enables long-term learning and personalization
-
-### External Integration
-
-The API server enables external services to:
-
-1. **Store Information**: External services can push data to memory
-2. **Inject Messages**: Send messages as if typed by the user
-3. **Query Memory**: Retrieve stored information programmatically
-
-Example use cases:
-- Voice recognition services storing transcribed conversations
-- Meeting assistants capturing action items
-- Automation tools logging system events
-- IoT devices storing sensor data with context
-
-### Service Status Monitoring
-
-Cortex TARS continuously monitors LLM service availability and displays status in the UI:
-- 🟢 **Active**: Service is responding normally
-- 🔴 **Inactive**: Service is unavailable
-- 🟡 **Initing**: Service is initializing
-
-## 🛠️ Development
-
-### Run Tests
+### 运行测试
 
 ```bash
 cargo test
 ```
 
-### Check Code
+### 代码检查
 
 ```bash
 cargo check
 ```
 
-### Format Code
+### 代码格式化
 
 ```bash
 cargo fmt
 ```
 
-### Build with Optimizations
+### 发布构建
 
 ```bash
 cargo build --release
 ```
 
-## 🐛 Troubleshooting
+## 🐛 故障排除
 
-### Qdrant Connection Issues
+### Qdrant 连接问题
 
-Verify Qdrant is running:
+验证 Qdrant 是否运行：
 
 ```bash
 curl http://localhost:6334/health
 ```
 
-Check your `config.toml` Qdrant URL configuration.
+检查 `config.toml` 中的 Qdrant URL 配置。
 
-### LLM API Errors
+### LLM API 错误
 
-- Verify API key is correct in `config.toml`
-- Check API endpoint URL
-- Ensure you have sufficient API credits
-- Review logs for detailed error messages
+- 验证 API 密钥正确
+- 检查 API 端点 URL
+- 确保 API 配额充足
+- 查看日志获取详细错误信息
 
-### Memory Not Working
+### 记忆功能不工作
 
-- Ensure Qdrant is running and accessible
-- Verify API keys for both LLM and embedding services
-- Check memory configuration thresholds
-- Enable logging for detailed diagnostics
+- 确保 Qdrant 正常运行
+- 验证 LLM 和 embedding 服务的 API 密钥
+- 检查记忆配置阈值
+- 启用日志查看详细诊断
 
-### Bot Configuration Issues
+### 语音输入问题
 
-Bot configurations are stored in:
-- Current directory: `./bots.json`
-- System config: `~/.config/cortex/mem-tars/bots.json`
+- 检查麦克风权限
+- 确认音频设备可用
+- 查看日志中的音频配置信息
 
-Check file permissions and JSON syntax if bots don't load.
+## 📚 相关资源
 
-## 📚 Resources
-
-- [Cortex Memory Documentation](https://github.com/sopaco/cortex-mem/tree/main/litho.docs)
+- [Cortex Memory 文档](https://github.com/sopaco/cortex-mem/tree/main/litho.docs)
 - [Cortex Memory Core](../../cortex-mem-core)
-- [Cortex Memory Rig Integration](../../cortex-mem-rig)
-- [RatATUI Framework](https://github.com/ratatui-org/ratatui)
-- [Rig Agent Framework](https://github.com/0xPlaygrounds/rig)
+- [Cortex Memory Tools](../../cortex-mem-tools)
+- [RatATUI 框架](https://github.com/ratatui-org/ratatui)
+- [Rig Agent 框架](https://github.com/0xPlaygrounds/rig)
+- [Qdrant 向量数据库](https://qdrant.tech/)
 
-## 📄 License
+## 📄 许可证
 
-MIT License - see [LICENSE](../../LICENSE) for details.
+MIT 许可证 - 详见 [LICENSE](../../LICENSE)。
 
-## 🙏 Acknowledgments
+## 🙏 致谢
 
-- **Cortex Memory**: The intelligent memory framework powering persistent AI memory
-- **RatATUI**: Beautiful terminal UI framework
-- **Rig**: LLM agent framework for building intelligent systems
-- **Qdrant**: High-performance vector database for semantic search
+- **Cortex Memory**：为 AI 提供持久记忆的智能框架
+- **RatATUI**：精美的终端 UI 框架
+- **Rig**：用于构建智能系统的 LLM Agent 框架
+- **Qdrant**：用于语义搜索的高性能向量数据库
+- **whisper-rs**：Rust 实现的 Whisper 语音识别
 
 ---
 
-**Cortex TARS** - Where AI meets persistent memory in the terminal. 🚀
+**Cortex TARS** — 让 AI 在终端中拥有持久记忆。🚀

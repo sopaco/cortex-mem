@@ -349,25 +349,6 @@ extractor.save_extraction("session-456", &memories).await?;
 
 ---
 
-## 8. Performance Considerations
-
-| Metric | Target | Optimization Strategy |
-|--------|--------|---------------------|
-| **Latency** | < 2s per extraction | Parallel LLM calls, connection pooling |
-| **Throughput** | 10 threads/min | Batch message processing, async I/O |
-| **Accuracy** | > 85% precision | Confidence thresholding, prompt refinement |
-| **Storage** | < 10KB per extraction | Selective persistence, compression |
-
----
-
-## 9. Future Enhancements
-
-- **Incremental Extraction**: Delta processing to avoid re-extracting unchanged conversation segments
-- **Multi-modal Support**: Extension to-handle image and audio content extraction
-- **Custom Entity Types**: Pluggable entity recognition schemas for domain-specific applications
-
----
-
 **Related Documentation:**
 - [Automation Management Domain](./automation-management.md)
 - [Profile Management Domain](./profile-management.md)
