@@ -106,6 +106,9 @@ impl EmbeddingClient {
             .await
             .map_err(|e| crate::Error::Embedding(format!("Failed to parse response: {}", e)))?;
 
+        // 强制等待1秒以避免限流
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+
         Ok(embedding_response
             .data
             .into_iter()
