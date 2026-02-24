@@ -2,12 +2,15 @@ use crate::agent::ChatMessage;
 use crate::config::BotConfig;
 use clipboard::ClipboardProvider;
 use ratatui::{
+    Frame,
     crossterm::event::{KeyEvent, MouseEvent, MouseEventKind},
     layout::{Alignment, Constraint, Direction, Layout, Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap},
-    Frame,
+    widgets::{
+        Block, Borders, List, ListItem, ListState, Paragraph, Scrollbar, ScrollbarOrientation,
+        ScrollbarState, Wrap,
+    },
 };
 use tui_markdown::from_str;
 use tui_textarea::TextArea;
@@ -16,16 +19,16 @@ use tui_textarea::TextArea;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AppState {
     BotSelection,
-    PasswordInput,  // 密码输入状态
+    PasswordInput, // 密码输入状态
     Chat,
 }
 
 /// 服务状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceStatus {
-    Initing,   // 初始化中
-    Active,    // 服务可用
-    Inactive,  // 服务不可用
+    Initing,  // 初始化中
+    Active,   // 服务可用
+    Inactive, // 服务不可用
 }
 
 /// 聊天界面状态
@@ -103,7 +106,13 @@ impl Theme {
     };
 
     pub fn all() -> &'static [Theme; 5] {
-        &[Self::DEFAULT, Self::DARK, Self::FOREST, Self::OCEAN, Self::SUNSET]
+        &[
+            Self::DEFAULT,
+            Self::DARK,
+            Self::FOREST,
+            Self::OCEAN,
+            Self::SUNSET,
+        ]
     }
 }
 
@@ -118,7 +127,7 @@ pub struct AppUi {
     pub messages: Vec<ChatMessage>,
     pub input_textarea: TextArea<'static>,
     pub scroll_offset: usize,
-    pub auto_scroll: bool,  // 是否自动滚动到底部
+    pub auto_scroll: bool, // 是否自动滚动到底部
     pub log_panel_visible: bool,
     pub log_lines: Vec<String>,
     pub log_scroll_offset: usize,
@@ -129,7 +138,7 @@ pub struct AppUi {
     pub selection_start: Option<(usize, usize)>, // (line_index, char_index)
     pub selection_end: Option<(usize, usize)>,   // (line_index, char_index)
     #[allow(dead_code)]
-    pub cursor_position: (usize, usize),         // 当前光标位置 (line_index, char_index)
+    pub cursor_position: (usize, usize), // 当前光标位置 (line_index, char_index)
     // 消息显示区域位置
     pub messages_area: Option<Rect>,
     // Markdown 渲染缓存：存储每条消息的渲染行，避免重复解析
@@ -161,9 +170,9 @@ pub struct AppUi {
 /// 机器人管理弹窗状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BotManagementState {
-    List,      // 机器人列表
-    Creating,  // 创建机器人
-    Editing,   // 编辑机器人
+    List,          // 机器人列表
+    Creating,      // 创建机器人
+    Editing,       // 编辑机器人
     ConfirmDelete, // 确认删除
 }
 
@@ -178,20 +187,20 @@ pub enum BotInputField {
 /// 键盘事件处理结果
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyAction {
-    Continue,         // 继续运行
-    Quit,             // 退出程序
-    SendMessage,      // 发送消息
-    ClearChat,        // 清空会话
-    ShowHelp,         // 显示帮助
-    ShowThemes,       // 显示主题选择
-    DumpChats,        // 导出会话到剪贴板
-    CreateBot,        // 创建机器人
-    EditBot,          // 编辑机器人
-    DeleteBot,        // 删除机器人
-    SaveBot,          // 保存机器人
-    CancelBot,        // 取消机器人操作
-    EnableAudioInput, // 启用语音输入
-    DisableAudioInput,// 禁用语音输入
+    Continue,          // 继续运行
+    Quit,              // 退出程序
+    SendMessage,       // 发送消息
+    ClearChat,         // 清空会话
+    ShowHelp,          // 显示帮助
+    ShowThemes,        // 显示主题选择
+    DumpChats,         // 导出会话到剪贴板
+    CreateBot,         // 创建机器人
+    EditBot,           // 编辑机器人
+    DeleteBot,         // 删除机器人
+    SaveBot,           // 保存机器人
+    CancelBot,         // 取消机器人操作
+    EnableAudioInput,  // 启用语音输入
+    DisableAudioInput, // 禁用语音输入
 }
 
 impl AppUi {
@@ -200,10 +209,12 @@ impl AppUi {
         bot_list_state.select(Some(0));
 
         let mut input_textarea = TextArea::default();
-        let _ = input_textarea.set_block(Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(Theme::DEFAULT.border_color))
-            .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"));
+        let _ = input_textarea.set_block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Theme::DEFAULT.border_color))
+                .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"),
+        );
         let _ = input_textarea.set_cursor_line_style(Style::default());
 
         let help_content = Self::parse_help_content();
@@ -213,28 +224,24 @@ impl AppUi {
 
         // 初始化机器人管理输入框
         let mut bot_name_input = TextArea::default();
-        let _ = bot_name_input.set_block(Block::default()
-            .borders(Borders::ALL)
-            .title("机器人名称"));
+        let _ =
+            bot_name_input.set_block(Block::default().borders(Borders::ALL).title("机器人名称"));
 
         let mut bot_prompt_input = TextArea::default();
-        let _ = bot_prompt_input.set_block(Block::default()
-            .borders(Borders::ALL)
-            .title("系统提示词"));
+        let _ =
+            bot_prompt_input.set_block(Block::default().borders(Borders::ALL).title("系统提示词"));
 
         let mut bot_password_input = TextArea::default();
-        let _ = bot_password_input.set_block(Block::default()
-            .borders(Borders::ALL)
-            .title("访问密码"));
+        let _ =
+            bot_password_input.set_block(Block::default().borders(Borders::ALL).title("访问密码"));
 
         let mut bot_management_list_state = ListState::default();
         bot_management_list_state.select(Some(0));
 
         // 初始化密码输入框
         let mut password_input = TextArea::default();
-        let _ = password_input.set_block(Block::default()
-            .borders(Borders::ALL)
-            .title("请输入密码"));
+        let _ =
+            password_input.set_block(Block::default().borders(Borders::ALL).title("请输入密码"));
 
         Self {
             state: AppState::BotSelection,
@@ -375,9 +382,9 @@ impl AppUi {
                         // 需要密码验证
                         self.pending_bot = Some(bot.clone());
                         self.password_input = TextArea::default();
-                        let _ = self.password_input.set_block(Block::default()
-                            .borders(Borders::ALL)
-                            .title("请输入密码"));
+                        let _ = self
+                            .password_input
+                            .set_block(Block::default().borders(Borders::ALL).title("请输入密码"));
                         self.state = AppState::PasswordInput;
                     }
                 }
@@ -395,7 +402,11 @@ impl AppUi {
                 log::info!("用户按 q 退出");
                 false
             }
-            KeyCode::Char('c') if key.modifiers.contains(ratatui::crossterm::event::KeyModifiers::CONTROL) => {
+            KeyCode::Char('c')
+                if key
+                    .modifiers
+                    .contains(ratatui::crossterm::event::KeyModifiers::CONTROL) =>
+            {
                 log::info!("用户按 Ctrl-C 退出");
                 false
             }
@@ -417,7 +428,12 @@ impl AppUi {
             }
             KeyCode::Enter => {
                 // 验证密码
-                let input_password = self.password_input.lines().first().map(|s| s.trim()).unwrap_or("");
+                let input_password = self
+                    .password_input
+                    .lines()
+                    .first()
+                    .map(|s| s.trim())
+                    .unwrap_or("");
                 if let Some(bot) = &self.pending_bot {
                     if input_password == bot.access_password.trim() {
                         // 密码正确，进入聊天
@@ -430,9 +446,11 @@ impl AppUi {
                         // 密码错误
                         log::warn!("密码错误");
                         self.password_input = TextArea::default();
-                        let _ = self.password_input.set_block(Block::default()
-                            .borders(Borders::ALL)
-                            .title("密码错误，请重新输入"));
+                        let _ = self.password_input.set_block(
+                            Block::default()
+                                .borders(Borders::ALL)
+                                .title("密码错误，请重新输入"),
+                        );
                         KeyAction::Continue
                     }
                 } else {
@@ -536,7 +554,8 @@ impl AppUi {
             let mut wrap_pos = 0;
 
             for (line_idx, line) in lines.iter().enumerate() {
-                let line_width: usize = line.chars()
+                let line_width: usize = line
+                    .chars()
                     .map(|c| unicode_width::UnicodeWidthChar::width(c).unwrap_or(0))
                     .sum();
 
@@ -594,9 +613,11 @@ impl AppUi {
 
             // 重新创建 TextArea
             let mut new_textarea = TextArea::from(new_lines.iter().cloned());
-            let _ = new_textarea.set_block(Block::default()
-                .borders(Borders::ALL)
-                .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"));
+            let _ = new_textarea.set_block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"),
+            );
             let _ = new_textarea.set_cursor_line_style(Style::default());
 
             // 重新计算光标位置
@@ -614,7 +635,8 @@ impl AppUi {
 
             let new_cursor_col = if cursor_row == line_idx && cursor_col > wrap_pos {
                 let suffix_prefix: String = chars[wrap_pos..cursor_col].iter().collect();
-                suffix_prefix.chars()
+                suffix_prefix
+                    .chars()
                     .map(|c| unicode_width::UnicodeWidthChar::width(c).unwrap_or(0))
                     .sum()
             } else if cursor_row == line_idx {
@@ -710,7 +732,8 @@ impl AppUi {
             }
             KeyCode::PageDown => {
                 let visible_lines = 20; // 弹窗可见行数
-                self.help_scroll_offset = self.help_scroll_offset
+                self.help_scroll_offset = self
+                    .help_scroll_offset
                     .saturating_add(10)
                     .min(self.help_content.len().saturating_sub(visible_lines));
                 KeyAction::Continue
@@ -760,10 +783,12 @@ impl AppUi {
                         log::info!("切换主题: {}", theme.name);
 
                         // 更新输入框样式
-                        let _ = self.input_textarea.set_block(Block::default()
-                            .borders(Borders::ALL)
-                            .border_style(Style::default().fg(self.current_theme.border_color))
-                            .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"));
+                        let _ = self.input_textarea.set_block(
+                            Block::default()
+                                .borders(Borders::ALL)
+                                .border_style(Style::default().fg(self.current_theme.border_color))
+                                .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"),
+                        );
 
                         self.theme_modal_visible = false;
                     }
@@ -781,16 +806,14 @@ impl AppUi {
 
             if !selected_text.is_empty() {
                 match clipboard::ClipboardContext::new() {
-                    Ok(mut ctx) => {
-                        match ctx.set_contents(selected_text.clone()) {
-                            Ok(_) => {
-                                log::info!("已复制 {} 个字符到剪贴板", selected_text.len());
-                            }
-                            Err(e) => {
-                                log::error!("复制到剪贴板失败: {}", e);
-                            }
+                    Ok(mut ctx) => match ctx.set_contents(selected_text.clone()) {
+                        Ok(_) => {
+                            log::info!("已复制 {} 个字符到剪贴板", selected_text.len());
                         }
-                    }
+                        Err(e) => {
+                            log::error!("复制到剪贴板失败: {}", e);
+                        }
+                    },
                     Err(e) => {
                         log::error!("无法访问剪贴板: {}", e);
                     }
@@ -893,7 +916,8 @@ impl AppUi {
                 }
                 MouseEventKind::ScrollDown => {
                     if self.help_scroll_offset < max_scroll {
-                        self.help_scroll_offset = self.help_scroll_offset.saturating_add(3).min(max_scroll);
+                        self.help_scroll_offset =
+                            self.help_scroll_offset.saturating_add(3).min(max_scroll);
                     }
                 }
                 _ => {}
@@ -945,7 +969,6 @@ impl AppUi {
                 true
             }
             MouseEventKind::Up(but) if but == ratatui::crossterm::event::MouseButton::Left => {
-
                 // 保持选择状态，用户可以继续操作
                 true
             }
@@ -970,8 +993,11 @@ impl AppUi {
         });
 
         // 检查鼠标是否在消息区域内
-        if event.row < content_area.top() || event.row >= content_area.bottom() ||
-           event.column < content_area.left() || event.column >= content_area.right() {
+        if event.row < content_area.top()
+            || event.row >= content_area.bottom()
+            || event.column < content_area.left()
+            || event.column >= content_area.right()
+        {
             log::debug!("鼠标不在消息区域内");
             return (self.scroll_offset, 0);
         }
@@ -1017,7 +1043,11 @@ impl AppUi {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .margin(1)
-            .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(3)])
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Min(0),
+                Constraint::Length(3),
+            ])
             .split(area);
 
         // 标题
@@ -1036,11 +1066,16 @@ impl AppUi {
                 ListItem::new(Line::from(vec![
                     Span::styled(
                         bot.name.clone(),
-                        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                        Style::default()
+                            .fg(Color::Cyan)
+                            .add_modifier(Modifier::BOLD),
                     ),
                     Span::raw(" - "),
                     Span::styled(
-                        format!("{}...", &bot.system_prompt.chars().take(40).collect::<String>()),
+                        format!(
+                            "{}...",
+                            &bot.system_prompt.chars().take(40).collect::<String>()
+                        ),
                         Style::default().fg(Color::Gray),
                     ),
                 ]))
@@ -1058,8 +1093,9 @@ impl AppUi {
         frame.render_stateful_widget(list, chunks[1], &mut self.bot_list_state);
 
         // 帮助提示
-        let help = Paragraph::new("↑/↓ 或 j/k: 选择 | Enter: 进入 | m: 管理机器人 | q 或 Ctrl-C: 退出")
-            .alignment(Alignment::Center);
+        let help =
+            Paragraph::new("↑/↓ 或 j/k: 选择 | Enter: 进入 | m: 管理机器人 | q 或 Ctrl-C: 退出")
+                .alignment(Alignment::Center);
 
         frame.render_widget(help, chunks[2]);
     }
@@ -1079,7 +1115,11 @@ impl AppUi {
             .split(area);
 
         // 标题
-        let bot_name = self.pending_bot.as_ref().map(|b| b.name.as_str()).unwrap_or("未知");
+        let bot_name = self
+            .pending_bot
+            .as_ref()
+            .map(|b| b.name.as_str())
+            .unwrap_or("未知");
         let title = Paragraph::new(format!("访问机器人: {}", bot_name))
             .block(Block::default().borders(Borders::ALL))
             .alignment(Alignment::Center)
@@ -1091,8 +1131,7 @@ impl AppUi {
         frame.render_widget(&self.password_input, chunks[1]);
 
         // 帮助提示
-        let help = Paragraph::new("Enter: 确认 | Esc: 取消")
-            .alignment(Alignment::Center);
+        let help = Paragraph::new("Enter: 确认 | Esc: 取消").alignment(Alignment::Center);
 
         frame.render_widget(help, chunks[2]);
     }
@@ -1131,8 +1170,11 @@ impl AppUi {
             .split(area);
 
         // 创建简洁的标题文字
-        let bot_name = self.selected_bot().map(|b| b.name.as_str()).unwrap_or("未知");
-        
+        let bot_name = self
+            .selected_bot()
+            .map(|b| b.name.as_str())
+            .unwrap_or("未知");
+
         // 🎙️ 添加语音输入状态指示
         let audio_status = if self.audio_input_enabled {
             Span::styled(
@@ -1142,13 +1184,9 @@ impl AppUi {
                     .add_modifier(Modifier::BOLD),
             )
         } else {
-            Span::styled(
-                " [🔇 语音输入关闭]",
-                Style::default()
-                    .fg(Color::DarkGray),
-            )
+            Span::styled(" [🔇 语音输入关闭]", Style::default().fg(Color::DarkGray))
         };
-        
+
         let title_line = Line::from(vec![
             Span::styled(
                 "Cortex TARS AI Program",
@@ -1172,7 +1210,7 @@ impl AppUi {
                     .border_style(
                         Style::default()
                             .fg(self.current_theme.primary_color)
-                            .add_modifier(Modifier::BOLD)
+                            .add_modifier(Modifier::BOLD),
                     )
                     .border_type(ratatui::widgets::BorderType::Double)
                     .title_style(
@@ -1182,19 +1220,19 @@ impl AppUi {
                                 ServiceStatus::Active => Color::Green,
                                 ServiceStatus::Inactive => Color::Red,
                             })
-                            .add_modifier(Modifier::BOLD)
+                            .add_modifier(Modifier::BOLD),
                     )
                     .title(match self.service_status {
                         ServiceStatus::Initing => " [ SYSTEM INITING ] ",
                         ServiceStatus::Active => " [ SYSTEM ACTIVE ] ",
                         ServiceStatus::Inactive => " [ SYSTEM INACTIVE ] ",
-                    })
+                    }),
             )
             .alignment(Alignment::Center)
             .style(
                 Style::default()
                     .fg(self.current_theme.text_color)
-                    .bg(self.current_theme.background_color)
+                    .bg(self.current_theme.background_color),
             );
 
         frame.render_widget(title, chunks[0]);
@@ -1221,7 +1259,10 @@ impl AppUi {
             .split(area);
 
         // 创建简洁的标题文字
-        let bot_name = self.selected_bot().map(|b| b.name.as_str()).unwrap_or("未知");
+        let bot_name = self
+            .selected_bot()
+            .map(|b| b.name.as_str())
+            .unwrap_or("未知");
         let title_line = Line::from(vec![
             Span::styled(
                 "Cortex TARS AI Program",
@@ -1244,7 +1285,7 @@ impl AppUi {
                     .border_style(
                         Style::default()
                             .fg(self.current_theme.primary_color)
-                            .add_modifier(Modifier::BOLD)
+                            .add_modifier(Modifier::BOLD),
                     )
                     .border_type(ratatui::widgets::BorderType::Double)
                     .title_style(
@@ -1254,19 +1295,19 @@ impl AppUi {
                                 ServiceStatus::Active => Color::Green,
                                 ServiceStatus::Inactive => Color::Red,
                             })
-                            .add_modifier(Modifier::BOLD)
+                            .add_modifier(Modifier::BOLD),
                     )
                     .title(match self.service_status {
                         ServiceStatus::Initing => " [ SYSTEM INITING ] ",
                         ServiceStatus::Active => " [ SYSTEM ACTIVE ] ",
                         ServiceStatus::Inactive => " [ SYSTEM INACTIVE ] ",
-                    })
+                    }),
             )
             .alignment(Alignment::Center)
             .style(
                 Style::default()
                     .fg(self.current_theme.text_color)
-                    .bg(self.current_theme.background_color)
+                    .bg(self.current_theme.background_color),
             );
 
         frame.render_widget(title, chunks[0]);
@@ -1319,16 +1360,12 @@ impl AppUi {
             all_lines.push(Line::from(vec![
                 Span::styled(
                     format!("[{}]", role_label),
-                    Style::default()
-                        .fg(role_color)
-                        .add_modifier(Modifier::BOLD),
+                    Style::default().fg(role_color).add_modifier(Modifier::BOLD),
                 ),
                 Span::raw(" "),
                 Span::styled(
                     format!("[{}]", time_str),
-                    Style::default()
-                        .fg(Color::Gray)
-                        .add_modifier(Modifier::DIM),
+                    Style::default().fg(Color::Gray).add_modifier(Modifier::DIM),
                 ),
             ]));
 
@@ -1338,8 +1375,15 @@ impl AppUi {
             } else {
                 // 解析 Markdown 并缓存
                 let markdown_text = from_str(&message.content);
-                let lines: Vec<String> = markdown_text.lines.iter()
-                    .map(|line| line.spans.iter().map(|s| s.content.clone()).collect::<String>())
+                let lines: Vec<String> = markdown_text
+                    .lines
+                    .iter()
+                    .map(|line| {
+                        line.spans
+                            .iter()
+                            .map(|s| s.content.clone())
+                            .collect::<String>()
+                    })
                     .collect();
                 self.message_render_cache[idx] = Some(lines.clone());
                 lines
@@ -1357,22 +1401,22 @@ impl AppUi {
         // 遍历所有行，计算每行在给定宽度下会被换成几行
         let available_width = content_area.width as usize;
         let mut total_lines = 0;
-        
+
         for line in &all_lines {
             // 计算行的实际显示宽度（考虑中文等宽字符）
             let line_text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
             let line_width = unicode_width::UnicodeWidthStr::width(line_text.as_str());
-            
+
             // 计算这一行会被wrap成几行
             if line_width == 0 {
-                total_lines += 1;  // 空行也占一行
+                total_lines += 1; // 空行也占一行
             } else if available_width > 0 {
-                total_lines += (line_width + available_width - 1) / available_width;  // 向上取整
+                total_lines += (line_width + available_width - 1) / available_width; // 向上取整
             } else {
                 total_lines += 1;
             }
         }
-        
+
         let visible_lines = content_area.height as usize;
         let max_scroll = total_lines.saturating_sub(visible_lines);
 
@@ -1388,24 +1432,23 @@ impl AppUi {
 
         // 渲染边框
         let title = "交互信息 (鼠标拖拽选择, Esc 清除选择)";
-        let block = Block::default()
-            .borders(Borders::ALL)
-            .title(title);
+        let block = Block::default().borders(Borders::ALL).title(title);
         frame.render_widget(block, area);
 
         // 🔧 修复：使用Paragraph::scroll()方法而不是手动skip/take
         // 这样Paragraph会正确处理wrap后的滚动
         let paragraph_with_scroll = if self.selection_active {
             // 选择模式下仍需要手动处理（因为需要高亮）
-            let display_lines = self.apply_selection_highlight(all_lines, self.scroll_offset, visible_lines);
+            let display_lines =
+                self.apply_selection_highlight(all_lines, self.scroll_offset, visible_lines);
             Paragraph::new(display_lines).wrap(Wrap { trim: false })
         } else {
             // 正常模式使用Paragraph的内置滚动
             Paragraph::new(all_lines)
                 .wrap(Wrap { trim: false })
-                .scroll((self.scroll_offset as u16, 0))  // 使用scroll方法
+                .scroll((self.scroll_offset as u16, 0)) // 使用scroll方法
         };
-        
+
         frame.render_widget(paragraph_with_scroll, content_area);
 
         // 渲染滚动条
@@ -1424,19 +1467,26 @@ impl AppUi {
                 horizontal: 0,
             });
 
-            frame.render_stateful_widget(
-                scrollbar,
-                scrollbar_area,
-                &mut scrollbar_state,
-            );
+            frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
         }
     }
 
     /// 应用选择高亮
-    fn apply_selection_highlight<'a>(&self, lines: Vec<Line<'a>>, scroll_offset: usize, visible_lines: usize) -> Vec<Line<'a>> {
+    fn apply_selection_highlight<'a>(
+        &self,
+        lines: Vec<Line<'a>>,
+        scroll_offset: usize,
+        visible_lines: usize,
+    ) -> Vec<Line<'a>> {
         let (start, end) = match (self.selection_start, self.selection_end) {
             (Some(s), Some(e)) => (s, e),
-            _ => return lines.into_iter().skip(scroll_offset).take(visible_lines).collect(),
+            _ => {
+                return lines
+                    .into_iter()
+                    .skip(scroll_offset)
+                    .take(visible_lines)
+                    .collect();
+            }
         };
 
         // 如果选择范围完全在可见区域之外，直接返回
@@ -1450,7 +1500,11 @@ impl AppUi {
         // 如果选择区域和可见区域没有重叠，直接返回
         if end_line < visible_start || start_line >= visible_end {
             // log::debug!("选择区域和可见区域没有重叠，直接返回");
-            return lines.into_iter().skip(scroll_offset).take(visible_lines).collect();
+            return lines
+                .into_iter()
+                .skip(scroll_offset)
+                .take(visible_lines)
+                .collect();
         }
 
         let start_col = if start.0 <= end.0 { start.1 } else { end.1 };
@@ -1487,9 +1541,13 @@ impl AppUi {
                         // 单行选择
                         let safe_start_col = start_col.min(char_len);
                         let safe_end_col = end_col.min(char_len);
-                        if safe_start_col < char_len && safe_end_col <= char_len && safe_start_col < safe_end_col {
+                        if safe_start_col < char_len
+                            && safe_end_col <= char_len
+                            && safe_start_col < safe_end_col
+                        {
                             let before: String = chars[..safe_start_col].iter().collect();
-                            let selected: String = chars[safe_start_col..safe_end_col].iter().collect();
+                            let selected: String =
+                                chars[safe_start_col..safe_end_col].iter().collect();
                             let after: String = chars[safe_end_col..].iter().collect();
 
                             Line::from(vec![
@@ -1530,10 +1588,7 @@ impl AppUi {
                         }
                     } else {
                         // 中间行，整行高亮
-                        Line::from(vec![Span::styled(
-                            line_text,
-                            highlight_style,
-                        )])
+                        Line::from(vec![Span::styled(line_text, highlight_style)])
                     }
                 } else {
                     line
@@ -1577,7 +1632,11 @@ impl AppUi {
             .collect();
 
         let paragraph = Paragraph::new(display_lines)
-            .block(Block::default().borders(Borders::ALL).title("日志 (Esc 关闭)"))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("日志 (Esc 关闭)"),
+            )
             .wrap(Wrap { trim: false });
 
         frame.render_widget(paragraph, area);
@@ -1590,18 +1649,14 @@ impl AppUi {
         // 🔧 修复：正确设置ScrollbarState，包括viewport_content_length
         let mut scrollbar_state = ScrollbarState::new(self.log_lines.len())
             .position(self.log_scroll_offset)
-            .viewport_content_length(visible_lines);  // 关键：设置可见行数
+            .viewport_content_length(visible_lines); // 关键：设置可见行数
 
         let scrollbar_area = area.inner(Margin {
             vertical: 1,
             horizontal: 0,
         });
 
-        frame.render_stateful_widget(
-            scrollbar,
-            scrollbar_area,
-            &mut scrollbar_state,
-        );
+        frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
     }
 
     /// 渲染帮助弹窗
@@ -1618,8 +1673,7 @@ impl AppUi {
 
         // 创建半透明背景遮罩（使用深灰色）
         let overlay_area = area;
-        let overlay_block = Block::default()
-            .style(Style::default().bg(Color::Rgb(20, 20, 20)));
+        let overlay_block = Block::default().style(Style::default().bg(Color::Rgb(20, 20, 20)));
 
         frame.render_widget(overlay_block, overlay_area);
 
@@ -1642,9 +1696,13 @@ impl AppUi {
                     .borders(Borders::ALL)
                     .border_style(Style::default().fg(self.current_theme.border_color))
                     .border_type(ratatui::widgets::BorderType::Double)
-                    .title_style(Style::default().fg(self.current_theme.primary_color).add_modifier(Modifier::BOLD))
+                    .title_style(
+                        Style::default()
+                            .fg(self.current_theme.primary_color)
+                            .add_modifier(Modifier::BOLD),
+                    )
                     .title(" 帮助信息 (Esc 关闭) ")
-                    .style(Style::default().bg(self.current_theme.background_color))
+                    .style(Style::default().bg(self.current_theme.background_color)),
             )
             .wrap(Wrap { trim: false })
             .alignment(Alignment::Left);
@@ -1660,18 +1718,14 @@ impl AppUi {
             // 🔧 修复：正确设置ScrollbarState，包括viewport_content_length
             let mut scrollbar_state = ScrollbarState::new(self.help_content.len())
                 .position(self.help_scroll_offset)
-                .viewport_content_length(visible_lines);  // 关键：设置可见行数
+                .viewport_content_length(visible_lines); // 关键：设置可见行数
 
             let scrollbar_area = modal_area.inner(Margin {
                 vertical: 1,
                 horizontal: 0,
             });
 
-            frame.render_stateful_widget(
-                scrollbar,
-                scrollbar_area,
-                &mut scrollbar_state,
-            );
+            frame.render_stateful_widget(scrollbar, scrollbar_area, &mut scrollbar_state);
         }
     }
 
@@ -1689,8 +1743,7 @@ impl AppUi {
 
         // 创建半透明背景遮罩（使用深灰色）
         let overlay_area = area;
-        let overlay_block = Block::default()
-            .style(Style::default().bg(Color::Rgb(20, 20, 20)));
+        let overlay_block = Block::default().style(Style::default().bg(Color::Rgb(20, 20, 20)));
 
         frame.render_widget(overlay_block, overlay_area);
 
@@ -1706,10 +1759,7 @@ impl AppUi {
                             .add_modifier(Modifier::BOLD),
                     ),
                     Span::raw(" - "),
-                    Span::styled(
-                        "●",
-                        Style::default().fg(theme.accent_color),
-                    ),
+                    Span::styled("●", Style::default().fg(theme.accent_color)),
                 ]))
             })
             .collect();
@@ -1723,15 +1773,15 @@ impl AppUi {
                     .title_style(
                         Style::default()
                             .fg(self.current_theme.primary_color)
-                            .add_modifier(Modifier::BOLD)
+                            .add_modifier(Modifier::BOLD),
                     )
                     .title(" 选择主题 (Esc 关闭, Enter 确认) ")
-                    .style(Style::default().bg(self.current_theme.background_color))
+                    .style(Style::default().bg(self.current_theme.background_color)),
             )
             .highlight_style(
                 Style::default()
                     .bg(self.current_theme.secondary_color)
-                    .add_modifier(Modifier::REVERSED)
+                    .add_modifier(Modifier::REVERSED),
             );
 
         frame.render_stateful_widget(list, modal_area, &mut self.theme_list_state);
@@ -1776,10 +1826,12 @@ impl AppUi {
     /// Clear input box
     pub fn clear_input(&mut self) {
         self.input_textarea = TextArea::default();
-        let _ = self.input_textarea.set_block(Block::default()
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(self.current_theme.border_color))
-            .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"));
+        let _ = self.input_textarea.set_block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(self.current_theme.border_color))
+                .title("输入消息或命令 (Enter 发送, 输入 /help 查看命令)"),
+        );
         let _ = self.input_textarea.set_cursor_line_style(Style::default());
     }
 
@@ -1844,6 +1896,8 @@ impl AppUi {
   - /help          显示此帮助信息
   - /themes        切换主题
   - /dump-chats    复制会话区域的所有内容到剪贴板
+  - /enable-audio-input    启用语音输入模式
+  - /disable-audio-input    关闭语音输入模式
 
 ## 快捷键
 
@@ -1860,11 +1914,18 @@ Powered by Cortex Memory";
         let markdown_text = from_str(help_text);
 
         // 转换为 Line 列表
-        markdown_text.lines.into_iter().map(|line| {
-            Line::from(line.spans.iter().map(|s| {
-                Span::raw(s.content.clone())
-            }).collect::<Vec<Span>>())
-        }).collect()
+        markdown_text
+            .lines
+            .into_iter()
+            .map(|line| {
+                Line::from(
+                    line.spans
+                        .iter()
+                        .map(|s| Span::raw(s.content.clone()))
+                        .collect::<Vec<Span>>(),
+                )
+            })
+            .collect()
     }
 
     /// 导出所有会话内容到剪贴板
@@ -1891,18 +1952,16 @@ Powered by Cortex Memory";
 
         // 尝试复制到剪贴板
         match clipboard::ClipboardContext::new() {
-            Ok(mut ctx) => {
-                match ctx.set_contents(content.clone()) {
-                    Ok(_) => {
-                        log::info!("已导出 {} 个字符到剪贴板", content.len());
-                        Ok(format!("已导出 {} 条消息到剪贴板", self.messages.len()))
-                    }
-                    Err(e) => {
-                        log::error!("复制到剪贴板失败: {}", e);
-                        Err(format!("复制到剪贴板失败: {}", e))
-                    }
+            Ok(mut ctx) => match ctx.set_contents(content.clone()) {
+                Ok(_) => {
+                    log::info!("已导出 {} 个字符到剪贴板", content.len());
+                    Ok(format!("已导出 {} 条消息到剪贴板", self.messages.len()))
                 }
-            }
+                Err(e) => {
+                    log::error!("复制到剪贴板失败: {}", e);
+                    Err(format!("复制到剪贴板失败: {}", e))
+                }
+            },
             Err(e) => {
                 log::error!("无法访问剪贴板: {}", e);
                 Err(format!("无法访问剪贴板: {}", e))
@@ -1933,9 +1992,8 @@ impl AppUi {
 
         // 创建纯黑色背景遮罩，完全遮挡主界面
         frame.render_widget(
-            Block::default()
-                .style(Style::default().bg(Color::Black)),
-            area
+            Block::default().style(Style::default().bg(Color::Black)),
+            area,
         );
 
         // 在弹窗区域绘制实心背景块，确保完全遮挡
@@ -1943,7 +2001,7 @@ impl AppUi {
             Paragraph::new("")
                 .block(Block::default())
                 .style(Style::default().bg(self.current_theme.background_color)),
-            modal_area
+            modal_area,
         );
 
         match self.bot_management_state {
@@ -1981,8 +2039,12 @@ impl AppUi {
                     .borders(Borders::ALL)
                     .border_style(Style::default().fg(self.current_theme.primary_color))
                     .border_type(ratatui::widgets::BorderType::Double)
-                    .title_style(Style::default().fg(self.current_theme.primary_color).add_modifier(Modifier::BOLD))
-                    .title(" Esc 关闭 ")
+                    .title_style(
+                        Style::default()
+                            .fg(self.current_theme.primary_color)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                    .title(" Esc 关闭 "),
             )
             .alignment(Alignment::Center)
             .style(Style::default().bg(self.current_theme.background_color));
@@ -2003,7 +2065,10 @@ impl AppUi {
                     ),
                     Span::raw(" - "),
                     Span::styled(
-                        format!("{}...", &bot.system_prompt.chars().take(30).collect::<String>()),
+                        format!(
+                            "{}...",
+                            &bot.system_prompt.chars().take(30).collect::<String>()
+                        ),
                         Style::default().fg(Color::Gray),
                     ),
                 ]))
@@ -2044,15 +2109,23 @@ impl AppUi {
             .split(area);
 
         // 标题
-        let title_text = if is_create { "创建机器人" } else { "编辑机器人" };
+        let title_text = if is_create {
+            "创建机器人"
+        } else {
+            "编辑机器人"
+        };
         let title = Paragraph::new(title_text)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
                     .border_style(Style::default().fg(self.current_theme.primary_color))
                     .border_type(ratatui::widgets::BorderType::Double)
-                    .title_style(Style::default().fg(self.current_theme.primary_color).add_modifier(Modifier::BOLD))
-                    .title(" Esc: 取消 | Ctrl+S: 保存 ")
+                    .title_style(
+                        Style::default()
+                            .fg(self.current_theme.primary_color)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                    .title(" Esc: 取消 | Ctrl+S: 保存 "),
             )
             .alignment(Alignment::Center)
             .style(Style::default().bg(self.current_theme.background_color));
@@ -2167,10 +2240,11 @@ impl AppUi {
 
                 // 绘制光标（使用反色块）
                 let cursor_area = Rect::new(cursor_x, cursor_y, 1, 1);
-                let cursor_block = Block::default()
-                    .style(Style::default()
+                let cursor_block = Block::default().style(
+                    Style::default()
                         .fg(self.current_theme.background_color)
-                        .bg(self.current_theme.text_color));
+                        .bg(self.current_theme.text_color),
+                );
                 frame.render_widget(cursor_block, cursor_area);
             }
         }
@@ -2196,7 +2270,7 @@ impl AppUi {
                     .border_style(Style::default().fg(Color::Red))
                     .border_type(ratatui::widgets::BorderType::Double)
                     .title_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
-                    .title(" Esc: 取消 ")
+                    .title(" Esc: 取消 "),
             )
             .alignment(Alignment::Center)
             .style(Style::default().bg(self.current_theme.background_color));
@@ -2205,7 +2279,10 @@ impl AppUi {
 
         // 获取选中的机器人
         let bot_name = if let Some(index) = self.bot_management_list_state.selected() {
-            self.bot_list.get(index).map(|b| b.name.clone()).unwrap_or_else(|| "未知".to_string())
+            self.bot_list
+                .get(index)
+                .map(|b| b.name.clone())
+                .unwrap_or_else(|| "未知".to_string())
         } else {
             "未知".to_string()
         };
@@ -2213,7 +2290,11 @@ impl AppUi {
         // 确认消息
         let confirm_msg = Paragraph::new(format!("确定要删除机器人 '{}' 吗？", bot_name))
             .alignment(Alignment::Center)
-            .style(Style::default().fg(self.current_theme.text_color).bg(self.current_theme.background_color));
+            .style(
+                Style::default()
+                    .fg(self.current_theme.text_color)
+                    .bg(self.current_theme.background_color),
+            );
 
         frame.render_widget(confirm_msg, chunks[1]);
 
@@ -2228,15 +2309,11 @@ impl AppUi {
     /// 处理机器人管理弹窗的键盘事件
     pub fn handle_bot_management_key(&mut self, key: KeyEvent) -> KeyAction {
         match self.bot_management_state {
-            BotManagementState::List => {
-                self.handle_bot_management_list_key(key)
-            }
+            BotManagementState::List => self.handle_bot_management_list_key(key),
             BotManagementState::Creating | BotManagementState::Editing => {
                 self.handle_bot_create_edit_key(key)
             }
-            BotManagementState::ConfirmDelete => {
-                self.handle_bot_confirm_delete_key(key)
-            }
+            BotManagementState::ConfirmDelete => self.handle_bot_confirm_delete_key(key),
         }
     }
 
@@ -2355,19 +2432,19 @@ impl AppUi {
     /// 清空机器人输入框
     fn clear_bot_inputs(&mut self) {
         self.bot_name_input = TextArea::default();
-        let _ = self.bot_name_input.set_block(Block::default()
-            .borders(Borders::ALL)
-            .title("机器人名称"));
+        let _ = self
+            .bot_name_input
+            .set_block(Block::default().borders(Borders::ALL).title("机器人名称"));
 
         self.bot_prompt_input = TextArea::default();
-        let _ = self.bot_prompt_input.set_block(Block::default()
-            .borders(Borders::ALL)
-            .title("系统提示词"));
+        let _ = self
+            .bot_prompt_input
+            .set_block(Block::default().borders(Borders::ALL).title("系统提示词"));
 
         self.bot_password_input = TextArea::default();
-        let _ = self.bot_password_input.set_block(Block::default()
-            .borders(Borders::ALL)
-            .title("访问密码"));
+        let _ = self
+            .bot_password_input
+            .set_block(Block::default().borders(Borders::ALL).title("访问密码"));
 
         // 重置活动输入框
         self.active_input_field = BotInputField::Name;
