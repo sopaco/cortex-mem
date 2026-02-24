@@ -46,7 +46,6 @@ pub struct App {
     previous_state: Option<crate::ui::AppState>,
     external_message_sender: mpsc::UnboundedSender<String>,
     external_message_receiver: mpsc::UnboundedReceiver<String>,
-    enable_vector_search: bool, // ✅ 向量搜索标志
     
     // 🎙️ 音频输入相关
     audio_input_enabled: bool,                                    // 是否启用语音输入
@@ -79,7 +78,6 @@ impl App {
         config_manager: ConfigManager,
         log_manager: Arc<LogManager>,
         infrastructure: Option<Arc<Infrastructure>>,
-        enable_vector_search: bool, // ✅ 参数
     ) -> Result<Self> {
         let mut ui = AppUi::new();
 
@@ -114,7 +112,6 @@ impl App {
             previous_state: Some(initial_state),
             external_message_sender: external_msg_tx,
             external_message_receiver: external_msg_rx,
-            enable_vector_search, // ✅ 存储向量搜索标志
             
             // 🎙️ 音频输入初始化
             audio_input_enabled: false,
@@ -748,46 +745,6 @@ impl App {
             }
         }
         self.ui.auto_scroll = true;
-    }
-
-    /// 退出时保存对话到记忆系统
-    /// 注意：此方法已被弃用，因为 AgentChatHandler 已在每轮对话后自动存储
-    /// 保留此方法仅用于兼容性或作为备用
-    #[deprecated(note = "AgentChatHandler 已自动存储对话，无需手动调用此方法")]
-    #[allow(dead_code)]
-    pub async fn save_conversations_to_memory(&self) -> Result<()> {
-        log::warn!("save_conversations_to_memory 已被弃用，AgentChatHandler 已自动存储对话");
-        Ok(())
-    }
-
-    /// 获取所有对话
-    pub fn get_conversations(&self) -> Vec<(String, String)> {
-        self.ui
-            .messages
-            .iter()
-            .filter_map(|msg| match msg.role {
-                crate::agent::MessageRole::User => Some((msg.content.clone(), String::new())),
-                crate::agent::MessageRole::System => None, // 系统消息不参与对话
-                crate::agent::MessageRole::Assistant => {
-                    if let Some(last) = self
-                        .ui
-                        .messages
-                        .iter()
-                        .rev()
-                        .find(|m| m.role == crate::agent::MessageRole::User)
-                    {
-                        Some((last.content.clone(), msg.content.clone()))
-                    } else {
-                        None
-                    }
-                }
-            })
-            .collect()
-    }
-
-    /// 获取用户ID
-    pub fn get_user_id(&self) -> String {
-        self.user_id.clone()
     }
 
     /// 处理来自 API 的外部消息（模拟用户输入）

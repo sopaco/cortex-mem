@@ -6,11 +6,7 @@
 //! - Extract events/decisions
 //! - Extract agent cases (problem + solution)
 
-use crate::{
-    llm::LLMClient,
-    CortexFilesystem,
-    Result, Error,
-};
+use crate::{CortexFilesystem, Error, Result, llm::LLMClient};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -96,7 +92,7 @@ pub struct CaseMemory {
 /// 🆕 Personal information memory
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PersonalInfoMemory {
-    pub category: String,  // e.g., "age", "occupation", "education", "location"
+    pub category: String, // e.g., "age", "occupation", "education", "location"
     pub content: String,
     pub confidence: f32,
 }
@@ -115,7 +111,7 @@ pub struct WorkHistoryMemory {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RelationshipMemory {
     pub person: String,
-    pub relation_type: String,  // e.g., "family", "colleague", "friend"
+    pub relation_type: String, // e.g., "family", "colleague", "friend"
     pub context: String,
     pub confidence: f32,
 }
@@ -124,7 +120,7 @@ pub struct RelationshipMemory {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GoalMemory {
     pub goal: String,
-    pub category: String,  // e.g., "career", "personal", "health", "learning"
+    pub category: String, // e.g., "career", "personal", "health", "learning"
     pub timeline: Option<String>,
     pub confidence: f32,
 }
@@ -133,7 +129,7 @@ pub struct GoalMemory {
 pub struct MemoryExtractor {
     llm_client: Arc<dyn LLMClient>,
     filesystem: Arc<CortexFilesystem>,
-    user_id: String, // 🆕 用户ID用于记忆隔离
+    user_id: String,  // 🆕 用户ID用于记忆隔离
     agent_id: String, // 🆕 Agent ID用于记忆隔离
 }
 
@@ -167,7 +163,7 @@ impl MemoryExtractor {
     /// Build the extraction prompt
     fn build_extraction_prompt(&self, messages: &[String]) -> String {
         let messages_text = messages.join("\n\n---\n\n");
-        
+
         format!(
             r#"Analyze the following conversation and extract memories in JSON format.
 
@@ -268,17 +264,18 @@ Return ONLY the JSON object. No additional text before or after."#,
             return Ok(ExtractedMemories::default());
         }
 
-        serde_json::from_str(&json_str).map_err(|e| Error::Other(format!("Failed to parse extraction response: {}", e)))
+        serde_json::from_str(&json_str)
+            .map_err(|e| Error::Other(format!("Failed to parse extraction response: {}", e)))
     }
 
     /// Save extracted memories to user/agent dimensions
     pub async fn save_memories(&self, memories: &ExtractedMemories) -> Result<()> {
         use crate::FilesystemOperations;
-        
+
         // 🔧 确保基础维度目录存在（否则工具访问会失败）
         let user_base_dir = format!("cortex://user/{}", self.user_id);
         let agent_base_dir = format!("cortex://agent/{}", self.agent_id);
-        
+
         // 创建用户和agent基础目录（如果不存在）
         // 通过写入一个临时文件再删除来确保目录被创建
         let user_marker = format!("{}/.marker", user_base_dir);
@@ -287,15 +284,15 @@ Return ONLY the JSON object. No additional text before or after."#,
         let _ = self.filesystem.write(&agent_marker, "").await;
         let _ = self.filesystem.delete(&user_marker).await;
         let _ = self.filesystem.delete(&agent_marker).await;
-        
+
         // 🔧 改进：读取已有文件，去重后追加，而不是覆盖
-        
+
         // Save preferences with deduplication
         let prefs_dir = format!("cortex://user/{}/preferences", self.user_id);
         let existing_prefs = self.load_existing_memories(&prefs_dir).await?;
         let new_prefs = self.deduplicate_preferences(&memories.preferences, &existing_prefs);
         let start_idx = existing_prefs.len();
-        
+
         for (idx, pref) in new_prefs.iter().enumerate() {
             let uri = format!("{}/pref_{}.md", prefs_dir, start_idx + idx);
             let content = format!(
@@ -313,7 +310,7 @@ Return ONLY the JSON object. No additional text before or after."#,
         let existing_entities = self.load_existing_memories(&entities_dir).await?;
         let new_entities = self.deduplicate_entities(&memories.entities, &existing_entities);
         let start_idx = existing_entities.len();
-        
+
         for (idx, entity) in new_entities.iter().enumerate() {
             let uri = format!("{}/entity_{}.md", entities_dir, start_idx + idx);
             let content = format!(
@@ -332,7 +329,7 @@ Return ONLY the JSON object. No additional text before or after."#,
         let existing_events = self.load_existing_memories(&events_dir).await?;
         let new_events = self.deduplicate_events(&memories.events, &existing_events);
         let start_idx = existing_events.len();
-        
+
         for (idx, event) in new_events.iter().enumerate() {
             let uri = format!("{}/event_{}.md", events_dir, start_idx + idx);
             let timestamp = event.timestamp.as_deref().unwrap_or("N/A");
@@ -351,10 +348,12 @@ Return ONLY the JSON object. No additional text before or after."#,
         let cases_dir = format!("cortex://agent/{}/cases", self.agent_id);
         let existing_cases = self.load_existing_memories(&cases_dir).await?;
         let start_idx = existing_cases.len();
-        
+
         for (idx, case) in memories.cases.iter().enumerate() {
             let uri = format!("{}/case_{}.md", cases_dir, start_idx + idx);
-            let lessons = case.lessons_learned.iter()
+            let lessons = case
+                .lessons_learned
+                .iter()
                 .map(|l| format!("- {}", l))
                 .collect::<Vec<_>>()
                 .join("\n");
@@ -372,9 +371,10 @@ Return ONLY the JSON object. No additional text before or after."#,
         // 🆕 Save personal info with deduplication
         let personal_info_dir = format!("cortex://user/{}/personal_info", self.user_id);
         let existing_personal_info = self.load_existing_memories(&personal_info_dir).await?;
-        let new_personal_info = self.deduplicate_personal_info(&memories.personal_info, &existing_personal_info);
+        let new_personal_info =
+            self.deduplicate_personal_info(&memories.personal_info, &existing_personal_info);
         let start_idx = existing_personal_info.len();
-        
+
         for (idx, info) in new_personal_info.iter().enumerate() {
             let uri = format!("{}/info_{}.md", personal_info_dir, start_idx + idx);
             let content = format!(
@@ -390,9 +390,10 @@ Return ONLY the JSON object. No additional text before or after."#,
         // 🆕 Save work history with deduplication
         let work_history_dir = format!("cortex://user/{}/work_history", self.user_id);
         let existing_work_history = self.load_existing_memories(&work_history_dir).await?;
-        let new_work_history = self.deduplicate_work_history(&memories.work_history, &existing_work_history);
+        let new_work_history =
+            self.deduplicate_work_history(&memories.work_history, &existing_work_history);
         let start_idx = existing_work_history.len();
-        
+
         for (idx, work) in new_work_history.iter().enumerate() {
             let uri = format!("{}/work_{}.md", work_history_dir, start_idx + idx);
             let duration = work.duration.as_deref().unwrap_or("N/A");
@@ -411,9 +412,10 @@ Return ONLY the JSON object. No additional text before or after."#,
         // 🆕 Save relationships with deduplication
         let relationships_dir = format!("cortex://user/{}/relationships", self.user_id);
         let existing_relationships = self.load_existing_memories(&relationships_dir).await?;
-        let new_relationships = self.deduplicate_relationships(&memories.relationships, &existing_relationships);
+        let new_relationships =
+            self.deduplicate_relationships(&memories.relationships, &existing_relationships);
         let start_idx = existing_relationships.len();
-        
+
         for (idx, rel) in new_relationships.iter().enumerate() {
             let uri = format!("{}/rel_{}.md", relationships_dir, start_idx + idx);
             let content = format!(
@@ -432,7 +434,7 @@ Return ONLY the JSON object. No additional text before or after."#,
         let existing_goals = self.load_existing_memories(&goals_dir).await?;
         let new_goals = self.deduplicate_goals(&memories.goals, &existing_goals);
         let start_idx = existing_goals.len();
-        
+
         for (idx, goal) in new_goals.iter().enumerate() {
             let uri = format!("{}/goal_{}.md", goals_dir, start_idx + idx);
             let timeline = goal.timeline.as_deref().unwrap_or("未指定");
@@ -449,11 +451,11 @@ Return ONLY the JSON object. No additional text before or after."#,
 
         Ok(())
     }
-    
+
     /// Load existing memory files from a directory
     async fn load_existing_memories(&self, dir_uri: &str) -> Result<Vec<String>> {
         use crate::FilesystemOperations;
-        
+
         match self.filesystem.list(dir_uri).await {
             Ok(entries) => {
                 let mut contents = Vec::new();
@@ -469,7 +471,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             Err(_) => Ok(Vec::new()), // Directory doesn't exist yet
         }
     }
-    
+
     /// Deduplicate preferences against existing ones
     fn deduplicate_preferences(
         &self,
@@ -490,7 +492,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             .cloned()
             .collect()
     }
-    
+
     /// Deduplicate entities against existing ones
     fn deduplicate_entities(
         &self,
@@ -510,7 +512,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             .cloned()
             .collect()
     }
-    
+
     /// Deduplicate events against existing ones
     fn deduplicate_events(
         &self,
@@ -530,7 +532,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             .cloned()
             .collect()
     }
-    
+
     /// 🆕 Deduplicate personal info against existing ones
     fn deduplicate_personal_info(
         &self,
@@ -542,15 +544,15 @@ Return ONLY the JSON object. No additional text before or after."#,
             .filter(|info| {
                 // 🔧 改进：检查category+content的组合相似度
                 let info_full_content = format!("{} {}", info.category, info.content);
-                let is_duplicate = existing_contents.iter().any(|existing| {
-                    Self::calculate_similarity(&info_full_content, existing) > 0.8
-                });
+                let is_duplicate = existing_contents
+                    .iter()
+                    .any(|existing| Self::calculate_similarity(&info_full_content, existing) > 0.8);
                 !is_duplicate
             })
             .cloned()
             .collect()
     }
-    
+
     /// 🆕 Deduplicate work history against existing ones
     fn deduplicate_work_history(
         &self,
@@ -561,16 +563,17 @@ Return ONLY the JSON object. No additional text before or after."#,
             .iter()
             .filter(|work| {
                 // 🔧 改进：检查company+role+description的组合相似度
-                let work_full_content = format!("{} {} {}", work.company, work.role, work.description);
-                let is_duplicate = existing_contents.iter().any(|existing| {
-                    Self::calculate_similarity(&work_full_content, existing) > 0.8
-                });
+                let work_full_content =
+                    format!("{} {} {}", work.company, work.role, work.description);
+                let is_duplicate = existing_contents
+                    .iter()
+                    .any(|existing| Self::calculate_similarity(&work_full_content, existing) > 0.8);
                 !is_duplicate
             })
             .cloned()
             .collect()
     }
-    
+
     /// 🆕 Deduplicate relationships against existing ones
     fn deduplicate_relationships(
         &self,
@@ -581,16 +584,17 @@ Return ONLY the JSON object. No additional text before or after."#,
             .iter()
             .filter(|rel| {
                 // 🔧 改进：检查person+relation_type+context的组合相似度
-                let rel_full_content = format!("{} {} {}", rel.person, rel.relation_type, rel.context);
-                let is_duplicate = existing_contents.iter().any(|existing| {
-                    Self::calculate_similarity(&rel_full_content, existing) > 0.8
-                });
+                let rel_full_content =
+                    format!("{} {} {}", rel.person, rel.relation_type, rel.context);
+                let is_duplicate = existing_contents
+                    .iter()
+                    .any(|existing| Self::calculate_similarity(&rel_full_content, existing) > 0.8);
                 !is_duplicate
             })
             .cloned()
             .collect()
     }
-    
+
     /// 🆕 Deduplicate goals against existing ones
     fn deduplicate_goals(
         &self,
@@ -602,30 +606,15 @@ Return ONLY the JSON object. No additional text before or after."#,
             .filter(|goal| {
                 // 🔧 改进：检查goal+category的组合相似度
                 let goal_full_content = format!("{} {}", goal.goal, goal.category);
-                let is_duplicate = existing_contents.iter().any(|existing| {
-                    Self::calculate_similarity(&goal_full_content, existing) > 0.8
-                });
+                let is_duplicate = existing_contents
+                    .iter()
+                    .any(|existing| Self::calculate_similarity(&goal_full_content, existing) > 0.8);
                 !is_duplicate
             })
             .cloned()
             .collect()
     }
-    
-    /// Check if two contents are similar (borrowed from AutoExtractor)
-    fn is_similar_content(&self, new_content: &str, existing_content: &str) -> bool {
-        // 简单的相似度检测：如果新内容的主要部分出现在已有内容中
-        let new_lower = new_content.to_lowercase();
-        let existing_lower = existing_content.to_lowercase();
-        
-        // 如果完全包含，视为重复
-        if existing_lower.contains(&new_lower) || new_lower.contains(&existing_lower) {
-            return true;
-        }
-        
-        // 计算相似度（基于最长公共子串）
-        Self::calculate_similarity(&new_lower, &existing_lower) > 0.7
-    }
-    
+
     /// Calculate similarity between two strings
     fn calculate_similarity(a: &str, b: &str) -> f64 {
         if a.is_empty() || b.is_empty() {

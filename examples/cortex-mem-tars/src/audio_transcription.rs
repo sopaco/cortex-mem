@@ -1,5 +1,5 @@
 /// Whisper 语音转录模块
-/// 
+///
 /// 改进点:
 /// 1. 使用 Arc 共享 WhisperContext，避免重复加载模型
 /// 2. 更好的错误处理和日志
@@ -31,15 +31,15 @@ pub struct TranscriptionConfig {
 impl Default for TranscriptionConfig {
     fn default() -> Self {
         Self {
-            model_path: "examples/废弃的录音项目参考/ggml-medium.bin".to_string(),
+            model_path: "whisper-ggml.bin".to_string(),
             num_threads: 4,
-            auto_detect_language: false,  // 改为 false，强制使用中文
+            auto_detect_language: false, // 改为 false，强制使用中文
         }
     }
 }
 
 /// Whisper 转录器
-/// 
+///
 /// 使用 Arc 包装以支持多线程共享
 pub struct WhisperTranscriber {
     context: Arc<WhisperContext>,
@@ -50,14 +50,14 @@ impl WhisperTranscriber {
     /// 创建新的转录器
     pub fn new(config: TranscriptionConfig) -> Result<Self> {
         log::info!("加载 Whisper 模型: {}", config.model_path);
-        
+
         // 🔇 禁用 Whisper 的控制台输出，避免干扰 TUI
         // 临时重定向 stderr 到 /dev/null
         #[cfg(unix)]
         let null_file = std::fs::File::create("/dev/null")?;
         #[cfg(windows)]
         let null_file = std::fs::File::create("NUL")?;
-        
+
         #[cfg(unix)]
         let saved_stderr = unsafe {
             let stderr_fd = libc::dup(2);
@@ -68,12 +68,12 @@ impl WhisperTranscriber {
                 None
             }
         };
-        
+
         let context_result = WhisperContext::new_with_params(
             &config.model_path,
             whisper_rs::WhisperContextParameters::default(),
         );
-        
+
         // 恢复 stderr
         #[cfg(unix)]
         if let Some(fd) = saved_stderr {
@@ -82,46 +82,41 @@ impl WhisperTranscriber {
                 libc::close(fd);
             }
         }
-        
+
         let context = context_result
             .with_context(|| format!("无法加载 Whisper 模型: {}", config.model_path))?;
-        
+
         log::info!("Whisper 模型加载成功");
-        
+
         Ok(Self {
             context: Arc::new(context),
             config,
         })
     }
 
-    /// 获取共享的 context (用于多线程)
-    pub fn context(&self) -> Arc<WhisperContext> {
-        Arc::clone(&self.context)
-    }
-
     /// 转录音频
-    /// 
+    ///
     /// # 参数
     /// - `audio_data`: 音频采样数据 (f32 格式，单声道)
     /// - `sample_rate`: 音频采样率
-    /// 
+    ///
     /// # 返回
     /// 转录的文本
     pub async fn transcribe(&self, audio_data: &[f32], sample_rate: u32) -> Result<String> {
         // 预处理音频
         let processed_audio = self.preprocess_audio(audio_data, sample_rate)?;
-        
+
         // 在阻塞线程池中执行转录
         let context = Arc::clone(&self.context);
         let num_threads = self.config.num_threads;
         let auto_detect = self.config.auto_detect_language;
-        
+
         let text = tokio::task::spawn_blocking(move || {
             Self::transcribe_blocking(&context, &processed_audio, num_threads, auto_detect)
         })
         .await
         .context("转录任务失败")??;
-        
+
         Ok(text)
     }
 
@@ -129,23 +124,23 @@ impl WhisperTranscriber {
     fn preprocess_audio(&self, audio_data: &[f32], sample_rate: u32) -> Result<Vec<f32>> {
         // 检查音频是否为静音
         let rms = (audio_data.iter().map(|&x| x * x).sum::<f32>() / audio_data.len() as f32).sqrt();
-        
+
         log::debug!(
             "音频预处理: {} 采样, {} Hz, RMS: {:.4}",
             audio_data.len(),
             sample_rate,
             rms
         );
-        
+
         if rms < 0.001 {
             log::warn!("音频过于安静 (RMS: {:.4})，可能是静音", rms);
         }
-        
+
         // 如果已经是 16kHz，直接返回
         if sample_rate == WHISPER_SAMPLE_RATE {
             return Ok(audio_data.to_vec());
         }
-        
+
         // 重采样到 16kHz
         log::debug!("重采样: {} Hz -> {} Hz", sample_rate, WHISPER_SAMPLE_RATE);
         Self::resample_audio(audio_data, sample_rate, WHISPER_SAMPLE_RATE)
@@ -170,9 +165,7 @@ impl WhisperTranscriber {
         )
         .context("无法创建重采样器")?;
 
-        let resampled_waves = resampler
-            .process(&[audio], None)
-            .context("重采样失败")?;
+        let resampled_waves = resampler.process(&[audio], None).context("重采样失败")?;
 
         Ok(resampled_waves[0].clone())
     }
@@ -199,12 +192,12 @@ impl WhisperTranscriber {
         } else {
             Some("zh") // 中文
         });
-        
+
         // 🔧 优化中文识别的参数
         params.set_initial_prompt("以下是普通话的句子。"); // 引导模型使用简体中文
         params.set_temperature(0.0); // 降低随机性，提高准确性
         params.set_no_speech_thold(0.6); // 过滤无语音段
-        
+
         params.set_print_special(false);
         params.set_print_progress(false);
         params.set_print_realtime(false);
@@ -212,9 +205,7 @@ impl WhisperTranscriber {
         params.set_single_segment(false);
 
         // 执行转录
-        state
-            .full(params, audio_data)
-            .context("Whisper 转录失败")?;
+        state.full(params, audio_data).context("Whisper 转录失败")?;
 
         // 收集所有段落
         let num_segments = state.full_n_segments().context("无法获取段落数量")?;
@@ -224,10 +215,10 @@ impl WhisperTranscriber {
         for i in 0..num_segments {
             if let Ok(segment) = state.full_get_segment_text(i) {
                 let segment_text = segment.trim();
-                
+
                 if !segment_text.is_empty() {
                     log::debug!("段落 {}: '{}'", i, segment_text);
-                    
+
                     // 在段落之间添加空格
                     if !transcribed_text.is_empty() {
                         transcribed_text.push(' ');
@@ -238,10 +229,10 @@ impl WhisperTranscriber {
         }
 
         log::info!("转录完成: {} 字符", transcribed_text.len());
-        
+
         // 🔧 繁体转简体
         let simplified_text = convert_traditional_to_simplified(&transcribed_text);
-        
+
         Ok(simplified_text)
     }
 }
@@ -275,13 +266,33 @@ pub fn is_meaningful_text(text: &str, audio_volume: f32) -> bool {
 
     // 3. 检查 Whisper 的特殊标记
     let meaningless_markers = [
-        "[silence]", "[music]", "[noise]", "[background]",
-        "[laughter]", "[applause]", "[pause]", "[cough]",
-        "[sneeze]", "[breath]", "[click]", "[thump]",
-        "[static]", "[echo]", "[no audio]", "[BLANK_AUDIO]",
-        "[typing]", "[HUMMING]", "(歌詞)",
-        "epic music", "upbeat music", "(epic music)", "(upbeat music)",
-        "*epic music*", "*upbeat music*", "music playing", "background music",
+        "[silence]",
+        "[music]",
+        "[noise]",
+        "[background]",
+        "[laughter]",
+        "[applause]",
+        "[pause]",
+        "[cough]",
+        "[sneeze]",
+        "[breath]",
+        "[click]",
+        "[thump]",
+        "[static]",
+        "[echo]",
+        "[no audio]",
+        "[BLANK_AUDIO]",
+        "[typing]",
+        "[HUMMING]",
+        "(歌詞)",
+        "epic music",
+        "upbeat music",
+        "(epic music)",
+        "(upbeat music)",
+        "*epic music*",
+        "*upbeat music*",
+        "music playing",
+        "background music",
     ];
 
     for marker in &meaningless_markers {
@@ -315,52 +326,169 @@ pub fn is_meaningful_text(text: &str, audio_volume: f32) -> bool {
 fn convert_traditional_to_simplified(text: &str) -> String {
     // 常见繁体字到简体字的映射
     let traditional_to_simplified = [
-        ("這", "这"), ("個", "个"), ("們", "们"), ("來", "来"),
-        ("說", "说"), ("時", "时"), ("為", "为"), ("會", "会"),
-        ("對", "对"), ("沒", "没"), ("過", "过"), ("還", "还"),
-        ("點", "点"), ("開", "开"), ("關", "关"), ("見", "见"),
-        ("聽", "听"), ("講", "讲"), ("認", "认"), ("識", "识"),
-        ("間", "间"), ("問", "问"), ("題", "题"), ("應", "应"),
-        ("該", "该"), ("當", "当"), ("現", "现"), ("樣", "样"),
-        ("處", "处"), ("變", "变"), ("動", "动"), ("從", "从"),
-        ("後", "后"), ("學", "学"), ("機", "机"), ("電", "电"),
-        ("話", "话"), ("國", "国"), ("長", "长"), ("種", "种"),
-        ("發", "发"), ("經", "经"), ("書", "书"), ("記", "记"),
-        ("員", "员"), ("業", "业"), ("產", "产"), ("廠", "厂"),
-        ("車", "车"), ("門", "门"), ("網", "网"), ("線", "线"),
-        ("進", "进"), ("運", "运"), ("數", "数"), ("據", "据"),
-        ("區", "区"), ("歷", "历"), ("報", "报"), ("場", "场"),
-        ("幾", "几"), ("條", "条"), ("導", "导"), ("術", "术"),
-        ("環", "环"), ("億", "亿"), ("萬", "万"), ("華", "华"),
-        ("復", "复"), ("雙", "双"), ("協", "协"), ("實", "实"),
-        ("體", "体"), ("內", "内"), ("總", "总"), ("達", "达"),
-        ("極", "极"), ("標", "标"), ("確", "确"), ("較", "较"),
-        ("組", "组"), ("統", "统"), ("級", "级"), ("獨", "独"),
-        ("與", "与"), ("並", "并"), ("層", "层"), ("際", "际"),
-        ("頭", "头"), ("漢", "汉"), ("測", "测"), ("態", "态"),
-        ("費", "费"), ("約", "约"), ("術", "术"), ("備", "备"),
-        ("劃", "划"), ("參", "参"), ("質", "质"), ("護", "护"),
-        ("導", "导"), ("險", "险"), ("測", "测"), ("廣", "广"),
-        ("農", "农"), ("響", "响"), ("類", "类"), ("語", "语"),
-        ("兒", "儿"), ("師", "师"), ("節", "节"), ("藝", "艺"),
-        ("錶", "表"), ("鐘", "钟"), ("鬧", "闹"), ("麼", "么"),
-        ("樂", "乐"), ("聲", "声"), ("臺", "台"), ("灣", "湾"),
-        ("礙", "碍"), ("愛", "爱"), ("罷", "罢"), ("筆", "笔"),
-        ("邊", "边"), ("賓", "宾"), ("倉", "仓"), ("嘗", "尝"),
-        ("塵", "尘"), ("遲", "迟"), ("蟲", "虫"), ("處", "处"),
-        ("觸", "触"), ("詞", "词"), ("達", "达"), ("帶", "带"),
-        ("單", "单"), ("擋", "挡"), ("島", "岛"), ("燈", "灯"),
-        ("調", "调"), ("讀", "读"), ("獨", "独"), ("對", "对"),
-        ("奪", "夺"), ("頓", "顿"), ("額", "额"), ("兒", "儿"),
-        ("爾", "尔"), ("罰", "罚"), ("範", "范"), ("飛", "飞"),
-        ("墳", "坟"), ("豐", "丰"), ("復", "复"), ("負", "负"),
+        ("這", "这"),
+        ("個", "个"),
+        ("們", "们"),
+        ("來", "来"),
+        ("說", "说"),
+        ("時", "时"),
+        ("為", "为"),
+        ("會", "会"),
+        ("對", "对"),
+        ("沒", "没"),
+        ("過", "过"),
+        ("還", "还"),
+        ("點", "点"),
+        ("開", "开"),
+        ("關", "关"),
+        ("見", "见"),
+        ("聽", "听"),
+        ("講", "讲"),
+        ("認", "认"),
+        ("識", "识"),
+        ("間", "间"),
+        ("問", "问"),
+        ("題", "题"),
+        ("應", "应"),
+        ("該", "该"),
+        ("當", "当"),
+        ("現", "现"),
+        ("樣", "样"),
+        ("處", "处"),
+        ("變", "变"),
+        ("動", "动"),
+        ("從", "从"),
+        ("後", "后"),
+        ("學", "学"),
+        ("機", "机"),
+        ("電", "电"),
+        ("話", "话"),
+        ("國", "国"),
+        ("長", "长"),
+        ("種", "种"),
+        ("發", "发"),
+        ("經", "经"),
+        ("書", "书"),
+        ("記", "记"),
+        ("員", "员"),
+        ("業", "业"),
+        ("產", "产"),
+        ("廠", "厂"),
+        ("車", "车"),
+        ("門", "门"),
+        ("網", "网"),
+        ("線", "线"),
+        ("進", "进"),
+        ("運", "运"),
+        ("數", "数"),
+        ("據", "据"),
+        ("區", "区"),
+        ("歷", "历"),
+        ("報", "报"),
+        ("場", "场"),
+        ("幾", "几"),
+        ("條", "条"),
+        ("導", "导"),
+        ("術", "术"),
+        ("環", "环"),
+        ("億", "亿"),
+        ("萬", "万"),
+        ("華", "华"),
+        ("復", "复"),
+        ("雙", "双"),
+        ("協", "协"),
+        ("實", "实"),
+        ("體", "体"),
+        ("內", "内"),
+        ("總", "总"),
+        ("達", "达"),
+        ("極", "极"),
+        ("標", "标"),
+        ("確", "确"),
+        ("較", "较"),
+        ("組", "组"),
+        ("統", "统"),
+        ("級", "级"),
+        ("獨", "独"),
+        ("與", "与"),
+        ("並", "并"),
+        ("層", "层"),
+        ("際", "际"),
+        ("頭", "头"),
+        ("漢", "汉"),
+        ("測", "测"),
+        ("態", "态"),
+        ("費", "费"),
+        ("約", "约"),
+        ("術", "术"),
+        ("備", "备"),
+        ("劃", "划"),
+        ("參", "参"),
+        ("質", "质"),
+        ("護", "护"),
+        ("導", "导"),
+        ("險", "险"),
+        ("測", "测"),
+        ("廣", "广"),
+        ("農", "农"),
+        ("響", "响"),
+        ("類", "类"),
+        ("語", "语"),
+        ("兒", "儿"),
+        ("師", "师"),
+        ("節", "节"),
+        ("藝", "艺"),
+        ("錶", "表"),
+        ("鐘", "钟"),
+        ("鬧", "闹"),
+        ("麼", "么"),
+        ("樂", "乐"),
+        ("聲", "声"),
+        ("臺", "台"),
+        ("灣", "湾"),
+        ("礙", "碍"),
+        ("愛", "爱"),
+        ("罷", "罢"),
+        ("筆", "笔"),
+        ("邊", "边"),
+        ("賓", "宾"),
+        ("倉", "仓"),
+        ("嘗", "尝"),
+        ("塵", "尘"),
+        ("遲", "迟"),
+        ("蟲", "虫"),
+        ("處", "处"),
+        ("觸", "触"),
+        ("詞", "词"),
+        ("達", "达"),
+        ("帶", "带"),
+        ("單", "单"),
+        ("擋", "挡"),
+        ("島", "岛"),
+        ("燈", "灯"),
+        ("調", "调"),
+        ("讀", "读"),
+        ("獨", "独"),
+        ("對", "对"),
+        ("奪", "夺"),
+        ("頓", "顿"),
+        ("額", "额"),
+        ("兒", "儿"),
+        ("爾", "尔"),
+        ("罰", "罚"),
+        ("範", "范"),
+        ("飛", "飞"),
+        ("墳", "坟"),
+        ("豐", "丰"),
+        ("復", "复"),
+        ("負", "负"),
     ];
-    
+
     let mut result = text.to_string();
     for (traditional, simplified) in &traditional_to_simplified {
         result = result.replace(traditional, simplified);
     }
-    
+
     result
 }
 
@@ -375,7 +503,7 @@ mod tests {
         assert_eq!(mono.len(), 3);
         assert!((mono[0] - 0.15).abs() < 0.01);
     }
-    
+
     #[test]
     fn test_traditional_to_simplified() {
         assert_eq!(convert_traditional_to_simplified("這個"), "这个");
