@@ -1,7 +1,7 @@
 // MCP Tool Definitions - OpenViking style
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolDefinition {
@@ -22,13 +22,12 @@ pub fn get_mcp_tool_definitions() -> Vec<ToolDefinition> {
                 "properties": {
                     "uri": {
                         "type": "string",
-                        "description": "内容的 URI（如 cortex://threads/{thread_id}/...）"
+                        "description": "内容的 URI（如 cortex://session/{session_id}/...）"
                     }
                 },
                 "required": ["uri"]
             }),
         },
-        
         ToolDefinition {
             name: "overview".to_string(),
             description: "获取内容的 L1 概览（~2000 tokens），包含核心信息和使用场景".to_string(),
@@ -43,7 +42,6 @@ pub fn get_mcp_tool_definitions() -> Vec<ToolDefinition> {
                 "required": ["uri"]
             }),
         },
-        
         ToolDefinition {
             name: "read".to_string(),
             description: "获取 L2 完整内容，仅在需要详细信息时使用".to_string(),
@@ -58,7 +56,6 @@ pub fn get_mcp_tool_definitions() -> Vec<ToolDefinition> {
                 "required": ["uri"]
             }),
         },
-        
         // ==================== Search Tools ====================
         ToolDefinition {
             name: "search".to_string(),
@@ -92,8 +89,8 @@ pub fn get_mcp_tool_definitions() -> Vec<ToolDefinition> {
                     },
                     "scope": {
                         "type": "string",
-                        "description": "搜索范围 URI（如 cortex://threads/{thread_id}）",
-                        "default": "cortex://threads"
+                        "description": "搜索范围 URI（如 cortex://session/{session_id}）",
+                        "default": "cortex://session"
                     },
                     "limit": {
                         "type": "integer",
@@ -104,7 +101,6 @@ pub fn get_mcp_tool_definitions() -> Vec<ToolDefinition> {
                 "required": ["query"]
             }),
         },
-        
         ToolDefinition {
             name: "find".to_string(),
             description: "快速查找内容，返回 L0 摘要".to_string(),
@@ -128,7 +124,6 @@ pub fn get_mcp_tool_definitions() -> Vec<ToolDefinition> {
                 "required": ["query"]
             }),
         },
-        
         // ==================== Filesystem Tools ====================
         ToolDefinition {
             name: "ls".to_string(),
@@ -138,7 +133,7 @@ pub fn get_mcp_tool_definitions() -> Vec<ToolDefinition> {
                 "properties": {
                     "uri": {
                         "type": "string",
-                        "description": "目录 URI（如 cortex://threads/{thread_id}/timeline）"
+                        "description": "目录 URI（如 cortex://session/{session_id}/timeline）"
                     },
                     "recursive": {
                         "type": "boolean",
@@ -154,7 +149,6 @@ pub fn get_mcp_tool_definitions() -> Vec<ToolDefinition> {
                 "required": ["uri"]
             }),
         },
-        
         ToolDefinition {
             name: "explore".to_string(),
             description: "智能探索记忆空间，结合搜索和浏览".to_string(),
@@ -168,7 +162,7 @@ pub fn get_mcp_tool_definitions() -> Vec<ToolDefinition> {
                     "start_uri": {
                         "type": "string",
                         "description": "起始 URI",
-                        "default": "cortex://threads"
+                        "default": "cortex://session"
                     },
                     "max_depth": {
                         "type": "integer",
@@ -188,7 +182,6 @@ pub fn get_mcp_tool_definitions() -> Vec<ToolDefinition> {
                 "required": ["query"]
             }),
         },
-        
         // ==================== Storage Tools ====================
         ToolDefinition {
             name: "store".to_string(),

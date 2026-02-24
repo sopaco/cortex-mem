@@ -40,7 +40,7 @@ Cortex Memory MCP 服务器提供四个核心工具，让 AI 助手能够：
 ```json
 {
   "success": true,
-  "uri": "cortex://threads/user-preferences/timeline/2024/01/15/14_30_45_abc123.md",
+  "uri": "cortex://session/user-preferences/timeline/2024/01/15/14_30_45_abc123.md",
   "message_id": "2024-01-15T14:30:45Z-abc123"
 }
 ```
@@ -83,7 +83,7 @@ Cortex Memory MCP 服务器提供四个核心工具，让 AI 助手能够：
   "query": "Rust OAuth 实现方法",
   "results": [
     {
-      "uri": "cortex://threads/tech-disc/timeline/2024/01/10/09_15_30_def456.md",
+      "uri": "cortex://session/tech-disc/timeline/2024/01/10/09_15_30_def456.md",
       "score": 0.92,
       "snippet": "...讨论了使用 OAuth2 客户端库实现 Rust 应用中的身份验证..."
     }
@@ -130,7 +130,7 @@ Cortex Memory MCP 服务器提供四个核心工具，让 AI 助手能够：
   "entries": [
     {
       "name": "user-preferences",
-      "uri": "cortex://threads/user-preferences",
+      "uri": "cortex://session/user-preferences",
       "is_directory": true,
       "size": 2048,
       "abstract_text": "用户偏好设置和选项"
@@ -154,7 +154,7 @@ Cortex Memory MCP 服务器提供四个核心工具，让 AI 助手能够：
 
 ```json
 {
-  "uri": "cortex://threads/user-preferences/timeline/2024/01/15/14_30_45_abc123.md"
+  "uri": "cortex://session/user-preferences/timeline/2024/01/15/14_30_45_abc123.md"
 }
 ```
 
@@ -163,7 +163,7 @@ Cortex Memory MCP 服务器提供四个核心工具，让 AI 助手能够：
 ```json
 {
   "success": true,
-  "uri": "cortex://threads/user-preferences/timeline/2024/01/15/14_30_45_abc123.md",
+  "uri": "cortex://session/user-preferences/timeline/2024/01/15/14_30_45_abc123.md",
   "content": "# Message\n\n用户偏好使用深色主题，并且喜欢使用 Vim 键位绑定。\n\n---\n*Timestamp: 2024-01-15T14:30:45Z*\n*Role: user*"
 }
 ```

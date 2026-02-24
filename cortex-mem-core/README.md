@@ -43,11 +43,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     fs.initialize().await?;
 
     // Write a memory
-    fs.write("cortex://users/john/preferences.md", 
+    fs.write("cortex://user/john/preferences.md", 
              "Prefers dark mode and vim keybindings").await?;
 
     // Read back
-    let content = fs.read("cortex://users/john/preferences.md").await?;
+    let content = fs.read("cortex://user/john/preferences.md").await?;
     println!("Content: {}", content);
 
     Ok(())
@@ -137,9 +137,9 @@ cortex://{dimension}/{tenant}/{path/to/resource}
 ### Example URIs
 
 ```
-cortex://users/john/preferences.md
-cortex://agents/tech-support/knowledge.md
-cortex://threads/session-123/timeline/2024/01/15/14_30_00_abc123.md
+cortex://user/john/preferences.md
+cortex://agent/tech-support/knowledge.md
+cortex://session/session-123/timeline/2024/01/15/14_30_00_abc123.md
 cortex://global/company-policy.md
 ```
 
