@@ -7,6 +7,11 @@ mod infrastructure;
 mod logger;
 mod ui;
 
+// 音频相关模块
+mod audio_input;
+mod audio_vad;
+mod audio_transcription;
+
 use anyhow::{Context, Result};
 use app::{App, create_default_bots};
 use clap::Parser;
@@ -24,14 +29,6 @@ struct Args {
     /// 启用增强记忆保存功能，退出时自动保存对话到记忆系统
     #[arg(long, action)]
     enhance_memory_saver: bool,
-
-    /// 启用音频连接功能，启动 API 服务器监听语音识别信息传入
-    #[arg(long, action)]
-    enable_audio_connect: bool,
-
-    /// 音频连接模式：store（存储到记忆系统）或 chat（模拟用户输入发送消息）
-    #[arg(long, default_value = "store")]
-    audio_connect_mode: String,
     
     /// 启用增强向量搜索功能，使用 Qdrant 进行语义搜索
     #[arg(long, action)]
@@ -45,14 +42,6 @@ async fn main() -> Result<()> {
 
     if args.enhance_memory_saver {
         log::info!("已启用增强记忆保存功能");
-    }
-
-    if args.enable_audio_connect {
-        log::info!("已启用音频连接功能");
-        if args.audio_connect_mode != "store" && args.audio_connect_mode != "chat" {
-            log::warn!("无效的 audio_connect_mode 值: {}，将使用默认值 'store'", args.audio_connect_mode);
-        }
-        log::info!("音频连接模式: {}", args.audio_connect_mode);
     }
     
     if args.enhance_vector_search {
@@ -89,8 +78,6 @@ async fn main() -> Result<()> {
         config_manager,
         log_manager,
         infrastructure.clone(),
-        args.enable_audio_connect,
-        args.audio_connect_mode.clone(),
         args.enhance_vector_search,  // ✅ 传递向量搜索标志
     )
     .context("无法创建应用")?;

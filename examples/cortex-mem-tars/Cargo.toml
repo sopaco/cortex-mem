@@ -62,3 +62,9 @@ clipboard = "0.5"
 
 # CLI
 clap = { version = "4.5", features = ["derive"] }
+
+# Audio input
+cpal = "0.15"
+rubato = "0.15"
+whisper-rs = "0.12"
+libc = "0.2"
