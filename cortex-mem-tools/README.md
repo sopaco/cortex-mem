@@ -1,11 +1,12 @@
 # Cortex Memory Tools Library
 
-`cortex-mem-tools` provides high-level abstractions and utilities for working with the Cortex Memory system. It offers simplified APIs for common operations and implements advanced automation features.
+`cortex-mem-tools` provides high-level abstractions and utilities for working with the Cortex Memory system. It offers simplified APIs for common operations with OpenViking-style tiered access (L0/L1/L2 layers).
 
 ## 🛠️ Overview
 
 Cortex Memory Tools implements:
 - High-level `MemoryOperations` interface for unified access to Cortex Memory
+- **Tiered Access**: L0 (Abstract), L1 (Overview), L2 (Full Content)
 - Advanced automation with event-driven processing
 - Model Context Protocol (MCP) tool definitions
 - Utility functions for memory management
@@ -15,15 +16,41 @@ Cortex Memory Tools implements:
 
 ### MemoryOperations
 
-The primary interface for working with Cortex Memory:
+The primary interface for working with Cortex Memory. It requires:
+- LLM client for layer generation
+- Vector search engine for semantic search
+- Embedding client for vectorization
 
 ```rust
 use cortex_mem_tools::MemoryOperations;
+use cortex_mem_core::llm::{LLMClient, LLMClientImpl, LLMConfig};
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create operations from data directory
-    let ops = MemoryOperations::from_data_dir("./cortex-data").await?;
+    // Create LLM client
+    let llm_config = LLMConfig {
+        api_base_url: "https://api.openai.com/v1".to_string(),
+        api_key: "your-api-key".to_string(),
+        model_efficient: "gpt-4o-mini".to_string(),
+        temperature: 0.1,
+        max_tokens: 4096,
+    };
+    let llm_client = Arc::new(LLMClientImpl::new(llm_config)?);
+    
+    // Create MemoryOperations with all dependencies
+    let ops = MemoryOperations::new(
+        "./cortex-data",           // data directory
+        "default",                  // tenant ID
+        llm_client,                 // LLM client
+        "http://localhost:6333",    // Qdrant URL
+        "cortex_memories",          // Qdrant collection
+        "https://api.openai.com/v1", // Embedding API URL
+        "your-embedding-key",       // Embedding API key
+        "text-embedding-3-small",   // Embedding model
+        Some(1536),                 // Embedding dimension
+        None,                       // Optional user ID
+    ).await?;
     
     // Add a message to a session
     let msg_id = ops.add_message(
@@ -32,45 +59,53 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "How do I reset my password?"
     ).await?;
     
-    // Search memories
-    let results = ops.search("password reset", None, 10).await?;
-    for memory in results {
-        println!("Found: {} (score: {:.2})", 
-            memory.uri, 
-            memory.score.unwrap_or(0.0)
-        );
-    }
+    // Read file content (L2)
+    let content = ops.read_file("cortex://session/tech-support/timeline/...").await?;
     
-    // Extract memories from session
-    let memories = ops.extract_memories("tech-support").await?;
-    println!("Extracted {} facts", memories.facts.len());
+    // Get abstract (L0) - quick relevance check
+    let abstract_result = ops.get_abstract("cortex://session/tech-support/...").await?;
+    println!("Abstract: {}", abstract_result.abstract_text);
+    
+    // Get overview (L1) - partial context
+    let overview = ops.get_overview("cortex://session/tech-support/...").await?;
+    println!("Overview: {}", overview.overview_text);
+    
+    // List sessions
+    let sessions = ops.list_sessions().await?;
+    for session in sessions {
+        println!("Session: {} ({})", session.thread_id, session.status);
+    }
     
     Ok(())
 }
 ```
 
+### Tiered Access (OpenViking Style)
+
+The library implements a three-tier access pattern for efficient memory retrieval:
+
+| Layer | Size | Purpose | Method |
+|-------|------|---------|--------|
+| **L0 Abstract** | ~100 tokens | Quick relevance judgment | `get_abstract()` |
+| **L1 Overview** | ~2000 tokens | Partial context understanding | `get_overview()` |
+| **L2 Full** | Complete content | Deep analysis and processing | `read_file()` / `get_read()` |
+
 ### Automation System
 
-Cortex Tools provides event-driven automation:
+MemoryOperations includes built-in automation:
+
+- **Auto Indexing**: Messages are automatically indexed for vector search
+- **Auto Extraction**: Memories are extracted when sessions are closed
+- **Event-Driven**: Uses EventBus for real-time processing
 
 ```rust
-use cortex_mem_tools::MemoryOperations;
-use cortex_mem_core::automation::{AutomationManager, SyncConfig, ExtractConfig};
+// Automation is built into MemoryOperations::new()
+// No additional configuration needed
 
-// Configure automation
-let sync_config = SyncConfig {
-    auto_index: true,
-    index_interval_secs: 300,
-    extract_config: ExtractConfig {
-        auto_extract: true,
-        extract_interval_secs: 600,
-        batch_size: 5,
-    },
-};
-
-// Run automation
-let automation = AutomationManager::new(filesystem.clone(), config, sync_config);
-automation.run().await?;
+// Access the auto extractor for manual extraction
+if let Some(extractor) = ops.auto_extractor() {
+    extractor.extract_session("tech-support").await?;
+}
 ```
 
 ### MCP Integration
@@ -78,90 +113,125 @@ automation.run().await?;
 The library provides tool definitions for Model Context Protocol:
 
 ```rust
-use cortex_mem_tools::mcp::{get_mcp_tool_definitions, execute_mcp_tool};
+use cortex_mem_tools::mcp::{get_mcp_tool_definitions, get_mcp_tool_definition};
 
-// Get available tools
+// Get all available MCP tool definitions
 let tools = get_mcp_tool_definitions();
 for tool in &tools {
-    println!("Available tool: {}", tool.name);
+    println!("Available tool: {} - {}", tool.name, tool.description);
 }
 
-// Execute a tool
-let result = execute_mcp_tool(
-    &tool_name,
-    &args,
-    &operations
-).await?;
+// Get a specific tool definition
+if let Some(tool) = get_mcp_tool_definition("search") {
+    println!("Search tool: {:?}", tool.input_schema);
+}
 ```
 
-## 🚀 Advanced Usage
+Available MCP tools:
+- `abstract` - Get L0 abstract
+- `overview` - Get L1 overview
+- `read` - Get L2 full content
+- `search` - Intelligent search with multiple engines
+- `find` - Quick search returning L0 abstracts
+- `ls` - List directory contents
+- `explore` - Intelligently explore memory space
+- `store` - Store content with automatic layer generation
 
-### Shared Component Management
+## 📚 API Reference
+
+### MemoryOperations
 
 ```rust
-use std::sync::Arc;
-use cortex_mem_tools::MemoryOperations;
-use cortex_mem_core::{CortexFilesystem, SessionManager, SessionConfig};
-use tokio::sync::RwLock;
-
-// Create shared components
-let filesystem = Arc::new(CortexFilesystem::new("./cortex-data").await?);
-filesystem.initialize().await?;
-
-let session_manager = Arc::new(RwLock::new(
-    SessionManager::new(filesystem.clone(), SessionConfig::default())
-));
-
-// Create operations interface
-let ops = MemoryOperations::new(
-    filesystem.clone(),
-    session_manager.clone()
-).await?;
-
-// Share across threads
+impl MemoryOperations {
+    /// Create with full dependencies (primary constructor)
+    pub async fn new(
+        data_dir: &str,
+        tenant_id: impl Into<String>,
+        llm_client: Arc<dyn LLMClient>,
+        qdrant_url: &str,
+        qdrant_collection: &str,
+        embedding_api_base_url: &str,
+        embedding_api_key: &str,
+        embedding_model_name: &str,
+        embedding_dim: Option<usize>,
+        user_id: Option<String>,
+    ) -> Result<Self>
+    
+    // Accessors
+    pub fn filesystem(&self) -> &Arc<CortexFilesystem>
+    pub fn vector_engine(&self) -> &Arc<VectorSearchEngine>
+    pub fn session_manager(&self) -> &Arc<RwLock<SessionManager>>
+    pub fn auto_extractor(&self) -> Option<&Arc<AutoExtractor>>
+    
+    // Session Management
+    pub async fn add_message(&self, thread_id: &str, role: &str, content: &str) -> Result<String>
+    pub async fn list_sessions(&self) -> Result<Vec<SessionInfo>>
+    pub async fn get_session(&self, thread_id: &str) -> Result<SessionInfo>
+    pub async fn close_session(&self, thread_id: &str) -> Result<()>
+    
+    // Tiered Access (L0/L1/L2)
+    pub async fn get_abstract(&self, uri: &str) -> Result<AbstractResponse>
+    pub async fn get_overview(&self, uri: &str) -> Result<OverviewResponse>
+    pub async fn get_read(&self, uri: &str) -> Result<ReadResponse>
+    
+    // File Operations
+    pub async fn read_file(&self, uri: &str) -> Result<String>
+    pub async fn list_files(&self, uri: &str) -> Result<Vec<String>>
+    pub async fn delete(&self, uri: &str) -> Result<()>
+    pub async fn exists(&self, uri: &str) -> Result<bool>
+    
+    // Tool-based Operations (using typed args)
+    pub async fn search(&self, args: SearchArgs) -> Result<SearchResponse>
+    pub async fn find(&self, args: FindArgs) -> Result<FindResponse>
+    pub async fn ls(&self, args: LsArgs) -> Result<LsResponse>
+    pub async fn explore(&self, args: ExploreArgs) -> Result<ExploreResponse>
+    pub async fn store(&self, args: StoreArgs) -> Result<StoreResponse>
+}
 ```
 
-### Vector Search with Filters
+### Type Definitions
 
 ```rust
-use cortex_mem_tools::MemoryOperations;
-use cortex_mem_core::search::{SearchOptions, SearchFilter};
+// Tiered access responses
+pub struct AbstractResponse {
+    pub uri: String,
+    pub abstract_text: String,
+    pub layer: String,  // "L0"
+    pub token_count: usize,
+}
 
-let options = SearchOptions {
-    limit: 10,
-    min_score: 0.5,
-    filter: SearchFilter {
-        dimensions: vec!["user", "session"],
-        tenants: vec!["tech-support"],
-    },
-};
+pub struct OverviewResponse {
+    pub uri: String,
+    pub overview_text: String,
+    pub layer: String,  // "L1"
+    pub token_count: usize,
+}
 
-let results = ops.search_with_options("password reset", options).await?;
-```
+pub struct ReadResponse {
+    pub uri: String,
+    pub content: String,
+    pub layer: String,  // "L2"
+    pub token_count: usize,
+    pub metadata: Option<FileMetadata>,
+}
 
-### Custom Event Handling
+// Search types
+pub struct SearchArgs {
+    pub query: String,
+    pub recursive: Option<bool>,
+    pub return_layers: Option<Vec<String>>,  // ["L0", "L1", "L2"]
+    pub scope: Option<String>,
+    pub limit: Option<usize>,
+}
 
-```rust
-use cortex_mem_core::events::{EventBus, CortexEvent};
-use cortex_mem_tools::AutomationManager;
-
-// Subscribe to events
-let mut event_bus = EventBus::new();
-let _receiver = event_bus.subscribe();
-
-// Handle events
-while let Some(event) = receiver.recv().await {
-    match event {
-        CortexEvent::FilesystemEvent(fs_event) => {
-            // File changed - trigger re-indexing
-        },
-        CortexEvent::SessionEvent(session_event) => {
-            // Session updated - trigger extraction
-        },
-        CortexEvent::SystemEvent(system_event) => {
-            // Handle system events
-        }
-    }
+pub struct StoreArgs {
+    pub content: String,
+    pub thread_id: String,
+    pub metadata: Option<Value>,
+    pub auto_generate_layers: Option<bool>,
+    pub scope: String,  // "session", "user", or "agent"
+    pub user_id: Option<String>,
+    pub agent_id: Option<String>,
 }
 ```
 
@@ -172,6 +242,9 @@ while let Some(event) = receiver.recv().await {
 │            Application Layer          │
 ├─────────────────────────────────────┤
 │        MemoryOperations API          │
+│    ┌──────────┬──────────┬────────┐  │
+│    │ L0:Abs   │ L1:Over  │ L2:Full│  │
+│    └──────────┴──────────┴────────┘  │
 ├─────────────────────────────────────┤
 │         Automation Layer             │
 │    ┌─────────────┬────────────────┐  │
@@ -189,106 +262,25 @@ while let Some(event) = receiver.recv().await {
 └─────────────────────────────────────┘
 ```
 
-## 📦 Features
+## 📦 Dependencies
 
-### Default Features
-
-- **Core Operations**: Session management, message handling, search
-- **Event System**: Event bus and listeners
-- **Types**: Type definitions and error handling
-
-### Optional Features
-
-- **vector-search**: Enable Qdrant vector search integration
-- **automation**: Enable event-driven automation
-- **mcp**: Enable Model Context Protocol tools
-- **embeddings**: Enable embedding generation
-
-## 📚 API Reference
-
-### MemoryOperations
-
-```rust
-impl MemoryOperations {
-    // Creation
-    pub async fn from_data_dir(path: &str) -> Result<Self>
-    pub fn new(
-        filesystem: Arc<CortexFilesystem>,
-        session_manager: Arc<RwLock<SessionManager>>
-    ) -> Result<Self>
-    
-    // Session Management
-    pub async fn create_session(&self, thread_id: &str, title: Option<String>) -> Result<Session>
-    pub async fn close_session(&self, thread_id: &str) -> Result<()>
-    pub async fn list_sessions(&self) -> Result<Vec<Session>>
-    
-    // Message Operations
-    pub async fn add_message(&self, thread_id: &str, role: &str, content: &str) -> Result<String>
-    pub async fn get_message(&self, uri: &str) -> Result<Message>
-    pub async fn delete_message(&self, uri: &str) Result<()>
-    
-    // Search and Retrieval
-    pub async fn search(&self, query: &str, thread: Option<&str>, limit: usize) -> Result<Vec<SearchResult>>
-    pub async fn search_with_options(&self, query: &str, options: SearchOptions) -> Result<Vec<SearchResult>>
-    
-    // Memory Extraction
-    pub async fn extract_memories(&self, thread_id: &str) -> Result<ExtractedMemories>
-    pub async fn extract_and_save(&self, thread_id: &str) -> Result<()>
-    
-    // File Operations
-    pub async fn list_files(&self, uri_pattern: &str) -> Result<Vec<FileInfo>>
-    pub async fn read_file(&self, uri: &str) -> Result<String>
-    pub async fn write_file(&self, uri: &str, content: &str) -> Result<()>
-}
-```
-
-### MCP Tools
-
-The library provides these MCP tools:
-
-| Tool Name | Description |
-|-----------|-------------|
-| `memory_search` | Search across memories |
-| `session_create` | Create new session |
-| `message_add` | Add message to session |
-| `memory_extract` | Extract memories from session |
-| `files_list` | List files in memory |
-
-## 🔧 Configuration
-
-Configuration is provided through the core configuration library:
-
-```rust
-use cortex_mem_tools::MemoryOperations;
-use cortex_mem_config::Config;
-
-let config = Config::from_file("config.toml")?;
-let ops = MemoryOperations::from_config(config).await?;
-```
+This crate depends on:
+- `cortex-mem-core` - Core library with all memory operations
+- `tokio` - Async runtime
+- `serde` / `serde_json` - Serialization
+- `anyhow` / `thiserror` - Error handling
+- `tracing` - Logging
+- `chrono` - Date/time handling
+- `uuid` - Unique identifiers
+- `async-trait` - Async trait support
 
 ## 🧪 Testing
 
 Run tests with all features:
 
 ```bash
-cargo test -p cortex-mem-tools --all-features
+cargo test -p cortex-mem-tools
 ```
-
-## 🔨 Development
-
-### Adding New Operations
-
-1. Open the corresponding core module
-2. Create a new method in the appropriate module
-3. Document the method comprehensively
-4. Create a test file in `tests/` directory
-
-### Adding New MCP Tools
-
-1. Create a new module in `mcp/tools/`
-2. Create a new method in `src/tools.rs`
-3. Document the tool comprehensively
-4. Create a test file in `tests/` directory
 
 ## 🔍 Error Handling
 
@@ -314,21 +306,11 @@ Contributions are welcome! Please:
 3. Add comprehensive tests
 4. Submit a pull request
 
-## 🔗 Dependencies
+## 🔗 Related Crates
 
-- `cortex-mem-core`: Core library
-- `cortex-mem-config`: Configuration
-- `async-trait`: For async traits
-- `tokio`: Async runtime
-- `serde`: Serialization
-
-## 🌟 Examples
-
-See the [`examples/`](examples/) directory for complete examples.
-
-- Basic operations
-- Automation setup
-- MCP integration
-- Custom tools
+- [`cortex-mem-core`](../cortex-mem-core/) - Core library
+- [`cortex-mem-mcp`](../cortex-mem-mcp/) - MCP server
+- [`cortex-mem-rig`](../cortex-mem-rig/) - Rig integration
+- [`cortex-mem-service`](../cortex-mem-service/) - HTTP REST API
 
 ---
