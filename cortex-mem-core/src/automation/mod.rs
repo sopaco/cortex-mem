@@ -5,6 +5,10 @@ mod manager;  // 🆕 自动化管理器
 mod sync;
 mod watcher;
 
+#[cfg(test)]
+#[path = "layer_generator_tests.rs"]
+mod layer_generator_tests;
+
 pub use auto_extract::{AutoExtractConfig, AutoExtractStats, AutoExtractor, AutoSessionManager};
 pub use indexer::{AutoIndexer, IndexStats, IndexerConfig};
 pub use layer_generator::{LayerGenerator, LayerGenerationConfig, GenerationStats, RegenerationStats, AbstractConfig, OverviewConfig};  // 🆕 导出
