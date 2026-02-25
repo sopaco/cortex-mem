@@ -1,5 +1,5 @@
 use crate::{
-    automation::{AutoExtractor, AutoIndexer},
+    automation::{AutoExtractor, AutoIndexer, LayerGenerator},
     events::{CortexEvent, SessionEvent},
     Result,
 };
@@ -22,6 +22,8 @@ pub struct AutomationConfig {
     pub index_on_close: bool,
     /// 索引批处理延迟（秒）
     pub index_batch_delay: u64,
+    /// 🆕 启动时自动生成缺失的 L0/L1 文件
+    pub auto_generate_layers_on_startup: bool,
 }
 
 impl Default for AutomationConfig {
@@ -32,6 +34,7 @@ impl Default for AutomationConfig {
             index_on_message: false,  // 默认不实时索引（性能考虑）
             index_on_close: true,      // 默认会话关闭时索引
             index_batch_delay: 2,
+            auto_generate_layers_on_startup: false,  // 🆕 默认关闭（避免启动时阻塞）
         }
     }
 }
@@ -40,6 +43,7 @@ impl Default for AutomationConfig {
 pub struct AutomationManager {
     indexer: Arc<AutoIndexer>,
     extractor: Option<Arc<AutoExtractor>>,
+    layer_generator: Option<Arc<LayerGenerator>>,  // 🆕 层级生成器
     config: AutomationConfig,
 }
 
@@ -53,13 +57,43 @@ impl AutomationManager {
         Self {
             indexer,
             extractor,
+            layer_generator: None,  // 🆕 初始为 None，需要单独设置
             config,
         }
+    }
+    
+    /// 🆕 设置层级生成器（可选）
+    pub fn with_layer_generator(mut self, layer_generator: Arc<LayerGenerator>) -> Self {
+        self.layer_generator = Some(layer_generator);
+        self
     }
     
     /// 🎯 核心方法：启动自动化任务
     pub async fn start(self, mut event_rx: mpsc::UnboundedReceiver<CortexEvent>) -> Result<()> {
         info!("Starting AutomationManager with config: {:?}", self.config);
+        
+        // 🆕 启动时自动生成缺失的 L0/L1 文件
+        if self.config.auto_generate_layers_on_startup {
+            if let Some(ref generator) = self.layer_generator {
+                info!("启动时检查并生成缺失的 L0/L1 文件...");
+                let generator_clone = generator.clone();
+                tokio::spawn(async move {
+                    match generator_clone.ensure_all_layers().await {
+                        Ok(stats) => {
+                            info!(
+                                "启动时层级生成完成: 总计 {}, 成功 {}, 失败 {}",
+                                stats.total, stats.generated, stats.failed
+                            );
+                        }
+                        Err(e) => {
+                            warn!("启动时层级生成失败: {}", e);
+                        }
+                    }
+                });
+            } else {
+                warn!("auto_generate_layers_on_startup 已启用但未设置 layer_generator");
+            }
+        }
         
         // 批处理缓冲区（收集需要索引的session_id）
         let mut pending_sessions: HashSet<String> = HashSet::new();

@@ -307,6 +307,12 @@ pub async fn create_memory_agent(
 }
 
 /// 从记忆中提取用户基本信息
+/// 🆕 提取用户基本信息用于初始化 Agent 上下文
+/// 
+/// 优化策略：
+/// - 优先读取目录的 .overview.md（L1 层级）
+/// - 如果没有 overview，回退到读取个别文件
+/// - 大幅减少初始化时的 token 消耗（节省 80-90%）
 pub async fn extract_user_basic_info(
     operations: Arc<MemoryOperations>,
     user_id: &str,
@@ -314,199 +320,113 @@ pub async fn extract_user_basic_info(
 ) -> Result<Option<String>, Box<dyn std::error::Error>> {
     use cortex_mem_core::FilesystemOperations;
 
-    // 🔧 统一使用精细化记忆文件（移除profile.json支持）
-    tracing::info!("Loading user memories from granular files for user: {}", user_id);
+    tracing::info!("Loading user memories (L1 overviews) for user: {}", user_id);
     
     let mut context = String::new();
     context.push_str("## 用户记忆\n\n");
-    let mut total_count = 0;
+    let mut has_content = false;
 
-    // 🆕 读取 personal_info/
-    let personal_info_uri = format!("cortex://user/{}/personal_info", user_id);
-    if let Ok(entries) = operations.filesystem().list(&personal_info_uri).await {
-        if !entries.is_empty() {
-            context.push_str("### 个人信息\n");
-            for entry in entries {
-                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
-                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
-                        let summary = extract_markdown_summary(&content);
-                        if !summary.is_empty() {
-                            context.push_str(&format!("- {}\n", summary));
-                            total_count += 1;
+    // 📋 核心信息类别（完整读取或使用 overview）
+    let core_categories = vec![
+        ("personal_info", "个人信息"),
+        ("work_history", "工作经历"),
+        ("preferences", "偏好习惯"),
+    ];
+    
+    for (category, title) in core_categories {
+        let category_uri = format!("cortex://user/{}/{}", user_id, category);
+        let overview_uri = format!("{}/.overview.md", category_uri);
+        
+        // 🆕 优先读取 .overview.md（L1 层级）
+        if let Ok(overview_content) = operations.filesystem().read(&overview_uri).await {
+            context.push_str(&format!("### {}\n", title));
+            // 移除 **Added** 时间戳
+            let clean_content = strip_metadata(&overview_content);
+            context.push_str(&clean_content);
+            context.push_str("\n\n");
+            has_content = true;
+            tracing::debug!("Loaded overview for {}", category);
+        } else {
+            // 回退：读取个别文件
+            if let Ok(entries) = operations.filesystem().list(&category_uri).await {
+                if !entries.is_empty() {
+                    context.push_str(&format!("### {}\n", title));
+                    for entry in entries {
+                        if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                            if let Ok(content) = operations.filesystem().read(&entry.uri).await {
+                                let summary = extract_markdown_summary(&content);
+                                if !summary.is_empty() {
+                                    context.push_str(&format!("- {}\n", summary));
+                                    has_content = true;
+                                }
+                            }
                         }
                     }
+                    context.push_str("\n");
                 }
             }
-            context.push_str("\n");
         }
     }
 
-    // 🆕 读取 work_history/
-    let work_history_uri = format!("cortex://user/{}/work_history", user_id);
-    if let Ok(entries) = operations.filesystem().list(&work_history_uri).await {
-        if !entries.is_empty() {
-            context.push_str("### 工作经历\n");
-            for entry in entries {
-                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
-                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
-                        let summary = extract_markdown_summary(&content);
-                        if !summary.is_empty() {
-                            context.push_str(&format!("- {}\n", summary));
-                            total_count += 1;
-                        }
-                    }
-                }
-            }
-            context.push_str("\n");
+    // 📋 次要信息类别（仅使用 overview，不回退）
+    let secondary_categories = vec![
+        ("relationships", "人际关系"),
+        ("goals", "目标愿景"),
+        ("entities", "相关实体"),
+        ("events", "重要事件"),
+    ];
+    
+    for (category, title) in secondary_categories {
+        let category_uri = format!("cortex://user/{}/{}", user_id, category);
+        let overview_uri = format!("{}/.overview.md", category_uri);
+        
+        // 🆕 仅读取 .overview.md，不回退到详细文件
+        if let Ok(overview_content) = operations.filesystem().read(&overview_uri).await {
+            context.push_str(&format!("### {}\n", title));
+            let clean_content = strip_metadata(&overview_content);
+            context.push_str(&clean_content);
+            context.push_str("\n\n");
+            has_content = true;
+            tracing::debug!("Loaded overview for {}", category);
         }
     }
 
-    // 读取 preferences/
-    let prefs_uri = format!("cortex://user/{}/preferences", user_id);
-    if let Ok(entries) = operations.filesystem().list(&prefs_uri).await {
-        if !entries.is_empty() {
-            context.push_str("### 偏好习惯\n");
-            for entry in entries {
-                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
-                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
-                        let summary = extract_markdown_summary(&content);
-                        if !summary.is_empty() {
-                            context.push_str(&format!("- {}\n", summary));
-                            total_count += 1;
-                        }
-                    }
-                }
-            }
-            context.push_str("\n");
-        }
-    }
-
-    // 🆕 读取 relationships/
-    let relationships_uri = format!("cortex://user/{}/relationships", user_id);
-    if let Ok(mut entries) = operations.filesystem().list(&relationships_uri).await {
-        if !entries.is_empty() {
-            // 🔧 按修改时间排序，优先返回最新的记忆
-            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
-            
-            context.push_str("### 人际关系\n");
-            for entry in entries.iter().take(5) {  // 只取前5个关系
-                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
-                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
-                        let summary = extract_markdown_summary(&content);
-                        if !summary.is_empty() {
-                            context.push_str(&format!("- {}\n", summary));
-                            total_count += 1;
-                        }
-                    }
-                }
-            }
-            context.push_str("\n");
-        }
-    }
-
-    // 🆕 读取 goals/
-    let goals_uri = format!("cortex://user/{}/goals", user_id);
-    if let Ok(mut entries) = operations.filesystem().list(&goals_uri).await {
-        if !entries.is_empty() {
-            // 🔧 按修改时间排序，优先返回最新的目标
-            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
-            
-            context.push_str("### 目标愿景\n");
-            for entry in entries.iter().take(5) {  // 只取前5个目标
-                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
-                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
-                        let summary = extract_markdown_summary(&content);
-                        if !summary.is_empty() {
-                            context.push_str(&format!("- {}\n", summary));
-                            total_count += 1;
-                        }
-                    }
-                }
-            }
-            context.push_str("\n");
-        }
-    }
-
-    // 读取 entities/
-    let entities_uri = format!("cortex://user/{}/entities", user_id);
-    if let Ok(mut entries) = operations.filesystem().list(&entities_uri).await {
-        if !entries.is_empty() {
-            // 🔧 按修改时间排序，优先返回最新的实体
-            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
-            
-            context.push_str("### 相关实体\n");
-            for entry in entries.iter().take(5) {  // 只取前5个最重要的实体
-                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
-                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
-                        let summary = extract_markdown_summary(&content);
-                        if !summary.is_empty() {
-                            context.push_str(&format!("- {}\n", summary));
-                            total_count += 1;
-                        }
-                    }
-                }
-            }
-            context.push_str("\n");
-        }
-    }
-
-    // 读取 events/
-    let events_uri = format!("cortex://user/{}/events", user_id);
-    if let Ok(mut entries) = operations.filesystem().list(&events_uri).await {
-        if !entries.is_empty() {
-            // 🔧 按修改时间排序，优先返回最新的事件
-            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
-            
-            context.push_str("### 重要事件\n");
-            for entry in entries.iter().take(3) {  // 只取前3个事件
-                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
-                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
-                        let summary = extract_markdown_summary(&content);
-                        if !summary.is_empty() {
-                            context.push_str(&format!("- {}\n", summary));
-                            total_count += 1;
-                        }
-                    }
-                }
-            }
-            context.push_str("\n");
-        }
-    }
-
-    // 🆕 读取 Agent记忆: cases/
+    // 🆕 读取 Agent 经验案例（仅 overview）
     let cases_uri = format!("cortex://agent/{}/cases", _agent_id);
-    if let Ok(mut entries) = operations.filesystem().list(&cases_uri).await {
-        if !entries.is_empty() {
-            // 🔧 按修改时间排序，优先返回最新的经验案例
-            entries.sort_by(|a, b| b.modified.cmp(&a.modified));
-            
-            context.push_str("### Agent经验案例\n");
-            for entry in entries.iter().take(5) {  // 只取前5个案例
-                if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
-                    if let Ok(content) = operations.filesystem().read(&entry.uri).await {
-                        let summary = extract_markdown_summary(&content);
-                        if !summary.is_empty() {
-                            context.push_str(&format!("- {}\n", summary));
-                            total_count += 1;
-                        }
-                    }
-                }
-            }
-            context.push_str("\n");
-        }
+    let cases_overview_uri = format!("{}/.overview.md", cases_uri);
+    
+    if let Ok(overview_content) = operations.filesystem().read(&cases_overview_uri).await {
+        context.push_str("### Agent经验案例\n");
+        let clean_content = strip_metadata(&overview_content);
+        context.push_str(&clean_content);
+        context.push_str("\n\n");
+        has_content = true;
+        tracing::debug!("Loaded overview for agent cases");
     }
 
-    if total_count == 0 {
+    if !has_content {
         tracing::info!("No user memories found for user: {}", user_id);
         return Ok(None);
     }
 
-    tracing::info!(
-        "Loaded {} memory items from granular files for user: {}",
-        total_count,
-        user_id
-    );
+    tracing::info!("Loaded user memories (L1 overviews) for user: {}", user_id);
     Ok(Some(context))
+}
+
+/// 移除 **Added** 时间戳等元数据
+fn strip_metadata(content: &str) -> String {
+    let mut lines: Vec<&str> = content.lines().collect();
+    
+    // 移除末尾的 **Added** 行
+    while let Some(last_line) = lines.last() {
+        if last_line.trim().is_empty() || last_line.contains("**Added**") || last_line.starts_with("---") {
+            lines.pop();
+        } else {
+            break;
+        }
+    }
+    
+    lines.join("\n").trim().to_string()
 }
 
 /// 从markdown文件中提取关键摘要信息

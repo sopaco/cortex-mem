@@ -1302,6 +1302,34 @@ impl App {
                     log::warn!("⚠️ 会话关闭失败: {}", e);
                 }
             }
+            
+            // 🆕 退出时生成所有缺失的 L0/L1 层级文件
+            log::info!("📑 开始生成缺失的 L0/L1 层级文件...");
+            match tenant_ops.ensure_all_layers().await {
+                Ok(stats) => {
+                    log::info!(
+                        "✅ 层级文件生成完成: 总计 {}, 成功 {}, 失败 {}",
+                        stats.total, stats.generated, stats.failed
+                    );
+                }
+                Err(e) => {
+                    log::warn!("⚠️ 层级文件生成失败: {}", e);
+                }
+            }
+            
+            // 🆕 退出时索引所有文件到向量数据库
+            log::info!("📊 开始索引所有文件到向量数据库...");
+            match tenant_ops.index_all_files().await {
+                Ok(stats) => {
+                    log::info!(
+                        "✅ 索引完成: 总计 {} 个文件, {} 个已索引, {} 个跳过",
+                        stats.total_files, stats.indexed_files, stats.skipped_files
+                    );
+                }
+                Err(e) => {
+                    log::warn!("⚠️ 索引失败: {}", e);
+                }
+            }
         } else {
             log::info!("ℹ️ 无需处理会话（未配置租户或无会话）");
         }

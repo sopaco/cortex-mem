@@ -261,6 +261,11 @@ impl SessionManager {
         }
     }
     
+    /// 🆕 获取 LLM client（如果存在）
+    pub fn llm_client(&self) -> Option<&Arc<dyn LLMClient>> {
+        self.llm_client.as_ref()
+    }
+    
     /// Create a new session
     /// Create a new session with user_id and agent_id
     pub async fn create_session_with_ids(

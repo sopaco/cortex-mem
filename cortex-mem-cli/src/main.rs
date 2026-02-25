@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 mod commands;
-use commands::{add, delete, get, list, search, session, stats};
+use commands::{add, delete, get, layers, list, search, session, stats};
 
 /// Cortex-Mem CLI - File-based memory management for AI Agents
 #[derive(Parser)]
@@ -103,6 +103,12 @@ enum Commands {
 
     /// Show statistics
     Stats,
+
+    /// Layer management (L0/L1 files)
+    Layers {
+        #[command(subcommand)]
+        action: LayersAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -119,6 +125,18 @@ enum SessionAction {
         #[arg(short, long)]
         title: Option<String>,
     },
+}
+
+#[derive(Subcommand)]
+enum LayersAction {
+    /// Ensure all directories have L0/L1 files (.abstract.md and .overview.md)
+    EnsureAll,
+
+    /// Show status of L0/L1 file coverage
+    Status,
+
+    /// Regenerate oversized .abstract files (> 2K characters)
+    RegenerateOversized,
 }
 
 #[tokio::main]
@@ -227,6 +245,17 @@ async fn main() -> Result<()> {
         Commands::Stats => {
             stats::execute(operations).await?;
         }
+        Commands::Layers { action } => match action {
+            LayersAction::EnsureAll => {
+                layers::ensure_all(operations).await?;
+            }
+            LayersAction::Status => {
+                layers::status(operations).await?;
+            }
+            LayersAction::RegenerateOversized => {
+                layers::regenerate_oversized(operations).await?;
+            }
+        },
     }
 
     Ok(())

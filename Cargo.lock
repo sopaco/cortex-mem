@@ -634,6 +634,7 @@ dependencies = [
  "chrono",
  "cortex-mem-config",
  "dyn-clone",
+ "futures",
  "qdrant-client",
  "regex",
  "reqwest 0.12.24",

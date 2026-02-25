@@ -8,3 +8,8 @@ pub use errors::{ToolsError, Result};
 pub use operations::MemoryOperations;
 pub use types::*;
 pub use mcp::{ToolDefinition, get_mcp_tool_definitions, get_mcp_tool_definition};
+
+pub use cortex_mem_core::automation::GenerationStats;
+
+// 🆕 重新导出 SyncStats 以便外部使用
+pub use cortex_mem_core::automation::SyncStats;

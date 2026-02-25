@@ -9,7 +9,8 @@ use cortex_mem_core::{
     SessionManager,
     automation::{
         SyncConfig, SyncManager, AutoExtractor, AutoExtractConfig,
-        AutoIndexer, IndexerConfig, AutomationManager, AutomationConfig,  // 🆕 添加AutoIndexer等
+        AutoIndexer, IndexerConfig, AutomationManager, AutomationConfig,
+        LayerGenerator, LayerGenerationConfig, AbstractConfig, OverviewConfig,  // 🆕 添加LayerGenerator
     },
     embedding::{EmbeddingClient, EmbeddingConfig},
     vector_store::QdrantVectorStore,
@@ -30,6 +31,14 @@ pub struct MemoryOperations {
     pub(crate) layer_manager: Arc<LayerManager>,
     pub(crate) vector_engine: Arc<VectorSearchEngine>,
     pub(crate) auto_extractor: Option<Arc<AutoExtractor>>,  // 🆕 AutoExtractor用于退出时提取
+    pub(crate) layer_generator: Option<Arc<LayerGenerator>>,  // 🆕 LayerGenerator用于退出时生成L0/L1
+    pub(crate) auto_indexer: Option<Arc<AutoIndexer>>,  // 🆕 AutoIndexer用于退出时索引
+    
+    // 🆕 保存组件引用以便退出时索引使用
+    pub(crate) embedding_client: Arc<EmbeddingClient>,
+    pub(crate) vector_store: Arc<QdrantVectorStore>,
+    pub(crate) llm_client: Arc<dyn LLMClient>,
+    
     pub(crate) default_user_id: String,  // 🆕 默认user_id
     pub(crate) default_agent_id: String, // 🆕 默认agent_id
 }
@@ -53,6 +62,16 @@ impl MemoryOperations {
     /// 🆕 Get the auto extractor (for manual extraction on exit)
     pub fn auto_extractor(&self) -> Option<&Arc<AutoExtractor>> {
         self.auto_extractor.as_ref()
+    }
+    
+    /// 🆕 Get the layer generator (for manual layer generation on exit)
+    pub fn layer_generator(&self) -> Option<&Arc<LayerGenerator>> {
+        self.layer_generator.as_ref()
+    }
+    
+    /// 🆕 Get the auto indexer (for manual indexing on exit)
+    pub fn auto_indexer(&self) -> Option<&Arc<AutoIndexer>> {
+        self.auto_indexer.as_ref()
     }
 
     /// Create from data directory with tenant isolation, LLM support, and vector search
@@ -158,12 +177,36 @@ impl MemoryOperations {
             index_on_message: true,  // ✅ 消息时自动索引
             index_on_close: false,   // Session关闭时不索引（已经实时索引了）
             index_batch_delay: 1,
+            auto_generate_layers_on_startup: false,  // 🆕 启动时不生成（避免阻塞）
         };
+        
+        // 🆕 创建LayerGenerator（用于退出时手动生成）
+        let layer_gen_config = LayerGenerationConfig {
+            batch_size: 10,
+            delay_ms: 1000,
+            auto_generate_on_startup: false,
+            abstract_config: AbstractConfig {
+                max_tokens: 400,
+                max_chars: 2000,
+                target_sentences: 2,
+            },
+            overview_config: OverviewConfig {
+                max_tokens: 1500,
+                max_chars: 6000,
+            },
+        };
+        let layer_generator = Arc::new(LayerGenerator::new(
+            filesystem.clone(),
+            llm_client.clone(),
+            layer_gen_config,
+        ));
+        
         let automation_manager = AutomationManager::new(
             auto_indexer.clone(),
             None,  // extractor由单独的监听器处理
             automation_config,
-        );
+        )
+        .with_layer_generator(layer_generator.clone());  // 🆕 设置LayerGenerator
         
         // 🆕 创建事件转发器（将主EventBus的事件转发给两个监听器）
         let (tx_automation, rx_automation) = tokio::sync::mpsc::unbounded_channel();
@@ -254,6 +297,14 @@ impl MemoryOperations {
             layer_manager,
             vector_engine,
             auto_extractor: Some(auto_extractor),  // 🆕
+            layer_generator: Some(layer_generator),  // 🆕 保存LayerGenerator用于退出时生成
+            auto_indexer: Some(auto_indexer),  // 🆕 保存AutoIndexer用于退出时索引
+            
+            // 🆕 保存组件引用以便退出时索引使用
+            embedding_client,
+            vector_store,
+            llm_client,
+            
             default_user_id: actual_user_id,  // 🆕 存储默认user_id
             default_agent_id: tenant_id.clone(), // 🆕 使用tenant_id作为默认agent_id
         })
@@ -401,5 +452,67 @@ impl MemoryOperations {
     pub async fn exists(&self, uri: &str) -> Result<bool> {
         let exists = self.filesystem.exists(uri).await.map_err(ToolsError::Core)?;
         Ok(exists)
+    }
+    
+    /// 🆕 生成所有缺失的 L0/L1 层级文件（用于退出时调用）
+    /// 
+    /// 这个方法扫描所有目录，找出缺失 .abstract.md 或 .overview.md 的目录，
+    /// 并批量生成它们。适合在应用退出时调用。
+    pub async fn ensure_all_layers(&self) -> Result<cortex_mem_core::automation::GenerationStats> {
+        if let Some(ref generator) = self.layer_generator {
+            tracing::info!("🔍 开始扫描并生成缺失的 L0/L1 层级文件...");
+            match generator.ensure_all_layers().await {
+                Ok(stats) => {
+                    tracing::info!(
+                        "✅ L0/L1 层级生成完成: 总计 {}, 成功 {}, 失败 {}",
+                        stats.total, stats.generated, stats.failed
+                    );
+                    Ok(stats)
+                }
+                Err(e) => {
+                    tracing::error!("❌ L0/L1 层级生成失败: {}", e);
+                    Err(e.into())
+                }
+            }
+        } else {
+            tracing::warn!("⚠️ LayerGenerator 未配置，跳过层级生成");
+            Ok(cortex_mem_core::automation::GenerationStats::default())
+        }
+    }
+    
+    /// 🆕 索引所有文件到向量数据库（用于退出时调用）
+    /// 
+    /// 这个方法扫描所有文件，包括新生成的 .abstract.md 和 .overview.md，
+    /// 并将它们索引到向量数据库中。适合在应用退出时调用。
+    pub async fn index_all_files(&self) -> Result<cortex_mem_core::automation::SyncStats> {
+        tracing::info!("📊 开始索引所有文件到向量数据库...");
+        
+        use cortex_mem_core::automation::{SyncManager, SyncConfig};
+        
+        // 创建 SyncManager
+        let sync_manager = SyncManager::new(
+            self.filesystem.clone(),
+            self.embedding_client.clone(),
+            self.vector_store.clone(),
+            self.llm_client.clone(),  // 不需要 Option
+            SyncConfig::default(),
+        );
+        
+        match sync_manager.sync_all().await {
+            Ok(stats) => {
+                tracing::info!(
+                    "✅ 索引完成: 总计 {} 个文件, {} 个已索引, {} 个跳过, {} 个错误",
+                    stats.total_files,
+                    stats.indexed_files,
+                    stats.skipped_files,
+                    stats.error_files
+                );
+                Ok(stats)
+            }
+            Err(e) => {
+                tracing::error!("❌ 索引失败: {}", e);
+                Err(e.into())
+            }
+        }
     }
 }
