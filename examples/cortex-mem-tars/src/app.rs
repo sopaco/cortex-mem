@@ -1322,8 +1322,8 @@ impl App {
             match tenant_ops.index_all_files().await {
                 Ok(stats) => {
                     log::info!(
-                        "✅ 索引完成: {} 个文件已索引, {} 个文件跳过",
-                        stats.indexed_files, stats.skipped_files
+                        "✅ 索引完成: 总计 {} 个文件, {} 个已索引, {} 个跳过",
+                        stats.total_files, stats.indexed_files, stats.skipped_files
                     );
                 }
                 Err(e) => {

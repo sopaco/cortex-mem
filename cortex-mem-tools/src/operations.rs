@@ -33,6 +33,12 @@ pub struct MemoryOperations {
     pub(crate) auto_extractor: Option<Arc<AutoExtractor>>,  // 🆕 AutoExtractor用于退出时提取
     pub(crate) layer_generator: Option<Arc<LayerGenerator>>,  // 🆕 LayerGenerator用于退出时生成L0/L1
     pub(crate) auto_indexer: Option<Arc<AutoIndexer>>,  // 🆕 AutoIndexer用于退出时索引
+    
+    // 🆕 保存组件引用以便退出时索引使用
+    pub(crate) embedding_client: Arc<EmbeddingClient>,
+    pub(crate) vector_store: Arc<QdrantVectorStore>,
+    pub(crate) llm_client: Arc<dyn LLMClient>,
+    
     pub(crate) default_user_id: String,  // 🆕 默认user_id
     pub(crate) default_agent_id: String, // 🆕 默认agent_id
 }
@@ -293,6 +299,12 @@ impl MemoryOperations {
             auto_extractor: Some(auto_extractor),  // 🆕
             layer_generator: Some(layer_generator),  // 🆕 保存LayerGenerator用于退出时生成
             auto_indexer: Some(auto_indexer),  // 🆕 保存AutoIndexer用于退出时索引
+            
+            // 🆕 保存组件引用以便退出时索引使用
+            embedding_client,
+            vector_store,
+            llm_client,
+            
             default_user_id: actual_user_id,  // 🆕 存储默认user_id
             default_agent_id: tenant_id.clone(), // 🆕 使用tenant_id作为默认agent_id
         })
@@ -473,15 +485,34 @@ impl MemoryOperations {
     /// 这个方法扫描所有文件，包括新生成的 .abstract.md 和 .overview.md，
     /// 并将它们索引到向量数据库中。适合在应用退出时调用。
     pub async fn index_all_files(&self) -> Result<cortex_mem_core::automation::SyncStats> {
-        tracing::warn!("⚠️ 退出时索引功能暂未实现");
-        tracing::info!("💡 提示：数据已通过实时索引自动同步到向量数据库");
+        tracing::info!("📊 开始索引所有文件到向量数据库...");
         
-        // 返回空的统计信息
-        Ok(cortex_mem_core::automation::SyncStats {
-            total_files: 0,
-            indexed_files: 0,
-            skipped_files: 0,
-            error_files: 0,
-        })
+        use cortex_mem_core::automation::{SyncManager, SyncConfig};
+        
+        // 创建 SyncManager
+        let sync_manager = SyncManager::new(
+            self.filesystem.clone(),
+            self.embedding_client.clone(),
+            self.vector_store.clone(),
+            self.llm_client.clone(),  // 不需要 Option
+            SyncConfig::default(),
+        );
+        
+        match sync_manager.sync_all().await {
+            Ok(stats) => {
+                tracing::info!(
+                    "✅ 索引完成: 总计 {} 个文件, {} 个已索引, {} 个跳过, {} 个错误",
+                    stats.total_files,
+                    stats.indexed_files,
+                    stats.skipped_files,
+                    stats.error_files
+                );
+                Ok(stats)
+            }
+            Err(e) => {
+                tracing::error!("❌ 索引失败: {}", e);
+                Err(e.into())
+            }
+        }
     }
 }
