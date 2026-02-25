@@ -1,5 +1,5 @@
 <p align="center">
-  <img height="200" src="./assets/blend_1_banner_800.jpg">
+    <img src="./assets/intro/TopBanner.webp">
 </p>
 
 <h1 align="center">Cortex Memory</h1>
@@ -31,9 +31,9 @@
 
 Cortex Memory uses a sophisticated pipeline to process and manage memories, centered around a **hybrid storage architecture** combining **virtual-filesystem** durability with vector-based **semantic search**.
 
-| **Virtual File** System and **Layered Context Loading** | Blazing **Precise** and **Accurate** Memory Retrieval |
-| :--- | :--- |
-|![architecture_style_modern](./assets/intro/architecture_style_modern.jpg) | ![architecture_style_classic](./assets/benchmark/cortex_mem_vs_langmem_thin.jpg) |
+| Blazing Fast **Layered Context Loading** | Context Organization as **Virtual Files** |  **Precision** Memory Retrieval |
+| :--- | :--- | :--- |
+| ![Layered Context Loading](./assets/intro/highlight_style_modern.jpg) |![architecture_style_modern](./assets/intro/architecture_style_modern.jpg) | ![architecture_style_classic](./assets/benchmark/cortex_mem_vs_langmem_thin.jpg) |
 
 **Cortex Memory** organizes data using a **virtual filesystem** approach with the `cortex://` URI scheme:
 
