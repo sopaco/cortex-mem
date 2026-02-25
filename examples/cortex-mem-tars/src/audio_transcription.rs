@@ -250,11 +250,17 @@ pub fn convert_to_mono(audio: &[f32], channels: usize) -> Vec<f32> {
 }
 
 /// 检查转录文本是否有意义
+///
+/// 改进点:
+/// 1. 提高音量阈值到 0.01
+/// 2. 增加更多 Whisper 特殊标记
+/// 3. 检测重复字符/重复词模式
+/// 4. 检测疑似噪音误识别的文本
 pub fn is_meaningful_text(text: &str, audio_volume: f32) -> bool {
     let text = text.trim();
 
     // 1. 检查音频音量
-    if audio_volume < 0.003 {
+    if audio_volume < 0.02 {
         log::debug!("音频音量过低: {:.4}", audio_volume);
         return false;
     }
@@ -264,8 +270,9 @@ pub fn is_meaningful_text(text: &str, audio_volume: f32) -> bool {
         return false;
     }
 
-    // 3. 检查 Whisper 的特殊标记
+    // 3. 检查 Whisper 的特殊标记（扩展列表）
     let meaningless_markers = [
+        // 标准标记
         "[silence]",
         "[music]",
         "[noise]",
@@ -284,6 +291,7 @@ pub fn is_meaningful_text(text: &str, audio_volume: f32) -> bool {
         "[BLANK_AUDIO]",
         "[typing]",
         "[HUMMING]",
+        // 音乐相关
         "(歌詞)",
         "epic music",
         "upbeat music",
@@ -293,6 +301,27 @@ pub fn is_meaningful_text(text: &str, audio_volume: f32) -> bool {
         "*upbeat music*",
         "music playing",
         "background music",
+        // 更多噪音标记
+        "[ringing]",
+        "[beep]",
+        "[ding]",
+        "[buzz]",
+        "[hiss]",
+        "[whir]",
+        "[crackle]",
+        "[pop]",
+        "[bang]",
+        "[clap]",
+        // 常见误识别
+        "...",
+        "…",
+        "   ",
+        "\n",
+        "(audience laughter)",
+        "(applause)",
+        "(cheering)",
+        "Subtitle",
+        "字幕",
     ];
 
     for marker in &meaningless_markers {
@@ -302,15 +331,15 @@ pub fn is_meaningful_text(text: &str, audio_volume: f32) -> bool {
         }
     }
 
-    // 4. 检查文本长度
-    if text.len() < 3 {
+    // 4. 检查文本长度（提高到 4 字符）
+    if text.len() < 4 {
         log::debug!("文本过短: {} 字符", text.len());
         return false;
     }
 
     // 5. 检查是否只包含标点符号
     let has_content = text.chars().any(|c| {
-        c.is_alphanumeric() || c.is_whitespace() || (c as u32) > 0x4E00 // CJK 字符
+        c.is_alphanumeric() || (c as u32) > 0x4E00 // CJK 字符
     });
 
     if !has_content {
@@ -318,7 +347,132 @@ pub fn is_meaningful_text(text: &str, audio_volume: f32) -> bool {
         return false;
     }
 
+    // 6. 🆕 检查是否为重复字符模式（如 "啊啊啊啊", "嗯嗯嗯"）
+    if is_repetitive_pattern(text) {
+        log::debug!("检测到重复字符模式: {}", text);
+        return false;
+    }
+
+    // 7. 🆕 检查是否为疑似噪音误识别（单个音节重复或无意义组合）
+    if is_likely_noise_misrecognition(text) {
+        log::debug!("检测到疑似噪音误识别: {}", text);
+        return false;
+    }
+
     true
+}
+
+/// 检查文本是否为重复字符模式
+///
+/// 例如: "啊啊啊啊", "嗯嗯嗯", "呃呃", "......" 等
+fn is_repetitive_pattern(text: &str) -> bool {
+    let chars: Vec<char> = text.chars().collect();
+
+    // 如果只有一个字符类型，认为是重复模式
+    if chars.len() >= 3 {
+        let unique_chars: std::collections::HashSet<char> = chars.iter().copied().collect();
+        if unique_chars.len() == 1 {
+            return true;
+        }
+
+        // 检查是否只有 2 种字符交替出现（如 "啊呃啊呃"）
+        if unique_chars.len() == 2 && chars.len() >= 4 {
+            // 检查是否为交替模式
+            let chars_vec: Vec<char> = unique_chars.into_iter().collect();
+            let mut pattern1 = true;
+            let mut pattern2 = true;
+            for (i, &c) in chars.iter().enumerate() {
+                if c != chars_vec[i % 2] {
+                    pattern1 = false;
+                }
+                if c != chars_vec[(i + 1) % 2] {
+                    pattern2 = false;
+                }
+            }
+            if pattern1 || pattern2 {
+                return true;
+            }
+        }
+    }
+
+    // 检查是否为重复词（如 "然后然后然后"）
+    let words: Vec<&str> = text.split_whitespace().collect();
+    if words.len() >= 3 {
+        let unique_words: std::collections::HashSet<&str> = words.iter().copied().collect();
+        if unique_words.len() == 1 {
+            return true;
+        }
+    }
+
+    false
+}
+
+/// 检查文本是否为疑似噪音误识别
+///
+/// Whisper 有时会将噪音误识别为一些常见的音节或组合
+fn is_likely_noise_misrecognition(text: &str) -> bool {
+    // 常见的噪音误识别模式
+    let noise_patterns = [
+        // 单音节重复
+        "嗯",
+        "呃",
+        "啊",
+        "哦",
+        "呃",
+        "额",
+        "唔",
+        "嗯",
+        "uh",
+        "um",
+        "ah",
+        "oh",
+        "er",
+        "hm",
+        // 无意义组合
+        "谢谢收看", // 常见误识别
+        "请继续",   // 常见误识别
+        "谢谢观看", // 常见误识别
+        "下期再见", // 常见误识别
+        "感谢收看", // 常见误识别
+        "谢谢大家", // 常见误识别
+    ];
+
+    let text_lower = text.to_lowercase();
+    let text_trimmed = text.trim();
+
+    // 检查是否只包含噪音模式
+    for pattern in &noise_patterns {
+        // 如果文本完全匹配或主要由这个模式组成
+        if text_trimmed == *pattern || text_lower == *pattern {
+            return true;
+        }
+        // 如果文本是模式的重复（如 "嗯嗯嗯"）
+        if pattern.len() <= 3 && text_trimmed.chars().all(|c| pattern.contains(c)) {
+            // 检查是否只包含这个模式的字符
+            let pattern_chars: std::collections::HashSet<char> = pattern.chars().collect();
+            let text_chars: std::collections::HashSet<char> = text_trimmed.chars().collect();
+            if text_chars.is_subset(&pattern_chars) && text_trimmed.len() >= 3 {
+                return true;
+            }
+        }
+    }
+
+    // 检查文本是否太短且包含大量标点
+    let alpha_count = text.chars().filter(|c| c.is_alphabetic()).count();
+    let punct_count = text.chars().filter(|c| c.is_ascii_punctuation()).count();
+    if text.len() < 10 && punct_count > alpha_count {
+        return true;
+    }
+
+    // 检查是否为纯数字（可能是噪音误识别）
+    if text
+        .chars()
+        .all(|c| c.is_ascii_digit() || c.is_whitespace())
+    {
+        return true;
+    }
+
+    false
 }
 
 /// 繁体转简体（简单映射）
