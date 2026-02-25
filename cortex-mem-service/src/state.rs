@@ -66,6 +66,7 @@ impl AppState {
             index_on_message: true, // ✅ 实时索引（API服务需要即时搜索）
             index_on_close: true,
             index_batch_delay: 1, // 1秒批处理
+            auto_generate_layers_on_startup: false,  // 🆕 本地文件系统下默认关闭
         });
 
         // 构建Cortex Memory

@@ -158,6 +158,7 @@ impl MemoryOperations {
             index_on_message: true,  // ✅ 消息时自动索引
             index_on_close: false,   // Session关闭时不索引（已经实时索引了）
             index_batch_delay: 1,
+            auto_generate_layers_on_startup: false,  // 🆕 本地文件系统下默认关闭（按需生成）
         };
         let automation_manager = AutomationManager::new(
             auto_indexer.clone(),
