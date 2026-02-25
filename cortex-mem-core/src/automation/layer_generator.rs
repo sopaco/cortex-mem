@@ -4,7 +4,7 @@ use crate::layers::generator::{AbstractGenerator, OverviewGenerator};
 use std::sync::Arc;
 use tracing::{info, warn, debug};
 use serde::{Deserialize, Serialize};
-use chrono::Utc;
+use chrono::{Utc, DateTime};
 
 /// 层级生成配置
 #[derive(Debug, Clone)]
@@ -59,7 +59,7 @@ impl Default for LayerGenerationConfig {
 }
 
 /// 层级生成统计
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GenerationStats {
     pub total: usize,
     pub generated: usize,
@@ -244,7 +244,13 @@ impl LayerGenerator {
     async fn generate_layers_for_directory(&self, uri: &str) -> Result<()> {
         debug!("生成层级文件: {}", uri);
         
-        // 1. 读取目录内容（聚合所有子文件）
+        // 🆕 1. 检查是否需要重新生成（避免重复生成未变更的内容）
+        if !self.should_regenerate(uri).await? {
+            debug!("目录内容未变更，跳过生成: {}", uri);
+            return Ok(());
+        }
+        
+        // 2. 读取目录内容（聚合所有子文件）
         let content = self.aggregate_directory_content(uri).await?;
         
         if content.is_empty() {
@@ -252,22 +258,22 @@ impl LayerGenerator {
             return Ok(());
         }
         
-        // 2. 使用现有的 AbstractGenerator 生成 L0 抽象
+        // 3. 使用现有的 AbstractGenerator 生成 L0 抽象
         let abstract_text = self.abstract_gen.generate_with_llm(&content, &self.llm_client).await?;
         
-        // 3. 使用现有的 OverviewGenerator 生成 L1 概览
+        // 4. 使用现有的 OverviewGenerator 生成 L1 概览
         let overview = self.overview_gen.generate_with_llm(&content, &self.llm_client).await?;
         
-        // 4. 强制执行长度限制
+        // 5. 强制执行长度限制
         let abstract_text = self.enforce_abstract_limit(abstract_text)?;
         let overview = self.enforce_overview_limit(overview)?;
         
-        // 5. 添加 "Added" 日期标记（与 extraction.rs 保持一致）
+        // 6. 添加 "Added" 日期标记（与 extraction.rs 保持一致）
         let timestamp = Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
         let abstract_with_date = format!("{}\n\n**Added**: {}", abstract_text, timestamp);
         let overview_with_date = format!("{}\n\n---\n\n**Added**: {}", overview, timestamp);
         
-        // 6. 写入文件
+        // 7. 写入文件
         let abstract_path = format!("{}/.abstract.md", uri);
         let overview_path = format!("{}/.overview.md", uri);
         
@@ -276,6 +282,87 @@ impl LayerGenerator {
         
         debug!("层级文件生成完成: {}", uri);
         Ok(())
+    }
+    
+    /// 🆕 检查是否需要重新生成层级文件
+    /// 
+    /// 检查逻辑：
+    /// 1. 如果 .abstract.md 或 .overview.md 不存在 → 需要生成
+    /// 2. 如果目录中有文件比 .abstract.md 更新 → 需要重新生成
+    /// 3. 否则 → 跳过（避免重复生成）
+    async fn should_regenerate(&self, uri: &str) -> Result<bool> {
+        let abstract_path = format!("{}/.abstract.md", uri);
+        let overview_path = format!("{}/.overview.md", uri);
+        
+        // 检查层级文件是否存在
+        let abstract_exists = self.filesystem.exists(&abstract_path).await?;
+        let overview_exists = self.filesystem.exists(&overview_path).await?;
+        
+        if !abstract_exists || !overview_exists {
+            debug!("层级文件缺失，需要生成: {}", uri);
+            return Ok(true);
+        }
+        
+        // 读取 .abstract.md 中的时间戳
+        let abstract_content = match self.filesystem.read(&abstract_path).await {
+            Ok(content) => content,
+            Err(_) => {
+                debug!("无法读取 .abstract.md，需要重新生成: {}", uri);
+                return Ok(true);
+            }
+        };
+        
+        // 提取 "Added" 时间戳
+        let abstract_timestamp = self.extract_added_timestamp(&abstract_content);
+        
+        if abstract_timestamp.is_none() {
+            debug!(".abstract.md 缺少时间戳，需要重新生成: {}", uri);
+            return Ok(true);
+        }
+        
+        let abstract_time = abstract_timestamp.unwrap();
+        
+        // 检查目录中的文件是否有更新
+        let entries = self.filesystem.list(uri).await?;
+        for entry in entries {
+            // 跳过隐藏文件和目录
+            if entry.name.starts_with('.') || entry.is_directory {
+                continue;
+            }
+            
+            // 只检查 .md 和 .txt 文件
+            if entry.name.ends_with(".md") || entry.name.ends_with(".txt") {
+                // 读取文件内容，提取其中的时间戳（如果有）
+                if let Ok(file_content) = self.filesystem.read(&entry.uri).await {
+                    if let Some(file_time) = self.extract_added_timestamp(&file_content) {
+                        // 如果文件时间戳晚于 abstract 时间戳，需要重新生成
+                        if file_time > abstract_time {
+                            debug!("文件 {} 有更新，需要重新生成: {}", entry.name, uri);
+                            return Ok(true);
+                        }
+                    }
+                }
+            }
+        }
+        
+        debug!("目录内容未变更，无需重新生成: {}", uri);
+        Ok(false)
+    }
+    
+    /// 🆕 从内容中提取 "Added" 时间戳
+    fn extract_added_timestamp(&self, content: &str) -> Option<DateTime<Utc>> {
+        // 查找 "**Added**: YYYY-MM-DD HH:MM:SS UTC" 格式
+        if let Some(start) = content.find("**Added**: ") {
+            let timestamp_str = &content[start + 11..];
+            if let Some(end) = timestamp_str.find('\n') {
+                let timestamp_str = &timestamp_str[..end].trim();
+                // 解析时间戳
+                if let Ok(dt) = DateTime::parse_from_str(timestamp_str, "%Y-%m-%d %H:%M:%S UTC") {
+                    return Some(dt.with_timezone(&Utc));
+                }
+            }
+        }
+        None
     }
     
     /// 聚合目录内容
