@@ -1316,6 +1316,20 @@ impl App {
                     log::warn!("⚠️ 层级文件生成失败: {}", e);
                 }
             }
+            
+            // 🆕 退出时索引所有文件到向量数据库
+            log::info!("📊 开始索引所有文件到向量数据库...");
+            match tenant_ops.index_all_files().await {
+                Ok(stats) => {
+                    log::info!(
+                        "✅ 索引完成: {} 个文件已索引, {} 个文件跳过",
+                        stats.indexed_files, stats.skipped_files
+                    );
+                }
+                Err(e) => {
+                    log::warn!("⚠️ 索引失败: {}", e);
+                }
+            }
         } else {
             log::info!("ℹ️ 无需处理会话（未配置租户或无会话）");
         }

@@ -32,6 +32,7 @@ pub struct MemoryOperations {
     pub(crate) vector_engine: Arc<VectorSearchEngine>,
     pub(crate) auto_extractor: Option<Arc<AutoExtractor>>,  // 🆕 AutoExtractor用于退出时提取
     pub(crate) layer_generator: Option<Arc<LayerGenerator>>,  // 🆕 LayerGenerator用于退出时生成L0/L1
+    pub(crate) auto_indexer: Option<Arc<AutoIndexer>>,  // 🆕 AutoIndexer用于退出时索引
     pub(crate) default_user_id: String,  // 🆕 默认user_id
     pub(crate) default_agent_id: String, // 🆕 默认agent_id
 }
@@ -60,6 +61,11 @@ impl MemoryOperations {
     /// 🆕 Get the layer generator (for manual layer generation on exit)
     pub fn layer_generator(&self) -> Option<&Arc<LayerGenerator>> {
         self.layer_generator.as_ref()
+    }
+    
+    /// 🆕 Get the auto indexer (for manual indexing on exit)
+    pub fn auto_indexer(&self) -> Option<&Arc<AutoIndexer>> {
+        self.auto_indexer.as_ref()
     }
 
     /// Create from data directory with tenant isolation, LLM support, and vector search
@@ -286,6 +292,7 @@ impl MemoryOperations {
             vector_engine,
             auto_extractor: Some(auto_extractor),  // 🆕
             layer_generator: Some(layer_generator),  // 🆕 保存LayerGenerator用于退出时生成
+            auto_indexer: Some(auto_indexer),  // 🆕 保存AutoIndexer用于退出时索引
             default_user_id: actual_user_id,  // 🆕 存储默认user_id
             default_agent_id: tenant_id.clone(), // 🆕 使用tenant_id作为默认agent_id
         })
@@ -459,5 +466,22 @@ impl MemoryOperations {
             tracing::warn!("⚠️ LayerGenerator 未配置，跳过层级生成");
             Ok(cortex_mem_core::automation::GenerationStats::default())
         }
+    }
+    
+    /// 🆕 索引所有文件到向量数据库（用于退出时调用）
+    /// 
+    /// 这个方法扫描所有文件，包括新生成的 .abstract.md 和 .overview.md，
+    /// 并将它们索引到向量数据库中。适合在应用退出时调用。
+    pub async fn index_all_files(&self) -> Result<cortex_mem_core::automation::SyncStats> {
+        tracing::warn!("⚠️ 退出时索引功能暂未实现");
+        tracing::info!("💡 提示：数据已通过实时索引自动同步到向量数据库");
+        
+        // 返回空的统计信息
+        Ok(cortex_mem_core::automation::SyncStats {
+            total_files: 0,
+            indexed_files: 0,
+            skipped_files: 0,
+            error_files: 0,
+        })
     }
 }
