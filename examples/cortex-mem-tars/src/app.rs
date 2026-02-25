@@ -46,13 +46,13 @@ pub struct App {
     previous_state: Option<crate::ui::AppState>,
     external_message_sender: mpsc::UnboundedSender<String>,
     external_message_receiver: mpsc::UnboundedReceiver<String>,
-    
+
     // 🎙️ 音频输入相关
-    audio_input_enabled: bool,                                    // 是否启用语音输入
-    audio_task_handle: Option<tokio::task::JoinHandle<()>>,      // 音频处理任务句柄
+    audio_input_enabled: bool, // 是否启用语音输入
+    audio_task_handle: Option<tokio::task::JoinHandle<()>>, // 音频处理任务句柄
     audio_text_receiver: Option<mpsc::UnboundedReceiver<String>>, // 接收转录文本
-    audio_transcriber: Option<Arc<WhisperTranscriber>>,          // Whisper转录器
-    agent_handler: Option<AgentChatHandler>,                     // Agent处理器
+    audio_transcriber: Option<Arc<WhisperTranscriber>>, // Whisper转录器
+    agent_handler: Option<AgentChatHandler>, // Agent处理器
 }
 
 /// 应用消息类型
@@ -112,7 +112,7 @@ impl App {
             previous_state: Some(initial_state),
             external_message_sender: external_msg_tx,
             external_message_receiver: external_msg_rx,
-            
+
             // 🎙️ 音频输入初始化
             audio_input_enabled: false,
             audio_task_handle: None,
@@ -275,7 +275,7 @@ impl App {
                     texts_to_process.push(text);
                 }
             }
-            
+
             for text in texts_to_process {
                 if let Err(e) = self.handle_audio_transcription(text).await {
                     log::error!("处理语音转录失败: {}", e);
@@ -353,7 +353,10 @@ impl App {
                                 if self.ui.state == AppState::Chat {
                                     if let Err(e) = self.enable_audio_input().await {
                                         log::error!("启用语音输入失败: {}", e);
-                                        self.ui.messages.push(ChatMessage::system(format!("❌ 启用语音输入失败: {}", e)));
+                                        self.ui.messages.push(ChatMessage::system(format!(
+                                            "❌ 启用语音输入失败: {}",
+                                            e
+                                        )));
                                     }
                                 }
                             }
@@ -361,7 +364,10 @@ impl App {
                                 if self.ui.state == AppState::Chat {
                                     if let Err(e) = self.disable_audio_input().await {
                                         log::error!("禁用语音输入失败: {}", e);
-                                        self.ui.messages.push(ChatMessage::system(format!("❌ 禁用语音输入失败: {}", e)));
+                                        self.ui.messages.push(ChatMessage::system(format!(
+                                            "❌ 禁用语音输入失败: {}",
+                                            e
+                                        )));
                                     }
                                 }
                             }
@@ -498,12 +504,16 @@ impl App {
                 }
                 crate::ui::KeyAction::EnableAudioInput => {
                     if let Err(e) = self.enable_audio_input().await {
-                        self.ui.messages.push(ChatMessage::system(format!("❌ 启用语音输入失败: {}", e)));
+                        self.ui
+                            .messages
+                            .push(ChatMessage::system(format!("❌ 启用语音输入失败: {}", e)));
                     }
                 }
                 crate::ui::KeyAction::DisableAudioInput => {
                     if let Err(e) = self.disable_audio_input().await {
-                        self.ui.messages.push(ChatMessage::system(format!("❌ 禁用语音输入失败: {}", e)));
+                        self.ui
+                            .messages
+                            .push(ChatMessage::system(format!("❌ 禁用语音输入失败: {}", e)));
                     }
                 }
                 _ => {}
@@ -1054,7 +1064,9 @@ impl App {
     /// 启用语音输入
     async fn enable_audio_input(&mut self) -> Result<()> {
         if self.audio_input_enabled {
-            self.ui.messages.push(ChatMessage::system("ℹ️ 语音输入已经开启"));
+            self.ui
+                .messages
+                .push(ChatMessage::system("ℹ️ 语音输入已经开启"));
             return Ok(());
         }
 
@@ -1063,7 +1075,7 @@ impl App {
         if self.current_bot.is_none() {
             if let Some(bot) = self.ui.selected_bot() {
                 self.current_bot = Some(bot.clone());
-                
+
                 // 更新 current_bot_id
                 if let Ok(mut bot_id) = self.current_bot_id.write() {
                     *bot_id = Some(bot.id.clone());
@@ -1071,18 +1083,20 @@ impl App {
                 }
             } else {
                 self.ui.messages.push(ChatMessage::system(
-                    "⚠️ 请先选择一个Bot（按Tab键切换到Bot选择界面并选择Bot）"
+                    "⚠️ 请先选择一个Bot（按Tab键切换到Bot选择界面并选择Bot）",
                 ));
                 return Ok(());
             }
         }
-        
+
         // 如果已选择Bot但Agent未初始化，先初始化Agent
         if self.rig_agent.is_none() {
             if let Some(bot) = &self.current_bot {
                 if let Some(infrastructure) = &self.infrastructure {
-                    self.ui.messages.push(ChatMessage::system("🤖 正在初始化AI Agent..."));
-                    
+                    self.ui
+                        .messages
+                        .push(ChatMessage::system("🤖 正在初始化AI Agent..."));
+
                     let config = infrastructure.config();
                     match create_memory_agent(
                         config.cortex.data_dir(),
@@ -1100,9 +1114,9 @@ impl App {
                             log::info!("✅ Agent已初始化");
                         }
                         Err(e) => {
-                            self.ui.messages.push(ChatMessage::system(
-                                format!("❌ Agent初始化失败: {}", e)
-                            ));
+                            self.ui
+                                .messages
+                                .push(ChatMessage::system(format!("❌ Agent初始化失败: {}", e)));
                             return Ok(());
                         }
                     }
@@ -1112,12 +1126,14 @@ impl App {
 
         // 1. 加载 Whisper 模型（如果未加载）
         if self.audio_transcriber.is_none() {
-            self.ui.messages.push(ChatMessage::system("📥 正在加载 Whisper 模型..."));
+            self.ui
+                .messages
+                .push(ChatMessage::system("📥 正在加载 Whisper 模型..."));
 
             let config = audio_transcription::TranscriptionConfig::default();
             let transcriber = audio_transcription::WhisperTranscriber::new(config)
                 .context("无法加载 Whisper 模型")?;
-            
+
             self.audio_transcriber = Some(Arc::new(transcriber));
         }
 
@@ -1132,8 +1148,10 @@ impl App {
 
         self.audio_input_enabled = true;
         self.ui.audio_input_enabled = true; // 🎙️ 同步UI状态
-        
-        self.ui.messages.push(ChatMessage::system("✅ 语音输入已开启，每20秒自动转录一次..."));
+
+        self.ui.messages.push(ChatMessage::system(
+            "✅ 语音输入已开启，每60秒自动转录一次...",
+        ));
 
         log::info!("🎙️ 语音输入已启用");
         Ok(())
@@ -1150,7 +1168,7 @@ impl App {
         let _null_file = std::fs::File::create("/dev/null").ok();
         #[cfg(windows)]
         let _null_file = std::fs::File::create("NUL").ok();
-        
+
         #[cfg(unix)]
         let _temp_stderr_guard = _null_file.as_ref().and_then(|f| {
             use std::os::unix::io::AsRawFd;
@@ -1168,7 +1186,7 @@ impl App {
         // 1. 停止音频任务
         if let Some(handle) = self.audio_task_handle.take() {
             handle.abort();
-            
+
             // 等待一小段时间，确保任务清理完成
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
@@ -1178,11 +1196,13 @@ impl App {
 
         self.audio_input_enabled = false;
         self.ui.audio_input_enabled = false; // 🎙️ 同步UI状态
-        
-        self.ui.messages.push(ChatMessage::system("🔇 语音输入已关闭"));
+
+        self.ui
+            .messages
+            .push(ChatMessage::system("🔇 语音输入已关闭"));
 
         log::info!("🔇 语音输入已禁用");
-        
+
         // _temp_stderr_guard 会在函数结束时恢复 stderr
         Ok(())
     }
@@ -1190,9 +1210,11 @@ impl App {
     /// 处理语音转录结果
     async fn handle_audio_transcription(&mut self, text: String) -> Result<()> {
         log::info!("🎙️ 语音识别: {}", text);
-        
+
         // 1. 添加系统消息显示识别结果
-        self.ui.messages.push(ChatMessage::system(format!("🎙️ 识别: {}", text)));
+        self.ui
+            .messages
+            .push(ChatMessage::system(format!("🎙️ 识别: {}", text)));
 
         // 2. 添加用户消息
         self.ui.messages.push(ChatMessage::user(text.clone()));
@@ -1208,10 +1230,10 @@ impl App {
             } else {
                 AgentChatHandler::new(rig_agent.clone())
             };
-            
+
             let msg_sender = self.message_sender.clone();
             let text_clone = text.clone();
-            
+
             match agent_handler.chat_stream(&text).await {
                 Ok(mut rx) => {
                     tokio::spawn(async move {
@@ -1233,14 +1255,16 @@ impl App {
                 }
                 Err(e) => {
                     log::error!("语音消息生成回复失败: {}", e);
-                    self.ui.messages.push(ChatMessage::system(format!("❌ 生成回复失败: {}", e)));
+                    self.ui
+                        .messages
+                        .push(ChatMessage::system(format!("❌ 生成回复失败: {}", e)));
                 }
             }
         } else {
             // 这种情况理论上不应该发生，因为在enable_audio_input时已经检查并初始化了
             log::error!("⚠️ Agent未初始化但通过了enable_audio_input检查");
             self.ui.messages.push(ChatMessage::system(
-                "⚠️ 内部错误：Agent状态异常，请重新启用语音输入"
+                "⚠️ 内部错误：Agent状态异常，请重新启用语音输入",
             ));
         }
 
@@ -1313,7 +1337,7 @@ pub fn create_default_bots(config_manager: &ConfigManager) -> Result<()> {
     Ok(())
 }
 
-/// 音频处理任务 - 简化版：每20秒录制一段音频并转录
+/// 音频处理任务 - 简化版：每60秒录制一段音频并转录
 async fn audio_processing_task(
     text_sender: mpsc::UnboundedSender<String>,
     transcriber: Arc<WhisperTranscriber>,
@@ -1323,9 +1347,9 @@ async fn audio_processing_task(
     let null_path = "/dev/null";
     #[cfg(windows)]
     let null_path = "NUL";
-    
+
     let _null_file = std::fs::File::create(null_path).ok();
-    
+
     #[cfg(unix)]
     let _stderr_guard = _null_file.as_ref().and_then(|f| {
         use std::os::unix::io::AsRawFd;
@@ -1339,12 +1363,12 @@ async fn audio_processing_task(
             }
         }
     });
-    
-    log::info!("🎙️ 音频处理任务启动（每20秒转录一次）");
+
+    log::info!("🎙️ 音频处理任务启动（每60秒转录一次）");
 
     // 1. 启动音频流
-    let (audio_tx, mut audio_rx) = mpsc::channel(10000);
-    
+    let (audio_tx, mut audio_rx) = mpsc::channel(100000);
+
     let audio_manager = match audio_input::AudioStreamManager::start(audio_tx) {
         Ok(manager) => {
             log::info!("✅ 音频流启动成功");
@@ -1360,18 +1384,18 @@ async fn audio_processing_task(
     let input_sample_rate = audio_config.sample_rate;
     let input_channels = audio_config.channels as usize;
 
-    // 2. 设置20秒定时器
-    const RECORDING_INTERVAL_SECS: u64 = 20;
+    // 2. 设置60秒定时器
+    const RECORDING_INTERVAL_SECS: u64 = 60;
     let mut interval = tokio::time::interval(Duration::from_secs(RECORDING_INTERVAL_SECS));
     interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-    
+
     // 跳过第一个tick（立即触发）
     interval.tick().await;
 
     // 3. 音频处理循环
     let mut audio_buffer = Vec::new();
     let mut segment_count = 0;
-    
+
     loop {
         tokio::select! {
             // 定时器触发：转录当前缓冲区的音频
@@ -1380,11 +1404,11 @@ async fn audio_processing_task(
                     log::debug!("⏱️ {}秒已过，但没有录制到音频数据", RECORDING_INTERVAL_SECS);
                     continue;
                 }
-                
+
                 segment_count += 1;
                 let sample_count = audio_buffer.len();
                 let duration_secs = sample_count as f32 / input_sample_rate as f32 / input_channels as f32;
-                
+
                 log::info!(
                     "⏱️ 录音段 #{}: {:.1}秒, {} 采样",
                     segment_count,
@@ -1394,9 +1418,10 @@ async fn audio_processing_task(
 
                 // 计算音量（RMS）
                 let rms = (audio_buffer.iter().map(|&x| x * x).sum::<f32>() / audio_buffer.len() as f32).sqrt();
-                
+
                 // 如果音量太低，跳过转录
-                if rms < 0.005 {
+                // 🔧 提高阈值，避免安静环境下噪音误触发
+                if rms < 0.02 {
                     log::info!("⚠️ 音量过低 (RMS: {:.4})，跳过转录", rms);
                     audio_buffer.clear();
                     continue;
@@ -1407,23 +1432,23 @@ async fn audio_processing_task(
                     &audio_buffer,
                     input_channels,
                 );
-                
-                // 清空缓冲区，准备下一个20秒
+
+                // 清空缓冲区，准备下一个60秒
                 audio_buffer.clear();
 
                 // 异步转录（不阻塞音频采集）
                 let transcriber_clone = Arc::clone(&transcriber);
                 let text_sender_clone = text_sender.clone();
-                
+
                 tokio::spawn(async move {
                     match transcriber_clone.transcribe(&mono_samples, input_sample_rate).await {
                         Ok(transcribed_text) => {
                             let text = transcribed_text.trim().to_string();
-                            
+
                             // 检查是否为有意义的文本
                             if audio_transcription::is_meaningful_text(&text, rms) {
                                 log::info!("✅ 转录成功: {}", text);
-                                
+
                                 if let Err(e) = text_sender_clone.send(text) {
                                     log::error!("发送转录文本失败: {}", e);
                                 }
@@ -1437,12 +1462,12 @@ async fn audio_processing_task(
                     }
                 });
             }
-            
+
             // 接收音频数据并累积到缓冲区
             Some(samples) = audio_rx.recv() => {
                 audio_buffer.extend_from_slice(&samples);
             }
-            
+
             // 音频流结束
             else => {
                 log::info!("🛑 音频流已关闭");
@@ -1486,4 +1511,3 @@ impl Drop for TempStderrGuard {
         }
     }
 }
-
