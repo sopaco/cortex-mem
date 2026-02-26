@@ -26,7 +26,7 @@ impl Default for SearchOptions {
     fn default() -> Self {
         Self {
             limit: 10,
-            threshold: 0.5,
+            threshold: 0.6,
             root_uri: None,
             recursive: true,
         }
