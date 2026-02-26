@@ -181,6 +181,7 @@ async fn main() -> Result<()> {
         llm_client,
         &config.qdrant.url,
         &config.qdrant.collection_name,
+        config.qdrant.api_key.as_deref(),
         &config.embedding.api_base_url,
         &config.embedding.api_key,
         &config.embedding.model_name,
