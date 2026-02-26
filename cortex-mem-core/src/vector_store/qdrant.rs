@@ -27,11 +27,11 @@ pub struct QdrantVectorStore {
 
 impl QdrantVectorStore {
     /// Create a new Qdrant vector store
-    /// 
+    ///
     /// If `embedding_dim` is set in config, this will automatically ensure
     /// the collection exists (creating it if necessary).
-    /// 
-    /// 🆕 If `tenant_id` is set in config, the collection name will be suffixed
+    ///
+    /// If `tenant_id` is set in config, the collection name will be suffixed
     /// with "_<tenant_id>" for tenant isolation.
     pub async fn new(config: &QdrantConfig) -> Result<Self> {
         let client = Qdrant::from_url(&config.url)
@@ -44,7 +44,7 @@ impl QdrantVectorStore {
             .build()
             .map_err(|e| Error::VectorStore(e))?;
 
-        // 🆕 Use tenant-aware collection name
+        // Use tenant-aware collection name
         let collection_name = config.get_collection_name();
 
         let store = Self {
@@ -62,8 +62,8 @@ impl QdrantVectorStore {
     }
 
     /// Create a new Qdrant vector store with auto-detected embedding dimension
-    /// 
-    /// 🆕 Supports tenant isolation through config.tenant_id
+    ///
+    /// Supports tenant isolation through config.tenant_id
     pub async fn new_with_llm_client(
         config: &QdrantConfig,
         _llm_client: &dyn crate::llm::LLMClient,
@@ -78,7 +78,7 @@ impl QdrantVectorStore {
             .build()
             .map_err(|e| Error::VectorStore(e))?;
 
-        // 🆕 Use tenant-aware collection name
+        // Use tenant-aware collection name
         let collection_name = config.get_collection_name();
 
         let store = Self {
@@ -90,12 +90,13 @@ impl QdrantVectorStore {
         // Auto-detect embedding dimension if not specified
         if store.embedding_dim.is_none() {
             info!("Auto-detecting embedding dimension...");
-            
+
             // Use LLMClient's embed method if available
             // For now, we'll require embedding_dim to be set in config
             return Err(Error::Config(
                 "Embedding dimension must be specified in config when using new_with_llm_client. \
-                Auto-detection from LLMClient is not yet implemented.".to_string()
+                Auto-detection from LLMClient is not yet implemented."
+                    .to_string(),
             ));
         }
 
@@ -121,7 +122,8 @@ impl QdrantVectorStore {
         if !collection_exists {
             let embedding_dim = self.embedding_dim.ok_or_else(|| {
                 Error::Config(
-                    "Embedding dimension not set. Use new_with_llm_client for auto-detection.".to_string()
+                    "Embedding dimension not set. Use new_with_llm_client for auto-detection."
+                        .to_string(),
                 )
             })?;
 
@@ -247,29 +249,41 @@ impl QdrantVectorStore {
 
         // Store entities and topics as arrays
         if !memory.metadata.entities.is_empty() {
-            let entities_values: Vec<qdrant_client::qdrant::Value> =
-                memory.metadata.entities.iter()
-                    .map(|entity| entity.to_string().into())
-                    .collect();
-            payload.insert("entities".to_string(), qdrant_client::qdrant::Value {
-                kind: Some(qdrant_client::qdrant::value::Kind::ListValue(
-                    qdrant_client::qdrant::ListValue {
-                        values: entities_values,
-                    })),
-            });
+            let entities_values: Vec<qdrant_client::qdrant::Value> = memory
+                .metadata
+                .entities
+                .iter()
+                .map(|entity| entity.to_string().into())
+                .collect();
+            payload.insert(
+                "entities".to_string(),
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::ListValue(
+                        qdrant_client::qdrant::ListValue {
+                            values: entities_values,
+                        },
+                    )),
+                },
+            );
         }
 
         if !memory.metadata.topics.is_empty() {
-            let topics_values: Vec<qdrant_client::qdrant::Value> =
-                memory.metadata.topics.iter()
-                    .map(|topic| topic.to_string().into())
-                    .collect();
-            payload.insert("topics".to_string(), qdrant_client::qdrant::Value {
-                kind: Some(qdrant_client::qdrant::value::Kind::ListValue(
-                    qdrant_client::qdrant::ListValue {
-                        values: topics_values,
-                    })),
-            });
+            let topics_values: Vec<qdrant_client::qdrant::Value> = memory
+                .metadata
+                .topics
+                .iter()
+                .map(|topic| topic.to_string().into())
+                .collect();
+            payload.insert(
+                "topics".to_string(),
+                qdrant_client::qdrant::Value {
+                    kind: Some(qdrant_client::qdrant::value::Kind::ListValue(
+                        qdrant_client::qdrant::ListValue {
+                            values: topics_values,
+                        },
+                    )),
+                },
+            );
         }
 
         // Custom metadata
@@ -538,20 +552,28 @@ impl QdrantVectorStore {
             .to_string();
 
         // Extract embedding from point vectors (VectorsOutput type from ScoredPoint)
-        let embedding = point.vectors.as_ref()
+        let embedding = point
+            .vectors
+            .as_ref()
             .and_then(|v| v.vectors_options.as_ref())
             .and_then(|opts| match opts {
                 vectors_output::VectorsOptions::Vector(vec) => Some(vec.data.clone()),
                 vectors_output::VectorsOptions::Vectors(named) => {
                     // For named vectors, try to get the default "" vector first
-                    named.vectors.get("").cloned()
+                    named
+                        .vectors
+                        .get("")
+                        .cloned()
                         .or_else(|| named.vectors.values().next().cloned())
                         .map(|v| v.data)
                 }
             })
             .unwrap_or_else(|| {
                 let dim = self.embedding_dim.unwrap_or(1024);
-                warn!("No embedding found in point, using zero vector of dimension {}", dim);
+                warn!(
+                    "No embedding found in point, using zero vector of dimension {}",
+                    dim
+                );
                 vec![0.0; dim]
             });
 
@@ -672,20 +694,23 @@ impl QdrantVectorStore {
                 .and_then(|v| match v {
                     qdrant_client::qdrant::Value {
                         kind: Some(qdrant_client::qdrant::value::Kind::ListValue(list)),
-                    } => {
-                        Some(list.values.iter().filter_map(|val| match val {
-                            qdrant_client::qdrant::Value {
-                                kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
-                            } => Some(s.clone()),
-                            _ => None,
-                        }).collect::<Vec<String>>())
-                    },
+                    } => Some(
+                        list.values
+                            .iter()
+                            .filter_map(|val| match val {
+                                qdrant_client::qdrant::Value {
+                                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                                } => Some(s.clone()),
+                                _ => None,
+                            })
+                            .collect::<Vec<String>>(),
+                    ),
                     qdrant_client::qdrant::Value {
                         kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
                     } => {
                         // Backward compatibility: parse JSON string format
                         serde_json::from_str(s).ok()
-                    },
+                    }
                     _ => None,
                 })
                 .unwrap_or_default(),
@@ -694,20 +719,23 @@ impl QdrantVectorStore {
                 .and_then(|v| match v {
                     qdrant_client::qdrant::Value {
                         kind: Some(qdrant_client::qdrant::value::Kind::ListValue(list)),
-                    } => {
-                        Some(list.values.iter().filter_map(|val| match val {
-                            qdrant_client::qdrant::Value {
-                                kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
-                            } => Some(s.clone()),
-                            _ => None,
-                        }).collect::<Vec<String>>())
-                    },
+                    } => Some(
+                        list.values
+                            .iter()
+                            .filter_map(|val| match val {
+                                qdrant_client::qdrant::Value {
+                                    kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                                } => Some(s.clone()),
+                                _ => None,
+                            })
+                            .collect::<Vec<String>>(),
+                    ),
                     qdrant_client::qdrant::Value {
                         kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
                     } => {
                         // Backward compatibility: parse JSON string format
                         serde_json::from_str(s).ok()
-                    },
+                    }
                     _ => None,
                 })
                 .unwrap_or_default(),
@@ -956,7 +984,7 @@ impl VectorStore for QdrantVectorStore {
             }
         }
     }
-    
+
     async fn scroll_ids(&self, filters: &Filters, limit: usize) -> Result<Vec<String>> {
         let filter = self.filters_to_qdrant_filter(filters);
         let limit = limit as u32;
@@ -976,15 +1004,14 @@ impl VectorStore for QdrantVectorStore {
             .await
             .map_err(|e| Error::VectorStore(e))?;
 
-        let ids: Vec<String> = response.result
+        let ids: Vec<String> = response
+            .result
             .into_iter()
             .filter_map(|point| {
-                point.id.and_then(|id| {
-                    match id.point_id_options {
-                        Some(point_id::PointIdOptions::Uuid(uuid)) => Some(uuid),
-                        Some(point_id::PointIdOptions::Num(num)) => Some(num.to_string()),
-                        None => None,
-                    }
+                point.id.and_then(|id| match id.point_id_options {
+                    Some(point_id::PointIdOptions::Uuid(uuid)) => Some(uuid),
+                    Some(point_id::PointIdOptions::Num(num)) => Some(num.to_string()),
+                    None => None,
                 })
             })
             .collect();

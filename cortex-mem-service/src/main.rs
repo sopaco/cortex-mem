@@ -17,7 +17,7 @@ use state::AppState;
 
 #[derive(Parser, Debug)]
 #[command(name = "cortex-mem-service")]
-#[command(about = "Cortex-Mem V2 HTTP REST API Service", long_about = None)]
+#[command(about = "Cortex Memory HTTP REST API Service", long_about = None)]
 #[command(version)]
 struct Cli {
     /// Data directory for cortex filesystem

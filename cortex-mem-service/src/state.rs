@@ -10,7 +10,7 @@ use tokio::sync::RwLock;
 #[derive(Clone)]
 pub struct AppState {
     #[allow(dead_code)]
-    pub cortex: Arc<CortexMem>, // 🆕 统一自动索引实例
+    pub cortex: Arc<CortexMem>,
     pub filesystem: Arc<CortexFilesystem>,
     pub session_manager: Arc<tokio::sync::RwLock<SessionManager>>,
     pub llm_client: Option<Arc<dyn LLMClient>>,
@@ -18,13 +18,13 @@ pub struct AppState {
     pub vector_store: Option<Arc<dyn cortex_mem_core::vector_store::VectorStore>>,
     pub embedding_client: Option<Arc<EmbeddingClient>>,
     /// Vector search engine with L0/L1/L2 layered search support
-    /// 🆕 使用RwLock支持租户切换时重新创建
+    /// 使用RwLock支持租户切换时重新创建
     pub vector_engine: Arc<RwLock<Option<Arc<VectorSearchEngine>>>>,
     /// Base data directory
     pub data_dir: PathBuf,
     /// Current tenant root directory (if set)
     pub current_tenant_root: Arc<RwLock<Option<PathBuf>>>,
-    /// 🆕 Current tenant ID (for recreating tenant-specific vector store)
+    /// Current tenant ID (for recreating tenant-specific vector store)
     pub current_tenant_id: Arc<RwLock<Option<String>>>,
 }
 
@@ -66,7 +66,8 @@ impl AppState {
             index_on_message: true, // ✅ 实时索引（API服务需要即时搜索）
             index_on_close: true,
             index_batch_delay: 1, // 1秒批处理
-            auto_generate_layers_on_startup: false,  // 🆕 本地文件系统下默认关闭
+            auto_generate_layers_on_startup: false,
+            generate_layers_every_n_messages: 5,
         });
 
         // 构建Cortex Memory
@@ -120,10 +121,10 @@ impl AppState {
             llm_client,
             vector_store,
             embedding_client,
-            vector_engine: Arc::new(RwLock::new(vector_engine)), // 🆕 包装在RwLock中
+            vector_engine: Arc::new(RwLock::new(vector_engine)),
             data_dir,
             current_tenant_root: Arc::new(RwLock::new(None)),
-            current_tenant_id: Arc::new(RwLock::new(None)), // 🆕 初始化租户ID
+            current_tenant_id: Arc::new(RwLock::new(None)),
         })
     }
 
@@ -174,7 +175,7 @@ impl AppState {
                 embedding_dim: config.qdrant.embedding_dim,
                 timeout_secs: config.qdrant.timeout_secs,
                 api_key: config.qdrant.api_key.clone(),
-                tenant_id: None, // 🆕 初始化时不设置租户ID（global）
+                tenant_id: None, // 初始化时不设置租户ID（global）
             };
 
             Ok((llm_client, Some(embedding_config), Some(qdrant_config)))
@@ -241,7 +242,7 @@ impl AppState {
                         .and_then(|s| s.parse().ok()),
                     timeout_secs: 30,
                     api_key: std::env::var("QDRANT_API_KEY").ok(),
-                    tenant_id: None, // 🆕 初始化时不设置租户ID（global）
+                    tenant_id: None, // 初始化时不设置租户ID（global）
                 })
             } else {
                 tracing::warn!("Qdrant not configured");
@@ -277,7 +278,7 @@ impl AppState {
     }
 
     /// Switch to a different tenant
-    /// 🆕 Recreates VectorSearchEngine with tenant-specific collection
+    /// Recreates VectorSearchEngine with tenant-specific collection
     pub async fn switch_tenant(&self, tenant_id: &str) -> anyhow::Result<()> {
         // Try both possible tenant locations
         let possible_paths = vec![
@@ -301,25 +302,25 @@ impl AppState {
         *current = Some(tenant_root.clone());
         drop(current);
 
-        // 🆕 Update current tenant ID
+        // Update current tenant ID
         let mut current_id = self.current_tenant_id.write().await;
         *current_id = Some(tenant_id.to_string());
         drop(current_id);
 
         tracing::info!("Switched to tenant root: {:?}", tenant_root);
 
-        // 🆕 Recreate VectorSearchEngine with tenant-specific collection
+        // Recreate VectorSearchEngine with tenant-specific collection
         if let (Some(ec), Some(llm)) = (&self.embedding_client, &self.llm_client) {
             let (_, _, qdrant_cfg_opt) = Self::load_configs()?;
             if let Some(mut qdrant_cfg) = qdrant_cfg_opt {
-                // 🆕 Set tenant ID in config
+                // Set tenant ID in config
                 qdrant_cfg.tenant_id = Some(tenant_id.to_string());
 
                 if let Ok(qdrant_store) = cortex_mem_core::QdrantVectorStore::new(&qdrant_cfg).await
                 {
                     let qdrant_arc = Arc::new(qdrant_store);
 
-                    // 🆕 Create tenant-specific filesystem
+                    // Create tenant-specific filesystem
                     let tenant_filesystem = Arc::new(CortexFilesystem::new(
                         tenant_root.to_string_lossy().as_ref(),
                     ));
@@ -331,7 +332,7 @@ impl AppState {
                         llm.clone(),
                     ));
 
-                    // 🆕 Update vector_engine
+                    // Update vector_engine
                     let mut engine = self.vector_engine.write().await;
                     *engine = Some(new_vector_engine);
 
@@ -347,10 +348,10 @@ impl AppState {
         Ok(())
     }
 
-    /// 🆕 Helper method to create QdrantVectorStore for manual indexing
+    /// Helper method to create QdrantVectorStore for manual indexing
     /// This is needed because AutoIndexer requires concrete QdrantVectorStore type
     ///
-    /// 🆕 Supports tenant-specific collection
+    /// Supports tenant-specific collection
     pub async fn create_qdrant_store(&self) -> anyhow::Result<cortex_mem_core::QdrantVectorStore> {
         // Get current tenant ID
         let tenant_id = self.current_tenant_id.read().await.clone();
@@ -363,10 +364,10 @@ impl AppState {
                 embedding_dim: config.qdrant.embedding_dim,
                 timeout_secs: config.qdrant.timeout_secs,
                 api_key: config.qdrant.api_key.clone(),
-                tenant_id: None, // 🆕 初始化为None
+                tenant_id: None, // 初始化为None
             };
 
-            // 🆕 Set tenant ID if available
+            // Set tenant ID if available
             if let Some(tid) = tenant_id {
                 qdrant_config.tenant_id = Some(tid);
             }
@@ -386,7 +387,7 @@ impl AppState {
                     .and_then(|s| s.parse().ok()),
                 timeout_secs: 30,
                 api_key: std::env::var("QDRANT_API_KEY").ok(),
-                tenant_id, // 🆕 使用当前租户ID
+                tenant_id, // 使用当前租户ID
             };
             cortex_mem_core::QdrantVectorStore::new(&qdrant_config)
                 .await

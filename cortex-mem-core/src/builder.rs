@@ -56,7 +56,7 @@ impl CortexMemBuilder {
         self
     }
 
-    /// 🆕 配置自动化行为
+    /// 配置自动化行为
     pub fn with_automation(mut self, config: AutomationConfig) -> Self {
         self.automation_config = config;
         self

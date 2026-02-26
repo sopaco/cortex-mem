@@ -25,16 +25,16 @@ pub struct ExtractedMemories {
     /// Agent cases (problem + solution)
     #[serde(default)]
     pub cases: Vec<CaseMemory>,
-    /// 🆕 Personal information (age, occupation, education, etc.)
+    /// Personal information (age, occupation, education, etc.)
     #[serde(default)]
     pub personal_info: Vec<PersonalInfoMemory>,
-    /// 🆕 Work history (companies, roles, durations)
+    /// Work history (companies, roles, durations)
     #[serde(default)]
     pub work_history: Vec<WorkHistoryMemory>,
-    /// 🆕 Relationships (family, friends, colleagues)
+    /// Relationships (family, friends, colleagues)
     #[serde(default)]
     pub relationships: Vec<RelationshipMemory>,
-    /// 🆕 Goals (career goals, personal goals)
+    /// Goals (career goals, personal goals)
     #[serde(default)]
     pub goals: Vec<GoalMemory>,
 }
@@ -89,7 +89,7 @@ pub struct CaseMemory {
     pub lessons_learned: Vec<String>,
 }
 
-/// 🆕 Personal information memory
+/// Personal information memory
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PersonalInfoMemory {
     pub category: String, // e.g., "age", "occupation", "education", "location"
@@ -97,7 +97,7 @@ pub struct PersonalInfoMemory {
     pub confidence: f32,
 }
 
-/// 🆕 Work history memory
+/// Work history memory
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkHistoryMemory {
     pub company: String,
@@ -107,7 +107,7 @@ pub struct WorkHistoryMemory {
     pub confidence: f32,
 }
 
-/// 🆕 Relationship memory
+/// Relationship memory
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RelationshipMemory {
     pub person: String,
@@ -116,7 +116,7 @@ pub struct RelationshipMemory {
     pub confidence: f32,
 }
 
-/// 🆕 Goal memory
+/// Goal memory
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GoalMemory {
     pub goal: String,
@@ -129,8 +129,8 @@ pub struct GoalMemory {
 pub struct MemoryExtractor {
     llm_client: Arc<dyn LLMClient>,
     filesystem: Arc<CortexFilesystem>,
-    user_id: String,  // 🆕 用户ID用于记忆隔离
-    agent_id: String, // 🆕 Agent ID用于记忆隔离
+    user_id: String,
+    agent_id: String,
 }
 
 impl MemoryExtractor {
@@ -368,7 +368,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             self.filesystem.write(&uri, &content).await?;
         }
 
-        // 🆕 Save personal info with deduplication
+        // Save personal info with deduplication
         let personal_info_dir = format!("cortex://user/{}/personal_info", self.user_id);
         let existing_personal_info = self.load_existing_memories(&personal_info_dir).await?;
         let new_personal_info =
@@ -387,7 +387,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             self.filesystem.write(&uri, &content).await?;
         }
 
-        // 🆕 Save work history with deduplication
+        // Save work history with deduplication
         let work_history_dir = format!("cortex://user/{}/work_history", self.user_id);
         let existing_work_history = self.load_existing_memories(&work_history_dir).await?;
         let new_work_history =
@@ -409,7 +409,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             self.filesystem.write(&uri, &content).await?;
         }
 
-        // 🆕 Save relationships with deduplication
+        // Save relationships with deduplication
         let relationships_dir = format!("cortex://user/{}/relationships", self.user_id);
         let existing_relationships = self.load_existing_memories(&relationships_dir).await?;
         let new_relationships =
@@ -429,7 +429,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             self.filesystem.write(&uri, &content).await?;
         }
 
-        // 🆕 Save goals with deduplication
+        // Save goals with deduplication
         let goals_dir = format!("cortex://user/{}/goals", self.user_id);
         let existing_goals = self.load_existing_memories(&goals_dir).await?;
         let new_goals = self.deduplicate_goals(&memories.goals, &existing_goals);
@@ -533,7 +533,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             .collect()
     }
 
-    /// 🆕 Deduplicate personal info against existing ones
+    /// Deduplicate personal info against existing ones
     fn deduplicate_personal_info(
         &self,
         new_info: &[PersonalInfoMemory],
@@ -553,7 +553,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             .collect()
     }
 
-    /// 🆕 Deduplicate work history against existing ones
+    /// Deduplicate work history against existing ones
     fn deduplicate_work_history(
         &self,
         new_work: &[WorkHistoryMemory],
@@ -574,7 +574,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             .collect()
     }
 
-    /// 🆕 Deduplicate relationships against existing ones
+    /// Deduplicate relationships against existing ones
     fn deduplicate_relationships(
         &self,
         new_rels: &[RelationshipMemory],
@@ -595,7 +595,7 @@ Return ONLY the JSON object. No additional text before or after."#,
             .collect()
     }
 
-    /// 🆕 Deduplicate goals against existing ones
+    /// Deduplicate goals against existing ones
     fn deduplicate_goals(
         &self,
         new_goals: &[GoalMemory],

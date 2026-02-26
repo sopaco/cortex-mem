@@ -13,7 +13,7 @@ pub async fn search(
     Json(req): Json<SearchRequest>,
 ) -> Result<Json<ApiResponse<Vec<SearchResultResponse>>>> {
     let limit = req.limit.unwrap_or(10);
-    let min_score = req.min_score.unwrap_or(0.5);
+    let min_score = req.min_score.unwrap_or(0.6);
 
     let results = search_layered(&state, &req.query, req.thread.as_deref(), limit, min_score).await?;
 

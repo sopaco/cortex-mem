@@ -46,7 +46,7 @@ impl ChatMessage {
     pub fn assistant(content: impl Into<String>) -> Self {
         Self::new(MessageRole::Assistant, content.into())
     }
-    
+
     pub fn system(content: impl Into<String>) -> Self {
         Self::new(MessageRole::System, content.into())
     }
@@ -60,7 +60,7 @@ pub async fn create_memory_agent(
     user_info: Option<&str>,
     bot_system_prompt: Option<&str>,
     agent_id: &str,
-    user_id: &str,  // 🔧 移除下划线前缀
+    user_id: &str, // 🔧 移除下划线前缀
 ) -> Result<(RigAgent<CompletionModel>, Arc<MemoryOperations>), Box<dyn std::error::Error>> {
     // 创建 cortex LLMClient 用于 L0/L1 生成
     let llm_config = cortex_mem_core::llm::LLMConfig {
@@ -75,7 +75,11 @@ pub async fn create_memory_agent(
 
     // 使用向量搜索版本（唯一支持的版本）
     tracing::info!("🔍 使用向量搜索功能");
-    tracing::info!("Embedding 配置: model={}, dim={:?}", config.embedding.model_name, config.qdrant.embedding_dim);
+    tracing::info!(
+        "Embedding 配置: model={}, dim={:?}",
+        config.embedding.model_name,
+        config.qdrant.embedding_dim
+    );
     let memory_tools = create_memory_tools_with_tenant_and_vector(
         data_dir,
         agent_id,
@@ -87,7 +91,7 @@ pub async fn create_memory_agent(
         &config.embedding.api_key,
         &config.embedding.model_name,
         config.qdrant.embedding_dim,
-        Some(user_id.to_string()),  // 🆕 传递真实的user_id
+        Some(user_id.to_string()),
     )
     .await?;
 
@@ -289,10 +293,10 @@ pub async fn create_memory_agent(
     // 构建带有 OpenViking 风格记忆工具的 agent
     use rig::client::CompletionClient;
     let completion_model = llm_client
-        .completions_api()  // Use completions API to get CompletionModel
+        .completions_api() // Use completions API to get CompletionModel
         .agent(&config.llm.model_efficient)
         .preamble(&system_prompt)
-        .default_max_turns(30)  // 🔧 设置默认max_turns为30，避免频繁触发MaxTurnError
+        .default_max_turns(30) // 🔧 设置默认max_turns为30，避免频繁触发MaxTurnError
         // 搜索工具（最常用）
         .tool(memory_tools.search_tool())
         .tool(memory_tools.find_tool())
@@ -308,8 +312,8 @@ pub async fn create_memory_agent(
 }
 
 /// 从记忆中提取用户基本信息
-/// 🆕 提取用户基本信息用于初始化 Agent 上下文
-/// 
+/// 提取用户基本信息用于初始化 Agent 上下文
+///
 /// 优化策略：
 /// - 优先读取目录的 .overview.md（L1 层级）
 /// - 如果没有 overview，回退到读取个别文件
@@ -322,7 +326,7 @@ pub async fn extract_user_basic_info(
     use cortex_mem_core::FilesystemOperations;
 
     tracing::info!("Loading user memories (L1 overviews) for user: {}", user_id);
-    
+
     let mut context = String::new();
     context.push_str("## 用户记忆\n\n");
     let mut has_content = false;
@@ -333,12 +337,12 @@ pub async fn extract_user_basic_info(
         ("work_history", "工作经历"),
         ("preferences", "偏好习惯"),
     ];
-    
+
     for (category, title) in core_categories {
         let category_uri = format!("cortex://user/{}/{}", user_id, category);
         let overview_uri = format!("{}/.overview.md", category_uri);
-        
-        // 🆕 优先读取 .overview.md（L1 层级）
+
+        // 优先读取 .overview.md（L1 层级）
         if let Ok(overview_content) = operations.filesystem().read(&overview_uri).await {
             context.push_str(&format!("### {}\n", title));
             // 移除 **Added** 时间戳
@@ -376,12 +380,12 @@ pub async fn extract_user_basic_info(
         ("entities", "相关实体"),
         ("events", "重要事件"),
     ];
-    
+
     for (category, title) in secondary_categories {
         let category_uri = format!("cortex://user/{}/{}", user_id, category);
         let overview_uri = format!("{}/.overview.md", category_uri);
-        
-        // 🆕 仅读取 .overview.md，不回退到详细文件
+
+        // 仅读取 .overview.md，不回退到详细文件
         if let Ok(overview_content) = operations.filesystem().read(&overview_uri).await {
             context.push_str(&format!("### {}\n", title));
             let clean_content = strip_metadata(&overview_content);
@@ -392,10 +396,10 @@ pub async fn extract_user_basic_info(
         }
     }
 
-    // 🆕 读取 Agent 经验案例（仅 overview）
+    // 读取 Agent 经验案例（仅 overview）
     let cases_uri = format!("cortex://agent/{}/cases", _agent_id);
     let cases_overview_uri = format!("{}/.overview.md", cases_uri);
-    
+
     if let Ok(overview_content) = operations.filesystem().read(&cases_overview_uri).await {
         context.push_str("### Agent经验案例\n");
         let clean_content = strip_metadata(&overview_content);
@@ -417,16 +421,19 @@ pub async fn extract_user_basic_info(
 /// 移除 **Added** 时间戳等元数据
 fn strip_metadata(content: &str) -> String {
     let mut lines: Vec<&str> = content.lines().collect();
-    
+
     // 移除末尾的 **Added** 行
     while let Some(last_line) = lines.last() {
-        if last_line.trim().is_empty() || last_line.contains("**Added**") || last_line.starts_with("---") {
+        if last_line.trim().is_empty()
+            || last_line.contains("**Added**")
+            || last_line.starts_with("---")
+        {
             lines.pop();
         } else {
             break;
         }
     }
-    
+
     lines.join("\n").trim().to_string()
 }
 
@@ -434,15 +441,15 @@ fn strip_metadata(content: &str) -> String {
 fn extract_markdown_summary(content: &str) -> String {
     let mut summary = String::new();
     let mut in_content = false;
-    
+
     for line in content.lines() {
         let trimmed = line.trim();
-        
+
         // 跳过空行
         if trimmed.is_empty() {
             continue;
         }
-        
+
         // 提取标题（去掉#号）
         if trimmed.starts_with('#') {
             let title = trimmed.trim_start_matches('#').trim();
@@ -461,7 +468,7 @@ fn extract_markdown_summary(content: &str) -> String {
                     summary.push_str(": ");
                 }
                 summary.push_str(desc);
-                break;  // 找到描述后就返回
+                break; // 找到描述后就返回
             }
         }
         // 提取普通内容行（不是markdown格式的）
@@ -477,13 +484,13 @@ fn extract_markdown_summary(content: &str) -> String {
             }
         }
     }
-    
+
     // 限制长度
     if summary.len() > 200 {
         summary.truncate(197);
         summary.push_str("...");
     }
-    
+
     summary
 }
 
@@ -572,39 +579,37 @@ impl AgentChatHandler {
 
             let mut stream = agent
                 .stream_chat(prompt_message, chat_history)
-                .multi_turn(30)  // 🔧 从20增加到30，减少触发MaxTurnError的可能性
+                .multi_turn(30) // 🔧 从20增加到30，减少触发MaxTurnError的可能性
                 .await;
 
             while let Some(item) = stream.next().await {
                 match item {
-                    Ok(stream_item) => {
-                        match stream_item {
-                            MultiTurnStreamItem::StreamAssistantItem(content) => {
-                                use rig::streaming::StreamedAssistantContent;
-                                match content {
-                                    StreamedAssistantContent::Text(text_content) => {
-                                        let text = &text_content.text;
-                                        full_response.push_str(text);
-                                        if tx.send(text.clone()).await.is_err() {
-                                            break;
-                                        }
+                    Ok(stream_item) => match stream_item {
+                        MultiTurnStreamItem::StreamAssistantItem(content) => {
+                            use rig::streaming::StreamedAssistantContent;
+                            match content {
+                                StreamedAssistantContent::Text(text_content) => {
+                                    let text = &text_content.text;
+                                    full_response.push_str(text);
+                                    if tx.send(text.clone()).await.is_err() {
+                                        break;
                                     }
-                                    StreamedAssistantContent::ToolCall { .. } => {
-                                        log::debug!("调用工具中...");
-                                    }
-                                    _ => {}
                                 }
-                            }
-                            MultiTurnStreamItem::FinalResponse(final_resp) => {
-                                full_response = final_resp.response().to_string();
-                                let _ = tx.send(full_response.clone()).await;
-                                break;
-                            }
-                            _ => {
-                                log::debug!("收到其他类型的流式项目");
+                                StreamedAssistantContent::ToolCall { .. } => {
+                                    log::debug!("调用工具中...");
+                                }
+                                _ => {}
                             }
                         }
-                    }
+                        MultiTurnStreamItem::FinalResponse(final_resp) => {
+                            full_response = final_resp.response().to_string();
+                            let _ = tx.send(full_response.clone()).await;
+                            break;
+                        }
+                        _ => {
+                            log::debug!("收到其他类型的流式项目");
+                        }
+                    },
                     Err(e) => {
                         log::error!("流式处理错误: {:?}", e);
                         let error_msg = format!("[错误: {}]", e);
@@ -623,8 +628,8 @@ impl AgentChatHandler {
                         scope: "session".to_string(),
                         metadata: None,
                         auto_generate_layers: Some(true),
-                        user_id: Some("tars_user".to_string()),  // 🔧 传递user_id
-                        agent_id: None,  // 🔧 agent_id由tenant_id决定，这里不传
+                        user_id: Some("tars_user".to_string()), // 🔧 传递user_id
+                        agent_id: None, // 🔧 agent_id由tenant_id决定，这里不传
                     };
                     if let Err(e) = ops.store(user_store).await {
                         tracing::warn!("Failed to save user message: {}", e);
@@ -638,8 +643,8 @@ impl AgentChatHandler {
                         scope: "session".to_string(),
                         metadata: None,
                         auto_generate_layers: Some(true),
-                        user_id: Some("tars_user".to_string()),  // 🔧 传递user_id
-                        agent_id: None,  // 🔧 agent_id由tenant_id决定，这里不传
+                        user_id: Some("tars_user".to_string()), // 🔧 传递user_id
+                        agent_id: None, // 🔧 agent_id由tenant_id决定，这里不传
                     };
                     if let Err(e) = ops.store(assistant_store).await {
                         tracing::warn!("Failed to save assistant message: {}", e);
