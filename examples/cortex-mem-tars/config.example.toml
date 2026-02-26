@@ -1,5 +1,5 @@
-# Cortex-Mem V2 配置文件 (简化版)
-# 
+# Cortex Memory 配置文件 (简化版)
+#
 # 架构说明：
 # - 当前使用：文件系统存储 + 关键词检索
 # - 保留向量配置：为未来向量搜索功能预留
@@ -52,7 +52,7 @@ cors_origins = ["*"]
 #      - Linux: ~/.local/share/cortex-mem-tars/cortex
 #      - Windows: %APPDATA%\cortex-mem\tars\cortex
 #   4. 当前目录 ./.cortex（最低优先级）
-# 
+#
 # 留空或注释此行将使用默认值（应用数据目录）
 # data_dir = "/path/to/custom/cortex/data"
 
