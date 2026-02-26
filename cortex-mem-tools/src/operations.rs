@@ -83,6 +83,7 @@ impl MemoryOperations {
         llm_client: Arc<dyn LLMClient>,
         qdrant_url: &str,
         qdrant_collection: &str,
+        qdrant_api_key: Option<&str>,
         embedding_api_base_url: &str,
         embedding_api_key: &str,
         embedding_model_name: &str,
@@ -116,6 +117,9 @@ impl MemoryOperations {
             collection_name: qdrant_collection.to_string(),
             embedding_dim,
             timeout_secs: 30,
+            api_key: qdrant_api_key
+                .map(|s| s.to_string())
+                .or_else(|| std::env::var("QDRANT_API_KEY").ok()),
             tenant_id: Some(tenant_id.clone()),  // 🆕 设置租户ID
         };
         let vector_store = Arc::new(QdrantVectorStore::new(&qdrant_config).await?);

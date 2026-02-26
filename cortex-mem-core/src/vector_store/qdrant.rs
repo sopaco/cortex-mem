@@ -35,6 +35,12 @@ impl QdrantVectorStore {
     /// with "_<tenant_id>" for tenant isolation.
     pub async fn new(config: &QdrantConfig) -> Result<Self> {
         let client = Qdrant::from_url(&config.url)
+            .api_key(
+                config
+                    .api_key
+                    .clone()
+                    .or_else(|| std::env::var("QDRANT_API_KEY").ok()),
+            )
             .build()
             .map_err(|e| Error::VectorStore(e))?;
 
@@ -63,6 +69,12 @@ impl QdrantVectorStore {
         _llm_client: &dyn crate::llm::LLMClient,
     ) -> Result<Self> {
         let client = Qdrant::from_url(&config.url)
+            .api_key(
+                config
+                    .api_key
+                    .clone()
+                    .or_else(|| std::env::var("QDRANT_API_KEY").ok()),
+            )
             .build()
             .map_err(|e| Error::VectorStore(e))?;
 

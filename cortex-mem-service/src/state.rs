@@ -173,6 +173,7 @@ impl AppState {
                 collection_name: config.qdrant.collection_name,
                 embedding_dim: config.qdrant.embedding_dim,
                 timeout_secs: config.qdrant.timeout_secs,
+                api_key: config.qdrant.api_key.clone(),
                 tenant_id: None, // 🆕 初始化时不设置租户ID（global）
             };
 
@@ -239,6 +240,7 @@ impl AppState {
                         .ok()
                         .and_then(|s| s.parse().ok()),
                     timeout_secs: 30,
+                    api_key: std::env::var("QDRANT_API_KEY").ok(),
                     tenant_id: None, // 🆕 初始化时不设置租户ID（global）
                 })
             } else {
@@ -360,6 +362,7 @@ impl AppState {
                 collection_name: config.qdrant.collection_name,
                 embedding_dim: config.qdrant.embedding_dim,
                 timeout_secs: config.qdrant.timeout_secs,
+                api_key: config.qdrant.api_key.clone(),
                 tenant_id: None, // 🆕 初始化为None
             };
 
@@ -382,6 +385,7 @@ impl AppState {
                     .ok()
                     .and_then(|s| s.parse().ok()),
                 timeout_secs: 30,
+                api_key: std::env::var("QDRANT_API_KEY").ok(),
                 tenant_id, // 🆕 使用当前租户ID
             };
             cortex_mem_core::QdrantVectorStore::new(&qdrant_config)

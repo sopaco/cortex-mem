@@ -7,6 +7,7 @@ pub struct QdrantConfig {
     pub collection_name: String,
     pub embedding_dim: Option<usize>,
     pub timeout_secs: u64,
+    pub api_key: Option<String>,
     /// 🆕 Optional tenant ID for collection isolation
     /// If set, collection_name will be suffixed with "_<tenant_id>"
     pub tenant_id: Option<String>,
@@ -19,6 +20,7 @@ impl Default for QdrantConfig {
             collection_name: "cortex-mem".to_string(),
             embedding_dim: None,
             timeout_secs: 30,
+            api_key: std::env::var("QDRANT_API_KEY").ok(),
             tenant_id: None,  // 🆕 默认不使用租户隔离
         }
     }
