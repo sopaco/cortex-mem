@@ -240,6 +240,54 @@ impl LayerGenerator {
         Ok(stats)
     }
     
+    /// 🆕 确保特定timeline目录拥有L0/L1层级文件
+    /// 
+    /// 用于会话关闭时触发生成，避免频繁更新
+    pub async fn ensure_timeline_layers(&self, timeline_uri: &str) -> Result<GenerationStats> {
+        info!("开始为timeline生成层级文件: {}", timeline_uri);
+        
+        // 扫描timeline下的所有目录
+        let mut directories = Vec::new();
+        self.scan_recursive(timeline_uri, &mut directories).await?;
+        
+        info!("发现 {} 个timeline目录", directories.len());
+        
+        // 检测缺失的 L0/L1
+        let missing = self.filter_missing_layers(&directories).await?;
+        info!("发现 {} 个目录缺失 L0/L1", missing.len());
+        
+        if missing.is_empty() {
+            return Ok(GenerationStats {
+                total: 0,
+                generated: 0,
+                failed: 0,
+            });
+        }
+        
+        let mut stats = GenerationStats {
+            total: missing.len(),
+            generated: 0,
+            failed: 0,
+        };
+        
+        // 生成层级文件（不需要分批，因为timeline通常不大）
+        for dir in missing {
+            match self.generate_layers_for_directory(&dir).await {
+                Ok(_) => {
+                    stats.generated += 1;
+                    info!("✓ 生成成功: {}", dir);
+                }
+                Err(e) => {
+                    stats.failed += 1;
+                    warn!("✗ 生成失败: {} - {}", dir, e);
+                }
+            }
+        }
+        
+        info!("Timeline层级生成完成: 成功 {}, 失败 {}", stats.generated, stats.failed);
+        Ok(stats)
+    }
+    
     /// 为单个目录生成 L0/L1
     async fn generate_layers_for_directory(&self, uri: &str) -> Result<()> {
         debug!("生成层级文件: {}", uri);

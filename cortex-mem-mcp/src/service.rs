@@ -127,6 +127,37 @@ pub struct GetAbstractResult {
     abstract_text: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct GenerateLayersArgs {
+    /// Thread/session ID (optional, if not provided, generates for all sessions)
+    thread_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct GenerateLayersResult {
+    success: bool,
+    message: String,
+    total: usize,
+    generated: usize,
+    failed: usize,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct IndexMemoriesArgs {
+    /// Thread/session ID (optional, if not provided, indexes all files)
+    thread_id: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct IndexMemoriesResult {
+    success: bool,
+    message: String,
+    total_files: usize,
+    indexed_files: usize,
+    skipped_files: usize,
+    error_files: usize,
+}
+
 // ==================== MCP Tools Implementation ====================
 
 #[tool_router]
@@ -149,13 +180,20 @@ impl MemoryMcpService {
         let role = params.0.role.as_deref().unwrap_or("user");
 
         match self.operations.add_message(&thread_id, role, &params.0.content).await {
-            Ok(message_id) => {
-                let uri = format!("cortex://session/{}/timeline/{}.md", thread_id, message_id);
-                info!("Memory stored at: {}", uri);
+            Ok(message_uri) => {
+                // Extract message_id from URI (last segment without extension)
+                let message_id = message_uri
+                    .rsplit('/')
+                    .next()
+                    .and_then(|s| s.strip_suffix(".md"))
+                    .unwrap_or("unknown")
+                    .to_string();
+                
+                info!("Memory stored at: {}", message_uri);
                 
                 Ok(Json(StoreMemoryResult {
                     success: true,
-                    uri,
+                    uri: message_uri,
                     message_id,
                 }))
             }
@@ -350,6 +388,74 @@ impl MemoryMcpService {
             }
         }
     }
+
+    #[tool(description = "Generate L0/L1 layer files for memories")]
+    async fn generate_layers(
+        &self,
+        params: Parameters<GenerateLayersArgs>,
+    ) -> std::result::Result<Json<GenerateLayersResult>, String> {
+        debug!("generate_layers called with args: {:?}", params.0);
+
+        match self.operations.ensure_all_layers().await {
+            Ok(stats) => {
+                let message = if let Some(ref thread_id) = params.0.thread_id {
+                    format!("Generated layers for session {}", thread_id)
+                } else {
+                    "Generated layers for all sessions".to_string()
+                };
+                
+                info!("{}: total={}, generated={}, failed={}", 
+                    message, stats.total, stats.generated, stats.failed);
+                
+                Ok(Json(GenerateLayersResult {
+                    success: true,
+                    message,
+                    total: stats.total,
+                    generated: stats.generated,
+                    failed: stats.failed,
+                }))
+            }
+            Err(e) => {
+                error!("Failed to generate layers: {}", e);
+                Err(format!("Failed to generate layers: {}", e))
+            }
+        }
+    }
+
+    #[tool(description = "Index memories to vector database")]
+    async fn index_memories(
+        &self,
+        params: Parameters<IndexMemoriesArgs>,
+    ) -> std::result::Result<Json<IndexMemoriesResult>, String> {
+        debug!("index_memories called with args: {:?}", params.0);
+
+        match self.operations.index_all_files().await {
+            Ok(stats) => {
+                let message = if let Some(ref thread_id) = params.0.thread_id {
+                    format!("Indexed memories for session {}", thread_id)
+                } else {
+                    "Indexed all memory files".to_string()
+                };
+                
+                info!("{}: total={}, indexed={}, skipped={}, errors={}", 
+                    message, stats.total_files, stats.indexed_files, 
+                    stats.skipped_files, stats.error_files);
+                
+                Ok(Json(IndexMemoriesResult {
+                    success: true,
+                    message,
+                    total_files: stats.total_files,
+                    indexed_files: stats.indexed_files,
+                    skipped_files: stats.skipped_files,
+                    error_files: stats.error_files,
+                }))
+            }
+            Err(e) => {
+                error!("Failed to index memories: {}", e);
+                Err(format!("Failed to index memories: {}", e))
+            }
+        }
+    }
 }
 
 #[tool_handler]
@@ -366,6 +472,8 @@ impl ServerHandler for MemoryMcpService {
                 - get_memory: Retrieve a specific memory\n\
                 - delete_memory: Delete a memory\n\
                 - get_abstract: Get the abstract summary of a memory\n\
+                - generate_layers: Generate L0/L1 layer files for memories\n\
+                - index_memories: Index memories to vector database\n\
                 \n\
                 URI format: cortex://{dimension}/{category}/{resource}\n\
                 Examples:\n\

@@ -13,7 +13,7 @@ use cortex_mem_core::{
         LayerGenerator, LayerGenerationConfig, AbstractConfig, OverviewConfig,  // 🆕 添加LayerGenerator
     },
     embedding::{EmbeddingClient, EmbeddingConfig},
-    vector_store::QdrantVectorStore,
+    vector_store::{QdrantVectorStore, VectorStore},  // 🔧 添加VectorStore trait
     events::EventBus,  // 🆕 添加EventBus
 };
 use std::sync::Arc;
@@ -174,10 +174,11 @@ impl MemoryOperations {
         let automation_config = AutomationConfig {
             auto_index: true,
             auto_extract: false,  // Extract由单独的监听器处理
-            index_on_message: true,  // ✅ 消息时自动索引
-            index_on_close: false,   // Session关闭时不索引（已经实时索引了）
+            index_on_message: true,  // ✅ 消息时自动索引L2
+            index_on_close: true,    // ✅ Session关闭时生成L0/L1并索引
             index_batch_delay: 1,
             auto_generate_layers_on_startup: false,  // 🆕 启动时不生成（避免阻塞）
+            generate_layers_every_n_messages: 5,  // 🆕 每5条消息生成一次L0/L1
         };
         
         // 🆕 创建LayerGenerator（用于退出时手动生成）
@@ -353,22 +354,27 @@ impl MemoryOperations {
 
         let sm = self.session_manager.read().await;
 
-        let message = cortex_mem_core::Message::new(
-            match role {
-                "user" => cortex_mem_core::MessageRole::User,
-                "assistant" => cortex_mem_core::MessageRole::Assistant,
-                "system" => cortex_mem_core::MessageRole::System,
-                _ => cortex_mem_core::MessageRole::User,
-            },
-            content,
+        // 🔧 使用SessionManager::add_message()替代message_storage().save_message()
+        // 这样可以自动触发MessageAdded事件，从而触发自动索引
+        let message_role = match role {
+            "user" => cortex_mem_core::MessageRole::User,
+            "assistant" => cortex_mem_core::MessageRole::Assistant,
+            "system" => cortex_mem_core::MessageRole::System,
+            _ => cortex_mem_core::MessageRole::User,
+        };
+        
+        let message = sm.add_message(thread_id, message_role, content.to_string()).await?;
+        let message_uri = format!(
+            "cortex://session/{}/timeline/{}/{}/{}_{}.md",
+            thread_id,
+            message.timestamp.format("%Y-%m"),
+            message.timestamp.format("%d"),
+            message.timestamp.format("%H_%M_%S"),
+            &message.id[..8]
         );
 
-        let message_uri = sm.message_storage().save_message(thread_id, &message).await?;
-
-        let message_id = message_uri.rsplit('/').next().unwrap_or("unknown").to_string();
-
-        tracing::info!("Added message {} to session {}", message_id, thread_id);
-        Ok(message_id)
+        tracing::info!("Added message to session {}, URI: {}", thread_id, message_uri);
+        Ok(message_uri)
     }
 
     /// List sessions
@@ -443,8 +449,23 @@ impl MemoryOperations {
 
     /// Delete file or directory
     pub async fn delete(&self, uri: &str) -> Result<()> {
+        // First delete from vector database
+        // We need to delete all 3 layers: L0, L1, L2
+        let l0_id = cortex_mem_core::uri_to_vector_id(uri, cortex_mem_core::ContextLayer::L0Abstract);
+        let l1_id = cortex_mem_core::uri_to_vector_id(uri, cortex_mem_core::ContextLayer::L1Overview);
+        let l2_id = cortex_mem_core::uri_to_vector_id(uri, cortex_mem_core::ContextLayer::L2Detail);
+        
+        // Delete from vector store (ignore errors as vectors might not exist)
+        let _ = self.vector_store.delete(&l0_id).await;
+        let _ = self.vector_store.delete(&l1_id).await;
+        let _ = self.vector_store.delete(&l2_id).await;
+        
+        tracing::info!("Deleted vectors for URI: {} (L0: {}, L1: {}, L2: {})", 
+            uri, l0_id, l1_id, l2_id);
+        
+        // Then delete from filesystem
         self.filesystem.delete(uri).await?;
-        tracing::info!("Deleted: {}", uri);
+        tracing::info!("Deleted file: {}", uri);
         Ok(())
     }
 
