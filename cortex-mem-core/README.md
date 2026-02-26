@@ -1,4 +1,4 @@
-# Cortex Memory Core Core Library
+# Cortex Memory Core Library
 
 `cortex-mem-core` is the foundational library of the Cortex Memory system, providing core services and abstractions for AI agent memory management.
 
@@ -6,10 +6,10 @@
 
 Cortex Memory Core implements:
 - A virtual filesystem with `cortex://` URI scheme for memory storage
-- Three-tier memory architecture (L0/L1/L3 layers)
+- Three-tier memory architecture (L0/L1/L2 layers)
 - Session-based conversational memory management
 - Vector search integration with Qdrant
-- Automated memory extraction and profiling
+- LLM-based memory extraction and profiling
 - Event-driven automation system
 
 ## 🏗️ Architecture
@@ -19,18 +19,55 @@ Cortex Memory Core implements:
 | Module | Purpose | Key Components |
 |--------|---------|----------------|
 | **`filesystem`** | Virtual file system with custom URI scheme | `CortexFilesystem`, `CortexUri`, `FilesystemOperations` |
-| **`session`** | Conversational session management | `SessionManager`, `Message`, `TimelineGenerator` |
-| **`vector_store`** | Vector database abstraction | `VectorStore`, embedding integration |
-| **`search`** | Semantic and hybrid search engines | `VectorSearchEngine`, `SearchOptions` |
+| **`session`** | Conversational session management | `SessionManager`, `Message`, `TimelineGenerator`, `ParticipantManager` |
+| **`vector_store`** | Vector database abstraction | `VectorStore` trait, `QdrantVectorStore` |
+| **`search`** | Semantic and layered search engines | `VectorSearchEngine`, `SearchOptions`, `SearchResult` |
 | **`extraction`** | Memory extraction and profiling | `MemoryExtractor`, `ExtractedMemories` |
-| **`automation`** | Event-driven automation | `AutomationManager`, `CortexEvent` |
-| **`layers`** | Three-tier memory architecture | `ContextLayer`, layer management |
-| **`llm`** | Large language model abstraction | `LlmClient`, LLM providers |
-| **`events`** | Event system for automation | `CortexEvent`, event handling |
+| **`automation`** | Event-driven automation | `AutomationManager`, `AutoIndexer`, `AutoExtractor`, `LayerGenerator` |
+| **`layers`** | Three-tier memory architecture | `LayerManager`, `ContextLayer` |
+| **`llm`** | Large language model abstraction | `LLMClient` trait, `LLMClientImpl` |
+| **`embedding`** | Embedding generation | `EmbeddingClient`, `EmbeddingCache` |
+| **`events`** | Event system for automation | `CortexEvent`, `EventBus` |
+| **`builder`** | Unified initialization API | `CortexMemBuilder`, `CortexMem` |
 
 ## 🚀 Quick Start
 
-### Basic Usage
+### Using CortexMemBuilder (Recommended)
+
+```rust
+use cortex_mem_core::{CortexMemBuilder, LLMConfig, QdrantConfig, EmbeddingConfig};
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let cortex = CortexMemBuilder::new("./cortex-data")
+        .with_embedding(EmbeddingConfig {
+            api_base_url: "https://api.openai.com/v1".to_string(),
+            api_key: "your-api-key".to_string(),
+            model_name: "text-embedding-3-small".to_string(),
+            batch_size: 10,
+            timeout_secs: 30,
+        })
+        .with_qdrant(QdrantConfig {
+            url: "http://localhost:6333".to_string(),
+            collection_name: "cortex_memories".to_string(),
+            embedding_dim: 1536,
+            timeout_secs: 30,
+            tenant_id: "default".to_string(),
+        })
+        .build()
+        .await?;
+
+    // Access components
+    let session_manager = cortex.session_manager();
+    let filesystem = cortex.filesystem();
+    let vector_store = cortex.vector_store();
+
+    Ok(())
+}
+```
+
+### Basic Filesystem Usage
 
 ```rust
 use cortex_mem_core::{CortexFilesystem, FilesystemOperations};
@@ -50,6 +87,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let content = fs.read("cortex://user/john/preferences.md").await?;
     println!("Content: {}", content);
 
+    // List directory
+    let entries = fs.list("cortex://user/john").await?;
+    for entry in entries {
+        println!("{}: {} ({})", entry.name, entry.uri, 
+                 if entry.is_directory { "dir" } else { "file" });
+    }
+
     Ok(())
 }
 ```
@@ -57,7 +101,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Session Management
 
 ```rust
-use cortex_mem_core::{SessionManager, SessionConfig, Message, MessageRole};
+use cortex_mem_core::{SessionManager, SessionConfig, Message, MessageRole, CortexFilesystem};
 use std::sync::Arc;
 
 #[tokio::main]
@@ -65,27 +109,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let fs = Arc::new(CortexFilesystem::new("./cortex-data")?);
     fs.initialize().await?;
     
-    let session_manager = SessionManager::new(fs);
+    let session_manager = SessionManager::new(fs, SessionConfig::default());
     
     // Create a session
-    let session = session_manager.create_session(
-        "tech-support",
-        Some("Technical Support Chat".to_string())
-    ).await?;
+    let session = session_manager.create_session("tech-support").await?;
     
     // Add messages
     session_manager.add_message(
         &session.thread_id,
-        Message {
-            role: MessageRole::User,
-            content: "How do I reset my password?".to_string(),
-            metadata: Default::default(),
-        }
+        "user",
+        "How do I reset my password?"
     ).await?;
     
-    // Extract memories
-    let memories = session_manager.extract_memories(&session.thread_id).await?;
-    println!("Extracted {} facts", memories.facts.len());
+    // List sessions
+    let sessions = session_manager.list_sessions().await?;
+    for s in sessions {
+        println!("Session: {} ({:?})", s.thread_id, s.status);
+    }
     
     Ok(())
 }
@@ -99,19 +139,31 @@ use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let fs = Arc::new(CortexFilesystem::new("./cortex-data")?);
-    fs.initialize().await?;
+    let search_engine = VectorSearchEngine::new(
+        qdrant_store,
+        embedding_client,
+        filesystem
+    );
     
-    let search_engine = VectorSearchEngine::new(fs, vec![])?;
+    // Basic semantic search
+    let results = search_engine.semantic_search(
+        "password reset",
+        SearchOptions {
+            limit: 10,
+            threshold: 0.5,
+            root_uri: Some("cortex://session".to_string()),
+            recursive: true,
+        }
+    ).await?;
     
-    // Search with options
-    let results = search_engine.search(
+    // Layered semantic search (L0 -> L1 -> L2)
+    let layered_results = search_engine.layered_semantic_search(
         "password reset",
         SearchOptions::default()
     ).await?;
     
-    for result in results {
-        println!("Found: {} (score: {:.2})", result.content, result.score);
+    for result in layered_results {
+        println!("Found: {} (score: {:.2})", result.uri, result.score);
     }
     
     Ok(())
@@ -125,56 +177,224 @@ The Cortex Filesystem extends standard file operations with custom URIs:
 ### URI Scheme
 
 ```
-cortex://{dimension}/{tenant}/{path/to/resource}
+cortex://{dimension}/{category}/{subcategory}/{resource}
 ```
 
-#### Dimensions:
-- **`users`** - User-specific memories
-- **`agents`** - Agent-specific memories  
-- **`threads`** - Conversational sessions
-- **`global`** - Shared resources and knowledge
+### Dimensions and Categories
+
+| Dimension | Categories | Description |
+|-----------|------------|-------------|
+| **`session`** | `{session-id}/timeline` | Conversational sessions with timeline |
+| **`user`** | `preferences`, `entities`, `events` | User-specific memories |
+| **`agent`** | `cases`, `skills`, `instructions` | Agent-specific memories |
+| **`resources`** | Various | Shared resources |
 
 ### Example URIs
 
 ```
+cortex://session/tech-support/timeline/2024/01/15/14_30_00_abc123.md
 cortex://user/john/preferences.md
-cortex://agent/tech-support/knowledge.md
-cortex://session/session-123/timeline/2024/01/15/14_30_00_abc123.md
-cortex://global/company-policy.md
+cortex://agent/assistant/skills/rust-programming.md
+cortex://resources/templates/meeting-notes.md
 ```
 
-## 📚 Memory Architecture
+## 📚 Memory Architecture (Three-Tier System)
 
 Cortex implements a three-tier memory system:
 
-### L0: Abstract Layer (~100 tokens)
-- Ultra-condensed summaries
-- Key fact extraction
-- Perfect for quick context
+| Layer | Size | Purpose | File Suffix |
+|-------|------|---------|-------------|
+| **L0 Abstract** | ~100 tokens | Ultra-condensed summaries, quick relevance check | `.abstract.md` |
+| **L1 Overview** | ~500-2000 tokens | Detailed summaries, key points and decisions | `.overview.md` |
+| **L2 Detail** | Full content | Complete original content, source of truth | `.md` (original) |
 
-### L1: Overview Layer (~500-2000 tokens)
-- Detailed summaries
-- Key points and decisions
-- Good for partial context
+### Layer Generation
 
-### L3: Full Content
-- Complete original content
-- Source of truth
-- Used for deep analysis
+```rust
+use cortex_mem_core::layers::LayerManager;
+
+let layer_manager = LayerManager::new(filesystem, llm_client);
+
+// Generate all layers for content
+let layers = layer_manager.generate_all_layers("cortex://session/.../message.md", &content).await?;
+
+// Load specific layer
+let abstract_content = layer_manager.load("cortex://session/.../message.md", ContextLayer::L0Abstract).await?;
+```
+
+## 📖 API Reference
+
+### Core Types
+
+```rust
+// Dimension enum
+pub enum Dimension {
+    Resources,
+    User,
+    Agent,
+    Session,
+}
+
+// Context layers
+pub enum ContextLayer {
+    L0Abstract,   // ~100 tokens
+    L1Overview,   // ~500-2000 tokens
+    L2Detail,     // Full content
+}
+
+// Memory types
+pub enum MemoryType {
+    Conversational,
+    Procedural,
+    Semantic,
+    Episodic,
+}
+
+// User memory categories
+pub enum UserMemoryCategory {
+    Profile,
+    Preferences,
+    Entities,
+    Events,
+}
+
+// Agent memory categories
+pub enum AgentMemoryCategory {
+    Cases,
+    Skills,
+    Instructions,
+}
+
+// File entry
+pub struct FileEntry {
+    pub uri: String,
+    pub name: String,
+    pub is_directory: bool,
+    pub size: Option<u64>,
+    pub modified: Option<DateTime<Utc>>,
+}
+
+// Memory with embedding
+pub struct Memory {
+    pub id: String,
+    pub content: String,
+    pub embedding: Option<Vec<f32>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub metadata: MemoryMetadata,
+}
+
+// Search result
+pub struct ScoredMemory {
+    pub memory: Memory,
+    pub score: f32,
+}
+```
+
+### FilesystemOperations Trait
+
+```rust
+#[async_trait]
+pub trait FilesystemOperations: Send + Sync {
+    async fn list(&self, uri: &str) -> Result<Vec<FileEntry>>;
+    async fn read(&self, uri: &str) -> Result<String>;
+    async fn write(&self, uri: &str, content: &str) -> Result<()>;
+    async fn delete(&self, uri: &str) -> Result<()>;
+    async fn exists(&self, uri: &str) -> Result<bool>;
+    async fn metadata(&self, uri: &str) -> Result<FileMetadata>;
+}
+```
+
+### VectorStore Trait
+
+```rust
+#[async_trait]
+pub trait VectorStore: Send + Sync + DynClone {
+    async fn insert(&self, memory: &Memory) -> Result<()>;
+    async fn search(&self, query_vector: &[f32], filters: &Filters, limit: usize) -> Result<Vec<ScoredMemory>>;
+    async fn search_with_threshold(&self, query_vector: &[f32], filters: &Filters, limit: usize, score_threshold: f32) -> Result<Vec<ScoredMemory>>;
+    async fn update(&self, memory: &Memory) -> Result<()>;
+    async fn delete(&self, id: &str) -> Result<()>;
+    async fn get(&self, id: &str) -> Result<Option<Memory>>;
+    async fn list(&self, filters: &Filters, limit: Option<usize>) -> Result<Vec<Memory>>;
+    async fn health_check(&self) -> Result<bool>;
+}
+```
+
+### LLMClient Trait
+
+```rust
+#[async_trait]
+pub trait LLMClient: Send + Sync {
+    async fn complete(&self, prompt: &str) -> Result<String>;
+    async fn complete_with_system(&self, system: &str, prompt: &str) -> Result<String>;
+    async fn extract_memories(&self, prompt: &str) -> Result<MemoryExtractionResponse>;
+    async fn extract_structured_facts(&self, prompt: &str) -> Result<StructuredFactExtraction>;
+    async fn extract_detailed_facts(&self, prompt: &str) -> Result<DetailedFactExtraction>;
+    fn model_name(&self) -> &str;
+    fn config(&self) -> &LLMConfig;
+}
+```
 
 ## 🔧 Configuration
 
+### QdrantConfig
+
 ```rust
-use cortex_mem_core::{CortexFilesystem, config::Config};
+pub struct QdrantConfig {
+    pub url: String,              // Default: "http://localhost:6333"
+    pub collection_name: String,  // Default: "cortex_memories"
+    pub embedding_dim: usize,     // Default: 1536
+    pub timeout_secs: u64,        // Default: 30
+    pub tenant_id: String,        // Default: "default"
+}
+```
 
-// From environment
-let config = Config::from_env()?;
+### EmbeddingConfig
 
-// From file
-let config = Config::from_file("config.toml")?;
+```rust
+pub struct EmbeddingConfig {
+    pub api_base_url: String,     // Default: OpenAI API
+    pub api_key: String,          // From EMBEDDING_API_KEY or LLM_API_KEY
+    pub model_name: String,       // Default: "text-embedding-3-small"
+    pub batch_size: usize,        // Default: 10
+    pub timeout_secs: u64,        // Default: 30
+}
+```
 
-// Custom configuration
-let fs = CortexFilesystem::with_config(config)?;
+### LLMConfig
+
+```rust
+pub struct LLMConfig {
+    pub api_base_url: String,     // Default: OpenAI API
+    pub api_key: String,          // From LLM_API_KEY env var
+    pub model_efficient: String,  // Default: "gpt-3.5-turbo"
+    pub temperature: f32,         // Default: 0.1
+    pub max_tokens: usize,        // Default: 4096
+}
+```
+
+### SessionConfig
+
+```rust
+pub struct SessionConfig {
+    pub auto_extract_on_close: bool,           // Default: true
+    pub max_messages_per_session: Option<usize>,
+    pub auto_archive_after_days: Option<i64>,
+}
+```
+
+### AutomationConfig
+
+```rust
+pub struct AutomationConfig {
+    pub auto_index: bool,                      // Default: true
+    pub auto_extract: bool,                    // Default: true
+    pub index_on_message: bool,                // Default: false
+    pub index_on_close: bool,                  // Default: true
+    pub index_batch_delay: u64,                // Default: 2 seconds
+    pub auto_generate_layers_on_startup: bool, // Default: false
+}
 ```
 
 ## 🔄 Event System
@@ -182,27 +402,54 @@ let fs = CortexFilesystem::with_config(config)?;
 Cortex includes an event-driven automation system:
 
 ```rust
-use cortex_mem_core::{CortexEvent, AutomationManager};
+use cortex_mem_core::{CortexEvent, EventBus, AutomationManager};
 
-// Handle events
+// Create event bus
+let (event_tx, event_rx) = EventBus::new();
+
+// Publish events
+event_tx.publish(CortexEvent::Session(SessionEvent::MessageAdded {
+    thread_id: "tech-support".to_string(),
+    message_id: "msg-123".to_string(),
+}));
+
+// Handle events in automation manager
 match event {
-    CortexEvent::FilesystemEvent(event) => {
+    CortexEvent::Session(event) => {
+        // Session event - trigger extraction/indexing
+    }
+    CortexEvent::Filesystem(event) => {
         // File changed - trigger re-indexing
     }
-    CortexEvent::SessionEvent(event) => {
-        // Session updated - trigger extraction
-    }
-    CortexEvent::SystemEvent(event) => {
-        // System event - handle accordingly
-    }
+}
+```
+
+### Event Types
+
+```rust
+pub enum CortexEvent {
+    Session(SessionEvent),
+    Filesystem(FilesystemEvent),
+}
+
+pub enum SessionEvent {
+    Created { thread_id: String },
+    MessageAdded { thread_id: String, message_id: String },
+    Closed { thread_id: String },
+}
+
+pub enum FilesystemEvent {
+    FileCreated { uri: String },
+    FileModified { uri: String },
+    FileDeleted { uri: String },
 }
 ```
 
 ## 🔗 Integration with Other Crates
 
-- **`cortex-mem-config`**: Provides configuration types
-- **`cortex-mem-tools`**: Utilities and helpers
-- **`cortex-mem-rig`**: RIG framework adapters
+- **`cortex-mem-config`**: Configuration loading and management
+- **`cortex-mem-tools`**: High-level utilities and MCP tool definitions
+- **`cortex-mem-rig`**: Rig framework adapters
 - **`cortex-mem-service`**: REST API implementation
 - **`cortex-mem-cli`**: Command-line interface
 - **`cortex-mem-mcp`**: MCP server implementation
@@ -216,17 +463,10 @@ Running tests requires all features:
 cargo test -p cortex-mem-core --all-features
 ```
 
-## 🌟 Features
-
-- **vector-search**: Enable Qdrant vector database integration (enabled by default)
-- **embeddings**: Enable embedding generation
-- **automation**: Enable event-driven automation
-- **extraction**: Enable LLM-based memory extraction
-
-## 📝 Dependencies
+## 📦 Dependencies
 
 Key dependencies include:
-- `serde` for serialization
+- `serde` / `serde_json` for serialization
 - `tokio` for async runtime
 - `qdrant-client` for vector storage
 - `rig-core` for LLM integration
@@ -234,6 +474,8 @@ Key dependencies include:
 - `uuid` for unique identifiers
 - `regex` for text matching
 - `sha2` for hashing
+- `tracing` for logging
+- `reqwest` for HTTP requests
 
 ## 📄 License
 
@@ -247,4 +489,4 @@ Please read our contributing guidelines and submit pull requests to the main rep
 
 - [Architecture Overview](../../litho.docs/en/2.Architecture.md)
 - [Core Workflow](../../litho.docs/en/3.Workflow.md)
-- [API Reference](docs/api-reference.md)
+- [System Boundaries](../../litho.docs/en/5.Boundary-Interfaces.md)

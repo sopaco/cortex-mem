@@ -1,172 +1,225 @@
 # Cortex Memory CLI
 
-`cortex-mem-cli` 是 Cortex Memory 系统的命令行界面，提供完整的终端访问功能。作为与系统交互的主要方式之一，它支持会话管理、消息操作、搜索和记忆提取等核心功能。
+`cortex-mem-cli` is the command-line interface for the Cortex Memory system, providing complete terminal access to memory management functionality.
 
-## ✨ 功能特性
+## ✨ Features
 
-- 🗣️ **会话管理**: 创建、列出、关闭会话
-- 💬 **消息操作**: 添加、搜索、删除消息
-- 🔍 **智能搜索**: 支持时间范围和维度过滤
-- 🧠 **记忆提取**: 自动提取事实、决策和实体
-- 📊 **统计信息**: 查看系统状态和使用统计
-- 🎨 **友好输出**: 彩色终端输出，可配置详细级别
+- 🗣️ **Session Management**: Create and list sessions
+- 💬 **Message Operations**: Add, search, get, and delete messages
+- 🔍 **Semantic Search**: Vector-based search with scope filtering
+- 📊 **Layer Management**: Generate and manage L0/L1 layer files
+- 📈 **Statistics**: View system status and usage statistics
+- 🎨 **Friendly Output**: Colored terminal output with configurable verbosity
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 安装
+### Installation
 
 ```bash
-# 从源码构建
+# Build from source
 cd cortex-mem
 cargo build --release --bin cortex-mem
 
-# 或直接运行
+# Or run directly
 cargo run --bin cortex-mem -- --help
 ```
 
-### 基本使用
+### Basic Usage
 
 ```bash
-# 创建新会话
-./cortex-mem session create tech-discussion --title "技术讨论"
+# Create a new session
+./cortex-mem session create tech-discussion --title "Technical Discussion"
 
-# 添加消息
-./cortex-mem add --thread tech-discussion "如何实现OAuth认证？"
+# Add a message
+./cortex-mem add --thread tech-discussion "How to implement OAuth authentication?"
 
-# 搜索相关内容
+# Search for relevant content
 ./cortex-mem search "OAuth" --thread tech-discussion
 
-# 提取记忆
-./cortex-mem session extract tech-discussion
-
-# 查看统计
+# View statistics
 ./cortex-mem stats
 ```
 
-## 📖 详细命令参考
+## 📖 Command Reference
 
-### 会话管理命令
+### Global Options
 
-#### 创建会话
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--config` | `-c` | `config.toml` | Path to configuration file |
+| `--tenant` | | `default` | Tenant identifier for memory isolation |
+| `--verbose` | `-v` | false | Enable verbose/debug logging |
+
+### Session Commands
+
+#### Create Session
 
 ```bash
 cortex-mem session create <thread-id> [--title <title>]
 
-# 示例
-cortex-mem session create project-planning --title "项目规划讨论"
-cortex-mem session create 2024-01-15-review  # 无标题
+# Examples
+cortex-mem session create project-planning --title "Project Planning Discussion"
+cortex-mem session create 2024-01-15-review  # Without title
 ```
 
-#### 关闭会话
-
-```bash
-cortex-mem session close <thread-id>
-
-# 示例
-cortex-mem session close tech-discussion
-```
-
-#### 提取记忆
-
-```bash
-cortex-mem session extract <thread-id>
-
-# 示例
-cortex-mem session extract project-planning
-```
-
-#### 列出所有会话
+#### List Sessions
 
 ```bash
 cortex-mem session list
 ```
 
-### 消息操作命令
+Output displays: thread_id, status, created_at, updated_at
 
-#### 添加消息
+### Message Commands
+
+#### Add Message
 
 ```bash
 cortex-mem add --thread <thread-id> [--role <role>] <content>
 
-# 角色选项: user, assistant, system (默认: user)
-cortex-mem add --thread tech-support --role user "忘记密码了怎么办？"
-cortex-mem add --thread tech-support --role assistant "请访问重置密码页面..."
+# Role options: user, assistant, system (default: user)
+cortex-mem add --thread tech-support --role user "I forgot my password, what should I do?"
+cortex-mem add --thread tech-support --role assistant "Please visit the password reset page..."
 ```
 
-#### 搜索消息
+| Argument | Short | Default | Description |
+|----------|-------|---------|-------------|
+| `--thread` | `-t` | (required) | Thread ID for the message |
+| `--role` | `-r` | `user` | Message role: `user`, `assistant`, or `system` |
+| `content` | | (required) | Message content text |
+
+#### Search Messages
 
 ```bash
-cortex-mem search <query> [--thread <thread-id>] [-n <limit>] [-s <min-score>]
+cortex-mem search <query> [--thread <thread-id>] [-n <limit>] [-s <min-score>] [--scope <scope>]
 
-# 示例
-cortex-mem search "密码"
+# Examples
+cortex-mem search "password"
 cortex-mem search "OAUTH" -n 5 -s 0.7
 cortex-mem search "API" --thread tech-support
 ```
 
-#### 列出消息
+| Argument | Short | Default | Description |
+|----------|-------|---------|-------------|
+| `query` | | (required) | Search query text |
+| `--thread` | `-t` | None | Thread ID to search within |
+| `--limit` | `-n` | `10` | Maximum number of results |
+| `--min-score` | `-s` | `0.4` | Minimum relevance score (0.0-1.0) |
+| `--scope` | | `session` | Search scope: `session`, `user`, or `agent` |
+
+#### List Memories
 
 ```bash
-cortex-mem list [--thread <thread-id>] [--dimension <dimension>]
+cortex-mem list [--uri <uri>] [--include-abstracts]
 
-# 示例
+# Examples
 cortex-mem list
-cortex-mem list --thread tech-support
-cortex-mem list --dimension agent
+cortex-mem list --uri cortex://user
+cortex-mem list --include-abstracts
 ```
 
-#### 获取特定消息
+| Argument | Short | Default | Description |
+|----------|-------|---------|-------------|
+| `--uri` | `-u` | `cortex://session` | URI path to list |
+| `--include-abstracts` | | false | Show L0 abstracts in results |
+
+#### Get Memory
 
 ```bash
-cortex-mem get <uri>
+cortex-mem get <uri> [--abstract-only]
 
-# 示例
+# Examples
 cortex-mem get cortex://session/tech-support/timeline/2024/01/15/14_30_00_abc123.md
+cortex-mem get cortex://session/tech-support/timeline/2024/01/15/14_30_00_abc123.md --abstract-only
 ```
 
-#### 删除消息
+| Argument | Short | Default | Description |
+|----------|-------|---------|-------------|
+| `uri` | | (required) | Memory URI to retrieve |
+| `--abstract-only` | `-a` | false | Show L0 abstract instead of full content |
+
+#### Delete Memory
 
 ```bash
 cortex-mem delete <uri>
+
+# Example
+cortex-mem delete cortex://session/tech-support/timeline/2024/01/15/14_30_00_abc123.md
 ```
 
-### 系统命令
+### Layer Commands
 
-#### 查看统计信息
+#### Ensure All Layers
+
+Generate missing `.abstract.md` (L0) and `.overview.md` (L1) files for all memories.
+
+```bash
+cortex-mem layers ensure-all
+```
+
+#### Layer Status
+
+Show L0/L1 file coverage status.
+
+```bash
+cortex-mem layers status
+```
+
+#### Regenerate Oversized Abstracts
+
+Regenerate `.abstract.md` files exceeding the size limit.
+
+```bash
+cortex-mem layers regenerate-oversized
+```
+
+### Statistics
 
 ```bash
 cortex-mem stats
 ```
 
-## ⚙️ 配置选项
+Displays:
+- Number of sessions
+- Number of user memories
+- Number of agent memories
+- Total message count
+- Data directory path
 
-### 数据目录
+## ⚙️ Configuration
 
-默认数据目录为 `./cortex-data`，可通过 `--data-dir` 参数自定义：
+### Configuration File
 
-```bash
-cortex-mem --data-dir /path/to/data session list
+Create a `config.toml` file with the following structure:
+
+```toml
+[cortex]
+data_dir = "/path/to/cortex-data"  # Optional, has smart defaults
+
+[llm]
+api_base_url = "https://api.openai.com/v1"
+api_key = "your-api-key"
+model_efficient = "gpt-4o-mini"
+temperature = 0.7
+max_tokens = 4096
+
+[embedding]
+api_base_url = "https://api.openai.com/v1"
+api_key = "your-embedding-api-key"
+model_name = "text-embedding-3-small"
+batch_size = 10
+timeout_secs = 30
+
+[qdrant]
+url = "http://localhost:6333"
+collection_name = "cortex-mem"
+embedding_dim = 1536
+timeout_secs = 30
 ```
 
-### 详细输出
+### Environment Variables
 
-使用 `--verbose` 或 `-v` 参数启用详细日志：
-
-```bash
-cortex-mem --verbose add --thread test "Hello"
-```
-
-### 配置文件
-
-CLI遵循以下配置优先级：
-1. 命令行参数
-2. 环境变量
-3. 配置文件 (config.toml)
-4. 默认值
-
-## 🌐 环境变量
-
-可以通过环境变量覆盖配置：
+Configuration can be overridden via environment variables:
 
 ```bash
 export CORTEX_DATA_DIR="/custom/path"
@@ -176,124 +229,105 @@ export QDRANT_URL="http://localhost:6333"
 cortex-mem session create test
 ```
 
-## 📝 完整工作流示例
+### Data Directory Resolution
+
+The data directory is resolved in the following priority order:
+1. `cortex.data_dir` config value
+2. `CORTEX_DATA_DIR` environment variable
+3. System app data directory (e.g., `%APPDATA%/tars/cortex` on Windows)
+4. Fallback: `./.cortex` in current directory
+
+## 📝 Complete Workflow Example
 
 ```bash
-# 1. 创建会话
-cortex-mem session create customer-support --title "客户支持会话"
+# 1. Create a session
+cortex-mem session create customer-support --title "Customer Support Session"
 
-# 2. 添加对话
-cortex-mem add --thread customer-support "我的订单状态是什么？"
-cortex-mem add --thread customer-support --role assistant "让我帮您查询订单状态..."
+# 2. Add conversation messages
+cortex-mem add --thread customer-support "What's my order status?"
+cortex-mem add --thread customer-support --role assistant "Let me check your order status..."
 
-# 3. 搜索相关信息
-cortex-mem search "订单" --thread customer-support
+# 3. Search for relevant information
+cortex-mem search "order" --thread customer-support
 
-# 4. 提取记忆到用户档案
-cortex-mem session extract customer-support
+# 4. View extracted memories
+cortex-mem list --uri cortex://user
 
-# 5. 查看提取的记忆
-cortex-mem list --dimension user
+# 5. Get a specific memory with abstract
+cortex-mem get cortex://session/customer-support/timeline/... --abstract-only
 
-# 6. 关闭会话
-cortex-mem session close customer-support
-
-# 7. 查看系统统计
+# 6. View system statistics
 cortex-mem stats
+
+# 7. Generate missing layer files
+cortex-mem layers ensure-all
 ```
 
-## 🎨 输出格式
+## 🎨 Output Format
 
-CLI使用颜色编码以提高可读性：
+CLI uses color coding for better readability:
 
-- 🔵 **蓝色**: 会话ID和文件URI
-- 🟢 **绿色**: 成功操作
-- 🟡 **黄色**: 警告信息
-- 🔴 **红色**: 错误信息
-- ⚪ **白色**: 一般信息
+- 🔵 **Blue**: Session IDs and file URIs
+- 🟢 **Green**: Successful operations
+- 🟡 **Yellow**: Warning messages
+- 🔴 **Red**: Error messages
+- ⚪ **White**: General information
 
-## 🧪 脚本测试
+## 🔍 Troubleshooting
 
-项目包含测试脚本用于快速验证功能：
+### Common Issues
 
-```bash
-# 快速测试
-./cortex-mem-cli/quick-test.sh
-
-# 完整演示
-./cortex-mem-cli/demo.sh
-```
-
-## 🔍 故障排除
-
-### 常见问题
-
-**数据目录权限错误**
+**Data directory permission error**
 ```bash
 chmod 755 ./cortex-data
 ```
 
-**LLM服务不可用**
+**LLM service unavailable**
 ```bash
 export LLM_API_BASE_URL="https://api.openai.com/v1"
 export LLM_API_KEY="your-key"
-export LLM_MODEL="gpt-4"
 ```
 
-**向量搜索失败**
+**Vector search failure**
 ```bash
-# 启动Qdrant
+# Start Qdrant
 docker run -p 6333:6333 qdrant/qdrant
 
-# 配置连接
+# Configure connection
 export QDRANT_URL="http://localhost:6333"
 ```
 
-### 调试模式
+### Debug Mode
 
 ```bash
-# 启用详细日志查看调试信息
-cortex-mem --verbose --log-level debug session create debug-test
+# Enable verbose logging
+cortex-mem --verbose session create debug-test
 
-# 查看完整错误堆栈
+# View full error stack trace
 RUST_BACKTRACE=1 cortex-mem search "test"
 ```
 
-## 🛣️ 路线图
+## 📚 Related Resources
 
-计划中的功能：
+- [Cortex Memory Main Project](../README.md)
+- [Core Library Documentation](../cortex-mem-core/README.md)
+- [HTTP API Service](../cortex-mem-service/README.md)
+- [Architecture Overview](../../litho.docs/en/2.Architecture.md)
 
-- [ ] 批量操作命令
-- [ ] 交互式模式
-- [ ] 配置管理命令
-- [ ] 导入/导出工具
-- [ ] 自动补全支持
-- [ ] 插件系统
+## 🤝 Contributing
 
-## 📚 更多资源
+Contributions are welcome! Please follow these steps:
 
-- [Cortex Memory 主项目](../README.md)
-- [核心库文档](../cortex-mem-core/README.md)
-- [HTTP API服务](../cortex-mem-service/README.md)
-- [架构概述](../../litho.docs/en/2.Architecture.md)
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Create a Pull Request
 
-## 🤝 贡献
+## 📄 License
 
-欢迎贡献！请遵循以下步骤：
-
-1. Fork 项目仓库
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建 Pull Request
-
-## 📄 许可证
-
-MIT 许可证 - 详见 [LICENSE](../../LICENSE) 文件
+MIT License - see the [LICENSE](../../LICENSE) file for details.
 
 ---
 
 **Built with ❤️ using Rust and the Cortex Memory Core**
-```
-
-接下来，我将继续为其他子crate创建或更新README文件。

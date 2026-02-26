@@ -6,24 +6,69 @@
 
 Cortex Memory Tools implements:
 - High-level `MemoryOperations` interface for unified access to Cortex Memory
-- **Tiered Access**: L0 (Abstract), L1 (Overview), L2 (Full Content)
+- **Tiered Access**: L0 (Abstract ~100 tokens), L1 (Overview ~2000 tokens), L2 (Full Content)
 - Advanced automation with event-driven processing
 - Model Context Protocol (MCP) tool definitions
-- Utility functions for memory management
 - Type-safe error handling and comprehensive types
 
 ## 🏗️ Core Components
 
 ### MemoryOperations
 
-The primary interface for working with Cortex Memory. It requires:
-- LLM client for layer generation
-- Vector search engine for semantic search
-- Embedding client for vectorization
+The primary interface for working with Cortex Memory:
+
+```
+MemoryOperations
+       |
+       +---> Tiered Access (L0/L1/L2)
+       |         |
+       |         +---> get_abstract()  -> AbstractResponse
+       |         +---> get_overview()  -> OverviewResponse
+       |         +---> get_read()      -> ReadResponse
+       |
+       +---> Search Operations
+       |         |
+       |         +---> search()  -> SearchResponse
+       |         +---> find()    -> FindResponse
+       |
+       +---> Filesystem Operations
+       |         |
+       |         +---> ls()      -> LsResponse
+       |         +---> explore() -> ExploreResponse
+       |
+       +---> Storage Operations
+       |         |
+       |         +---> store()   -> StoreResponse
+       |
+       +---> Session Management
+       |         |
+       |         +---> add_message()
+       |         +---> list_sessions()
+       |         +---> get_session()
+       |         +---> close_session()
+       |
+       +---> Automation
+                 |
+                 +---> ensure_all_layers()
+                 +---> index_all_files()
+```
+
+## 🚀 Quick Start
+
+### Installation
+
+```toml
+[dependencies]
+cortex-mem-tools = { path = "../cortex-mem-tools" }
+cortex-mem-core = { path = "../cortex-mem-core" }
+tokio = { version = "1", features = ["full"] }
+```
+
+### Basic Usage
 
 ```rust
 use cortex_mem_tools::MemoryOperations;
-use cortex_mem_core::llm::{LLMClient, LLMClientImpl, LLMConfig};
+use cortex_mem_core::llm::{LLMClientImpl, LLMConfig};
 use std::sync::Arc;
 
 #[tokio::main]
@@ -58,17 +103,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "user",
         "How do I reset my password?"
     ).await?;
-    
-    // Read file content (L2)
-    let content = ops.read_file("cortex://session/tech-support/timeline/...").await?;
+    println!("Message ID: {}", msg_id);
     
     // Get abstract (L0) - quick relevance check
-    let abstract_result = ops.get_abstract("cortex://session/tech-support/...").await?;
+    let abstract_result = ops.get_abstract(&format!(
+        "cortex://session/tech-support/timeline/{}.md", 
+        msg_id
+    )).await?;
     println!("Abstract: {}", abstract_result.abstract_text);
     
     // Get overview (L1) - partial context
-    let overview = ops.get_overview("cortex://session/tech-support/...").await?;
+    let overview = ops.get_overview(&format!(
+        "cortex://session/tech-support/timeline/{}.md",
+        msg_id
+    )).await?;
     println!("Overview: {}", overview.overview_text);
+    
+    // Read file content (L2)
+    let content = ops.read_file(&format!(
+        "cortex://session/tech-support/timeline/{}.md",
+        msg_id
+    )).await?;
+    println!("Content: {}", content);
     
     // List sessions
     let sessions = ops.list_sessions().await?;
@@ -82,64 +138,58 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ### Tiered Access (OpenViking Style)
 
-The library implements a three-tier access pattern for efficient memory retrieval:
-
 | Layer | Size | Purpose | Method |
 |-------|------|---------|--------|
 | **L0 Abstract** | ~100 tokens | Quick relevance judgment | `get_abstract()` |
 | **L1 Overview** | ~2000 tokens | Partial context understanding | `get_overview()` |
 | **L2 Full** | Complete content | Deep analysis and processing | `read_file()` / `get_read()` |
 
-### Automation System
-
-MemoryOperations includes built-in automation:
-
-- **Auto Indexing**: Messages are automatically indexed for vector search
-- **Auto Extraction**: Memories are extracted when sessions are closed
-- **Event-Driven**: Uses EventBus for real-time processing
+### Tool-Based Operations
 
 ```rust
-// Automation is built into MemoryOperations::new()
-// No additional configuration needed
+use cortex_mem_tools::{MemoryOperations, SearchArgs, LsArgs, StoreArgs};
 
-// Access the auto extractor for manual extraction
-if let Some(extractor) = ops.auto_extractor() {
-    extractor.extract_session("tech-support").await?;
+// Search with typed args
+let search_result = ops.search(SearchArgs {
+    query: "password reset".to_string(),
+    recursive: Some(true),
+    return_layers: Some(vec!["L0".to_string(), "L1".to_string()]),
+    scope: Some("cortex://session".to_string()),
+    limit: Some(10),
+}).await?;
+
+for result in &search_result.results {
+    println!("URI: {} (score: {:.2})", result.uri, result.score);
 }
+
+// List directory with abstracts
+let ls_result = ops.ls(LsArgs {
+    uri: "cortex://session".to_string(),
+    recursive: Some(false),
+    include_abstracts: Some(true),
+}).await?;
+
+for entry in &ls_result.entries {
+    println!("{}: {}", entry.name, entry.abstract_text.as_ref().unwrap_or(&"".to_string()));
+}
+
+// Store with auto layer generation
+let store_result = ops.store(StoreArgs {
+    content: "User prefers dark mode and vim keybindings".to_string(),
+    thread_id: "user-prefs".to_string(),
+    metadata: None,
+    auto_generate_layers: Some(true),
+    scope: "user".to_string(),
+    user_id: Some("user-123".to_string()),
+    agent_id: None,
+}).await?;
+
+println!("Stored at: {}", store_result.uri);
 ```
-
-### MCP Integration
-
-The library provides tool definitions for Model Context Protocol:
-
-```rust
-use cortex_mem_tools::mcp::{get_mcp_tool_definitions, get_mcp_tool_definition};
-
-// Get all available MCP tool definitions
-let tools = get_mcp_tool_definitions();
-for tool in &tools {
-    println!("Available tool: {} - {}", tool.name, tool.description);
-}
-
-// Get a specific tool definition
-if let Some(tool) = get_mcp_tool_definition("search") {
-    println!("Search tool: {:?}", tool.input_schema);
-}
-```
-
-Available MCP tools:
-- `abstract` - Get L0 abstract
-- `overview` - Get L1 overview
-- `read` - Get L2 full content
-- `search` - Intelligent search with multiple engines
-- `find` - Quick search returning L0 abstracts
-- `ls` - List directory contents
-- `explore` - Intelligently explore memory space
-- `store` - Store content with automatic layer generation
 
 ## 📚 API Reference
 
-### MemoryOperations
+### MemoryOperations Constructor
 
 ```rust
 impl MemoryOperations {
@@ -156,115 +206,244 @@ impl MemoryOperations {
         embedding_dim: Option<usize>,
         user_id: Option<String>,
     ) -> Result<Self>
-    
-    // Accessors
-    pub fn filesystem(&self) -> &Arc<CortexFilesystem>
-    pub fn vector_engine(&self) -> &Arc<VectorSearchEngine>
-    pub fn session_manager(&self) -> &Arc<RwLock<SessionManager>>
-    pub fn auto_extractor(&self) -> Option<&Arc<AutoExtractor>>
-    
-    // Session Management
-    pub async fn add_message(&self, thread_id: &str, role: &str, content: &str) -> Result<String>
-    pub async fn list_sessions(&self) -> Result<Vec<SessionInfo>>
-    pub async fn get_session(&self, thread_id: &str) -> Result<SessionInfo>
-    pub async fn close_session(&self, thread_id: &str) -> Result<()>
-    
-    // Tiered Access (L0/L1/L2)
-    pub async fn get_abstract(&self, uri: &str) -> Result<AbstractResponse>
-    pub async fn get_overview(&self, uri: &str) -> Result<OverviewResponse>
-    pub async fn get_read(&self, uri: &str) -> Result<ReadResponse>
-    
-    // File Operations
-    pub async fn read_file(&self, uri: &str) -> Result<String>
-    pub async fn list_files(&self, uri: &str) -> Result<Vec<String>>
-    pub async fn delete(&self, uri: &str) -> Result<()>
-    pub async fn exists(&self, uri: &str) -> Result<bool>
-    
-    // Tool-based Operations (using typed args)
-    pub async fn search(&self, args: SearchArgs) -> Result<SearchResponse>
-    pub async fn find(&self, args: FindArgs) -> Result<FindResponse>
-    pub async fn ls(&self, args: LsArgs) -> Result<LsResponse>
-    pub async fn explore(&self, args: ExploreArgs) -> Result<ExploreResponse>
-    pub async fn store(&self, args: StoreArgs) -> Result<StoreResponse>
 }
 ```
 
-### Type Definitions
+### Accessor Methods
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `filesystem()` | `&Arc<CortexFilesystem>` | Get underlying filesystem |
+| `vector_engine()` | `&Arc<VectorSearchEngine>` | Get vector search engine |
+| `session_manager()` | `&Arc<RwLock<SessionManager>>` | Get session manager |
+| `auto_extractor()` | `Option<&Arc<AutoExtractor>>` | Get auto extractor |
+| `layer_generator()` | `Option<&Arc<LayerGenerator>>` | Get layer generator |
+| `auto_indexer()` | `Option<&Arc<AutoIndexer>>` | Get auto indexer |
+
+### Session Management
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `add_message()` | `thread_id, role, content` | Add message to session |
+| `list_sessions()` | - | List all sessions |
+| `get_session()` | `thread_id` | Get session info |
+| `close_session()` | `thread_id` | Close a session |
+
+### Tiered Access (L0/L1/L2)
+
+| Method | Parameters | Returns |
+|--------|------------|---------|
+| `get_abstract()` | `uri: &str` | `AbstractResponse` |
+| `get_overview()` | `uri: &str` | `OverviewResponse` |
+| `get_read()` | `uri: &str` | `ReadResponse` |
+
+### File Operations
+
+| Method | Parameters | Description |
+|--------|------------|-------------|
+| `read_file()` | `uri` | Read file content |
+| `list_files()` | `uri` | List files in directory |
+| `delete()` | `uri` | Delete file/directory |
+| `exists()` | `uri` | Check existence |
+
+### Tool-Based Operations
+
+| Method | Parameters | Returns |
+|--------|------------|---------|
+| `search()` | `SearchArgs` | `SearchResponse` |
+| `find()` | `FindArgs` | `FindResponse` |
+| `ls()` | `LsArgs` | `LsResponse` |
+| `explore()` | `ExploreArgs` | `ExploreResponse` |
+| `store()` | `StoreArgs` | `StoreResponse` |
+
+### Automation Methods
+
+| Method | Return Type | Description |
+|--------|-------------|-------------|
+| `ensure_all_layers()` | `GenerationStats` | Generate missing L0/L1 layers |
+| `index_all_files()` | `SyncStats` | Index all files to vector DB |
+
+## 📖 Type Definitions
+
+### Tiered Access Responses
 
 ```rust
-// Tiered access responses
 pub struct AbstractResponse {
     pub uri: String,
     pub abstract_text: String,
-    pub layer: String,  // "L0"
+    pub layer: String,       // "L0"
     pub token_count: usize,
 }
 
 pub struct OverviewResponse {
     pub uri: String,
     pub overview_text: String,
-    pub layer: String,  // "L1"
+    pub layer: String,       // "L1"
     pub token_count: usize,
 }
 
 pub struct ReadResponse {
     pub uri: String,
     pub content: String,
-    pub layer: String,  // "L2"
+    pub layer: String,       // "L2"
     pub token_count: usize,
     pub metadata: Option<FileMetadata>,
 }
+```
 
-// Search types
+### Search Types
+
+```rust
 pub struct SearchArgs {
     pub query: String,
-    pub recursive: Option<bool>,
-    pub return_layers: Option<Vec<String>>,  // ["L0", "L1", "L2"]
+    pub recursive: Option<bool>,           // Default: true
+    pub return_layers: Option<Vec<String>>, // ["L0", "L1", "L2"]
+    pub scope: Option<String>,              // Search scope URI
+    pub limit: Option<usize>,               // Default: 10
+}
+
+pub struct SearchResponse {
+    pub query: String,
+    pub results: Vec<SearchResult>,
+    pub total: usize,
+    pub engine_used: String,
+}
+
+pub struct SearchResult {
+    pub uri: String,
+    pub score: f32,
+    pub snippet: String,
+    pub content: Option<String>,
+}
+
+pub struct FindArgs {
+    pub query: String,
     pub scope: Option<String>,
     pub limit: Option<usize>,
 }
 
-pub struct StoreArgs {
-    pub content: String,
-    pub thread_id: String,
-    pub metadata: Option<Value>,
-    pub auto_generate_layers: Option<bool>,
-    pub scope: String,  // "session", "user", or "agent"
-    pub user_id: Option<String>,
-    pub agent_id: Option<String>,
+pub struct FindResponse {
+    pub query: String,
+    pub results: Vec<FindResult>,
+    pub total: usize,
 }
 ```
 
-## 🧱 Architecture
+### Filesystem Types
 
+```rust
+pub struct LsArgs {
+    pub uri: String,                        // Default: "cortex://session"
+    pub recursive: Option<bool>,            // Default: false
+    pub include_abstracts: Option<bool>,    // Default: false
+}
+
+pub struct LsResponse {
+    pub uri: String,
+    pub entries: Vec<LsEntry>,
+    pub total: usize,
+}
+
+pub struct ExploreArgs {
+    pub query: String,
+    pub start_uri: Option<String>,          // Default: "cortex://session"
+    pub max_depth: Option<usize>,           // Default: 3
+    pub return_layers: Option<Vec<String>>, // Default: ["L0"]
+}
+
+pub struct ExploreResponse {
+    pub query: String,
+    pub exploration_path: Vec<String>,
+    pub matches: Vec<ExploreMatch>,
+    pub total_explored: usize,
+    pub total_matches: usize,
+}
 ```
-┌─────────────────────────────────────┐
-│            Application Layer          │
-├─────────────────────────────────────┤
-│        MemoryOperations API          │
-│    ┌──────────┬──────────┬────────┐  │
-│    │ L0:Abs   │ L1:Over  │ L2:Full│  │
-│    └──────────┴──────────┴────────┘  │
-├─────────────────────────────────────┤
-│         Automation Layer             │
-│    ┌─────────────┬────────────────┐  │
-│    │ AutoIndexer │  AutoExtractor │  │
-│    └─────────────┴────────────────┘  │
-├─────────────────────────────────────┤
-│         Event System                 │
-│    ┌─────────────┬────────────────┐  │
-│    │  EventBus   │ EventListeners │  │
-│    └─────────────┴────────────────┘  │
-├─────────────────────────────────────┤
-│          Core Layer                  │
-│  CortexFilesystem│SessionManager    │
-│  LayerManager   │VectorSearchEngine│
-└─────────────────────────────────────┘
+
+### Storage Types
+
+```rust
+pub struct StoreArgs {
+    pub content: String,
+    pub thread_id: String,                  // Default: ""
+    pub metadata: Option<Value>,
+    pub auto_generate_layers: Option<bool>, // Default: true
+    pub scope: String,                      // "session", "user", or "agent"
+    pub user_id: Option<String>,            // Required for user scope
+    pub agent_id: Option<String>,           // Required for agent scope
+}
+
+pub struct StoreResponse {
+    pub uri: String,
+    pub layers_generated: Vec<String>,
+    pub success: bool,
+}
+```
+
+### Session Info
+
+```rust
+pub struct SessionInfo {
+    pub thread_id: String,
+    pub status: String,
+    pub message_count: usize,
+    pub created_at: String,
+    pub updated_at: String,
+}
+```
+
+## 🔌 MCP Integration
+
+The library provides tool definitions for Model Context Protocol:
+
+```rust
+use cortex_mem_tools::mcp::{get_mcp_tool_definitions, get_mcp_tool_definition};
+
+// Get all available MCP tool definitions
+let tools = get_mcp_tool_definitions();
+for tool in &tools {
+    println!("Tool: {} - {}", tool.name, tool.description);
+}
+
+// Get a specific tool definition
+if let Some(tool) = get_mcp_tool_definition("search") {
+    println!("Search tool schema: {:?}", tool.input_schema);
+}
+```
+
+### Available MCP Tools
+
+| Tool | Description | Required Params | Optional Params |
+|------|-------------|-----------------|-----------------|
+| `abstract` | Get L0 abstract | `uri` | - |
+| `overview` | Get L1 overview | `uri` | - |
+| `read` | Get L2 full content | `uri` | - |
+| `search` | Intelligent search | `query` | `recursive, return_layers, scope, limit` |
+| `find` | Quick search (L0 only) | `query` | `scope, limit` |
+| `ls` | List directory | `uri` | `recursive, include_abstracts` |
+| `explore` | Intelligent exploration | `query` | `start_uri, max_depth, return_layers` |
+| `store` | Store with auto layers | `content, thread_id` | `metadata, auto_generate_layers, scope, user_id, agent_id` |
+
+## ⚠️ Error Handling
+
+All operations return `Result<T, ToolsError>`:
+
+```rust
+pub enum ToolsError {
+    InvalidInput(String),      // Invalid input provided
+    Runtime(String),           // Runtime error during operation
+    NotFound(String),          // Memory not found
+    Custom(String),            // Custom error
+    Serialization(Error),      // Serde JSON error
+    Core(Error),               // Core library error
+    Io(Error),                 // IO error
+}
+
+pub type Result<T> = std::result::Result<T, ToolsError>;
 ```
 
 ## 📦 Dependencies
 
-This crate depends on:
 - `cortex-mem-core` - Core library with all memory operations
 - `tokio` - Async runtime
 - `serde` / `serde_json` - Serialization
@@ -276,26 +455,17 @@ This crate depends on:
 
 ## 🧪 Testing
 
-Run tests with all features:
-
 ```bash
+# Run tests
 cargo test -p cortex-mem-tools
+
+# Run specific tests
+cargo test -p cortex-mem-tools core_functionality
 ```
-
-## 🔍 Error Handling
-
-All operations return `Result<T, ToolsError>` where `ToolsError` includes:
-
-- Configuration errors
-- Filesystem errors
-- Session errors
-- Search errors
-- Automation errors
-- MCP tool errors
 
 ## 📄 License
 
-MIT License - see the [`LICENSE`](../../LICENSE) file for details.
+MIT License - see the [LICENSE](../../LICENSE) file for details.
 
 ## 🤝 Contributing
 
@@ -309,8 +479,11 @@ Contributions are welcome! Please:
 ## 🔗 Related Crates
 
 - [`cortex-mem-core`](../cortex-mem-core/) - Core library
-- [`cortex-mem-mcp`](../cortex-mem-mcp/) - MCP server
-- [`cortex-mem-rig`](../cortex-mem-rig/) - Rig integration
+- [`cortex-mem-mcp`](../cortex-mem-mcp/) - MCP server implementation
+- [`cortex-mem-rig`](../cortex-mem-rig/) - Rig framework integration
 - [`cortex-mem-service`](../cortex-mem-service/) - HTTP REST API
+- [`cortex-mem-cli`](../cortex-mem-cli/) - Command-line interface
 
 ---
+
+**Built with ❤️ using Rust**

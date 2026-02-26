@@ -1,43 +1,43 @@
 # Cortex Memory MCP Server
 
-`cortex-mem-mcp` 是一个基于 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) 的服务器，使 AI 助手能够与 Cortex Memory 系统进行交互，实现持久化记忆存储和检索。
+`cortex-mem-mcp` is a server implementation based on [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) that enables AI assistants to interact with the Cortex Memory system for persistent memory storage and retrieval.
 
-## 🧠 功能概述
+## 🧠 Overview
 
-Cortex Memory MCP 服务器提供六个核心工具，让 AI 助手能够：
+Cortex Memory MCP Server provides six core tools for AI assistants:
 
-- 📝 **存储记忆**: 将对话中的关键信息保存到长期记忆
-- 🔍 **搜索记忆**: 使用语义向量搜索检索相关记忆
-- 📋 **列出记忆**: 浏览已存储的记忆条目
-- 📄 **获取记忆**: 读取特定记忆的完整内容
-- 🗑️ **删除记忆**: 删除指定的记忆条目
-- 📊 **获取摘要**: 获取记忆的 L0 抽象摘要
+- 📝 **store_memory**: Store new memories from conversations
+- 🔍 **query_memory**: Semantic vector search with L0/L1/L2 layered results
+- 📋 **list_memories**: Browse stored memory entries
+- 📄 **get_memory**: Retrieve complete memory content
+- 🗑️ **delete_memory**: Delete specific memory entries
+- 📊 **get_abstract**: Get L0 abstract summary (~100 tokens)
 
-## 🛠️ MCP 工具
+## 🛠️ MCP Tools
 
 ### 1. `store_memory`
 
-存储新的记忆到 Cortex Memory 系统中。
+Store a new memory in the Cortex Memory system.
 
-#### 参数
+#### Parameters
 
-| 参数 | 类型 | 必需 | 默认值 | 描述 |
-|------|------|------|--------|------|
-| `content` | string | ✅ | - | 要存储的记忆内容 |
-| `thread_id` | string | ❌ | "default" | 会话ID，用于组织相关记忆 |
-| `role` | string | ❌ | "user" | 消息角色: "user", "assistant", "system" |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `content` | string | ✅ | - | Memory content to store |
+| `thread_id` | string | ❌ | `"default"` | Session ID for organizing related memories |
+| `role` | string | ❌ | `"user"` | Message role: `"user"`, `"assistant"`, or `"system"` |
 
-#### 示例
+#### Example Request
 
 ```json
 {
-  "content": "用户偏好使用深色主题，并且喜欢使用 Vim 键位绑定",
+  "content": "User prefers dark theme and likes vim keybindings",
   "thread_id": "user-preferences",
   "role": "user"
 }
 ```
 
-#### 响应
+#### Response
 
 ```json
 {
@@ -47,73 +47,82 @@ Cortex Memory MCP 服务器提供六个核心工具，让 AI 助手能够：
 }
 ```
 
+---
+
 ### 2. `query_memory`
 
-使用语义向量搜索检索相关记忆，支持 L0/L1/L2 分层返回。
+Search memories using semantic vector search with L0/L1/L2 layered results.
 
-#### 参数
+#### Parameters
 
-| 参数 | 类型 | 必需 | 默认值 | 描述 |
-|------|------|------|--------|------|
-| `query` | string | ✅ | - | 搜索查询字符串 |
-| `thread_id` | string | ❌ | - | 限制搜索到此会话 |
-| `limit` | number | ❌ | 10 | 最大结果数量 |
-| `scope` | string | ❌ | "session" | 搜索范围: "session", "user", "agent" |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | ✅ | - | Search query string |
+| `thread_id` | string | ❌ | - | Limit search to this session |
+| `limit` | number | ❌ | `10` | Maximum number of results |
+| `scope` | string | ❌ | `"session"` | Search scope: `"session"`, `"user"`, or `"agent"` |
 
-#### 搜索范围说明
+#### Scope URI Mapping
 
-- **`session`**: 搜索会话记忆 (`cortex://session`)
-- **`user`**: 搜索用户相关的长期记忆 (`cortex://user`)
-- **`agent`**: 搜索 Agent 记忆 (`cortex://agent`)
+| Scope | URI Pattern |
+|-------|-------------|
+| `session` | `cortex://session` |
+| `user` | `cortex://user` |
+| `agent` | `cortex://agent` |
+| (with thread_id) | `cortex://session/{thread_id}` |
 
-#### 示例
+#### Example Request
 
 ```json
 {
-  "query": "Rust OAuth 实现方法",
+  "query": "Rust OAuth implementation method",
   "thread_id": "technical-discussions",
   "limit": 5,
   "scope": "session"
 }
 ```
 
-#### 响应
+#### Response
 
 ```json
 {
   "success": true,
-  "query": "Rust OAuth 实现方法",
+  "query": "Rust OAuth implementation method",
   "results": [
     {
       "uri": "cortex://session/tech-disc/timeline/2024/01/10/09_15_30_def456.md",
       "score": 0.92,
-      "snippet": "...讨论了使用 OAuth2 客户端库实现 Rust 应用中的身份验证..."
+      "snippet": "...discussed using OAuth2 client library for authentication in Rust applications..."
     }
   ],
   "total": 1
 }
 ```
 
+---
+
 ### 3. `list_memories`
 
-列出指定 URI 路径下的记忆内容。
+List memories from a specific URI path.
 
-#### 参数
+#### Parameters
 
-| 参数 | 类型 | 必需 | 默认值 | 描述 |
-|------|------|------|--------|------|
-| `uri` | string | ❌ | "cortex://session" | 要列出的 URI 路径 |
-| `limit` | number | ❌ | 50 | 最大条目数 |
-| `include_abstracts` | boolean | ❌ | false | 是否包含 L0 摘要 |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `uri` | string | ❌ | `"cortex://session"` | URI path to list |
+| `limit` | number | ❌ | `50` | Maximum number of entries |
+| `include_abstracts` | boolean | ❌ | `false` | Include L0 abstracts |
 
-#### 支持的 URI 模式
+#### Supported URI Patterns
 
-- `"cortex://session"` - 列出所有会话
-- `"cortex://user/{user-id}"` - 列出指定用户的记忆
-- `"cortex://agent/{agent-id}"` - 列出指定 agent 的记忆
-- `"cortex://session/{session-id}/timeline"` - 列出会话的时间线
+| URI Pattern | Description |
+|-------------|-------------|
+| `cortex://session` | List all sessions |
+| `cortex://user/{user-id}` | List user memories |
+| `cortex://agent/{agent-id}` | List agent memories |
+| `cortex://session/{session-id}/timeline` | List session timeline |
 
-#### 示例
+#### Example Request
 
 ```json
 {
@@ -123,7 +132,7 @@ Cortex Memory MCP 服务器提供六个核心工具，让 AI 助手能够：
 }
 ```
 
-#### 响应
+#### Response
 
 ```json
 {
@@ -135,24 +144,26 @@ Cortex Memory MCP 服务器提供六个核心工具，让 AI 助手能够：
       "uri": "cortex://session/user-preferences",
       "is_directory": true,
       "size": 2048,
-      "abstract_text": "用户偏好设置和选项"
+      "abstract_text": "User preference settings and options"
     }
   ],
   "total": 1
 }
 ```
 
+---
+
 ### 4. `get_memory`
 
-获取特定记忆的完整内容。
+Retrieve complete content of a specific memory.
 
-#### 参数
+#### Parameters
 
-| 参数 | 类型 | 必需 | 默认值 | 描述 |
-|------|------|------|--------|------|
-| `uri` | string | ✅ | - | 记忆的完整 URI |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `uri` | string | ✅ | - | Full URI of the memory |
 
-#### 示例
+#### Example Request
 
 ```json
 {
@@ -160,27 +171,29 @@ Cortex Memory MCP 服务器提供六个核心工具，让 AI 助手能够：
 }
 ```
 
-#### 响应
+#### Response
 
 ```json
 {
   "success": true,
   "uri": "cortex://session/user-preferences/timeline/2024/01/15/14_30_45_abc123.md",
-  "content": "# Message\n\n用户偏好使用深色主题，并且喜欢使用 Vim 键位绑定。\n\n---\n*Timestamp: 2024-01-15T14:30:45Z*\n*Role: user*"
+  "content": "# Message\n\nUser prefers dark theme and likes vim keybindings.\n\n---\n*Timestamp: 2024-01-15T14:30:45Z*\n*Role: user*"
 }
 ```
+
+---
 
 ### 5. `delete_memory`
 
-删除指定的记忆条目。
+Delete a specific memory entry.
 
-#### 参数
+#### Parameters
 
-| 参数 | 类型 | 必需 | 默认值 | 描述 |
-|------|------|------|--------|------|
-| `uri` | string | ✅ | - | 要删除的记忆 URI |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `uri` | string | ✅ | - | URI of the memory to delete |
 
-#### 示例
+#### Example Request
 
 ```json
 {
@@ -188,7 +201,7 @@ Cortex Memory MCP 服务器提供六个核心工具，让 AI 助手能够：
 }
 ```
 
-#### 响应
+#### Response
 
 ```json
 {
@@ -197,17 +210,19 @@ Cortex Memory MCP 服务器提供六个核心工具，让 AI 助手能够：
 }
 ```
 
+---
+
 ### 6. `get_abstract`
 
-获取指定记忆的 L0 抽象摘要（约 100 tokens），用于快速判断相关性。
+Get the L0 abstract summary (~100 tokens) of a memory for quick relevance checking.
 
-#### 参数
+#### Parameters
 
-| 参数 | 类型 | 必需 | 默认值 | 描述 |
-|------|------|------|--------|------|
-| `uri` | string | ✅ | - | 记忆的 URI |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `uri` | string | ✅ | - | URI of the memory |
 
-#### 示例
+#### Example Request
 
 ```json
 {
@@ -215,47 +230,47 @@ Cortex Memory MCP 服务器提供六个核心工具，让 AI 助手能够：
 }
 ```
 
-#### 响应
+#### Response
 
 ```json
 {
   "success": true,
   "uri": "cortex://session/user-preferences/timeline/2024/01/15/14_30_45_abc123.md",
-  "abstract_text": "用户偏好设置：深色主题，Vim 键位绑定"
+  "abstract_text": "User preferences: dark theme, vim keybindings"
 }
 ```
 
-## 🚀 安装与配置
+## 🚀 Installation & Configuration
 
-### 构建要求
+### Build Requirements
 
-- Rust 1.70 或更高版本
-- 跨平台支持：Linux、macOS、Windows
+- Rust 1.70 or later
+- Cross-platform support: Linux, macOS, Windows
 
-### 构建
+### Build
 
 ```bash
-# 克隆仓库
+# Clone repository
 git clone https://github.com/sopaco/cortex-mem.git
 cd cortex-mem
 
-# 构建服务器
+# Build the server
 cargo build --release --bin cortex-mem-mcp
 
-# 二进制位置
+# Binary location
 ./target/release/cortex-mem-mcp
 ```
 
-### 命令行参数
+### Command-line Arguments
 
-| 参数 | 默认值 | 描述 |
-|------|--------|------|
-| `--config` | `config.toml` | 配置文件路径 |
-| `--tenant` | `default` | 租户 ID |
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--config` / `-c` | `config.toml` | Path to configuration file |
+| `--tenant` | `default` | Tenant ID for memory isolation |
 
-### 配置 Claude Desktop
+### Configure Claude Desktop
 
-编辑 Claude Desktop 配置文件：
+Edit Claude Desktop configuration file:
 
 **macOS**:
 ```bash
@@ -267,7 +282,7 @@ open ~/Library/Application\ Support/Claude/claude_desktop_config.json
 notepad %APPDATA%\Claude\claude_desktop_config.json
 ```
 
-添加以下配置：
+Add configuration:
 
 ```json
 {
@@ -286,15 +301,15 @@ notepad %APPDATA%\Claude\claude_desktop_config.json
 }
 ```
 
-### 配置文件 (config.toml)
+### Configuration File (config.toml)
 
 ```toml
 [cortex]
-# 数据目录（可选，默认为当前目录下的 cortex-data）
+# Data directory (optional, has smart defaults)
 data_dir = "/path/to/cortex-data"
 
 [llm]
-# LLM API 配置
+# LLM API configuration
 api_base_url = "https://api.openai.com/v1"
 api_key = "your-api-key"
 model_efficient = "gpt-4o-mini"
@@ -302,7 +317,7 @@ temperature = 0.1
 max_tokens = 4096
 
 [embedding]
-# 嵌入配置
+# Embedding configuration
 api_base_url = "https://api.openai.com/v1"
 api_key = "your-embedding-api-key"
 model_name = "text-embedding-3-small"
@@ -310,182 +325,179 @@ batch_size = 10
 timeout_secs = 30
 
 [qdrant]
-# 向量数据库配置
+# Vector database configuration
 url = "http://localhost:6333"
 collection_name = "cortex_memories"
 embedding_dim = 1536
 timeout_secs = 30
 ```
 
-## 🔄 MCP 工作流
+### Data Directory Resolution
 
-### 典型记忆工作流
+Priority order:
+1. `cortex.data_dir` config value
+2. `CORTEX_DATA_DIR` environment variable
+3. System app data directory (e.g., `%APPDATA%/tars/cortex` on Windows)
+4. Fallback: `./.cortex` in current directory
 
-1. **对话开始**: Claude 检索相关记忆
+## 🔄 MCP Workflow
+
+### Typical Memory Workflow
+
 ```javascript
-// Claude 查询用户偏好
+// 1. Start of conversation: Query relevant memories
 await query_memory({
-  query: "用户偏好",
+  query: "user preferences",
   scope: "user",
   limit: 5
 });
-```
 
-2. **存储新信息**: 将对话中关键信息存储
-```javascript
-// Claude 存储新的发现
+// 2. During conversation: Store new information
 await store_memory({
-  content: "用户提到他们正在学习 Rust 异步编程",
+  content: "User mentioned they are learning Rust async programming",
   thread_id: "learning-journey",
   role: "user"
 });
-```
 
-3. **对话结束**: 生成摘要并存储
-```javascript
-// Claude 总结讨论要点
+// 3. End of conversation: Store summary
 await store_memory({
-  content: "讨论了 Rust 的 async/await、Pin 和 Future，用户理解了基本概念",
+  content: "Discussed Rust async/await, Pin, and Future. User understood the basics.",
   thread_id: "rust-async-discussion",
   role: "assistant"
 });
 ```
 
-### 高级搜索策略
-
-结合多种工具获取最佳结果：
+### Advanced Search Strategy
 
 ```javascript
-// 1. 先从会话中搜索
+// 1. Search in sessions first
 const sessionResults = await query_memory({
-  query: "Rust 错误处理",
+  query: "Rust error handling",
   scope: "session",
   limit: 5
 });
 
-// 2. 如果需要更多上下文，搜索用户记忆
+// 2. If more context needed, search user memories
 if (sessionResults.results.length < 3) {
   const userResults = await query_memory({
-    query: "Rust 错误处理",
+    query: "Rust error handling",
     scope: "user",
     limit: 5
   });
-  // 合并结果
+  // Merge results
   sessionResults.results.push(...userResults.results);
 }
 
-// 3. 获取完整内容
+// 3. Get full content
 const fullContent = await get_memory({
   uri: sessionResults.results[0].uri
 });
 
-// 4. 或者只获取摘要快速查看
+// 4. Or get abstract for quick preview
 const abstract = await get_abstract({
   uri: sessionResults.results[0].uri
 });
 ```
 
-## 🔧 故障排除
+## 🔧 Troubleshooting
 
-### 常见问题
+### Common Issues
 
-#### 1. 连接失败
+#### 1. Connection Failed
 
-**错误**: `Failed to connect to MCP server`
+**Error**: `Failed to connect to MCP server`
 
-**解决方案**:
-1. 检查 Claude Desktop 配置文件路径
-2. 验证二进制文件路径和权限
-3. 查看日志输出
+**Solution**:
+1. Check Claude Desktop configuration file path
+2. Verify binary file path and permissions
+3. View log output
 
 ```bash
-# 测试运行
+# Test run
 RUST_LOG=debug ./cortex-mem-mcp --config config.toml --tenant default
 ```
 
-#### 2. 记忆存储失败
+#### 2. Memory Storage Failed
 
-**错误**: `Failed to store memory`
+**Error**: `Failed to store memory`
 
-**解决方案**:
-1. 检查数据目录权限
-2. 验证 LLM API 配置
-3. 确认 Qdrant 服务运行正常
-4. 检查 embedding 配置
+**Solution**:
+1. Check data directory permissions
+2. Verify LLM API configuration
+3. Confirm Qdrant service is running
+4. Check embedding configuration
 
 ```bash
-# 检查目录权限
+# Check directory permissions
 ls -la ./cortex-data
 chmod 755 ./cortex-data
 
-# 检查 Qdrant 连接
+# Check Qdrant connection
 curl http://localhost:6333/collections
 ```
 
-#### 3. 搜索无结果
+#### 3. Empty Search Results
 
-**错误**: `Search returned empty results`
+**Error**: `Search returned empty results`
 
-**解决方案**:
-1. 检查是否有记忆存储
-2. 验证搜索查询格式
-3. 确认搜索范围
+**Solution**:
+1. Check if memories exist
+2. Verify search query format
+3. Confirm search scope
 
 ```javascript
-// 测试搜索
+// Test listing
 await list_memories({
   uri: "cortex://session",
   limit: 50
 });
 ```
 
-#### 4. Qdrant 连接失败
+#### 4. Qdrant Connection Failed
 
-**错误**: `Failed to connect to Qdrant`
+**Error**: `Failed to connect to Qdrant`
 
-**解决方案**:
-1. 确保 Qdrant 服务正在运行
-2. 检查 URL 配置是否正确
-3. 验证集合名称是否存在
+**Solution**:
+1. Ensure Qdrant service is running
+2. Check URL configuration
+3. Verify collection name exists
 
 ```bash
-# 启动 Qdrant (Docker)
+# Start Qdrant (Docker)
 docker run -p 6333:6333 qdrant/qdrant
 
-# 检查连接
+# Check connection
 curl http://localhost:6333
 ```
 
-### 调试模式
-
-启用详细日志进行问题诊断：
+### Debug Mode
 
 ```bash
-# 启用调试模式
+# Enable verbose logging
 RUST_LOG=debug ./cortex-mem-mcp --config config.toml --tenant default
 ```
 
-## 🔗 相关资源
+## 🔗 Related Resources
 
-- [Cortex Memory 主文档](../README.md)
-- [Cortex Memory 核心](../cortex-mem-core/README.md)
-- [Cortex Memory 工具](../cortex-mem-tools/README.md)
+- [Cortex Memory Main Documentation](../README.md)
+- [Cortex Memory Core](../cortex-mem-core/README.md)
+- [Cortex Memory Tools](../cortex-mem-tools/README.md)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
-- [Claude Desktop MCP 文档](https://docs.anthropic.com/claude/docs/mcp)
+- [Claude Desktop MCP Documentation](https://docs.anthropic.com/claude/docs/mcp)
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎贡献！请遵循以下步骤：
+Contributions are welcome! Please follow these steps:
 
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 创建 Pull Request
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Create a Pull Request
 
-## 📄 许可证
+## 📄 License
 
-MIT 许可证 - 详见 [LICENSE](../../LICENSE) 文件
+MIT License - see the [LICENSE](../../LICENSE) file for details.
 
 ---
 
