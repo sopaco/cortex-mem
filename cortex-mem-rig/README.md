@@ -1,321 +1,416 @@
 # Cortex Memory Rig Integration
 
-`cortex-mem-rig` 提供与 [Rig](https://github.com/coreylowman/rig) AI 框架的集成，使 AI 代理能够通过工具调用与 Cortex Memory 系统进行交互。
+`cortex-mem-rig` provides integration with the [Rig](https://github.com/0xPlaygrounds/rig) AI framework, enabling AI agents to interact with the Cortex Memory system through tool calls.
 
-## 🧠 概述
+## 🧠 Overview
 
-Cortex Memory Rig 实现了三层架构访问工具，允许 AI 代理高效地检索和操作记忆：
+Cortex Memory Rig implements OpenViking-style tiered access tools, allowing AI agents to efficiently retrieve and manipulate memories:
 
-### 三层访问架构
+### Three-Tier Access Architecture
 
-| 层级 | 大小 | 用途 | 工具 |
-|------|------|------|------|
-| **L0 Abstract** | ~100 tokens | 快速相关性判断 | `abstract_tool` |
-| **L1 Overview** | ~500-2000 tokens | 部分上下文理解 | `overview_tool` |
-| **L3 Full** | 完整内容 | 深度分析和处理 | `read_tool` |
+| Layer | Size | Purpose | Tool |
+|-------|------|---------|------|
+| **L0 Abstract** | ~100 tokens | Quick relevance judgment | `abstract_tool` |
+| **L1 Overview** | ~2000 tokens | Partial context understanding | `overview_tool` |
+| **L2 Full** | Complete content | Deep analysis and processing | `read_tool` |
 
-### 核心工具集
+### Tool Categories
 
-- 📊 **分层访问工具**: `abstract()`, `overview()`, `read()`
-- 🔍 **搜索工具**: `search()`, `find()`
-- 📁 **文件系统工具**: `ls()`, `explore()`, `store()`
+- 📊 **Tiered Access Tools**: `abstract`, `overview`, `read`
+- 🔍 **Search Tools**: `search`, `find`
+- 📁 **Filesystem Tools**: `ls`, `explore`
+- 💾 **Storage Tools**: `store`
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 安装
+### Installation
 
 ```toml
 [dependencies]
 cortex-mem-rig = { path = "../cortex-mem-rig" }
 cortex-mem-tools = { path = "../cortex-mem-tools" }
-rig-core = "0.31"
+cortex-mem-core = { path = "../cortex-mem-core" }
+rig-core = "0.11"
+tokio = { version = "1", features = ["full"] }
 ```
 
-### 基本使用
+### Basic Usage
 
 ```rust
-use cortex_mem_rig::MemoryTools;
-use cortex_mem_tools::MemoryOperations;
-use rig::agents::Agent;
+use cortex_mem_rig::{MemoryTools, create_memory_tools_with_tenant_and_vector};
+use cortex_mem_core::llm::{LLMClientImpl, LLMConfig};
 use std::sync::Arc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 创建记忆操作
-    let operations = Arc::new(MemoryOperations::from_data_dir("./cortex-data").await?);
+    // Create LLM client
+    let llm_config = LLMConfig {
+        api_base_url: "https://api.openai.com/v1".to_string(),
+        api_key: "your-api-key".to_string(),
+        model_efficient: "gpt-4o-mini".to_string(),
+        temperature: 0.1,
+        max_tokens: 4096,
+    };
+    let llm_client = Arc::new(LLMClientImpl::new(llm_config)?);
     
-    // 创建 Rig 工具集
-    let memory_tools = MemoryTools::new(operations);
+    // Create memory tools with vector search support
+    let memory_tools = create_memory_tools_with_tenant_and_vector(
+        "./cortex-data",
+        "default",
+        llm_client,
+        "http://localhost:6333",
+        "cortex_memories",
+        "https://api.openai.com/v1",
+        "your-embedding-key",
+        "text-embedding-3-small",
+        Some(1536),
+        None,
+    ).await?;
     
-    // 创建 agent 并附加工具
-    let agent = Agent::new("gpt-4o-mini")
-        .preamble("你是一个具有持久记忆的 AI 助手。")
-        .tool(memory_tools.abstract_tool())
-        .tool(memory_tools.overview_tool())
-        .tool(memory_tools.search_tool())
-        .build();
+    // Get individual tools for Rig agent
+    let abstract_tool = memory_tools.abstract_tool();
+    let overview_tool = memory_tools.overview_tool();
+    let read_tool = memory_tools.read_tool();
+    let search_tool = memory_tools.search_tool();
+    let store_tool = memory_tools.store_tool();
     
-    // 使用 agent...
+    // Use with Rig agent...
     
     Ok(())
 }
 ```
 
-## 📚 API 参考
+## 📚 API Reference
 
 ### MemoryTools
 
-主要的工具集合类，提供对不同层级工具的访问。
+Main struct providing access to all memory tools.
 
 ```rust
-impl MemoryTools {
-    pub fn new(operations: Arc<MemoryOperations>) -> Self
+pub struct MemoryTools {
+    operations: Arc<MemoryOperations>,
+}
 
-    // 三层访问工具
+impl MemoryTools {
+    /// Create from existing MemoryOperations
+    pub fn new(operations: Arc<MemoryOperations>) -> Self
+    
+    /// Get underlying operations
+    pub fn operations(&self) -> &Arc<MemoryOperations>
+    
+    // Tiered Access Tools
     pub fn abstract_tool(&self) -> AbstractTool
     pub fn overview_tool(&self) -> OverviewTool
     pub fn read_tool(&self) -> ReadTool
     
-    // 搜索工具
+    // Search Tools
     pub fn search_tool(&self) -> SearchTool
     pub fn find_tool(&self) -> FindTool
     
-    // 文件系统工具
+    // Filesystem Tools
     pub fn ls_tool(&self) -> LsTool
     pub fn explore_tool(&self) -> ExploreTool
-    pub fn store_tool(&self) -> StoreTool
     
-    // 获取底层操作
-    pub fn operations(&self) -> &Arc<MemoryOperations>
+    // Storage Tools
+    pub fn store_tool(&self) -> StoreTool
 }
 ```
 
-### 分层访问工具
-
-#### AbstractTool
-
-获取内容的 L0 抽象摘要（约 100 tokens），用于快速判断相关性。
+### Factory Functions
 
 ```rust
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AbstractArgs {
-    pub uri: String,
-}
+/// Create MemoryTools from existing MemoryOperations
+pub fn create_memory_tools(operations: Arc<MemoryOperations>) -> MemoryTools
 
-#[derive(Debug, Serialize, Deserialize)]
+/// Create MemoryTools with tenant isolation and vector search support
+pub async fn create_memory_tools_with_tenant_and_vector(
+    data_dir: &str,
+    tenant_id: &str,
+    llm_client: Arc<dyn LLMClient>,
+    qdrant_url: &str,
+    qdrant_collection: &str,
+    embedding_api_base_url: &str,
+    embedding_api_key: &str,
+    embedding_model_name: &str,
+    embedding_dim: Option<usize>,
+    user_id: Option<String>,
+) -> Result<MemoryTools, Box<dyn std::error::Error>>
+```
+
+## 🛠️ Tool Definitions
+
+### Tiered Access Tools
+
+#### AbstractTool (`"abstract"`)
+
+Get L0 abstract (~100 tokens) for quick relevance checking.
+
+**Parameters:**
+```rust
+pub struct AbstractArgs {
+    pub uri: String,  // Required: Memory URI
+}
+```
+
+**Response:**
+```rust
 pub struct AbstractResponse {
     pub uri: String,
     pub abstract_text: String,
-    pub layer: String,
+    pub layer: String,       // "L0"
     pub token_count: usize,
 }
-
-impl Tool for AbstractTool {
-    const NAME: &'static str = "abstract";
-    // ...
-}
 ```
 
-**示例使用**:
+#### OverviewTool (`"overview"`)
+
+Get L1 overview (~2000 tokens) for partial context.
+
+**Parameters:**
 ```rust
-let result = agent.prompt(
-    "获取cortex://user/user-123/preferences.md的摘要"
-).await?;
-```
-
-#### OverviewTool
-
-获取内容的 L1 概览（约 500-2000 tokens），用于部分上下文理解。
-
-```rust
-#[derive(Debug, Serialize, Deserialize)]
 pub struct OverviewArgs {
-    pub uri: String,
+    pub uri: String,  // Required: Memory URI
 }
+```
 
-#[derive(Debug, Serialize, Deserialize)]
+**Response:**
+```rust
 pub struct OverviewResponse {
     pub uri: String,
     pub overview_text: String,
-    pub layer: String,
+    pub layer: String,       // "L1"
     pub token_count: usize,
-    pub sections: Vec<String>,
-}
-
-impl Tool for OverviewTool {
-    const NAME: &'static str = "overview";
-    // ...
 }
 ```
 
-#### ReadTool
+#### ReadTool (`"read"`)
 
-获取完整内容（L3），用于深度分析。
+Get L2 full content for deep analysis.
 
+**Parameters:**
 ```rust
-#[derive(Debug, Serialize, Deserialize)]
 pub struct ReadArgs {
-    pub uri: String,
+    pub uri: String,  // Required: Memory URI
 }
+```
 
-#[derive(Debug, Serialize, Deserialize)]
+**Response:**
+```rust
 pub struct ReadResponse {
     pub uri: String,
     pub content: String,
-    pub layer: String,
+    pub layer: String,       // "L2"
     pub token_count: usize,
-    pub sections: Vec<String>,
-}
-
-impl Tool for ReadTool {
-    const NAME: &'static str = "read";
-    // ...
+    pub metadata: Option<FileMetadata>,
 }
 ```
 
-### 搜索工具
+### Search Tools
 
-#### SearchTool
+#### SearchTool (`"search"`)
 
-执行智能搜索，支持多种模式。
+Intelligent vector search with LLM query rewriting and layered retrieval.
 
+**Parameters:**
 ```rust
-#[derive(Debug, Serialize, Deserialize)]
 pub struct SearchArgs {
-    pub query: String,
-    pub thread: Option<String>,
-    pub scope: Option<String>,
-    pub limit: Option<usize>,
+    pub query: String,                    // Required: Search query
+    pub recursive: Option<bool>,          // Default: true
+    pub return_layers: Option<Vec<String>>, // ["L0", "L1", "L2"]
+    pub scope: Option<String>,            // Search scope URI
+    pub limit: Option<usize>,             // Default: 10
 }
+```
 
-#[derive(Debug, Serialize, Deserialize)]
+**Response:**
+```rust
 pub struct SearchResponse {
     pub query: String,
     pub results: Vec<SearchResult>,
-    pub count: usize,
+    pub total: usize,
+    pub engine_used: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
 pub struct SearchResult {
     pub uri: String,
-    pub snippet: String,
     pub score: f32,
+    pub snippet: String,
+    pub content: Option<String>,
+}
+```
+
+#### FindTool (`"find"`)
+
+Quick search returning only L0 abstracts.
+
+**Parameters:**
+```rust
+pub struct FindArgs {
+    pub query: String,          // Required: Search query
+    pub scope: Option<String>,  // Search scope URI
+    pub limit: Option<usize>,   // Default: 10
+}
+```
+
+**Response:**
+```rust
+pub struct FindResponse {
+    pub query: String,
+    pub results: Vec<FindResult>,
+    pub total: usize,
+}
+
+pub struct FindResult {
+    pub uri: String,
+    pub score: f32,
+    pub abstract_text: String,
+}
+```
+
+### Filesystem Tools
+
+#### LsTool (`"ls"`)
+
+List directory contents.
+
+**Parameters:**
+```rust
+pub struct LsArgs {
+    pub uri: String,                    // Default: "cortex://session"
+    pub recursive: Option<bool>,        // Default: false
+    pub include_abstracts: Option<bool>, // Default: false
+}
+```
+
+**Response:**
+```rust
+pub struct LsResponse {
+    pub uri: String,
+    pub entries: Vec<LsEntry>,
+    pub total: usize,
+}
+
+pub struct LsEntry {
+    pub name: String,
+    pub uri: String,
+    pub is_directory: bool,
+    pub size: Option<u64>,
     pub abstract_text: Option<String>,
 }
-
-impl Tool for SearchTool {
-    const NAME: &'static str = "search";
-    // ...
-}
 ```
 
-#### FindTool
+#### ExploreTool (`"explore"`)
 
-查找特定类型的记忆或内容。
+Intelligent memory exploration.
 
+**Parameters:**
 ```rust
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FindArgs {
-    pub query: String,
-    pub filters: Option<FindFilters>,
-    pub limit: Option<usize>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FindFilters {
-    pub dimensions: Option<Vec<String>>,
-    pub tags: Option<Vec<String>>,
-    pub date_range: Option<DateRange>,
-}
-
-impl Tool for FindTool {
-    const NAME: &'static str = "find";
-    // ...
-}
-```
-
-### 文件系统工具
-
-#### LsTool
-
-列出目录内容。
-
-```rust
-#[derive(Debug, Serialize, Deserialize)]
-pub struct LsArgs {
-    pub uri: String,
-    pub recursive: Option<bool>,
-    pub include_abstracts: Option<bool>,
-}
-
-impl Tool for LsTool {
-    const NAME: &'static str = "ls";
-    // ...
-}
-```
-
-#### ExploreTool
-
-探索结构化的记忆内容。
-
-```rust
-#[derive(Debug, Serialize, Deserialize)]
 pub struct ExploreArgs {
-    pub uri: String,
-    pub depth: Option<usize>,
-    pub filters: Option<ExploreFilters>,
-}
-
-impl Tool for ExploreTool {
-    const NAME: &'static str = "explore";
-    // ...
+    pub query: String,                   // Required: Exploration query
+    pub start_uri: Option<String>,       // Default: "cortex://session"
+    pub max_depth: Option<usize>,        // Default: 3
+    pub return_layers: Option<Vec<String>>, // Default: ["L0"]
 }
 ```
 
-#### StoreTool
-
-存储新记忆。
-
+**Response:**
 ```rust
-#[derive(Debug, Serialize, Deserialize)]
+pub struct ExploreResponse {
+    pub query: String,
+    pub exploration_path: Vec<String>,
+    pub matches: Vec<ExploreMatch>,
+    pub total_explored: usize,
+    pub total_matches: usize,
+}
+```
+
+### Storage Tool
+
+#### StoreTool (`"store"`)
+
+Store content with automatic L0/L1 layer generation.
+
+**Parameters:**
+```rust
 pub struct StoreArgs {
-    pub content: String,
-    pub thread_id: Option<String>,
-    pub role: Option<String>,
-    pub metadata: Option<serde_json::Value>,
-}
-
-impl Tool for StoreTool {
-    const NAME: &'static str = "store";
-    // ...
+    pub content: String,                  // Required: Content to store
+    pub thread_id: String,                // Default: ""
+    pub metadata: Option<Value>,          // Optional metadata
+    pub auto_generate_layers: Option<bool>, // Default: true
+    pub scope: String,                    // "session", "user", or "agent"
+    pub user_id: Option<String>,          // Required for user scope
+    pub agent_id: Option<String>,         // Required for agent scope
 }
 ```
 
-## 🛠️ Agent 集成
+**Response:**
+```rust
+pub struct StoreResponse {
+    pub uri: String,
+    pub layers_generated: Vec<String>,
+    pub success: bool,
+}
+```
 
-### 完整示例
+## 🔧 Rig Framework Integration
+
+### Tool Trait Implementation
+
+Each tool implements the `rig::tool::Tool` trait:
 
 ```rust
-use rig::providers::openai::{Client, completion::CompletionModel};
+impl Tool for AbstractTool {
+    const NAME: &'static str = "abstract";
+
+    type Error = ToolsError;
+    type Args = AbstractArgs;
+    type Output = AbstractResponse;
+
+    fn definition(&self, _prompt: String) -> impl Future<Output = ToolDefinition> + Send + Sync {
+        async {
+            ToolDefinition {
+                name: Self::NAME.to_string(),
+                description: "...".to_string(),
+                parameters: json!({ /* JSON Schema */ }),
+            }
+        }
+    }
+
+    async fn call(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+        Ok(self.operations.get_abstract(&args.uri).await?)
+    }
+}
+```
+
+### Agent Integration Example
+
+```rust
+use rig::providers::openai::{Client, GPT_4O_MINI};
 use cortex_mem_rig::MemoryTools;
-use cortex_mem_tools::MemoryOperations;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 初始化 OpenAI 客户端
-    let openai_client = Client::from_env()?;
+    // Initialize OpenAI client
+    let client = Client::from_env();
     
-    // 创建记忆操作
-    let operations = Arc::new(MemoryOperations::from_data_dir("./cortex-data").await?);
+    // Create memory tools
+    let memory_tools = create_memory_tools_with_tenant_and_vector(
+        "./cortex-data",
+        "default",
+        llm_client,
+        "http://localhost:6333",
+        "cortex_memories",
+        "https://api.openai.com/v1",
+        "your-key",
+        "text-embedding-3-small",
+        Some(1536),
+        None,
+    ).await?;
     
-    // 创建工具集
-    let memory_tools = MemoryTools::new(operations);
-    
-    // 创建 Agent
-    let agent = openai_client
-        .completion_model(CompletionModel::Gpt4Omini)
-        .agent("记忆助手")
-        .preamble("你是一个具有长期记忆的 AI 助手。你可以存储和检索用户信息。")
+    // Create agent with tools
+    let agent = client
+        .agent(GPT_4O_MINI)
+        .preamble("You are an AI assistant with persistent memory capabilities.")
         .tool(memory_tools.abstract_tool())
         .tool(memory_tools.overview_tool())
         .tool(memory_tools.read_tool())
@@ -323,146 +418,102 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .tool(memory_tools.store_tool())
         .build();
     
-    // 对话示例
+    // Use the agent
     let response = agent.prompt(
-        "请先搜索关于用户偏好的信息，然后存储用户喜欢使用深色主题的偏好。"
+        "Search for user preferences and store that they like dark theme."
     ).await?;
     
-    println!("Agent 响应: {}", response);
+    println!("Agent response: {}", response);
     
     Ok(())
 }
 ```
 
-### 链式工具调用
+## 🎯 Best Practices
+
+### Tiered Access Pattern
+
+1. **Use `abstract` first** for quick relevance checking
+2. **Use `overview` if relevant** for more context
+3. **Use `read` only when necessary** for complete content
+
+### Search Optimization
 
 ```rust
-// Agent 会自动进行链式调用
-let response = agent.prompt(
-    "1. 搜索用户之前关于编程语言偏好的讨论\n\
-     2. 获取最相关讨论的概览\n\
-     3. 如果需要，读取完整内容\n\
-     4. 基于结果提供个性化建议"
-).await?;
-```
+// Limit search scope for better performance
+agent.prompt("Search 'error handling' in session 'rust-discussion'").await?;
 
-## 🎯 最佳实践
+// Use find for quick lookups (returns only L0 abstracts)
+agent.prompt("Find memories about 'OAuth' and show abstracts").await?;
 
-### 分层访问模式
-
-1. **首先使用 abstract()** 快速判断相关性
-2. **如果相关，使用 overview()** 获取更多上下文
-3. **仅在必要时使用 read()** 获取完整内容
-
-```rust
-// Agent 的内部思考模式可能如下：
-// 1. 用户询问关于 Rust 的问题
-// 2. 搜索 "Rust programming"
-// 3. 对每个结果使用 abstract() 检查相关性
-// 4. 对相关的使用 overview() 获取更多上下文
-// 5. 对最终需要的文档使用 read() 获取完整内容
-```
-
-### 搜索优化
-
-```rust
-// 限定搜索范围
-agent.prompt("在 'tech-discussions' 会话中搜索 Rust 相关内容").await?;
-
-// 使用精确查询
-agent.prompt("查找与 'async/await' 相关的具体实现示例").await?;
-
-// 结合分层访问
+// Combine with tiered access
 agent.prompt(
-    "搜索 '错误处理'，对前3个结果获取摘要，然后对最相关的获取概览"
+    "Search 'async programming', get abstracts for top 3, then read the most relevant one"
 ).await?;
 ```
 
-## 🔧 高级配置
-
-### 自定义工具
+### Memory Storage
 
 ```rust
-use cortex_mem_rig::tools::AbstractTool;
+// Store in session scope (default)
+agent.prompt("Store 'User is learning Rust async' in current session").await?;
 
-impl AbstractTool {
-    pub fn with_custom_token_limit(operations: Arc<MemoryOperations>, limit: usize) -> Self {
-        // 自定义 token 限制
-        Self { operations, token_limit: Some(limit) }
-    }
-}
+// Store in user scope for long-term memory
+agent.prompt("Store 'User prefers dark mode' as a user preference").await?;
 ```
 
-### 工具组合
-
-```rust
-// 创建专门的工具组合
-let retrieval_tools = MemoryToolsBuilder::new(operations)
-    .with_tiered_access()   // L0, L1, L3 工具
-    .with_search()          // 搜索工具
-    .with_filesystem()      // 文件系统工具
-    .build();
-
-let write_tools = MemoryToolsBuilder::new(operations)
-    .with_store()           // 存储工具
-    .with_search()          // 用于验证的搜索
-    .build();
-```
-
-## 🧪 测试
+## 🧪 Testing
 
 ```bash
-# 运行 Rig 集成测试
+# Run Rig integration tests
 cargo test -p cortex-mem-rig
 
-# 运行工具测试
-cargo test -p cortex-mem-rig tools
-
-# 运行端到端测试
-cargo test -p cortex-mem-rig e2e
+# Run all tests
+cargo test --all
 ```
 
-## 🚨 常见问题
+## 🚨 Common Issues
 
-### 1. 工具调用失败
+### Tool Call Failed
 
-确保：
-- Cortex Memory 核心正确初始化
-- 数据目录具有写权限
-- 搜索索引已建立
+Ensure:
+- Cortex Memory Core is properly initialized
+- Data directory has write permissions
+- Search index is built
 
-### 2. 抽象内容为空
+### Empty Abstract Content
 
-可能原因：
-- 文件不存在
-- 内容过短无法生成摘要
-- LLM 服务不可用
+Possible causes:
+- File does not exist
+- Content too short to generate summary
+- LLM service unavailable
 
-### 3. 搜索结果不准确
+### Inaccurate Search Results
 
-优化方法：
-- 使用更精确的查询
-- 限定搜索范围
-- 使用 find 工具而非 search
+Optimization tips:
+- Use more specific queries
+- Limit search scope
+- Use `search` instead of `find` for comprehensive results
 
-## 🛣️ 路线图
+## 📦 Dependencies
 
-- [ ] 流式访问工具（适用于大文件）
-- [ ] 缓存层优化
-- [ ] 工具调用统计
-- [ ] 自动工具选择
-- [ ] 多模态记忆支持
+- `cortex-mem-tools` - High-level memory operations
+- `cortex-mem-core` - Core library
+- `rig-core` - Rig AI framework
+- `tokio` - Async runtime
+- `serde` / `serde_json` - Serialization
+- `anyhow` / `thiserror` - Error handling
 
-## 📄 许可证
+## 📄 License
 
-MIT 许可证 - 详见 [LICENSE](../../LICENSE) 文件
+MIT License - see the [LICENSE](../../LICENSE) file for details.
 
-## 🔗 相关资源
+## 🔗 Related Resources
 
-- [Cortex Memory 核心](../cortex-mem-core/README.md)
-- [Cortex Memory 工具](../cortex-mem-tools/README.md)
-- [Rig 框架](https://github.com/coreylowman/rig)
-- [Rig 文档](https://docs.rs/rig/)
+- [Cortex Memory Core](../cortex-mem-core/README.md)
+- [Cortex Memory Tools](../cortex-mem-tools/README.md)
+- [Rig Framework](https://github.com/0xPlaygrounds/rig)
+- [Rig Documentation](https://docs.rs/rig/)
 
 ---
 

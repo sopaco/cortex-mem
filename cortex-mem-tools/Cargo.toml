@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
-description = "High-level tools and utilities for Cortex-Mem V2"
+description = "High-level tools and utilities for Cortex Memory Integration"
 
 [dependencies]
 # Local dependencies
