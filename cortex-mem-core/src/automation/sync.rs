@@ -145,6 +145,45 @@ impl SyncManager {
         Ok(total_stats)
     }
 
+    /// 同步特定路径到向量数据库
+    /// 
+    /// 用于只索引特定session或特定路径的文件
+    /// 例如: sync_specific_path("cortex://session/abc123")
+    pub async fn sync_specific_path(&self, uri: &str) -> Result<SyncStats> {
+        info!("Starting sync for specific path: {}", uri);
+
+        // 检查路径是否存在
+        if !self.filesystem.exists(uri).await? {
+            warn!("Path does not exist: {}", uri);
+            return Ok(SyncStats::default());
+        }
+
+        // 判断是session路径还是其他路径
+        let stats = if uri.starts_with("cortex://session/") {
+            // session路径使用递归同步（包含timeline等子目录）
+            self.sync_directory_recursive(uri).await?
+        } else if uri.starts_with("cortex://user/") || uri.starts_with("cortex://agent/") {
+            // user/agent路径使用非递归同步
+            self.sync_directory(uri, MemoryType::Semantic).await?
+        } else if uri.starts_with("cortex://resources/") {
+            self.sync_directory(uri, MemoryType::Semantic).await?
+        } else {
+            // 其他路径尝试递归同步
+            self.sync_directory_recursive(uri).await?
+        };
+
+        info!(
+            "Sync completed for {}: {} files processed, {} indexed, {} skipped, {} errors",
+            uri,
+            stats.total_files,
+            stats.indexed_files,
+            stats.skipped_files,
+            stats.error_files
+        );
+
+        Ok(stats)
+    }
+
     /// 同步单个目录（非递归）
     fn sync_directory<'a>(
         &'a self,

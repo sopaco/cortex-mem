@@ -158,6 +158,19 @@ pub struct IndexMemoriesResult {
     error_files: usize,
 }
 
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct CloseSessionArgs {
+    /// Thread/session ID to close
+    thread_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct CloseSessionResult {
+    success: bool,
+    thread_id: String,
+    message: String,
+}
+
 // ==================== MCP Tools Implementation ====================
 
 #[tool_router]
@@ -396,30 +409,43 @@ impl MemoryMcpService {
     ) -> std::result::Result<Json<GenerateLayersResult>, String> {
         debug!("generate_layers called with args: {:?}", params.0);
 
-        match self.operations.ensure_all_layers().await {
-            Ok(stats) => {
-                let message = if let Some(ref thread_id) = params.0.thread_id {
-                    format!("Generated layers for session {}", thread_id)
-                } else {
-                    "Generated layers for all sessions".to_string()
-                };
-                
-                info!("{}: total={}, generated={}, failed={}", 
-                    message, stats.total, stats.generated, stats.failed);
-                
-                Ok(Json(GenerateLayersResult {
-                    success: true,
-                    message,
-                    total: stats.total,
-                    generated: stats.generated,
-                    failed: stats.failed,
-                }))
+        // ✅ 根据thread_id参数选择不同的处理方式
+        let (stats, message) = if let Some(ref thread_id) = params.0.thread_id {
+            // 只生成特定session的层级文件
+            match self.operations.ensure_session_layers(thread_id).await {
+                Ok(stats) => {
+                    let msg = format!("Generated layers for session {}", thread_id);
+                    (stats, msg)
+                }
+                Err(e) => {
+                    error!("Failed to generate layers for session {}: {}", thread_id, e);
+                    return Err(format!("Failed to generate layers: {}", e));
+                }
             }
-            Err(e) => {
-                error!("Failed to generate layers: {}", e);
-                Err(format!("Failed to generate layers: {}", e))
+        } else {
+            // 生成所有session的层级文件
+            match self.operations.ensure_all_layers().await {
+                Ok(stats) => {
+                    let msg = "Generated layers for all sessions".to_string();
+                    (stats, msg)
+                }
+                Err(e) => {
+                    error!("Failed to generate layers: {}", e);
+                    return Err(format!("Failed to generate layers: {}", e));
+                }
             }
-        }
+        };
+        
+        info!("{}: total={}, generated={}, failed={}", 
+            message, stats.total, stats.generated, stats.failed);
+        
+        Ok(Json(GenerateLayersResult {
+            success: true,
+            message,
+            total: stats.total,
+            generated: stats.generated,
+            failed: stats.failed,
+        }))
     }
 
     #[tool(description = "Index memories to vector database")]
@@ -429,30 +455,71 @@ impl MemoryMcpService {
     ) -> std::result::Result<Json<IndexMemoriesResult>, String> {
         debug!("index_memories called with args: {:?}", params.0);
 
-        match self.operations.index_all_files().await {
-            Ok(stats) => {
-                let message = if let Some(ref thread_id) = params.0.thread_id {
-                    format!("Indexed memories for session {}", thread_id)
-                } else {
-                    "Indexed all memory files".to_string()
-                };
+        // ✅ 根据thread_id参数选择不同的处理方式
+        let (stats, message) = if let Some(ref thread_id) = params.0.thread_id {
+            // 只索引特定session的文件
+            match self.operations.index_session_files(thread_id).await {
+                Ok(stats) => {
+                    let msg = format!("Indexed memories for session {}", thread_id);
+                    (stats, msg)
+                }
+                Err(e) => {
+                    error!("Failed to index session {}: {}", thread_id, e);
+                    return Err(format!("Failed to index memories: {}", e));
+                }
+            }
+        } else {
+            // 索引所有文件
+            match self.operations.index_all_files().await {
+                Ok(stats) => {
+                    let msg = "Indexed all memory files".to_string();
+                    (stats, msg)
+                }
+                Err(e) => {
+                    error!("Failed to index memories: {}", e);
+                    return Err(format!("Failed to index memories: {}", e));
+                }
+            }
+        };
+        
+        info!("{}: total={}, indexed={}, skipped={}, errors={}", 
+            message, stats.total_files, stats.indexed_files, 
+            stats.skipped_files, stats.error_files);
+        
+        Ok(Json(IndexMemoriesResult {
+            success: true,
+            message,
+            total_files: stats.total_files,
+            indexed_files: stats.indexed_files,
+            skipped_files: stats.skipped_files,
+            error_files: stats.error_files,
+        }))
+    }
+
+    #[tool(description = "Close a session and trigger final processing (L0/L1 generation, memory extraction, indexing)")]
+    async fn close_session(
+        &self,
+        params: Parameters<CloseSessionArgs>,
+    ) -> std::result::Result<Json<CloseSessionResult>, String> {
+        debug!("close_session called with args: {:?}", params.0);
+        
+        let thread_id = &params.0.thread_id;
+        
+        match self.operations.close_session(thread_id).await {
+            Ok(_) => {
+                info!("Session closed successfully: {}", thread_id);
                 
-                info!("{}: total={}, indexed={}, skipped={}, errors={}", 
-                    message, stats.total_files, stats.indexed_files, 
-                    stats.skipped_files, stats.error_files);
-                
-                Ok(Json(IndexMemoriesResult {
+                Ok(Json(CloseSessionResult {
                     success: true,
-                    message,
-                    total_files: stats.total_files,
-                    indexed_files: stats.indexed_files,
-                    skipped_files: stats.skipped_files,
-                    error_files: stats.error_files,
+                    thread_id: thread_id.clone(),
+                    message: format!(
+                        "Session closed. L0/L1 generation, memory extraction, and indexing initiated in background."
+                    ),
                 }))
             }
             Err(e) => {
-                error!("Failed to index memories: {}", e);
-                Err(format!("Failed to index memories: {}", e))
+                error!("Failed to close session {}: {}", thread_id, e);
+                Err(format!("Failed to close session: {}", e))
             }
         }
     }
@@ -472,14 +539,23 @@ impl ServerHandler for MemoryMcpService {
                 - get_memory: Retrieve a specific memory\n\
                 - delete_memory: Delete a memory\n\
                 - get_abstract: Get the abstract summary of a memory\n\
-                - generate_layers: Generate L0/L1 layer files for memories\n\
-                - index_memories: Index memories to vector database\n\
+                - generate_layers: Generate L0/L1 layer files for memories (supports optional thread_id)\n\
+                - index_memories: Index memories to vector database (supports optional thread_id)\n\
+                - close_session: Close a session and trigger final processing\n\
                 \n\
                 URI format: cortex://{dimension}/{category}/{resource}\n\
                 Examples:\n\
                 - cortex://session/default/timeline/...\n\
                 - cortex://user/preferences/language.md\n\
-                - cortex://agent/cases/case_001.md"
+                - cortex://agent/cases/case_001.md\n\
+                \n\
+                Session Management:\n\
+                - Call close_session when conversation ends to trigger:\n\
+                  * L0/L1 layer generation\n\
+                  * Memory extraction\n\
+                  * Vector indexing\n\
+                - Sessions are automatically created on first store_memory call\n\
+                - Each session has a unique thread_id for isolation"
                     .to_string(),
             ),
             capabilities: ServerCapabilities::builder().enable_tools().build(),

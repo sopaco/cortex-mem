@@ -46,40 +46,43 @@
 
 pub mod config;
 pub mod error;
-pub mod events;  // 🆕 事件系统
+pub mod events;
 pub mod logging;
 pub mod types;
 
 pub mod automation;
+pub mod builder;
+pub mod embedding;
 pub mod extraction;
 pub mod filesystem;
-pub mod builder;  // 🆕 统一初始化API
 pub mod layers;
 pub mod llm;
 pub mod search;
 pub mod session;
 pub mod vector_store;
-pub mod embedding;
 
 // Re-exports
 pub use config::*;
 pub use error::{Error, Result};
-pub use events::{CortexEvent, EventBus, FilesystemEvent, SessionEvent};  // 🆕 导出事件类型
+pub use events::{CortexEvent, EventBus, FilesystemEvent, SessionEvent};
 pub use types::*;
 
-pub use automation::{AutoExtractConfig, AutoExtractor, AutoIndexer, AutomationConfig, AutomationManager, FsWatcher, IndexStats, IndexerConfig, SyncConfig, SyncManager, SyncStats, WatcherConfig};
-pub use builder::{CortexMem, CortexMemBuilder};  // 🆕 导出统一API
+pub use automation::{
+    AutoExtractConfig, AutoExtractor, AutoIndexer, AutomationConfig, AutomationManager, FsWatcher,
+    IndexStats, IndexerConfig, SyncConfig, SyncManager, SyncStats, WatcherConfig,
+};
+pub use builder::{CortexMem, CortexMemBuilder};
 pub use extraction::ExtractionConfig;
 // Note: MemoryExtractor is also exported from session module
+pub use embedding::{EmbeddingClient, EmbeddingConfig};
 pub use filesystem::{CortexFilesystem, FilesystemOperations};
 pub use llm::LLMClient;
 pub use search::{SearchOptions, VectorSearchEngine};
 pub use session::{
-    Message, MessageRole, Participant, ParticipantManager, SessionConfig, SessionManager,
-    MemoryExtractor, ExtractedMemories, PreferenceMemory, EntityMemory, EventMemory, CaseMemory,
+    CaseMemory, EntityMemory, EventMemory, ExtractedMemories, MemoryExtractor, Message,
+    MessageRole, Participant, ParticipantManager, PreferenceMemory, SessionConfig, SessionManager,
 };
-pub use vector_store::{QdrantVectorStore, VectorStore, uri_to_vector_id, parse_vector_id};
-pub use embedding::{EmbeddingClient, EmbeddingConfig};
+pub use vector_store::{QdrantVectorStore, VectorStore, parse_vector_id, uri_to_vector_id};
 
 // Session-related re-exports
 pub use session::message::MessageStorage;

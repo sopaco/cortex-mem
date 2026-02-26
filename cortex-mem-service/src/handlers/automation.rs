@@ -73,50 +73,53 @@ pub async fn trigger_extraction(
     let entities_for_response = if req.auto_save {
         // 🔧 修复: 使用MemoryExtractor保存提取的记忆
         use cortex_mem_core::session::extraction::MemoryExtractor;
-        
+
         // 从metadata获取user_id和agent_id，如果没有则使用默认值
-        let user_id = "default".to_string();  // TODO: 从请求或session metadata获取
+        let user_id = "default".to_string(); // TODO: 从请求或session metadata获取
         let agent_id = "default".to_string();
-        
+
         let memory_extractor = MemoryExtractor::new(
             llm_client.clone(),
             state.filesystem.clone(),
             user_id,
             agent_id,
         );
-        
+
         // 转换extraction_result为ExtractedMemories格式
-        use cortex_mem_core::session::extraction::{
-            ExtractedMemories, EntityMemory,
-        };
-        
+        use cortex_mem_core::session::extraction::{EntityMemory, ExtractedMemories};
+
         // 先clone entities用于返回
         let entities_clone = extraction_result.entities.clone();
-        
+
         let extracted_memories = ExtractedMemories {
-            preferences: vec![],  // extraction_result不包含preferences
-            entities: extraction_result.entities.into_iter().map(|e| {
-                EntityMemory {
+            preferences: vec![], // extraction_result不包含preferences
+            entities: extraction_result
+                .entities
+                .into_iter()
+                .map(|e| EntityMemory {
                     name: e.name.clone(),
                     entity_type: e.entity_type.clone(),
                     description: e.description.unwrap_or_else(|| e.name.clone()),
                     context: format!("Extracted from session {}", thread_id),
-                }
-            }).collect(),
-            events: vec![],  // extraction_result不包含events
-            cases: vec![],   // extraction_result不包含cases
+                })
+                .collect(),
+            events: vec![], // extraction_result不包含events
+            cases: vec![],  // extraction_result不包含cases
             personal_info: vec![],
             work_history: vec![],
             relationships: vec![],
             goals: vec![],
         };
-        
+
         if let Err(e) = memory_extractor.save_memories(&extracted_memories).await {
             tracing::warn!("Failed to auto-save memories: {}", e);
         } else {
-            tracing::info!("Auto-saved {} entities to user/agent memories", extracted_memories.entities.len());
+            tracing::info!(
+                "Auto-saved {} entities to user/agent memories",
+                extracted_memories.entities.len()
+            );
         }
-        
+
         entities_clone
     } else {
         extraction_result.entities
@@ -150,7 +153,7 @@ pub async fn trigger_indexing(
         .as_ref()
         .ok_or_else(|| AppError::BadRequest("Embedding service not configured.".to_string()))?;
 
-    // 🆕 Create QdrantVectorStore (required for AutoIndexer)
+    // Create QdrantVectorStore (required for AutoIndexer)
     let qdrant_store = match state.create_qdrant_store().await {
         Ok(store) => Arc::new(store),
         Err(e) => {
@@ -161,7 +164,7 @@ pub async fn trigger_indexing(
         }
     };
 
-    // 🆕 Create tenant-aware filesystem
+    // Create tenant-aware filesystem
     let filesystem = if let Some(tenant_root) = state.current_tenant_root.read().await.as_ref() {
         Arc::new(CortexFilesystem::new(
             tenant_root.to_string_lossy().as_ref(),
@@ -209,7 +212,7 @@ pub async fn trigger_indexing_all(
         .as_ref()
         .ok_or_else(|| AppError::BadRequest("Embedding service not configured.".to_string()))?;
 
-    // 🆕 Create QdrantVectorStore (required for AutoIndexer)
+    // Create QdrantVectorStore (required for AutoIndexer)
     let qdrant_store = match state.create_qdrant_store().await {
         Ok(store) => Arc::new(store),
         Err(e) => {
@@ -220,7 +223,7 @@ pub async fn trigger_indexing_all(
         }
     };
 
-    // 🆕 Create tenant-aware filesystem
+    // Create tenant-aware filesystem
     let filesystem = if let Some(tenant_root) = state.current_tenant_root.read().await.as_ref() {
         Arc::new(CortexFilesystem::new(
             tenant_root.to_string_lossy().as_ref(),

@@ -1,10 +1,9 @@
 use crate::{
+    ContextLayer, Result,
     embedding::EmbeddingClient,
     filesystem::{CortexFilesystem, FilesystemOperations},
     session::Message,
     vector_store::{QdrantVectorStore, VectorStore},
-    ContextLayer,
-    Result,
 };
 use std::sync::Arc;
 use tracing::{debug, info, warn};
@@ -226,12 +225,14 @@ impl AutoIndexer {
             stats.total_indexed, stats.total_skipped, stats.total_errors
         );
 
-        // 🆕 Phase 1: Index L0/L1 layers for timeline directories
+        // Index L0/L1 layers for timeline directories
         info!("Indexing timeline L0/L1 layers for thread: {}", thread_id);
         match self.index_timeline_layers(thread_id).await {
             Ok(layer_stats) => {
-                info!("Timeline layers indexed: {} L0, {} L1", 
-                      layer_stats.l0_indexed, layer_stats.l1_indexed);
+                info!(
+                    "Timeline layers indexed: {} L0, {} L1",
+                    layer_stats.l0_indexed, layer_stats.l1_indexed
+                );
                 stats.total_indexed += layer_stats.l0_indexed + layer_stats.l1_indexed;
                 stats.total_errors += layer_stats.errors;
             }
@@ -295,7 +296,7 @@ impl AutoIndexer {
                         .await?;
                 } else if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
                     if let Ok(content) = self.filesystem.as_ref().read(&entry.uri).await {
-                        // 🆕 先尝试解析为标准markdown格式
+                        // 先尝试解析为标准markdown格式
                         if let Some(message) = self.parse_message_markdown(&content) {
                             messages.push(message);
                         } else {
@@ -303,9 +304,11 @@ impl AutoIndexer {
                             // 文件名格式：HH_MM_SS_<uuid前8字符>.md
                             // 例如：15_10_18_28b538d8.md
                             // 但这只是UUID的前8字符，我们需要从文件内容中提取完整UUID
-                            
+
                             // 尝试从Markdown内容中手动提取ID（更宽松的解析）
-                            let message_id = if let Some(id) = Self::extract_id_from_content(&content) {
+                            let message_id = if let Some(id) =
+                                Self::extract_id_from_content(&content)
+                            {
                                 id
                             } else {
                                 // 如果仍然提取不到，尝试从文件名提取UUID部分
@@ -316,7 +319,10 @@ impl AutoIndexer {
                                     // 取最后一个部分（UUID前8字符）
                                     // 但我们知道这不是完整UUID，所以给它一个警告
                                     let partial_id = parts[parts.len() - 1];
-                                    warn!("Could not extract full UUID from {}, using partial ID: {}", entry.uri, partial_id);
+                                    warn!(
+                                        "Could not extract full UUID from {}, using partial ID: {}",
+                                        entry.uri, partial_id
+                                    );
                                     // 跳过这个消息，因为部分ID无法用于向量存储
                                     continue;
                                 } else {
@@ -324,20 +330,23 @@ impl AutoIndexer {
                                     continue;
                                 }
                             };
-                            
+
                             // 从entry.modified获取时间戳
                             let timestamp = entry.modified;
-                            
+
                             let message = Message {
-                                id: message_id.clone(),  // 🔧 clone以便后续使用
+                                id: message_id.clone(),                  // 🔧 clone以便后续使用
                                 role: crate::session::MessageRole::User, // 默认为User
                                 content: content.trim().to_string(),
                                 timestamp,
                                 created_at: timestamp,
                                 metadata: None,
                             };
-                            
-                            debug!("Collected message from {} with ID: {}", entry.uri, message_id);
+
+                            debug!(
+                                "Collected message from {} with ID: {}",
+                                entry.uri, message_id
+                            );
                             messages.push(message);
                         }
                     }
@@ -372,7 +381,11 @@ impl AutoIndexer {
                     .map(|s| s.trim())
                     .and_then(|s| {
                         // 移除可能的`符号
-                        s.trim_start_matches('`').trim_end_matches('`').trim().to_string().into()
+                        s.trim_start_matches('`')
+                            .trim_end_matches('`')
+                            .trim()
+                            .to_string()
+                            .into()
                     })
                 {
                     if !id_str.is_empty() {
@@ -425,12 +438,8 @@ impl AutoIndexer {
             if line.contains("**ID**:") || line.contains("ID:") {
                 // 尝试提取ID
                 if let Some(id_part) = line.split(':').nth(1) {
-                    let id = id_part
-                        .trim()
-                        .trim_matches('`')
-                        .trim()
-                        .to_string();
-                    
+                    let id = id_part.trim().trim_matches('`').trim().to_string();
+
                     // 验证是否是有效的UUID格式
                     if uuid::Uuid::parse_str(&id).is_ok() {
                         return Some(id);
@@ -451,23 +460,26 @@ impl AutoIndexer {
         format!("{:x}", hasher.finish())
     }
 
-    /// 🆕 索引timeline目录的L0/L1层
-    /// 
+    /// 索引timeline目录的L0/L1层
+    ///
     /// 该方法会递归扫描timeline目录结构，为每个包含.abstract.md和.overview.md的目录
     /// 生成L0/L1层的向量索引
     async fn index_timeline_layers(&self, thread_id: &str) -> Result<TimelineLayerStats> {
         let mut stats = TimelineLayerStats::default();
         let timeline_base = format!("cortex://session/{}/timeline", thread_id);
-        
+
         // 递归收集所有timeline目录
         let directories = self.collect_timeline_directories(&timeline_base).await?;
         info!("Found {} timeline directories to index", directories.len());
-        
+
         for dir_uri in directories {
             // 索引L0 Abstract
             let l0_file_uri = format!("{}/.abstract.md", dir_uri);
             if let Ok(l0_content) = self.filesystem.as_ref().read(&l0_file_uri).await {
-                match self.index_layer(&dir_uri, &l0_content, ContextLayer::L0Abstract).await {
+                match self
+                    .index_layer(&dir_uri, &l0_content, ContextLayer::L0Abstract)
+                    .await
+                {
                     Ok(indexed) => {
                         if indexed {
                             stats.l0_indexed += 1;
@@ -480,11 +492,14 @@ impl AutoIndexer {
                     }
                 }
             }
-            
+
             // 索引L1 Overview
             let l1_file_uri = format!("{}/.overview.md", dir_uri);
             if let Ok(l1_content) = self.filesystem.as_ref().read(&l1_file_uri).await {
-                match self.index_layer(&dir_uri, &l1_content, ContextLayer::L1Overview).await {
+                match self
+                    .index_layer(&dir_uri, &l1_content, ContextLayer::L1Overview)
+                    .await
+                {
                     Ok(indexed) => {
                         if indexed {
                             stats.l1_indexed += 1;
@@ -498,17 +513,18 @@ impl AutoIndexer {
                 }
             }
         }
-        
+
         Ok(stats)
     }
-    
+
     /// 收集timeline目录结构中的所有目录URI
     async fn collect_timeline_directories(&self, base_uri: &str) -> Result<Vec<String>> {
         let mut directories = Vec::new();
-        self.collect_directories_recursive(base_uri, &mut directories).await?;
+        self.collect_directories_recursive(base_uri, &mut directories)
+            .await?;
         Ok(directories)
     }
-    
+
     /// 递归收集目录
     fn collect_directories_recursive<'a>(
         &'a self,
@@ -519,18 +535,19 @@ impl AutoIndexer {
             match self.filesystem.as_ref().list(uri).await {
                 Ok(entries) => {
                     // 检查当前目录是否包含.abstract.md或.overview.md
-                    let has_layers = entries.iter().any(|e| {
-                        e.name == ".abstract.md" || e.name == ".overview.md"
-                    });
-                    
+                    let has_layers = entries
+                        .iter()
+                        .any(|e| e.name == ".abstract.md" || e.name == ".overview.md");
+
                     if has_layers {
                         directories.push(uri.to_string());
                     }
-                    
+
                     // 递归处理子目录
                     for entry in entries {
                         if entry.is_directory && !entry.name.starts_with('.') {
-                            self.collect_directories_recursive(&entry.uri, directories).await?;
+                            self.collect_directories_recursive(&entry.uri, directories)
+                                .await?;
                         }
                     }
                     Ok(())
@@ -542,30 +559,25 @@ impl AutoIndexer {
             }
         })
     }
-    
+
     /// 索引单个层（L0或L1）
-    /// 
+    ///
     /// 返回: Ok(true)表示已索引, Ok(false)表示已存在跳过
-    async fn index_layer(
-        &self,
-        dir_uri: &str,
-        content: &str,
-        layer: ContextLayer,
-    ) -> Result<bool> {
-        use crate::vector_store::{uri_to_vector_id, VectorStore};
-        
+    async fn index_layer(&self, dir_uri: &str, content: &str, layer: ContextLayer) -> Result<bool> {
+        use crate::vector_store::{VectorStore, uri_to_vector_id};
+
         // 生成向量ID（基于目录URI，不是文件URI）
         let vector_id = uri_to_vector_id(dir_uri, layer);
-        
+
         // 检查是否已索引
         if let Ok(Some(_)) = self.vector_store.as_ref().get(&vector_id).await {
             debug!("Layer {:?} already indexed for {}", layer, dir_uri);
             return Ok(false);
         }
-        
+
         // 生成embedding
         let embedding = self.embedding.embed(content).await?;
-        
+
         // 创建Memory对象
         let memory = crate::types::Memory {
             id: vector_id,
@@ -588,7 +600,7 @@ impl AutoIndexer {
                 custom: std::collections::HashMap::new(),
             },
         };
-        
+
         // 存储到Qdrant
         self.vector_store.as_ref().insert(&memory).await?;
         Ok(true)

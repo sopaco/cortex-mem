@@ -123,12 +123,33 @@ impl VectorSearchEngine {
         let query_vec = self.embedding.embed(query).await?;
 
         // 2. Search in Qdrant
-        let filters = crate::types::Filters::default();
+        // ✅ 修复：构建包含scope的Filters
+        let mut filters = crate::types::Filters::default();
+        if let Some(scope) = &options.root_uri {
+            filters.uri_prefix = Some(scope.clone());
+        }
+
         let scored = self
             .qdrant
             .as_ref()
             .search_with_threshold(&query_vec, &filters, options.limit, Some(options.threshold))
             .await?;
+
+        // ✅ 修复：添加应用层URI前缀过滤（确保scope隔离）
+        let scope_prefix = options.root_uri.as_ref();
+        let scored: Vec<_> = scored
+            .into_iter()
+            .filter(|result| {
+                if let Some(prefix) = scope_prefix {
+                    if let Some(uri) = &result.memory.metadata.uri {
+                        return uri.starts_with(prefix);
+                    }
+                    // 如果没有URI metadata，保守地排除（防止泄露）
+                    return false;
+                }
+                true
+            })
+            .collect();
 
         // 3. Enrich results with content
         let mut results = Vec::new();
@@ -191,7 +212,7 @@ impl VectorSearchEngine {
             intent.intent_type, intent.keywords
         );
 
-        // 🆕 自适应阈值：根据查询类型动态调整
+        // 自适应阈值：根据查询类型动态调整
         let adaptive_threshold = Self::adaptive_l0_threshold(query, &intent.intent_type);
 
         // Generate query embedding once (use rewritten query if available)
@@ -233,18 +254,18 @@ impl VectorSearchEngine {
             })
             .collect();
 
-        // 🆕 增强降级检索策略
+        // 增强降级检索策略
         if l0_results.is_empty() {
             warn!(
                 "No L0 results found at threshold {}, trying fallback strategies",
                 adaptive_threshold
             );
 
-            // 策略1: 降低阈值重试（对于实体查询可能已经是0.4了，尝试更低）
+            // 策略1: 降低阈值重试（但不要降得太低，防止返回过多不相关结果）
             let relaxed_threshold = if adaptive_threshold <= 0.4 {
-                0.3 // 对于已经很低的阈值，尝试0.3
+                0.4 // 最低不低于0.4（余弦相似度约60度）
             } else {
-                adaptive_threshold - 0.3 // 否则降低0.3
+                (adaptive_threshold - 0.2).max(0.4) // 降低0.2，但最低0.4
             };
 
             info!(
@@ -287,7 +308,11 @@ impl VectorSearchEngine {
             } else {
                 // 策略2: 完全降级到语义搜索（跳过L0，直接全量L2检索）
                 warn!(
-                    "No results even with relaxed threshold, falling back to full semantic search"
+                    "No results even with relaxed threshold {}, falling back to full semantic search",
+                    relaxed_threshold
+                );
+                warn!(
+                    "⚠️ Semantic search fallback may return less relevant results due to lack of L0/L1 guidance"
                 );
                 return self.semantic_search(query, options).await;
             }
@@ -302,7 +327,7 @@ impl VectorSearchEngine {
             .await
     }
 
-    /// 🆕 继续执行分层检索的L1/L2阶段
+    /// 继续执行分层检索的L1/L2阶段
     ///
     /// 这个方法被提取出来，以便在降级重试后复用
     async fn continue_layered_search(
@@ -619,7 +644,7 @@ impl VectorSearchEngine {
         QueryIntentType::General
     }
 
-    /// 🆕 判断查询是否可能是实体查询（人名、地名、组织名等）
+    /// 判断查询是否可能是实体查询（人名、地名、组织名等）
     ///
     /// 实体查询的特征：
     /// - 查询很短（通常2-4个字符/词）
@@ -665,7 +690,7 @@ impl VectorSearchEngine {
         false
     }
 
-    /// 🆕 根据查询意图自适应计算L0阈值
+    /// 根据查询意图自适应计算L0阈值
     ///
     /// 不同查询类型使用不同阈值：
     /// - 实体查询: 0.4 (降低阈值，因为L0摘要可能丢失实体)
