@@ -347,13 +347,13 @@ pub fn is_meaningful_text(text: &str, audio_volume: f32) -> bool {
         return false;
     }
 
-    // 6. 🆕 检查是否为重复字符模式（如 "啊啊啊啊", "嗯嗯嗯"）
+    // 6. 检查是否为重复字符模式（如 "啊啊啊啊", "嗯嗯嗯"）
     if is_repetitive_pattern(text) {
         log::debug!("检测到重复字符模式: {}", text);
         return false;
     }
 
-    // 7. 🆕 检查是否为疑似噪音误识别（单个音节重复或无意义组合）
+    // 7. 检查是否为疑似噪音误识别（单个音节重复或无意义组合）
     if is_likely_noise_misrecognition(text) {
         log::debug!("检测到疑似噪音误识别: {}", text);
         return false;

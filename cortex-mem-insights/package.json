@@ -1,29 +1,29 @@
 {
-  "name": "cortex-mem-insights",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "serve": "bun server.ts",
-    "compile": "bun build --compile --minify --bytecode --sourcemap ./server.ts --outfile ./dist/cortex-mem-insights",
-    "compile:prod": "bun build --compile --minify --bytecode --sourcemap --define VERSION='\"0.1.0\"' --define BUILD_TIME='\"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"' ./server.ts --outfile ./dist/cortex-mem-insights",
-    "compile:mac": "bun build --compile --minify --bytecode --target=bun-darwin-arm64 --define VERSION='\"0.1.0\"' ./server.ts --outfile ./dist/cortex-mem-insights-mac-arm64",
-    "compile:mac-x64": "bun build --compile --minify --bytecode --target=bun-darwin-x64 --define VERSION='\"0.1.0\"' ./server.ts --outfile ./dist/cortex-mem-insights-mac-x64",
-    "compile:linux": "bun build --compile --minify --bytecode --target=bun-linux-x64 --define VERSION='\"0.1.0\"' ./server.ts --outfile ./dist/cortex-mem-insights-linux",
-    "compile:windows": "bun build --compile --minify --bytecode --target=bun-windows-x64 --define VERSION='\"0.1.0\"' ./server.ts --outfile ./dist/cortex-mem-insights.exe",
-    "compile:all": "bun run compile:mac && bun run compile:mac-x64 && bun run compile:linux && bun run compile:windows"
-  },
-  "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^5.0.3",
-    "svelte": "^5.19.0",
-    "svelte-check": "^4.1.4",
-    "typescript": "~5.7.3",
-    "vite": "^6.1.0"
-  },
-  "dependencies": {
-    "svelte-routing": "^2.13.0"
-  }
+	"name": "cortex-mem-insights",
+	"private": true,
+	"version": "2.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"serve": "bun server.ts",
+		"compile": "bun build --compile --minify --bytecode --sourcemap ./server.ts --outfile ./dist/cortex-mem-insights",
+		"compile:prod": "bun build --compile --minify --bytecode --sourcemap --define VERSION='\"2.0.0\"' --define BUILD_TIME='\"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"' ./server.ts --outfile ./dist/cortex-mem-insights",
+		"compile:mac": "bun build --compile --minify --bytecode --target=bun-darwin-arm64 --define VERSION='\"2.0.0\"' ./server.ts --outfile ./dist/cortex-mem-insights-mac-arm64",
+		"compile:mac-x64": "bun build --compile --minify --bytecode --target=bun-darwin-x64 --define VERSION='\"2.0.0\"' ./server.ts --outfile ./dist/cortex-mem-insights-mac-x64",
+		"compile:linux": "bun build --compile --minify --bytecode --target=bun-linux-x64 --define VERSION='\"2.0.0\"' ./server.ts --outfile ./dist/cortex-mem-insights-linux",
+		"compile:windows": "bun build --compile --minify --bytecode --target=bun-windows-x64 --define VERSION='\"2.0.0\"' ./server.ts --outfile ./dist/cortex-mem-insights.exe",
+		"compile:all": "bun run compile:mac && bun run compile:mac-x64 && bun run compile:linux && bun run compile:windows"
+	},
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"svelte": "^5.19.0",
+		"svelte-check": "^4.1.4",
+		"typescript": "~5.7.3",
+		"vite": "^6.1.0"
+	},
+	"dependencies": {
+		"svelte-routing": "^2.13.0"
+	}
 }

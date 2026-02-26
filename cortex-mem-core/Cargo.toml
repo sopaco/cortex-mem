@@ -10,7 +10,7 @@ repository.workspace = true
 [dependencies]
 # Workspace dependencies
 tokio = { workspace = true }
-futures = { workspace = true }  # 🆕 用于并发操作
+futures = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

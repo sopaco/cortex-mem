@@ -1,5 +1,5 @@
-mod client;
-mod cache;  // 🆕 Embedding 缓存层
+mod cache;
+mod client; // Embedding 缓存层
 
+pub use cache::{CacheConfig, CacheStats, EmbeddingCache, EmbeddingProvider};
 pub use client::{EmbeddingClient, EmbeddingConfig};
-pub use cache::{EmbeddingCache, CacheConfig, CacheStats, EmbeddingProvider};  // 🆕
