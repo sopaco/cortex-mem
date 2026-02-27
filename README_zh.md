@@ -527,15 +527,21 @@ cortex-mem-cli --config config.toml --tenant acme session create thread-456 --ti
 cortex-mem-cli --config config.toml --tenant acme session close thread-456
 ```
 
-#### 同步和统计
-同步文件系统与向量存储并显示系统统计信息。
+#### 层级管理和统计
+管理层级文件并显示系统统计信息。
 
 ```sh
-# 文件系统与向量存储之间的手动同步
-cortex-mem-cli --config config.toml --tenant acme sync
-
 # 显示系统统计信息
 cortex-mem-cli --config config.toml --tenant acme stats
+
+# 列出可用租户
+cortex-mem-cli --config config.toml tenant list
+
+# 显示L0/L1层级文件覆盖状态
+cortex-mem-cli --config config.toml --tenant acme layers status
+
+# 生成缺失的L0/L1层级文件
+cortex-mem-cli --config config.toml --tenant acme layers ensure-all
 ```
 
 ### REST API (`cortex-mem-service`)

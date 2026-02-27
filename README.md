@@ -525,15 +525,21 @@ cortex-mem-cli --config config.toml --tenant acme session create thread-456 --ti
 cortex-mem-cli --config config.toml --tenant acme session close thread-456
 ```
 
-#### Sync and Stats
-Synchronize filesystem with vector store and display system statistics.
+#### Sync, Layers, and Stats
+Synchronize filesystem with vector store, manage layer files, and display system statistics.
 
 ```sh
-# Manual synchronization between filesystem and vector store
-cortex-mem-cli --config config.toml --tenant acme sync
-
 # Display system statistics
 cortex-mem-cli --config config.toml --tenant acme stats
+
+# List available tenants
+cortex-mem-cli --config config.toml tenant list
+
+# Show L0/L1 layer file coverage status
+cortex-mem-cli --config config.toml --tenant acme layers status
+
+# Generate missing L0/L1 layer files
+cortex-mem-cli --config config.toml --tenant acme layers ensure-all
 ```
 
 ### REST API (`cortex-mem-service`)
