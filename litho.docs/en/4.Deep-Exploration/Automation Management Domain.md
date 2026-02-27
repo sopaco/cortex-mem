@@ -103,9 +103,13 @@ graph TB
 pub struct AutomationConfig {
     pub auto_index: bool,          // Enable automatic indexing
     pub auto_extract: bool,        // Enable memory extraction on session close
+    pub index_on_message: bool,    // Index on message add (default: true)
+    pub index_on_close: bool,      // Index on session close (default: true)
     pub poll_interval_secs: u64,   // Filesystem polling frequency (default: 5)
     pub batch_delay_secs: u64,     // Batching window for indexing (default: 2)
     pub sync_on_startup: bool,     // Run full sync on system start
+    pub auto_generate_layers_on_startup: bool,  // Generate L0/L1 on startup (default: false)
+    pub generate_layers_every_n_messages: usize, // Periodic L0/L1 generation (0 = disabled)
 }
 ```
 
@@ -141,16 +145,23 @@ loop {
 
 ### 3.3 Auto Indexer (`automation/indexer.rs`)
 
-**Responsibility**: Converts filesystem-based conversation threads into vector-searchable embeddings in Qdrant.
+**Responsibility**: Converts filesystem-based conversation threads into vector-searchable embeddings in Qdrant. Now supports indexing timeline L0/L1 layers for enhanced hierarchical search.
 
 **Processing Pipeline**:
 1. **Receive Trigger**: Consumes `FsEvent` from the Automation Manager
 2. **Batch Accumulation**: Collects events for `batch_delay_secs` to group related changes
 3. **Content Retrieval**: Reads raw L2 content via `CortexFilesystem`
 4. **Layer Generation**: Invokes `LayerManager` to generate L0 (abstract) and L1 (overview) summaries if not cached
-5. **Vectorization**: Generates embeddings via `EmbeddingClient`
-6. **Upsert Operation**: Stores vectors in Qdrant with tenant-aware collection naming (`cortex-mem-{tenant_id}`)
-7. **ID Generation**: Uses deterministic vector IDs derived from URI + layer type (e.g., `session/123#l0`)
+5. **Timeline Layer Indexing**: Indexes L0/L1 layers from timeline directories recursively
+6. **Vectorization**: Generates embeddings via `EmbeddingClient`
+7. **Upsert Operation**: Stores vectors in Qdrant with tenant-aware collection naming (`cortex-mem-{tenant_id}`)
+8. **ID Generation**: Uses deterministic vector IDs derived from URI + layer type (e.g., `session/123#l0`)
+
+**Key Functions**:
+- `AutoIndexer::index_thread(thread_id: &str)`: Indexes a specific conversation thread
+- `AutoIndexer::index_batch(threads: Vec<ThreadId>)`: Processes multiple threads atomically
+- `AutoIndexer::index_timeline_layers(thread_id: &str)`: Indexes L0/L1 layers for timeline directories
+- `AutoIndexer::regenerate_layers(thread_id: &str)`: Forces regeneration of L0/L1 summaries
 
 **Key Functions**:
 - `AutoIndexer::index_thread(thread_id: &str)`: Indexes a specific conversation thread
@@ -301,6 +312,12 @@ auto_index = true
 # Enable automatic extraction when sessions close
 auto_extract = true
 
+# Index immediately on message add (recommended for real-time search)
+index_on_message = true
+
+# Generate L0/L1 and index on session close
+index_on_close = true
+
 # Filesystem polling interval in seconds
 poll_interval_secs = 5
 
@@ -309,6 +326,12 @@ batch_delay_secs = 2
 
 # Perform full sync on startup
 sync_on_startup = false
+
+# Generate missing L0/L1 layers on startup (can cause startup delay)
+auto_generate_layers_on_startup = false
+
+# Generate L0/L1 every N messages (0 = disabled)
+generate_layers_every_n_messages = 5
 
 # Maximum concurrent indexing operations
 max_concurrent_indexes = 10

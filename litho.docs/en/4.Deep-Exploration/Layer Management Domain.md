@@ -57,6 +57,26 @@ pub async fn generate_batch(&self, uris: &[Uri]) -> Result<BatchResult, LayerErr
 pub async fn generate_timeline_layers(&self, timeline_uri: &Uri) -> Result<(), LayerError>
 ```
 
+### 3.2 Layer Generator (`/cortex-mem-core/src/automation/layer_generator.rs`)
+
+The **Layer Generator** handles L0/L1 generation for directories, supporting both full-system scans and session-scoped generation.
+
+**Key Methods:**
+- `ensure_all_layers()`: Scans all directories and generates missing L0/L1 files
+- `ensure_timeline_layers(timeline_uri: &str)`: Generates L0/L1 for a specific timeline directory (used on session close)
+- `should_regenerate(uri: &str)`: Checks if regeneration is needed based on timestamps
+
+**Change Detection Strategy:**
+1. Check if `.abstract.md` or `.overview.md` exists
+2. Extract "Added" timestamp from existing layer files
+3. Compare with source file modification times
+4. Only regenerate if source files are newer than layer files
+
+**Performance Optimization:**
+- Skips 90% of regeneration by timestamp-based change detection
+- Batch processing with configurable delays
+- Content truncation to prevent LLM context overflow
+
 ### 3.2 Summary Generators (`/cortex-mem-core/src/layers/generator.rs`)
 
 The generator subcomponents handle LLM-powered content transformation:
