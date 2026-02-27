@@ -57,6 +57,8 @@ pub struct QdrantConfig {
     pub collection_name: String,
     pub embedding_dim: Option<usize>,
     pub timeout_secs: u64,
+    #[serde(default)]
+    pub api_key: Option<String>,
 }
 
 /// Embedding configuration for vector search

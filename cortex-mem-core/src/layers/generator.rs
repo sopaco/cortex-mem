@@ -4,7 +4,8 @@ use std::sync::Arc;
 
 /// Abstract (L0) generator
 /// 
-/// Generates a 1-2 sentence summary (~100 tokens) from content using LLM
+/// Generates a concise summary (~100 tokens) from content using LLM
+/// for quick relevance checking and filtering
 pub struct AbstractGenerator;
 
 impl AbstractGenerator {
@@ -15,8 +16,9 @@ impl AbstractGenerator {
     /// Generate abstract from content using LLM (mandatory)
     pub async fn generate_with_llm(&self, content: &str, llm: &Arc<dyn LLMClient>) -> Result<String> {
         let system = r#"You are an expert at creating concise abstracts.
-Your goal is to generate single-sentence summaries that capture the core essence of content for quick relevance checking.
-Keep abstracts under 100 tokens. Be direct and informative."#;
+Your goal is to generate summaries that capture multiple key aspects of content for quick relevance checking.
+Keep abstracts under 100 tokens. Prioritize breadth over depth - cover more topics briefly rather than elaborating on one.
+Be direct and informative. Use compact phrasing to maximize information density."#;
         
         let prompt = crate::llm::prompts::Prompts::abstract_generation(content);
         

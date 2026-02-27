@@ -71,6 +71,7 @@ impl ConfigManager {
                     collection_name: "cortex_mem".to_string(),
                     embedding_dim: Some(1536),
                     timeout_secs: 30,
+                    api_key: std::env::var("QDRANT_API_KEY").ok(),
                 },
                 embedding: cortex_mem_config::EmbeddingConfig::default(),
                 llm: cortex_mem_config::LLMConfig {
