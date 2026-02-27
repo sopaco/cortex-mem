@@ -186,6 +186,18 @@ Displays:
 - Total message count
 - Data directory path
 
+### Tenant Commands
+
+#### List Tenants
+
+List all available tenant IDs to help you identify the correct `--tenant` parameter value.
+
+```bash
+cortex-mem tenant list
+```
+
+Output displays all tenant IDs found in the data directory. Use the desired tenant ID with `--tenant <id>` for other commands.
+
 ## ⚙️ Configuration
 
 ### Configuration File
