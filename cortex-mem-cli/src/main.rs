@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 mod commands;
-use commands::{add, delete, get, layers, list, search, session, stats};
+use commands::{add, delete, get, layers, list, search, session, stats, tenant};
 
 /// Cortex-Mem CLI - File-based memory management for AI Agents
 #[derive(Parser)]
@@ -18,7 +18,7 @@ struct Cli {
     #[arg(short, long, default_value = "config.toml")]
     config: PathBuf,
 
-    /// Tenant identifier
+    /// Tenant identifier (use 'cortex-mem tenant list' to see available tenants)
     #[arg(long, default_value = "default")]
     tenant: String,
 
@@ -109,6 +109,12 @@ enum Commands {
         #[command(subcommand)]
         action: LayersAction,
     },
+
+    /// Tenant management
+    Tenant {
+        #[command(subcommand)]
+        action: TenantAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -139,6 +145,12 @@ enum LayersAction {
     RegenerateOversized,
 }
 
+#[derive(Subcommand)]
+enum TenantAction {
+    /// List all available tenants
+    List,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -160,6 +172,19 @@ async fn main() -> Result<()> {
         )
     })?;
 
+    // Determine data directory
+    let data_dir = config.cortex.data_dir();
+
+    // Handle tenant list command early (doesn't need MemoryOperations)
+    if let Commands::Tenant { action } = cli.command {
+        match action {
+            TenantAction::List => {
+                tenant::list(&data_dir).await?;
+            }
+        }
+        return Ok(());
+    }
+
     // Initialize LLM client
     let model_name = config.llm.model_efficient.clone();
     let llm_config = cortex_mem_core::llm::LLMConfig {
@@ -170,9 +195,6 @@ async fn main() -> Result<()> {
         max_tokens: config.llm.max_tokens as usize,
     };
     let llm_client = Arc::new(LLMClientImpl::new(llm_config)?);
-
-    // Determine data directory
-    let data_dir = config.cortex.data_dir();
 
     // Initialize MemoryOperations with vector search
     let operations = MemoryOperations::new(
@@ -193,6 +215,7 @@ async fn main() -> Result<()> {
     if cli.verbose {
         eprintln!("LLM model: {}", model_name);
         eprintln!("Data directory: {}", data_dir);
+        eprintln!("Tenant: {}", cli.tenant);
     }
 
     let operations = Arc::new(operations);
@@ -257,6 +280,9 @@ async fn main() -> Result<()> {
                 layers::regenerate_oversized(operations).await?;
             }
         },
+        Commands::Tenant { .. } => {
+            // Already handled above
+        }
     }
 
     Ok(())

@@ -45,7 +45,18 @@ impl LayerManager {
             return self.filesystem.read(&abstract_uri).await;
         }
         
-        // Otherwise, generate from L2 using LLM
+        // Check if URI is a directory (doesn't end with .md)
+        let is_directory = !uri.ends_with(".md");
+        
+        if is_directory {
+            // For directories, abstract should be pre-generated via layers ensure-all
+            return Err(crate::Error::Other(format!(
+                "Abstract not found for directory '{}'. Run 'cortex-mem layers ensure-all' to generate it.",
+                uri
+            )));
+        }
+        
+        // For files, generate abstract from L2 using LLM
         let detail = self.load_detail(uri).await?;
         let abstract_text = self.abstract_gen.generate_with_llm(&detail, &self.llm_client).await?;
         
@@ -193,14 +204,31 @@ impl LayerManager {
     }
     
     /// Get layer URI for a base URI
+    /// 
+    /// For file URIs (ending with .md): extract directory and append layer file
+    /// For directory URIs: directly append layer file
     fn get_layer_uri(base_uri: &str, layer: ContextLayer) -> String {
         match layer {
             ContextLayer::L0Abstract => {
-                let dir = base_uri.rsplit_once('/').map(|(dir, _)| dir).unwrap_or(base_uri);
+                // Check if URI points to a file (ends with .md) or a directory
+                let dir = if base_uri.ends_with(".md") {
+                    // File URI: extract directory path
+                    base_uri.rsplit_once('/').map(|(dir, _)| dir).unwrap_or(base_uri)
+                } else {
+                    // Directory URI: use as-is
+                    base_uri
+                };
                 format!("{}/.abstract.md", dir)
             }
             ContextLayer::L1Overview => {
-                let dir = base_uri.rsplit_once('/').map(|(dir, _)| dir).unwrap_or(base_uri);
+                // Check if URI points to a file (ends with .md) or a directory
+                let dir = if base_uri.ends_with(".md") {
+                    // File URI: extract directory path
+                    base_uri.rsplit_once('/').map(|(dir, _)| dir).unwrap_or(base_uri)
+                } else {
+                    // Directory URI: use as-is
+                    base_uri
+                };
                 format!("{}/.overview.md", dir)
             }
             ContextLayer::L2Detail => base_uri.to_string(),

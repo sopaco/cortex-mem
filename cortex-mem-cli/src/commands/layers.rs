@@ -3,11 +3,11 @@ use cortex_mem_core::automation::{LayerGenerator, LayerGenerationConfig};
 use cortex_mem_tools::MemoryOperations;
 use std::sync::Arc;
 
-/// 确保所有目录拥有 L0/L1 文件
+/// Ensure all directories have L0/L1 files
 pub async fn ensure_all(operations: Arc<MemoryOperations>) -> Result<()> {
-    println!("🔍 扫描文件系统，检查缺失的 .abstract.md 和 .overview.md 文件...\n");
+    println!("🔍 Scanning filesystem for missing .abstract.md and .overview.md files...\n");
     
-    // 从 session_manager 中获取 LLM client
+    // Get LLM client from session_manager
     let llm_client = {
         let sm = operations.session_manager().read().await;
         sm.llm_client()
@@ -15,7 +15,7 @@ pub async fn ensure_all(operations: Arc<MemoryOperations>) -> Result<()> {
             .clone()
     };
     
-    // 创建 LayerGenerator
+    // Create LayerGenerator
     let config = LayerGenerationConfig::default();
     let generator = LayerGenerator::new(
         operations.filesystem().clone(),
@@ -23,28 +23,28 @@ pub async fn ensure_all(operations: Arc<MemoryOperations>) -> Result<()> {
         config,
     );
     
-    // 执行扫描和生成
+    // Execute scan and generation
     let stats = generator.ensure_all_layers().await?;
     
-    // 显示结果
-    println!("\n✅ 生成完成！");
+    // Display results
+    println!("\n✅ Generation complete!");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    println!("📊 统计信息:");
-    println!("   • 总计发现缺失: {} 个目录", stats.total);
-    println!("   • 成功生成:     {} 个", stats.generated);
-    println!("   • 失败:         {} 个", stats.failed);
+    println!("📊 Statistics:");
+    println!("   • Total missing:   {} directories", stats.total);
+    println!("   • Generated:       {}", stats.generated);
+    println!("   • Failed:          {}", stats.failed);
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     
     if stats.failed > 0 {
-        println!("\n⚠️  部分目录生成失败，请检查日志获取详细信息");
+        println!("\n⚠️  Some directories failed to generate. Check logs for details.");
     }
     
     Ok(())
 }
 
-/// 显示层级文件状态
+/// Display layer file status
 pub async fn status(operations: Arc<MemoryOperations>) -> Result<()> {
-    println!("📊 层级文件状态检查\n");
+    println!("📊 Layer file status check\n");
     
     let llm_client = {
         let sm = operations.session_manager().read().await;
@@ -60,11 +60,11 @@ pub async fn status(operations: Arc<MemoryOperations>) -> Result<()> {
         config,
     );
     
-    // 扫描所有目录
+    // Scan all directories
     let directories = generator.scan_all_directories().await?;
-    println!("🗂️  总计目录数: {}\n", directories.len());
+    println!("🗂️  Total directories: {}\n", directories.len());
     
-    // 检测缺失的目录
+    // Detect missing directories
     let missing = generator.filter_missing_layers(&directories).await?;
     
     let complete = directories.len() - missing.len();
@@ -75,33 +75,33 @@ pub async fn status(operations: Arc<MemoryOperations>) -> Result<()> {
     };
     
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    println!("✅ 完整 (有 L0/L1): {} ({:.0}%)", complete, complete_percent);
-    println!("❌ 缺失 (无 L0/L1): {} ({:.0}%)", missing.len(), 100 - complete_percent);
+    println!("✅ Complete (has L0/L1): {} ({:.0}%)", complete, complete_percent);
+    println!("❌ Missing (no L0/L1):   {} ({:.0}%)", missing.len(), 100 - complete_percent);
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     
     if missing.len() > 0 {
-        println!("\n💡 提示: 运行 `cortex-mem-cli layers ensure-all` 来生成缺失的文件");
+        println!("\n💡 Tip: Run `cortex-mem layers ensure-all` to generate missing files");
         
         if missing.len() <= 10 {
-            println!("\n缺失的目录:");
+            println!("\nMissing directories:");
             for dir in &missing {
                 println!("  • {}", dir);
             }
         } else {
-            println!("\n缺失的目录 (显示前 10 个):");
+            println!("\nMissing directories (showing first 10):");
             for dir in missing.iter().take(10) {
                 println!("  • {}", dir);
             }
-            println!("  ... 还有 {} 个", missing.len() - 10);
+            println!("  ... and {} more", missing.len() - 10);
         }
     }
     
     Ok(())
 }
 
-/// 重新生成超大的 .abstract 文件
+/// Regenerate oversized .abstract files
 pub async fn regenerate_oversized(operations: Arc<MemoryOperations>) -> Result<()> {
-    println!("🔍 扫描超大的 .abstract.md 文件...\n");
+    println!("🔍 Scanning for oversized .abstract.md files...\n");
     
     let llm_client = {
         let sm = operations.session_manager().read().await;
@@ -119,16 +119,16 @@ pub async fn regenerate_oversized(operations: Arc<MemoryOperations>) -> Result<(
     
     let stats = generator.regenerate_oversized_abstracts().await?;
     
-    println!("\n✅ 重新生成完成！");
+    println!("\n✅ Regeneration complete!");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    println!("📊 统计信息:");
-    println!("   • 发现超大文件: {} 个", stats.total);
-    println!("   • 成功重新生成: {} 个", stats.regenerated);
-    println!("   • 失败:         {} 个", stats.failed);
+    println!("📊 Statistics:");
+    println!("   • Oversized files found:    {}", stats.total);
+    println!("   • Successfully regenerated: {}", stats.regenerated);
+    println!("   • Failed:                   {}", stats.failed);
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     
     if stats.total == 0 {
-        println!("\n✨ 所有 .abstract 文件大小都在限制范围内！");
+        println!("\n✨ All .abstract files are within size limits!");
     }
     
     Ok(())

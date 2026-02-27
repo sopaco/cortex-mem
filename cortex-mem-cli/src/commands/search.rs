@@ -12,6 +12,19 @@ pub async fn execute(
     min_score: f32,
     scope: &str,
 ) -> Result<()> {
+    // Validate min_score parameter
+    if min_score < 0.0 || min_score > 1.0 {
+        return Err(anyhow::anyhow!(
+            "min_score must be between 0.0 and 1.0, got {:.2}",
+            min_score
+        ));
+    }
+    
+    // Validate limit parameter
+    if limit == 0 {
+        return Err(anyhow::anyhow!("limit must be greater than 0"));
+    }
+
     println!("{} Searching for: {}", "🔍".bold(), query.yellow());
 
     // Build search scope URI
