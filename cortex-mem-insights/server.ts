@@ -33,22 +33,27 @@ const buildTime =
  */
 function openBrowser(url: string): void {
   const platform = process.platform;
-  let command: string;
-
-  if (platform === "darwin") {
-    command = "open";
-  } else if (platform === "win32") {
-    command = "start";
-  } else {
-    // Linux and others
-    command = "xdg-open";
-  }
 
   try {
-    spawn(command, [url], {
-      detached: true,
-      stdio: "ignore",
-    }).unref();
+    if (platform === "darwin") {
+      // macOS
+      spawn("open", [url], {
+        detached: true,
+        stdio: "ignore",
+      }).unref();
+    } else if (platform === "win32") {
+      // Windows - 使用cmd /c start命令
+      spawn("cmd", ["/c", "start", "", url], {
+        detached: true,
+        stdio: "ignore",
+      }).unref();
+    } else {
+      // Linux and others
+      spawn("xdg-open", [url], {
+        detached: true,
+        stdio: "ignore",
+      }).unref();
+    }
     console.log(`🌐 Opening browser at ${url}...`);
   } catch (error) {
     console.warn(`⚠️  Could not open browser automatically: ${error}`);
