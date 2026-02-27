@@ -4,16 +4,17 @@ pub struct Prompts;
 impl Prompts {
     /// Prompt for generating L0 abstract
     ///
-    /// Based on OpenViking design: ~100 tokens, single-sentence summary
-    /// for quick relevance checking and filtering
+    /// Based on OpenViking design: ~100 tokens for quick relevance checking and filtering
     pub fn abstract_generation(content: &str) -> String {
         format!(
             r#"Generate a concise abstract (~100 tokens maximum) for the following content.
 
 Requirements:
-- Single sentence or 2-3 short sentences maximum
-- Capture the CORE ESSENCE: who, what, when (if applicable)
-- Focus on the most important information for quick relevance checking
+- Stay within ~100 tokens limit
+- Cover MULTIPLE key aspects when content is rich (who, what, key topics, important outcomes)
+- Prioritize information breadth over depth - mention more topics rather than elaborating on one
+- Use compact phrasing: "discussed X, Y, and Z" instead of long explanations
+- For multi-topic content: list key themes briefly rather than focusing on just one
 - Use clear, direct language
 - Avoid filler words and unnecessary details
 - **CRITICAL: Use the SAME LANGUAGE as the input content**
