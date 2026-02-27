@@ -452,9 +452,11 @@ impl LayerGenerator {
 
         // 截断到合理长度（避免超出 LLM 上下文限制）
         let max_chars = 10000;
-        if content.len() > max_chars {
-            content.truncate(max_chars);
+        if content.chars().count() > max_chars {
+            let truncated: String = content.chars().take(max_chars).collect();
+            let mut content = truncated;
             content.push_str("\n\n[内容已截断...]");
+            return Ok(content);
         }
 
         Ok(content)
@@ -465,17 +467,30 @@ impl LayerGenerator {
         let mut result = text.trim().to_string();
         let max_chars = self.config.abstract_config.max_chars;
 
-        if result.len() <= max_chars {
+        if result.chars().count() <= max_chars {
             return Ok(result);
         }
 
+        // 找到 max_chars 字符对应的字节位置
+        let byte_limit = result
+            .char_indices()
+            .nth(max_chars)
+            .map(|(i, _)| i)
+            .unwrap_or(result.len());
+
         // 截断到最后一个句号/问号/叹号
-        if let Some(pos) = result[..max_chars]
+        if let Some(pos) = result[..byte_limit]
             .rfind(|c| c == '。' || c == '.' || c == '?' || c == '!' || c == '！' || c == '？')
         {
             result.truncate(pos + 1);
         } else {
-            result.truncate(max_chars - 3);
+            // 找到 max_chars - 3 字符对应的字节位置
+            let truncate_pos = result
+                .char_indices()
+                .nth(max_chars.saturating_sub(3))
+                .map(|(i, _)| i)
+                .unwrap_or(result.len());
+            result.truncate(truncate_pos);
             result.push_str("...");
         }
 
@@ -487,16 +502,29 @@ impl LayerGenerator {
         let mut result = text.trim().to_string();
         let max_chars = self.config.overview_config.max_chars;
 
-        if result.len() <= max_chars {
+        if result.chars().count() <= max_chars {
             return Ok(result);
         }
 
+        // 找到 max_chars 字符对应的字节位置
+        let byte_limit = result
+            .char_indices()
+            .nth(max_chars)
+            .map(|(i, _)| i)
+            .unwrap_or(result.len());
+
         // 截断到最后一个段落
-        if let Some(pos) = result[..max_chars].rfind("\n\n") {
+        if let Some(pos) = result[..byte_limit].rfind("\n\n") {
             result.truncate(pos);
             result.push_str("\n\n[内容已截断...]");
         } else {
-            result.truncate(max_chars - 3);
+            // 找到 max_chars - 3 字符对应的字节位置
+            let truncate_pos = result
+                .char_indices()
+                .nth(max_chars.saturating_sub(3))
+                .map(|(i, _)| i)
+                .unwrap_or(result.len());
+            result.truncate(truncate_pos);
             result.push_str("...");
         }
 
