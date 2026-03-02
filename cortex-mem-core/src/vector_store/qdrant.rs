@@ -611,11 +611,11 @@ impl QdrantVectorStore {
             })
             .map(|s| {
                 debug!("Parsing memory type from string: '{}'", s);
-                crate::types::MemoryType::parse(s)
+                crate::types::V1MemoryType::parse(s)
             })
             .unwrap_or_else(|| {
                 warn!("No memory type found in payload, defaulting to Conversational");
-                crate::types::MemoryType::Conversational
+                crate::types::V1MemoryType::Conversational
             });
 
         let hash = payload

@@ -194,6 +194,8 @@ pub struct SessionManager {
     config: SessionConfig,
     llm_client: Option<Arc<dyn LLMClient>>,
     event_bus: Option<EventBus>,
+    /// Optional event sender for v2.5 incremental update system
+    memory_event_tx: Option<tokio::sync::mpsc::UnboundedSender<crate::memory_events::MemoryEvent>>,
 }
 
 impl SessionManager {
@@ -209,6 +211,7 @@ impl SessionManager {
             config,
             llm_client: None,
             event_bus: None,
+            memory_event_tx: None,
         }
     }
 
@@ -228,6 +231,7 @@ impl SessionManager {
             config,
             llm_client: Some(llm_client),
             event_bus: None,
+            memory_event_tx: None,
         }
     }
 
@@ -247,6 +251,7 @@ impl SessionManager {
             config,
             llm_client: None,
             event_bus: Some(event_bus),
+            memory_event_tx: None,
         }
     }
 
@@ -267,7 +272,14 @@ impl SessionManager {
             config,
             llm_client: Some(llm_client),
             event_bus: Some(event_bus),
+            memory_event_tx: None,
         }
+    }
+    
+    /// Set the memory event sender for v2.5 incremental update system
+    pub fn with_memory_event_tx(mut self, tx: tokio::sync::mpsc::UnboundedSender<crate::memory_events::MemoryEvent>) -> Self {
+        self.memory_event_tx = Some(tx);
+        self
     }
 
     /// 获取 LLM client（如果存在）
@@ -397,6 +409,18 @@ impl SessionManager {
             let _ = bus.publish(CortexEvent::Session(SessionEvent::Closed {
                 session_id: thread_id.to_string(),
             }));
+        }
+        
+        // v2.5: 发送记忆事件给协调器处理
+        if let Some(ref tx) = self.memory_event_tx {
+            let user_id = metadata.user_id.clone().unwrap_or_else(|| "default".to_string());
+            let agent_id = metadata.agent_id.clone().unwrap_or_else(|| "default".to_string());
+            
+            let _ = tx.send(crate::memory_events::MemoryEvent::SessionClosed {
+                session_id: thread_id.to_string(),
+                user_id,
+                agent_id,
+            });
         }
 
         Ok(metadata)

@@ -17,10 +17,13 @@ impl Default for MemoryImportance {
     }
 }
 
-/// Memory type classification
+/// Memory extraction category
+/// 
+/// Used for classifying LLM extraction results.
+/// For v2.5 memory indexing, use [`crate::memory_index::MemoryType`] instead.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
-pub enum MemoryType {
+pub enum ExtractionCategory {
     Fact,
     Decision,
     Entity,

@@ -97,20 +97,7 @@ impl MemoryOperations {
         // 创建EventBus用于自动化
         let (event_bus, mut event_rx_main) = EventBus::new();
 
-        let config = SessionConfig::default();
-        // 使用with_llm_and_events创建SessionManager
-        let session_manager = SessionManager::with_llm_and_events(
-            filesystem.clone(),
-            config,
-            llm_client.clone(),
-            event_bus.clone(),
-        );
-        let session_manager = Arc::new(RwLock::new(session_manager));
-
-        // LLM-enabled LayerManager for high-quality L0/L1 generation
-        let layer_manager = Arc::new(LayerManager::new(filesystem.clone(), llm_client.clone()));
-
-        // Initialize Qdrant
+        // Initialize Qdrant first (needed for MemoryEventCoordinator)
         tracing::info!("Initializing Qdrant vector store: {}", qdrant_url);
         let qdrant_config = cortex_mem_core::QdrantConfig {
             url: qdrant_url.to_string(),
@@ -128,7 +115,7 @@ impl MemoryOperations {
             qdrant_config.get_collection_name()
         );
 
-        // Initialize Embedding client
+        // Initialize Embedding client (needed for MemoryEventCoordinator)
         tracing::info!(
             "Initializing Embedding client with model: {}",
             embedding_model_name
@@ -142,6 +129,31 @@ impl MemoryOperations {
         };
         let embedding_client = Arc::new(EmbeddingClient::new(embedding_config)?);
         tracing::info!("Embedding client initialized");
+
+        // v2.5: Create MemoryEventCoordinator BEFORE SessionManager
+        let (coordinator, memory_event_tx, event_rx) = cortex_mem_core::MemoryEventCoordinator::new(
+            filesystem.clone(),
+            llm_client.clone(),
+            embedding_client.clone(),
+            vector_store.clone(),
+        );
+        
+        // Start the coordinator event loop in background
+        tokio::spawn(coordinator.start(event_rx));
+        tracing::info!("MemoryEventCoordinator started for v2.5 incremental updates");
+
+        let config = SessionConfig::default();
+        // Create SessionManager with memory_event_tx for v2.5 integration
+        let session_manager = SessionManager::with_llm_and_events(
+            filesystem.clone(),
+            config,
+            llm_client.clone(),
+            event_bus.clone(),
+        ).with_memory_event_tx(memory_event_tx.clone());
+        let session_manager = Arc::new(RwLock::new(session_manager));
+
+        // LLM-enabled LayerManager for high-quality L0/L1 generation
+        let layer_manager = Arc::new(LayerManager::new(filesystem.clone(), llm_client.clone()));
 
         // Create vector search engine with LLM support for query rewriting
         let vector_engine = Arc::new(VectorSearchEngine::with_llm(
@@ -158,7 +170,7 @@ impl MemoryOperations {
         // 🔧 创建AutoExtractor(简化配置，移除了save_user_memories和save_agent_memories)
         let auto_extract_config = AutoExtractConfig {
             min_message_count: 5,
-            extract_on_close: true, // 🔧 显式设置为true，确保会话关闭时自动提取记忆
+            extract_on_close: false, // v2.5: 禁用旧机制，使用新的 MemoryEventCoordinator
         };
         let auto_extractor = Arc::new(AutoExtractor::with_user_id(
             filesystem.clone(),

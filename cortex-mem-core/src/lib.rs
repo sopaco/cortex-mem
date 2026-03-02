@@ -9,6 +9,7 @@
 //! - **会话管理**: 多线程会话管理，支持时间轴和参与者
 //! - **记忆提取**: 使用 LLM 自动提取和分类记忆
 //! - **索引自动化**: 自动监听文件变化并增量索引
+//! - **增量更新**: 支持记忆的版本追踪、增量更新和层级联动
 //!
 //! ## 快速开始
 //!
@@ -43,6 +44,13 @@
 //! - [`automation`]: 自动化索引和提取
 //! - [`extraction`]: 记忆提取和分类
 //! - [`llm`]: LLM 客户端接口
+//! - [`memory_index`]: 记忆索引和版本追踪
+//! - [`memory_events`]: 记忆事件系统
+//! - [`memory_index_manager`]: 记忆索引管理器
+//! - [`incremental_memory_updater`]: 增量记忆更新器
+//! - [`cascade_layer_updater`]: 层级联动更新器
+//! - [`vector_sync_manager`]: 向量同步管理器
+//! - [`memory_event_coordinator`]: 记忆事件协调器
 
 pub mod config;
 pub mod error;
@@ -61,10 +69,20 @@ pub mod search;
 pub mod session;
 pub mod vector_store;
 
+// New modules for v2.5 incremental update system
+pub mod memory_index;
+pub mod memory_events;
+pub mod memory_index_manager;
+pub mod incremental_memory_updater;
+pub mod cascade_layer_updater;
+pub mod vector_sync_manager;
+pub mod memory_event_coordinator;
+
 // Re-exports
 pub use config::*;
 pub use error::{Error, Result};
 pub use events::{CortexEvent, EventBus, FilesystemEvent, SessionEvent};
+// Note: types::* exports V1MemoryType (and deprecated MemoryType alias for backward compatibility)
 pub use types::*;
 
 pub use automation::{
@@ -83,6 +101,21 @@ pub use session::{
     MessageRole, Participant, ParticipantManager, PreferenceMemory, SessionConfig, SessionManager,
 };
 pub use vector_store::{QdrantVectorStore, VectorStore, parse_vector_id, uri_to_vector_id};
+
+// New re-exports for v2.5
+// MemoryType from memory_index is the primary type for v2.5
+pub use memory_index::{
+    MemoryIndex, MemoryMetadata, MemoryScope, MemoryType, MemoryUpdateResult,
+    SessionExtractionSummary,
+};
+pub use memory_events::{
+    ChangeType, DeleteReason, EventStats, MemoryEvent,
+};
+pub use memory_index_manager::MemoryIndexManager;
+pub use incremental_memory_updater::IncrementalMemoryUpdater;
+pub use cascade_layer_updater::CascadeLayerUpdater;
+pub use vector_sync_manager::{VectorSyncManager, VectorSyncStats};
+pub use memory_event_coordinator::MemoryEventCoordinator;
 
 // Session-related re-exports
 pub use session::message::MessageStorage;

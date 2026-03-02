@@ -54,6 +54,20 @@ impl Default for ExtractedMemories {
     }
 }
 
+impl ExtractedMemories {
+    /// Check if all memory lists are empty
+    pub fn is_empty(&self) -> bool {
+        self.preferences.is_empty()
+            && self.entities.is_empty()
+            && self.events.is_empty()
+            && self.cases.is_empty()
+            && self.personal_info.is_empty()
+            && self.work_history.is_empty()
+            && self.relationships.is_empty()
+            && self.goals.is_empty()
+    }
+}
+
 /// User preference memory
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PreferenceMemory {

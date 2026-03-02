@@ -3,7 +3,7 @@ use crate::{
     filesystem::{CortexFilesystem, FilesystemOperations},
     layers::manager::LayerManager,
     llm::LLMClient,
-    types::{Memory, MemoryMetadata, MemoryType},
+    types::{Memory, MemoryMetadata, V1MemoryType},
     vector_store::{QdrantVectorStore, uri_to_vector_id},
     ContextLayer,
     Result,
@@ -102,7 +102,7 @@ impl SyncManager {
         // 同步用户记忆 (preferences, entities, events)
         if self.config.sync_users {
             let stats = self
-                .sync_directory("cortex://user", MemoryType::Semantic)
+                .sync_directory("cortex://user", V1MemoryType::Semantic)
                 .await?;
             total_stats.add(&stats);
         }
@@ -110,7 +110,7 @@ impl SyncManager {
         // 同步Agent记忆 (cases, skills)
         if self.config.sync_agents {
             let stats = self
-                .sync_directory("cortex://agent", MemoryType::Semantic)
+                .sync_directory("cortex://agent", V1MemoryType::Semantic)
                 .await?;
             total_stats.add(&stats);
         }
@@ -127,7 +127,7 @@ impl SyncManager {
             if let Ok(entries) = self.filesystem.list("cortex://resources").await {
                 if !entries.is_empty() {
                     let stats = self
-                        .sync_directory("cortex://resources", MemoryType::Semantic)
+                        .sync_directory("cortex://resources", V1MemoryType::Semantic)
                         .await?;
                     total_stats.add(&stats);
                 }
@@ -164,9 +164,9 @@ impl SyncManager {
             self.sync_directory_recursive(uri).await?
         } else if uri.starts_with("cortex://user/") || uri.starts_with("cortex://agent/") {
             // user/agent路径使用非递归同步
-            self.sync_directory(uri, MemoryType::Semantic).await?
+            self.sync_directory(uri, V1MemoryType::Semantic).await?
         } else if uri.starts_with("cortex://resources/") {
-            self.sync_directory(uri, MemoryType::Semantic).await?
+            self.sync_directory(uri, V1MemoryType::Semantic).await?
         } else {
             // 其他路径尝试递归同步
             self.sync_directory_recursive(uri).await?
@@ -188,7 +188,7 @@ impl SyncManager {
     fn sync_directory<'a>(
         &'a self,
         uri: &'a str,
-        memory_type: MemoryType,
+        memory_type: V1MemoryType,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<SyncStats>> + Send + 'a>> {
         Box::pin(async move {
             let entries = self.filesystem.list(uri).await?;
@@ -244,7 +244,7 @@ impl SyncManager {
                     stats.add(&sub_stats);
                 } else if entry.name.ends_with(".md") {
                     // 处理Markdown文件
-                    match self.sync_file(&entry.uri, MemoryType::Conversational).await {
+                    match self.sync_file(&entry.uri, V1MemoryType::Conversational).await {
                         Ok(true) => stats.indexed_files += 1,
                         Ok(false) => stats.skipped_files += 1,
                         Err(e) => {
@@ -261,7 +261,7 @@ impl SyncManager {
     }
 
     /// 同步单个文件（支持分层向量索引）
-    async fn sync_file(&self, uri: &str, memory_type: MemoryType) -> Result<bool> {
+    async fn sync_file(&self, uri: &str, memory_type: V1MemoryType) -> Result<bool> {
         // 检查是否已经索引（检查L2层）
         let l2_id = uri_to_vector_id(uri, ContextLayer::L2Detail);
         if self.is_indexed(&l2_id).await? {
@@ -379,7 +379,7 @@ impl SyncManager {
     fn parse_metadata(
         &self,
         uri: &str,
-        memory_type: MemoryType,
+        memory_type: V1MemoryType,
         layer: &str,
     ) -> Result<MemoryMetadata> {
         use serde_json::Value;

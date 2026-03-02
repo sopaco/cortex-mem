@@ -98,7 +98,7 @@ pub struct MemoryMetadata {
     pub run_id: Option<String>,
     pub actor_id: Option<String>,
     pub role: Option<String>,
-    pub memory_type: MemoryType,
+    pub memory_type: V1MemoryType,
     pub hash: String,
     pub importance_score: f32,
     pub entities: Vec<String>,
@@ -106,26 +106,58 @@ pub struct MemoryMetadata {
     pub custom: HashMap<String, serde_json::Value>,
 }
 
-/// Memory type (for V1 compatibility)
+impl Default for MemoryMetadata {
+    fn default() -> Self {
+        Self {
+            uri: None,
+            user_id: None,
+            agent_id: None,
+            run_id: None,
+            actor_id: None,
+            role: None,
+            memory_type: V1MemoryType::default(),
+            hash: String::new(),
+            importance_score: 0.5,
+            entities: Vec::new(),
+            topics: Vec::new(),
+            custom: HashMap::new(),
+        }
+    }
+}
+
+/// Memory type for V1 vector store compatibility
+/// 
+/// This is used for backward compatibility with existing vector store data.
+/// For new v2.5 memory indexing, use [`crate::memory_index::MemoryType`] instead.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum MemoryType {
+pub enum V1MemoryType {
     Conversational,
     Procedural,
     Semantic,
     Episodic,
 }
 
-impl MemoryType {
+impl Default for V1MemoryType {
+    fn default() -> Self {
+        V1MemoryType::Conversational
+    }
+}
+
+impl V1MemoryType {
     pub fn parse(s: &str) -> Self {
         match s {
-            "Conversational" => MemoryType::Conversational,
-            "Procedural" => MemoryType::Procedural,
-            "Semantic" => MemoryType::Semantic,
-            "Episodic" => MemoryType::Episodic,
-            _ => MemoryType::Conversational, // Default fallback
+            "Conversational" => V1MemoryType::Conversational,
+            "Procedural" => V1MemoryType::Procedural,
+            "Semantic" => V1MemoryType::Semantic,
+            "Episodic" => V1MemoryType::Episodic,
+            _ => V1MemoryType::Conversational, // Default fallback
         }
     }
 }
+
+/// Legacy alias for backward compatibility
+#[deprecated(since = "2.5.0", note = "Use V1MemoryType or memory_index::MemoryType instead")]
+pub type MemoryType = V1MemoryType;
 
 /// User memory category (OpenViking-aligned)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -215,7 +247,7 @@ pub struct Filters {
     pub user_id: Option<String>,
     pub agent_id: Option<String>,
     pub run_id: Option<String>,
-    pub memory_type: Option<MemoryType>,
+    pub memory_type: Option<V1MemoryType>,
     pub created_after: Option<DateTime<Utc>>,
     pub created_before: Option<DateTime<Utc>>,
     pub updated_after: Option<DateTime<Utc>>,
