@@ -25,7 +25,8 @@ function colorize(text, color) {
 }
 
 // Crates to publish in dependency order (excluding cortex-mem-insights which is a web project)
-// Order based on dependencies: config -> core -> tools -> rig -> (service, cli, mcp) -> tars
+// Order based on dependencies: config -> core -> tools -> rig -> (service, cli, mcp)
+// Note: cortex-mem-tars is excluded as it's an example project
 const CRATES_TO_PUBLISH = [
 	{ name: 'cortex-mem-config', path: 'cortex-mem-config' },
 	{ name: 'cortex-mem-core', path: 'cortex-mem-core' },
@@ -33,14 +34,35 @@ const CRATES_TO_PUBLISH = [
 	{ name: 'cortex-mem-rig', path: 'cortex-mem-rig' },
 	{ name: 'cortex-mem-service', path: 'cortex-mem-service' },
 	{ name: 'cortex-mem-cli', path: 'cortex-mem-cli' },
-	{ name: 'cortex-mem-mcp', path: 'cortex-mem-mcp' },
-	{ name: 'cortex-mem-tars', path: 'examples/cortex-mem-tars' }
+	{ name: 'cortex-mem-mcp', path: 'cortex-mem-mcp' }
 ];
 
-// Get version from Cargo.toml
+// Get workspace version from root Cargo.toml
+function getWorkspaceVersion() {
+	const workspaceCargoPath = path.join(PROJECT_ROOT, 'Cargo.toml');
+	const content = fs.readFileSync(workspaceCargoPath, 'utf8');
+	// Look for version in [workspace.package] section
+	const match = content.match(/^\[workspace\.package\][\s\S]*?^version\s*=\s*"([^"]+)"/m);
+	if (match) return match[1];
+	// Fallback: look for standalone version
+	const fallbackMatch = content.match(/^version\s*=\s*"([^"]+)"/m);
+	return fallbackMatch ? fallbackMatch[1] : null;
+}
+
+// Cached workspace version
+const WORKSPACE_VERSION = getWorkspaceVersion();
+
+// Get version from Cargo.toml (supports both standalone and workspace version)
 function getVersion(cratePath) {
 	const cargoTomlPath = path.join(PROJECT_ROOT, cratePath, 'Cargo.toml');
 	const content = fs.readFileSync(cargoTomlPath, 'utf8');
+	
+	// Check if using workspace version
+	if (/version\.workspace\s*=\s*true/.test(content)) {
+		return WORKSPACE_VERSION;
+	}
+	
+	// Look for standalone version
 	const match = content.match(/^version\s*=\s*"([^"]+)"/m);
 	return match ? match[1] : null;
 }
@@ -164,14 +186,17 @@ function waitForCrateAvailability(crateName, maxWaitSeconds = 120) {
 	});
 }
 
-// Check if crate is already published on crates.io using API
-function isCratePublished(crateName) {
+// Check if a specific version of a crate is already published on crates.io
+function isVersionPublished(crateName, version) {
 	try {
-		// Use curl to check crates.io API directly
-		execSync(`curl -s -f "https://crates.io/api/v1/crates/${crateName}" > /dev/null`, {
-			stdio: 'pipe'
+		// Use curl to check crates.io API and get the newest version
+		const result = execSync(`curl.exe -s "https://crates.io/api/v1/crates/${crateName}"`, {
+			stdio: 'pipe',
+			encoding: 'utf8'
 		});
-		return true;
+		const data = JSON.parse(result);
+		const newestVersion = data.crate?.newest_version || data.crate?.max_version;
+		return newestVersion === version;
 	} catch (error) {
 		return false;
 	}
@@ -187,6 +212,7 @@ async function main() {
 	const dryRun = args.includes('--dry-run');
 	const skipWait = args.includes('--skip-wait');
 	const force = args.includes('--force'); // New flag to force republish
+	const autoConfirm = args.includes('--yes') || args.includes('-y'); // Auto-confirm flag
 
 	if (dryRun) {
 		console.log(colorize('\n⚠️  DRY RUN MODE - No actual publishing will occur', 'yellow'));
@@ -200,7 +226,7 @@ async function main() {
 	console.log(colorize('\n📦 Crates to publish (in dependency order):', 'blue'));
 	CRATES_TO_PUBLISH.forEach((crate, index) => {
 		const version = getVersion(crate.path);
-		const published = isCratePublished(crate.name);
+		const published = isVersionPublished(crate.name, version);
 		console.log(
 			`  ${index + 1}. ${colorize(crate.name, published ? 'yellow' : 'green')} v${version} ${published ? '(already published)' : ''}`
 		);
@@ -209,7 +235,7 @@ async function main() {
 	console.log(colorize('\n' + '='.repeat(60), 'cyan'));
 
 	// Ask for confirmation
-	if (!dryRun) {
+	if (!dryRun && !autoConfirm) {
 		console.log(colorize('\n⚠️  This will publish the above crates to crates.io', 'yellow'));
 		console.log(colorize('Press Ctrl+C to cancel, or press Enter to continue...', 'yellow'));
 		await new Promise((resolve) => {
@@ -226,7 +252,7 @@ async function main() {
 		const version = getVersion(crate.path);
 
 		// Skip if already published (unless force mode)
-		if (!force && isCratePublished(crate.name)) {
+		if (!force && isVersionPublished(crate.name, version)) {
 			console.log(
 				colorize(
 					`\n⏭️  [${i + 1}/${CRATES_TO_PUBLISH.length}] Skipping ${crate.name} v${version} - already published`,
