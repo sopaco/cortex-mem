@@ -19,7 +19,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use tokio::sync::{mpsc, RwLock};
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 /// Update statistics for monitoring optimization effectiveness
 #[derive(Debug, Clone, Default)]
@@ -790,23 +790,22 @@ impl CascadeLayerUpdater {
     pub async fn update_all_layers(&self, scope: &MemoryScope, owner_id: &str) -> Result<()> {
         let root_uri = self.get_scope_root(scope, owner_id);
         
-        log::info!("update_all_layers: checking root directory {}", root_uri);
+        debug!("Checking root directory: {}", root_uri);
         
         if !self.filesystem.exists(&root_uri).await? {
-            log::info!("Root directory {} does not exist, skipping", root_uri);
+            debug!("Root directory {} does not exist, skipping", root_uri);
             return Ok(());
         }
         
-        log::info!("Root directory exists, starting recursive layer file update...");
+        debug!("Starting recursive layer update...");
         
         // Walk through all directories and update layers
         self.update_all_layers_recursive(&root_uri, scope, owner_id).await?;
         
         // Update root layers last
-        log::info!("Starting root directory layer file update...");
         self.update_root_layers(scope, owner_id).await?;
         
-        log::info!("update_all_layers completed: {:?}", scope);
+        info!("Layer update completed for {:?}", scope);
         Ok(())
     }
 
@@ -820,12 +819,11 @@ impl CascadeLayerUpdater {
         Box::pin(async move {
             let entries = self.filesystem.list(dir_uri).await?;
             
-            log::info!("update_all_layers_recursive: {} has {} entries", dir_uri, entries.len());
+            debug!("Directory {} has {} entries", dir_uri, entries.len());
             
             // First, process all subdirectories
             for entry in &entries {
                 if entry.is_directory && !entry.name.starts_with('.') {
-                    log::info!("  Entering subdirectory: {}", entry.name);
                     self.update_all_layers_recursive(&entry.uri, scope, owner_id).await?;
                 }
             }
@@ -835,13 +833,10 @@ impl CascadeLayerUpdater {
                 !e.is_directory && !e.name.starts_with('.') && e.name.ends_with(".md")
             });
             
-            log::info!("Directory {} has content files: {}", dir_uri, has_content);
-            
             if has_content {
-                log::info!("Starting layer file generation for directory {}...", dir_uri);
                 match self.update_directory_layers(dir_uri, scope, owner_id).await {
-                    Ok(_) => log::info!("Directory {} layer files generated successfully", dir_uri),
-                    Err(e) => log::warn!("Directory {} layer file generation failed: {}", dir_uri, e),
+                    Ok(_) => debug!("Layer files generated for {}", dir_uri),
+                    Err(e) => warn!("Layer generation failed for {}: {}", dir_uri, e),
                 }
             }
             

@@ -4,7 +4,7 @@ use crate::{CortexFilesystem, FilesystemOperations, MessageStorage, ParticipantM
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tracing::info;
+use tracing::{info, warn};
 
 /// Session status
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -376,9 +376,8 @@ impl SessionManager {
                 thread_id, user_id, agent_id
             );
         } else {
-            // 使用 log 以便在 tars 中可见
-            log::warn!(
-                "⚠️ memory_event_tx is None, SessionClosed event NOT sent for session {}",
+            warn!(
+                "memory_event_tx is None, SessionClosed event NOT sent for session {}",
                 thread_id
             );
         }

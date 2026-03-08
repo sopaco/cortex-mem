@@ -57,7 +57,7 @@ async fn main() -> anyhow::Result<()> {
         .with(log_level)
         .init();
 
-    info!("Starting Cortex-Mem Service V2");
+    info!("Starting Cortex Memory Service");
     info!("Data directory: {}", cli.data_dir);
 
     // Initialize application state

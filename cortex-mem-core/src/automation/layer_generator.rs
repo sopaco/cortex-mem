@@ -103,23 +103,22 @@ impl LayerGenerator {
             // Check if scope exists
             match self.filesystem.exists(&scope_uri).await {
                 Ok(true) => {
-                    log::info!("Scanning scope: {} ({})", scope, scope_uri);
+                    debug!("Scanning scope: {}", scope);
                     match self.scan_scope(&scope_uri).await {
                         Ok(dirs) => {
-                            log::info!("Scope {} found {} directories", scope, dirs.len());
+                            debug!("Scope {} found {} directories", scope, dirs.len());
                             directories.extend(dirs);
                         }
                         Err(e) => {
-                            log::warn!("Failed to scan scope {}: {}", scope, e);
                             warn!("Failed to scan scope {}: {}", scope, e);
                         }
                     }
                 }
                 Ok(false) => {
-                    log::info!("Scope {} does not exist, skipping", scope);
+                    debug!("Scope {} does not exist, skipping", scope);
                 }
                 Err(e) => {
-                    log::warn!("Failed to check scope {} existence: {}", scope, e);
+                    warn!("Failed to check scope {} existence: {}", scope, e);
                 }
             }
         }
@@ -134,14 +133,14 @@ impl LayerGenerator {
         // First check if scope exists
         match self.filesystem.exists(scope_uri).await {
             Ok(true) => {
-                log::info!("Scope directory exists: {}", scope_uri);
+                debug!("Scope directory exists: {}", scope_uri);
             }
             Ok(false) => {
-                log::info!("Scope directory does not exist: {}", scope_uri);
+                debug!("Scope directory does not exist: {}", scope_uri);
                 return Ok(directories);
             }
             Err(e) => {
-                log::warn!("Failed to check scope existence: {} - {}", scope_uri, e);
+                warn!("Failed to check scope existence: {} - {}", scope_uri, e);
                 return Ok(directories);
             }
         }
@@ -149,13 +148,10 @@ impl LayerGenerator {
         // Try to list directory contents
         match self.filesystem.list(scope_uri).await {
             Ok(entries) => {
-                log::info!("Scope {} has {} entries", scope_uri, entries.len());
-                for entry in &entries {
-                    log::info!("  - {} (is_dir: {})", entry.name, entry.is_directory);
-                }
+                debug!("Scope {} has {} entries", scope_uri, entries.len());
             }
             Err(e) => {
-                log::warn!("Failed to list scope directory: {} - {}", scope_uri, e);
+                warn!("Failed to list scope directory: {} - {}", scope_uri, e);
                 return Ok(directories);
             }
         }
@@ -232,29 +228,16 @@ impl LayerGenerator {
 
     /// Ensure all directories have L0/L1
     pub async fn ensure_all_layers(&self) -> Result<GenerationStats> {
-        log::info!("Starting directory scan...");
-        info!("Starting directory scan...");
+        info!("Scanning directories for missing L0/L1 layers...");
         let directories = self.scan_all_directories().await?;
-        log::info!("Found {} directories", directories.len());
-        info!("Found {} directories", directories.len());
+        debug!("Found {} directories", directories.len());
         
-        // Debug: print scanned directories
         for dir in &directories {
-            log::debug!("Scanned directory: {}", dir);
             debug!("Scanned directory: {}", dir);
         }
 
-        log::info!("Detecting missing L0/L1...");
-        info!("Detecting missing L0/L1...");
         let missing = self.filter_missing_layers(&directories).await?;
-        log::info!("Found {} directories missing L0/L1", missing.len());
         info!("Found {} directories missing L0/L1", missing.len());
-        
-        // Debug: print directories missing layer files
-        for dir in &missing {
-            log::info!("Need to generate layer files for: {}", dir);
-            info!("Need to generate layer files for: {}", dir);
-        }
 
         if missing.is_empty() {
             return Ok(GenerationStats {
@@ -274,20 +257,17 @@ impl LayerGenerator {
         let total_batches = (missing.len() + self.config.batch_size - 1) / self.config.batch_size;
 
         for (batch_idx, batch) in missing.chunks(self.config.batch_size).enumerate() {
-            log::info!("Processing batch {}/{}", batch_idx + 1, total_batches);
-            info!("Processing batch {}/{}", batch_idx + 1, total_batches);
+            debug!("Processing batch {}/{}", batch_idx + 1, total_batches);
 
             for dir in batch {
                 match self.generate_layers_for_directory(dir).await {
                     Ok(_) => {
                         stats.generated += 1;
-                        log::info!("Generation succeeded: {}", dir);
-                        info!("Generation succeeded: {}", dir);
+                        debug!("Generated: {}", dir);
                     }
                     Err(e) => {
                         stats.failed += 1;
-                        log::warn!("Generation failed: {} - {}", dir, e);
-                        warn!("Generation failed: {} - {}", dir, e);
+                        warn!("Failed to generate for {}: {}", dir, e);
                     }
                 }
             }
@@ -298,8 +278,7 @@ impl LayerGenerator {
             }
         }
 
-        log::info!("Generation completed: {} succeeded, {} failed", stats.generated, stats.failed);
-        info!("Generation completed: {} succeeded, {} failed", stats.generated, stats.failed);
+        info!("Layer generation completed: {} generated, {} failed", stats.generated, stats.failed);
         Ok(stats)
     }
 

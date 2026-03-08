@@ -24,7 +24,6 @@ tracing-subscriber = { workspace = true }
 walkdir = { workspace = true }
 rig-core = { workspace = true }
 reqwest = { workspace = true }
-log = "0.4"
 
 # Additional dependencies
 regex = "1.10"

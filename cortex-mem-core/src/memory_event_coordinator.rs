@@ -26,7 +26,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 use tokio::sync::{RwLock, mpsc, watch};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info, trace, warn};
 
 /// Configuration for event coordinator
 #[derive(Debug, Clone)]
@@ -300,26 +300,24 @@ impl MemoryEventCoordinator {
     /// * `true` - 所有任务已完成
     /// * `false` - 在等待过程中有新任务产生（通常不应该发生）
     pub async fn flush_and_wait(&self, check_interval: Duration) -> bool {
-        log::info!("Starting flush and waiting for all tasks to complete...");
+        info!("Flushing and waiting for all tasks...");
 
         let start = std::time::Instant::now();
-        let max_wait = Duration::from_secs(300); // Max wait 5 minutes
+        let max_wait = Duration::from_secs(300);
 
-        // Phase 0: Yield runtime to let event loop have a chance to run
-        // This is critical: tokio::task::yield_now() lets other tasks execute
-        log::info!("Phase 0: Yielding runtime, waiting for events to be processed...");
+        // Phase 0: Yield runtime to let event loop run
         for i in 0..10 {
             tokio::task::yield_now().await;
             tokio::time::sleep(Duration::from_millis(10)).await;
 
             let pending = self.pending_tasks.load(Ordering::SeqCst);
             if pending > 0 {
-                log::info!("Phase 0 completed: detected {} tasks started processing", pending);
+                debug!("Detected {} pending tasks", pending);
                 break;
             }
 
             if i == 9 {
-                log::info!("Phase 0 completed: no pending tasks detected");
+                debug!("No pending tasks detected");
             }
         }
 
@@ -327,7 +325,6 @@ impl MemoryEventCoordinator {
         loop {
             let pending = self.pending_tasks.load(Ordering::SeqCst);
             if pending == 0 {
-                // Wait a short time to see if new events are being processed
                 tokio::time::sleep(Duration::from_millis(100)).await;
                 let pending_after = self.pending_tasks.load(Ordering::SeqCst);
                 if pending_after == 0 {
@@ -336,64 +333,42 @@ impl MemoryEventCoordinator {
                 continue;
             }
 
-            // Check if timed out
             if start.elapsed() >= max_wait {
-                log::warn!("Wait timeout, still have {} tasks not completed", pending);
+                warn!("Timeout, {} tasks still pending", pending);
                 return false;
             }
 
-            log::trace!(
-                "Waiting for {} event processing tasks... (elapsed: {:?})",
-                pending,
-                start.elapsed()
-            );
+            trace!("Waiting for {} tasks... (elapsed: {:?})", pending, start.elapsed());
             tokio::time::sleep(check_interval).await;
         }
-        log::info!("Phase 1 completed: event processing tasks cleared");
+        debug!("Event processing tasks cleared");
 
         // Phase 2: Flush pending updates in debouncer
         if let Some(ref debouncer) = self.debouncer {
             let pending_count = debouncer.pending_count().await;
             if pending_count > 0 {
-                log::info!(
-                    "Phase 2: Flushing {} debouncer pending updates...",
-                    pending_count
-                );
+                info!("Flushing {} debouncer updates", pending_count);
                 let flushed = debouncer.flush_all(&self.layer_updater).await;
-                log::info!("Phase 2 completed: flushed {} layer updates", flushed);
-            } else {
-                log::info!("Phase 2 completed: debouncer has no pending updates");
+                debug!("Flushed {} layer updates", flushed);
             }
-        } else {
-            log::info!("Phase 2 skipped: debouncer not enabled");
         }
 
-        // Phase 3: Wait again to ensure tasks from debouncer flush also complete
+        // Phase 3: Wait for debouncer flush tasks to complete
         loop {
             let pending = self.pending_tasks.load(Ordering::SeqCst);
             if pending == 0 {
                 break;
             }
 
-            // Check if timed out
             if start.elapsed() >= max_wait {
-                log::warn!("Wait timeout, still have {} tasks not completed", pending);
+                warn!("Timeout, {} tasks still pending", pending);
                 return false;
             }
 
-            log::info!(
-                "Waiting for {} post-flush tasks... (elapsed: {:?})",
-                pending,
-                start.elapsed()
-            );
             tokio::time::sleep(check_interval).await;
         }
-        log::info!("Phase 3 completed: all tasks cleared");
 
-        log::info!(
-            "flush_and_wait completed: all tasks and layer updates processed (elapsed: {:?})",
-            start.elapsed()
-        );
+        info!("All tasks completed (elapsed: {:?})", start.elapsed());
         true
     }
 
@@ -412,31 +387,25 @@ impl MemoryEventCoordinator {
         loop {
             let pending = self.pending_tasks.load(Ordering::SeqCst);
 
-            // If no pending tasks, return success
             if pending == 0 {
-                // Wait a short time to ensure no new tasks just submitted
                 tokio::time::sleep(Duration::from_millis(200)).await;
                 let pending_after = self.pending_tasks.load(Ordering::SeqCst);
                 if pending_after == 0 {
-                    log::info!("All background tasks completed");
+                    info!("All background tasks completed");
                     return true;
                 }
-                // New tasks submitted, continue waiting
                 continue;
             }
 
-            // Check if timed out
             if start.elapsed() >= timeout {
-                log::warn!("Wait for background tasks timeout, still have {} tasks not completed", pending);
+                warn!("Timeout, {} tasks still pending", pending);
                 return false;
             }
 
-            // Print wait log on first time
             if start.elapsed() < Duration::from_millis(600) {
-                log::info!("Waiting for {} background tasks to complete...", pending);
+                info!("Waiting for {} tasks...", pending);
             }
 
-            // Wait a short time before checking again
             tokio::time::sleep(check_interval).await;
         }
     }
@@ -724,28 +693,17 @@ impl MemoryEventCoordinator {
         user_id: &str,
         agent_id: &str,
     ) -> Result<()> {
-        // 使用 log 以便在 tars 中可见
-        log::info!(
-            "🔄 Processing session closed: {} (user_id={}, agent_id={})",
-            session_id,
-            user_id,
-            agent_id
-        );
-        info!("Processing session closed: {}", session_id);
+        info!("Processing session closed: {} (user={}, agent={})", session_id, user_id, agent_id);
 
         // 1. Extract memories from the session
         let extracted = self.extract_memories_from_session(session_id).await?;
 
-        log::info!(
-            "🧠 Extracted memories: preferences={}, entities={}, events={}, cases={}, personal_info={}, work_history={}, relationships={}, goals={}",
+        info!(
+            "Extracted memories: {} preferences, {} entities, {} events, {} cases",
             extracted.preferences.len(),
             extracted.entities.len(),
             extracted.events.len(),
-            extracted.cases.len(),
-            extracted.personal_info.len(),
-            extracted.work_history.len(),
-            extracted.relationships.len(),
-            extracted.goals.len()
+            extracted.cases.len()
         );
 
         // 2. Update user memories
@@ -755,22 +713,12 @@ impl MemoryEventCoordinator {
                 .update_memories(user_id, agent_id, session_id, &extracted)
                 .await?;
 
-            log::info!(
-                "✅ User memory update for session {}: {} created, {} updated",
-                session_id,
-                user_result.created,
-                user_result.updated
-            );
             info!(
-                "User memory update for session {}: {} created, {} updated",
+                "User memory updated for session {}: {} created, {} updated",
                 session_id, user_result.created, user_result.updated
             );
-
-            // Note: Not calling update_all_layers here as it's a long-running operation
-            // that would block the event processing loop. Instead, call generate_user_agent_layers explicitly during exit flow
-            log::info!("Memory written, should call generate_user_agent_layers during exit to generate layer files");
         } else {
-            log::info!("⚠️ No memories extracted from session {}", session_id);
+            info!("No memories extracted from session {}", session_id);
         }
 
         // 3. Update timeline layers
@@ -782,7 +730,6 @@ impl MemoryEventCoordinator {
         let timeline_uri = format!("cortex://session/{}/timeline", session_id);
         self.vector_sync.sync_directory(&timeline_uri).await?;
 
-        log::info!("✅ Session {} processing complete", session_id);
         info!("Session {} processing complete", session_id);
 
         Ok(())
@@ -847,10 +794,7 @@ impl MemoryEventCoordinator {
 
     /// Extract memories from a session using LLM
     async fn extract_memories_from_session(&self, session_id: &str) -> Result<ExtractedMemories> {
-        // Collect all messages from the session
         let timeline_uri = format!("cortex://session/{}/timeline", session_id);
-
-        log::info!("📂 Collecting messages from: {}", timeline_uri);
 
         let mut messages = Vec::new();
         match self
@@ -858,54 +802,34 @@ impl MemoryEventCoordinator {
             .await
         {
             Ok(_) => {
-                log::info!("✅ Collected {} messages from session", messages.len());
+                debug!("Collected {} messages from session", messages.len());
             }
             Err(e) => {
-                log::error!("❌ Failed to collect messages: {}", e);
+                error!("Failed to collect messages: {}", e);
                 return Err(e);
             }
         }
 
         if messages.is_empty() {
-            log::warn!("⚠️ No messages found in session {}", session_id);
-            debug!("No messages found in session {}", session_id);
+            warn!("No messages found in session {}", session_id);
             return Ok(ExtractedMemories::default());
         }
 
-        // Build extraction prompt
-        log::info!(
-            "🧠 Building extraction prompt for {} messages...",
-            messages.len()
-        );
         let prompt = self.build_extraction_prompt(&messages);
 
-        // Call LLM for extraction
-        log::info!("📞 Calling LLM for memory extraction...");
+        debug!("Calling LLM for memory extraction...");
         let response = match self.llm_client.complete(&prompt).await {
             Ok(resp) => {
-                log::info!("✅ LLM response received ({} chars)", resp.len());
+                debug!("LLM response received ({} chars)", resp.len());
                 resp
             }
             Err(e) => {
-                log::error!("❌ LLM call failed: {}", e);
+                error!("LLM call failed: {}", e);
                 return Err(e);
             }
         };
 
-        // Parse response
         let extracted = self.parse_extraction_response(&response);
-
-        log::info!(
-            "🧠 Extracted memories: preferences={}, entities={}, events={}, cases={}, personal_info={}, work_history={}, relationships={}, goals={}",
-            extracted.preferences.len(),
-            extracted.entities.len(),
-            extracted.events.len(),
-            extracted.cases.len(),
-            extracted.personal_info.len(),
-            extracted.work_history.len(),
-            extracted.relationships.len(),
-            extracted.goals.len()
-        );
 
         info!(
             "Extracted {} memories from session {}",
