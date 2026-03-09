@@ -100,21 +100,32 @@ impl LayerManager {
         self.filesystem.read(uri).await
     }
     
-    /// Generate all layers for a new memory (LLM is mandatory)
-    pub async fn generate_all_layers(&self, uri: &str, content: &str) -> Result<()> {
+    /// Generate all layers for a new memory (LLM is mandatory).
+    ///
+    /// `known_entities`: optional named entities that must be preserved in the L0 abstract.
+    /// Pass an empty slice when no entity preservation is required.
+    pub async fn generate_all_layers(
+        &self,
+        uri: &str,
+        content: &str,
+        known_entities: &[String],
+    ) -> Result<()> {
         // 1. Write L2 (detail)
         self.filesystem.write(uri, content).await?;
-        
-        // 2. Generate L0 abstract using LLM
-        let abstract_text = self.abstract_gen.generate_with_llm(content, &self.llm_client).await?;
+
+        // 2. Generate L0 abstract using LLM (with entity preservation)
+        let abstract_text = self
+            .abstract_gen
+            .generate_with_llm(content, &self.llm_client, known_entities)
+            .await?;
         let abstract_uri = Self::get_layer_uri(uri, ContextLayer::L0Abstract);
         self.filesystem.write(&abstract_uri, &abstract_text).await?;
-        
+
         // 3. Generate L1 overview using LLM
         let overview = self.overview_gen.generate_with_llm(content, &self.llm_client).await?;
         let overview_uri = Self::get_layer_uri(uri, ContextLayer::L1Overview);
         self.filesystem.write(&overview_uri, &overview).await?;
-        
+
         Ok(())
     }
     
@@ -169,8 +180,11 @@ impl LayerManager {
             all_content.push_str("\n\n---\n\n");
         }
         
-        // 3. Generate L0 abstract using LLM
-        let abstract_text = self.abstract_gen.generate_with_llm(&all_content, &self.llm_client).await?;
+        // 3. Generate L0 abstract using LLM（timeline 聚合内容，无特定实体透传）
+        let abstract_text = self
+            .abstract_gen
+            .generate_with_llm(&all_content, &self.llm_client, &[])
+            .await?;
         let abstract_uri = format!("{}/.abstract.md", timeline_uri);
         self.filesystem.write(&abstract_uri, &abstract_text).await?;
         info!("Generated L0 abstract: {}", abstract_uri);

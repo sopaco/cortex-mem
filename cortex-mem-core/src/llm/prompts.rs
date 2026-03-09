@@ -103,28 +103,87 @@ Extracted Memories (JSON):"#,
         )
     }
 
-    /// Prompt for intent analysis in retrieval
-    pub fn intent_analysis(query: &str) -> String {
+    /// 统一查询意图分析 Prompt（一次 LLM 请求返回所有检索所需信息）
+    ///
+    /// 返回：改写查询、关键词、实体列表、意图类型、时间约束
+    /// 支持中英文及混合语言查询
+    pub fn unified_query_analysis(query: &str) -> String {
+        // 截断保护：query 最多取前 500 个字符（使用 chars 保证 Unicode 安全）
+        let safe_query: String = query.chars().take(500).collect();
+
         format!(
-            r#"Analyze the following query and extract:
+            r#"Analyze the following search query and return a JSON object with all fields filled.
 
-1. **Keywords**: Important keywords for search (2-5 words)
-2. **Entities**: Named entities mentioned (people, places, technologies)
-3. **Time Range**: Any time-related constraints (if mentioned)
-4. **Query Type**: The type of query (factual, procedural, conceptual, etc.)
-
-Format as JSON:
+## Output JSON Format
 {{
-  "keywords": ["...", "..."],
-  "entities": ["...", "..."],
-  "time_range": {{ "start": "...", "end": "..." }},
-  "query_type": "..."
+  "rewritten_query": "expanded query for better vector retrieval (keep original meaning, add synonyms, max 80 chars)",
+  "keywords": ["keyword1", "keyword2"],
+  "entities": ["entity1", "entity2"],
+  "intent_type": "entity_lookup|factual|temporal|relational|search|general",
+  "time_constraint": {{ "start": "...", "end": "..." }}
 }}
 
-Query: {}
+## Field Rules
+- **rewritten_query**: Expand abbreviations and add relevant synonyms. If already clear, keep as-is. Max 80 chars.
+- **keywords**: 2-5 most important search terms. Must be in the same language as the query.
+- **entities**: Named entities (person names, place names, tool names, technology names). Empty array if none.
+- **intent_type**: Choose ONE from:
+  - `entity_lookup`: Query asks about a specific named entity ("王明是谁", "who is Alice", "React框架")
+  - `factual`: Asking for a specific fact ("X是什么", "what is X", "how does X work")
+  - `temporal`: Involves time reference ("最近", "上周", "recently", "last week", "yesterday")
+  - `relational`: Comparison or relationship ("X vs Y", "X和Y的关系", "difference between X and Y")
+  - `search`: Looking to find/list content ("查找", "列出", "find", "show me", "list all")
+  - `general`: Everything else
+- **time_constraint**: Set to `null` if no time reference in query. Otherwise fill start/end as descriptive strings.
 
-Intent Analysis (JSON):"#,
-            query
+## Query
+{}
+
+## Response (valid JSON only, no markdown, no explanation):"#,
+            safe_query
+        )
+    }
+
+    /// Prompt for abstract generation with optional entity preservation
+    ///
+    /// When `known_entities` is non-empty, the LLM is instructed to retain
+    /// those entity names in the generated abstract.
+    pub fn abstract_generation_with_entities(content: &str, known_entities: &[String]) -> String {
+        // 截断保护：content 最多取前 8000 个字符
+        let safe_content: String = content.chars().take(8000).collect();
+
+        let entity_hint = if known_entities.is_empty() {
+            String::new()
+        } else {
+            format!(
+                "\n\nIMPORTANT: The following named entities MUST appear verbatim in the abstract \
+                if they are present in the content: {}",
+                known_entities.join(", ")
+            )
+        };
+
+        format!(
+            r#"Generate a concise abstract (~100 tokens maximum) for the following content.
+
+Requirements:
+- Stay within ~100 tokens limit
+- Cover MULTIPLE key aspects when content is rich (who, what, key topics, important outcomes)
+- Prioritize information breadth over depth - mention more topics rather than elaborating on one
+- Use compact phrasing: "discussed X, Y, and Z" instead of long explanations
+- For multi-topic content: list key themes briefly rather than focusing on just one
+- Use clear, direct language
+- Avoid filler words and unnecessary details
+- **CRITICAL: Use the SAME LANGUAGE as the input content**
+  - If content is in Chinese, write abstract in Chinese
+  - If content is in English, write abstract in English
+  - If content is in other languages, use that language
+  - Preserve the original linguistic and cultural context{}
+
+Content:
+{}
+
+Abstract (max 100 tokens, in the same language as the content):"#,
+            entity_hint, safe_content
         )
     }
 }

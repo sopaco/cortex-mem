@@ -159,6 +159,7 @@ impl AppState {
                 model_name: config.embedding.model_name,
                 batch_size: config.embedding.batch_size,
                 timeout_secs: config.embedding.timeout_secs,
+                ..EmbeddingConfig::default()
             };
 
             // Qdrant config
@@ -216,6 +217,7 @@ impl AppState {
                     model_name: model,
                     batch_size: 10,
                     timeout_secs: 30,
+                    ..EmbeddingConfig::default()
                 })
             } else {
                 tracing::warn!("Embedding not configured");

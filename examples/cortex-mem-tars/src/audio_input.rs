@@ -17,7 +17,7 @@ pub struct AudioCaptureConfig {
 impl From<&SupportedStreamConfig> for AudioCaptureConfig {
     fn from(config: &SupportedStreamConfig) -> Self {
         Self {
-            sample_rate: config.sample_rate().0,
+            sample_rate: config.sample_rate(),
             channels: config.channels(),
         }
     }
@@ -46,7 +46,10 @@ impl AudioStreamManager {
             .default_input_device()
             .context("没有可用的音频输入设备")?;
         
-        log::info!("音频输入设备: {}", device.name()?);
+        let device_desc = device.description()
+            .map(|d| format!("{:?}", d))
+            .unwrap_or_else(|_| "unknown".to_string());
+        log::info!("音频输入设备: {}", device_desc);
         log::info!("音频增益: {:.1}x", AUDIO_GAIN);
 
         let config = device

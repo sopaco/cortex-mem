@@ -353,7 +353,7 @@ impl LayerGenerator {
         // 3. Use existing AbstractGenerator to generate L0 abstract
         let abstract_text = self
             .abstract_gen
-            .generate_with_llm(&content, &self.llm_client)
+            .generate_with_llm(&content, &self.llm_client, &[])
             .await?;
 
         // 4. Use existing OverviewGenerator to generate L1 overview

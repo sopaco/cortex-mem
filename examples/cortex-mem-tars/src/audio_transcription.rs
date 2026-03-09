@@ -207,24 +207,25 @@ impl WhisperTranscriber {
         // 执行转录
         state.full(params, audio_data).context("Whisper 转录失败")?;
 
-        // 收集所有段落
-        let num_segments = state.full_n_segments().context("无法获取段落数量")?;
+        // 收集所有段落（使用 whisper-rs 0.15+ 的迭代器 API）
+        let num_segments = state.full_n_segments();
         log::debug!("Whisper 识别出 {} 个段落", num_segments);
 
         let mut transcribed_text = String::new();
-        for i in 0..num_segments {
-            if let Ok(segment) = state.full_get_segment_text(i) {
-                let segment_text = segment.trim();
+        for segment in state.as_iter() {
+            let segment_text = segment.to_str_lossy()
+                .map(|s| s.into_owned())
+                .unwrap_or_default();
+            let segment_text = segment_text.trim();
 
-                if !segment_text.is_empty() {
-                    log::debug!("段落 {}: '{}'", i, segment_text);
+            if !segment_text.is_empty() {
+                log::debug!("段落: '{}'", segment_text);
 
-                    // 在段落之间添加空格
-                    if !transcribed_text.is_empty() {
-                        transcribed_text.push(' ');
-                    }
-                    transcribed_text.push_str(segment_text);
+                // 在段落之间添加空格
+                if !transcribed_text.is_empty() {
+                    transcribed_text.push(' ');
                 }
+                transcribed_text.push_str(segment_text);
             }
         }
 

@@ -79,6 +79,7 @@ pub mod cascade_layer_debouncer;  // Phase 2 optimization
 pub mod llm_result_cache;          // Phase 3 optimization (LLM cache only)
 pub mod vector_sync_manager;
 pub mod memory_event_coordinator;
+pub mod memory_cleanup;  // Phase v2.6: forgetting mechanism
 
 // Re-exports
 pub use config::*;
@@ -97,7 +98,7 @@ pub use extraction::ExtractionConfig;
 pub use embedding::{EmbeddingClient, EmbeddingConfig};
 pub use filesystem::{CortexFilesystem, FilesystemOperations};
 pub use llm::LLMClient;
-pub use search::{SearchOptions, VectorSearchEngine};
+pub use search::{SearchOptions, VectorSearchEngine, SearchResult, QueryIntentType, EnhancedQueryIntent};
 pub use session::{
     CaseMemory, EntityMemory, EventMemory, ExtractedMemories, MemoryExtractor, Message,
     MessageRole, Participant, ParticipantManager, PreferenceMemory, SessionConfig, SessionManager,
@@ -120,6 +121,7 @@ pub use cascade_layer_debouncer::{LayerUpdateDebouncer, DebouncerConfig};  // Ph
 pub use llm_result_cache::{LlmResultCache, CacheConfig, CacheStats};      // Phase 3
 pub use vector_sync_manager::{VectorSyncManager, VectorSyncStats};
 pub use memory_event_coordinator::{MemoryEventCoordinator, CoordinatorConfig};  // Phase 2
+pub use memory_cleanup::{MemoryCleanupService, MemoryCleanupConfig, CleanupStats};  // v2.6
 
 // Session-related re-exports
 pub use session::message::MessageStorage;

@@ -244,7 +244,7 @@ impl CascadeLayerUpdater {
                     debug!("💔 Cache MISS, generating with LLM");
                     
                     let l0 = self.l0_generator
-                        .generate_with_llm(&content, &self.llm_client)
+                        .generate_with_llm(&content, &self.llm_client, &[])
                         .await?;
                     
                     let l1 = self.l1_generator
@@ -265,7 +265,7 @@ impl CascadeLayerUpdater {
         } else {
             // No cache, generate directly
             let l0 = self.l0_generator
-                .generate_with_llm(&content, &self.llm_client)
+                .generate_with_llm(&content, &self.llm_client, &[])
                 .await?;
             
             let l1 = self.l1_generator
@@ -403,7 +403,7 @@ impl CascadeLayerUpdater {
                     debug!("💔 Cache MISS for root, generating with LLM");
                     
                     let l0 = self.l0_generator
-                        .generate_with_llm(&aggregated, &self.llm_client)
+                        .generate_with_llm(&aggregated, &self.llm_client, &[])
                         .await?;
                     
                     let l1 = self.l1_generator
@@ -422,7 +422,7 @@ impl CascadeLayerUpdater {
             }
         } else {
             let l0 = self.l0_generator
-                .generate_with_llm(&aggregated, &self.llm_client)
+                .generate_with_llm(&aggregated, &self.llm_client, &[])
                 .await?;
             
             let l1 = self.l1_generator
@@ -586,7 +586,7 @@ impl CascadeLayerUpdater {
         
         // Generate L0 abstract
         let abstract_text = self.l0_generator
-            .generate_with_llm(&content, &self.llm_client)
+            .generate_with_llm(&content, &self.llm_client, &[])
             .await?;
         
         // Generate L1 overview
@@ -698,7 +698,7 @@ impl CascadeLayerUpdater {
                     
                     if !month_content.is_empty() {
                         let abstract_text = self.l0_generator
-                            .generate_with_llm(&month_content, &self.llm_client)
+                            .generate_with_llm(&month_content, &self.llm_client, &[])
                             .await?;
                         
                         let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
@@ -730,7 +730,7 @@ impl CascadeLayerUpdater {
                 
                 if !day_content.is_empty() {
                     let abstract_text = self.l0_generator
-                        .generate_with_llm(&day_content, &self.llm_client)
+                        .generate_with_llm(&day_content, &self.llm_client, &[])
                         .await?;
                     
                     let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC");

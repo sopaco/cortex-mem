@@ -180,7 +180,7 @@ impl MemoryOperations {
                     } else {
                         // Fallback: synchronous generation (should not happen in production)
                         tracing::warn!("⚠️ memory_event_tx not available, falling back to sync generation");
-                        if let Err(e) = self.layer_manager.generate_all_layers(&uri, &args.content).await {
+                        if let Err(e) = self.layer_manager.generate_all_layers(&uri, &args.content, &[]).await {
                             tracing::warn!("Failed to generate layers for {}: {}", uri, e);
                         }
                     }
@@ -205,7 +205,7 @@ impl MemoryOperations {
                         tracing::debug!("📤 Sent LayerUpdateNeeded event for agent scope");
                     } else {
                         tracing::warn!("⚠️ memory_event_tx not available, falling back to sync generation");
-                        if let Err(e) = self.layer_manager.generate_all_layers(&uri, &args.content).await {
+                        if let Err(e) = self.layer_manager.generate_all_layers(&uri, &args.content, &[]).await {
                             tracing::warn!("Failed to generate layers for {}: {}", uri, e);
                         }
                     }

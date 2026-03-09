@@ -185,7 +185,7 @@ impl LLMClientImpl {
         let response: String = self.complete(prompt).await?;
         
         // Extract JSON from response (handles markdown code blocks)
-        let json_str = Self::extract_json_from_response(&response);
+        let json_str = Self::extract_json_from_response_static(&response);
         
         // Try to parse as structured response first
         if let Ok(extracted) = serde_json::from_str::<MemoryExtractionResponse>(json_str) {
@@ -238,7 +238,7 @@ impl LLMClientImpl {
     }
 
     /// Extract JSON from LLM response, handling markdown code blocks
-    fn extract_json_from_response(response: &str) -> &str {
+    pub fn extract_json_from_response_static(response: &str) -> &str {
         let trimmed = response.trim();
         
         // If response is wrapped in ```json ... ``` or ``` ... ```
@@ -329,7 +329,7 @@ impl LLMClient for LLMClientImpl {
         let response: String = self.complete(prompt).await?;
         
         // Extract JSON from response (handles markdown code blocks)
-        let json_str = Self::extract_json_from_response(&response);
+        let json_str = Self::extract_json_from_response_static(&response);
         
         // Try to parse as structured response first
         if let Ok(extracted) = serde_json::from_str::<MemoryExtractionResponse>(json_str) {
@@ -399,7 +399,7 @@ If no facts are found, return: {{"facts": []}}
         let response = self.complete(&extraction_prompt).await?;
         
         // Try to extract JSON from the response
-        let json_str = Self::extract_json_from_response(&response);
+        let json_str = Self::extract_json_from_response_static(&response);
         
         // Try to parse as structured facts
         match serde_json::from_str::<crate::llm::extractor_types::StructuredFactExtraction>(json_str) {
@@ -454,7 +454,7 @@ If no facts are found, return: {{"facts": []}}
         let response = self.complete(&extraction_prompt).await?;
         
         // Try to extract JSON from the response
-        let json_str = Self::extract_json_from_response(&response);
+        let json_str = Self::extract_json_from_response_static(&response);
         
         // Try to parse as detailed facts
         match serde_json::from_str::<crate::llm::extractor_types::DetailedFactExtraction>(json_str) {

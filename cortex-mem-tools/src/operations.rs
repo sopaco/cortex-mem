@@ -152,6 +152,7 @@ impl MemoryOperations {
             model_name: embedding_model_name.to_string(),
             batch_size: 10,
             timeout_secs: 30,
+            ..EmbeddingConfig::default()
         };
         let embedding_client = Arc::new(EmbeddingClient::new(embedding_config)?);
         tracing::info!("Embedding client initialized");

@@ -84,39 +84,49 @@ impl std::fmt::Display for MemoryScope {
 pub struct MemoryMetadata {
     /// Unique memory ID
     pub id: String,
-    
+
     /// File path relative to scope root
     pub file: String,
-    
+
     /// Memory type
     pub memory_type: MemoryType,
-    
+
     /// Primary key for matching (topic for preferences, name for entities, etc.)
     pub key: String,
-    
+
     /// Content hash for change detection
     pub content_hash: String,
-    
+
     /// Source session IDs that contributed to this memory
     pub source_sessions: Vec<String>,
-    
+
     /// Creation timestamp
     pub created_at: DateTime<Utc>,
-    
+
     /// Last update timestamp
     pub updated_at: DateTime<Utc>,
-    
+
     /// Last access timestamp
     pub last_accessed: DateTime<Utc>,
-    
+
     /// Access count
     pub access_count: u32,
-    
+
     /// Confidence score (0.0 - 1.0)
     pub confidence: f32,
-    
+
     /// Current content summary (for quick comparison)
     pub content_summary: String,
+
+    // ── 遗忘机制字段 ─────────────────────────────────────────────────────────
+
+    /// 巩固次数：被访问并复用的次数（越高衰减越慢）
+    #[serde(default)]
+    pub consolidation_count: u32,
+
+    /// 是否已归档（归档后不参与常规检索，但保留数据供审计）
+    #[serde(default)]
+    pub archived: bool,
 }
 
 impl MemoryMetadata {
@@ -145,6 +155,8 @@ impl MemoryMetadata {
             access_count: 0,
             confidence,
             content_summary,
+            consolidation_count: 0,
+            archived: false,
         }
     }
     
@@ -161,10 +173,32 @@ impl MemoryMetadata {
         }
     }
     
-    /// Record an access
+    /// Record an access and update consolidation count
     pub fn record_access(&mut self) {
         self.last_accessed = Utc::now();
         self.access_count += 1;
+        // 每 5 次访问触发一次巩固（减缓遗忘曲线）
+        if self.access_count % 5 == 0 {
+            self.consolidation_count += 1;
+        }
+    }
+
+    /// 计算当前记忆强度（0.0-1.0）
+    ///
+    /// 基于艾宾浩斯遗忘曲线：strength = confidence * exp(-decay_days / consolidation_factor)
+    /// - decay_rate: 默认 0.1（10% 每天衰减）
+    /// - consolidation_factor: 1.0 + 0.2 * consolidation_count（巩固次数越多衰减越慢）
+    pub fn compute_strength(&self) -> f32 {
+        let now = Utc::now();
+        let decay_days = now
+            .signed_duration_since(self.last_accessed)
+            .num_seconds()
+            .max(0) as f32
+            / 86_400.0;
+
+        let consolidation_factor = 1.0 + 0.2 * self.consolidation_count as f32;
+        let strength = self.confidence * (-0.1 * decay_days / consolidation_factor).exp();
+        strength.clamp(0.0, 1.0)
     }
 }
 

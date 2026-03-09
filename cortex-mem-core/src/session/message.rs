@@ -147,7 +147,7 @@ impl MessageStorage {
         let thread_uri = format!("cortex://session/{}", thread_id);
         let content = message.to_markdown();
         if let Err(e) = layer_manager
-            .generate_all_layers(&thread_uri, &content)
+            .generate_all_layers(&thread_uri, &content, &[])
             .await
         {
             tracing::warn!("Failed to generate layers for thread {}: {}", thread_id, e);

@@ -419,7 +419,7 @@ impl App {
 
                         log::info!("即将调用 on_enter_chat_mode...");
 
-                        self.on_enter_chat_mode(&bot);
+                        self.on_enter_chat_mode(&bot).await;
 
                         log::info!("on_enter_chat_mode 调用完成");
                     } else {
@@ -514,103 +514,13 @@ impl App {
             return Ok(());
         }
 
-        // 检查是否刚进入聊天模式
+        // 检查是否有选中的机器人（防护性检查，正常情况下 on_enter_chat_mode 已经初始化）
         if self.current_bot.is_none() {
             if let Some(bot) = self.ui.selected_bot() {
-                self.current_bot = Some(bot.clone());
-
-                // 更新 current_bot_id
-                if let Ok(mut bot_id) = self.current_bot_id.write() {
-                    *bot_id = Some(bot.id.clone());
-                    log::info!("已更新当前机器人 ID: {}", bot.id);
-                }
-
-                // 如果有基础设施，创建真实的带记忆的 Agent
-                if let Some(infrastructure) = &self.infrastructure {
-                    let config = infrastructure.config();
-                    match create_memory_agent(
-                        config.cortex.data_dir(),
-                        config,
-                        None, // user_info 稍后从租户 operations 提取
-                        Some(bot.system_prompt.as_str()),
-                        &bot.id,
-                        &self.user_id,
-                    )
-                    .await
-                    {
-                        Ok((rig_agent, tenant_ops)) => {
-                            // 保存租户 operations
-                            self.tenant_operations = Some(tenant_ops.clone());
-
-                            // 从租户 operations 提取用户基本信息
-                            let user_info = match extract_user_basic_info(
-                                tenant_ops.clone(),
-                                &self.user_id,
-                                &bot.id,
-                            )
-                            .await
-                            {
-                                Ok(info) => {
-                                    self.user_info = info.clone();
-                                    info
-                                }
-                                Err(e) => {
-                                    log::error!("提取用户基本信息失败: {}", e);
-                                    None
-                                }
-                            };
-
-                            // 如果有用户信息，需要重新创建 Agent（带用户信息）
-                            if user_info.is_some() {
-                                let config = infrastructure.config();
-                                match create_memory_agent(
-                                    config.cortex.data_dir(),
-                                    config,
-                                    user_info.as_deref(),
-                                    Some(bot.system_prompt.as_str()),
-                                    &bot.id,
-                                    &self.user_id,
-                                )
-                                .await
-                                {
-                                    Ok((agent_with_userinfo, _)) => {
-                                        self.rig_agent = Some(agent_with_userinfo);
-                                        log::info!("已创建带记忆功能的真实 Agent（含用户信息）");
-                                    }
-                                    Err(e) => {
-                                        log::error!("重新创建 Agent 失败: {}", e);
-                                        self.rig_agent = Some(rig_agent);
-                                    }
-                                }
-                            } else {
-                                self.rig_agent = Some(rig_agent);
-                                log::info!("已创建带记忆功能的真实 Agent");
-                            }
-
-                            // 🔧 创建rig_agent后立即初始化agent_handler
-                            if let Some(rig_agent) = &self.rig_agent {
-                                let session_id = self
-                                    .current_session_id
-                                    .get_or_insert_with(|| uuid::Uuid::new_v4().to_string())
-                                    .clone();
-                                self.agent_handler = Some(AgentChatHandler::with_memory(
-                                    rig_agent.clone(),
-                                    tenant_ops.clone(),
-                                    session_id,
-                                ));
-                                log::info!(
-                                    "✅ 已初始化 agent_handler with session_id: {}",
-                                    self.current_session_id.as_ref().unwrap()
-                                );
-                            }
-                        }
-                        Err(e) => {
-                            log::error!("创建真实 Agent 失败 {}", e);
-                        }
-                    }
-                }
-
-                log::info!("选择机器人: {}", bot.name);
+                // 如果 on_enter_chat_mode 未被调用（例如直接跳转到 Chat），在此兜底初始化
+                let bot_cloned = bot.clone();
+                log::warn!("⚠️ 检测到 current_bot 未设置，执行兜底初始化...");
+                self.on_enter_chat_mode(&bot_cloned).await;
             } else {
                 log::warn!("没有选中的机器人");
                 return Ok(());
@@ -829,41 +739,117 @@ impl App {
         Ok(())
     }
 
-    /// 启动 API 服务器
-    /// 当切换到聊天状态时调用此方法
-    pub fn on_enter_chat_mode(&mut self, bot: &BotConfig) {
+    /// 进入聊天模式时初始化 Agent 和 AgentHandler
+    /// 当从 BotSelection 或 PasswordInput 切换到 Chat 状态时调用此方法
+    pub async fn on_enter_chat_mode(&mut self, bot: &BotConfig) {
         log::info!("🎯 进入聊天模式，机器人: {} (ID: {})", bot.name, bot.id);
 
-        // 更新 current_bot_id
+        // 更新 current_bot_id 和 current_bot
         if let Ok(mut bot_id) = self.current_bot_id.write() {
             *bot_id = Some(bot.id.clone());
             log::info!("✅ 已更新当前机器人 ID: {}", bot.id);
         } else {
             log::error!("❌ 无法更新 current_bot_id");
         }
+        self.current_bot = Some(bot.clone());
 
-        // 🔧 初始化agent_handler
+        // 如果 rig_agent 还未初始化，在此异步初始化
+        if self.rig_agent.is_none() {
+            if let Some(infrastructure) = &self.infrastructure {
+                log::info!("🤖 开始初始化 AI Agent...");
+                let config = infrastructure.config();
+                match create_memory_agent(
+                    config.cortex.data_dir(),
+                    config,
+                    None, // user_info 稍后从租户 operations 提取
+                    Some(bot.system_prompt.as_str()),
+                    &bot.id,
+                    &self.user_id,
+                )
+                .await
+                {
+                    Ok((rig_agent, tenant_ops)) => {
+                        self.tenant_operations = Some(tenant_ops.clone());
+
+                        // 从租户 operations 提取用户基本信息
+                        let user_info = match extract_user_basic_info(
+                            tenant_ops.clone(),
+                            &self.user_id,
+                            &bot.id,
+                        )
+                        .await
+                        {
+                            Ok(info) => {
+                                self.user_info = info.clone();
+                                info
+                            }
+                            Err(e) => {
+                                log::error!("提取用户基本信息失败: {}", e);
+                                None
+                            }
+                        };
+
+                        // 如果有用户信息，需要重新创建带用户信息的 Agent
+                        if user_info.is_some() {
+                            let config = infrastructure.config();
+                            match create_memory_agent(
+                                config.cortex.data_dir(),
+                                config,
+                                user_info.as_deref(),
+                                Some(bot.system_prompt.as_str()),
+                                &bot.id,
+                                &self.user_id,
+                            )
+                            .await
+                            {
+                                Ok((agent_with_userinfo, _)) => {
+                                    self.rig_agent = Some(agent_with_userinfo);
+                                    log::info!("✅ 已创建带用户信息的 Agent");
+                                }
+                                Err(e) => {
+                                    log::error!("重新创建带用户信息的 Agent 失败: {}", e);
+                                    self.rig_agent = Some(rig_agent);
+                                }
+                            }
+                        } else {
+                            self.rig_agent = Some(rig_agent);
+                            log::info!("✅ 已创建 Agent（无用户历史记忆）");
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("❌ 初始化 AI Agent 失败: {}", e);
+                        return;
+                    }
+                }
+            } else {
+                log::error!("❌ 基础设施未初始化，无法创建 Agent");
+                return;
+            }
+        }
+
+        // 初始化 agent_handler
         if let Some(rig_agent) = &self.rig_agent {
+            let session_id = self
+                .current_session_id
+                .get_or_insert_with(|| uuid::Uuid::new_v4().to_string())
+                .clone();
+
             if let Some(tenant_ops) = &self.tenant_operations {
-                let session_id = self
-                    .current_session_id
-                    .get_or_insert_with(|| uuid::Uuid::new_v4().to_string())
-                    .clone();
                 self.agent_handler = Some(AgentChatHandler::with_memory(
                     rig_agent.clone(),
                     tenant_ops.clone(),
                     session_id,
                 ));
                 log::info!(
-                    "✅ 已初始化 agent_handler with session_id: {}",
+                    "✅ 已初始化 agent_handler（含记忆）session_id: {}",
                     self.current_session_id.as_ref().unwrap()
                 );
             } else {
                 self.agent_handler = Some(AgentChatHandler::new(rig_agent.clone()));
-                log::info!("✅ 已初始化 agent_handler (无记忆)");
+                log::info!("✅ 已初始化 agent_handler（无记忆）");
             }
         } else {
-            log::warn!("⚠️  rig_agent 未初始化，无法创建 agent_handler");
+            log::error!("❌ rig_agent 初始化后仍为 None，无法创建 agent_handler");
         }
     }
 
