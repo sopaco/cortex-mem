@@ -156,6 +156,26 @@ function publishCrate(cratePath, dryRun = false) {
 	}
 }
 
+// Helper: Make HTTP GET request (cross-platform, no curl dependency)
+function httpGet(url) {
+	return new Promise((resolve, reject) => {
+		const https = require('https');
+		https
+			.get(url, (res) => {
+				let data = '';
+				res.on('data', (chunk) => (data += chunk));
+				res.on('end', () => {
+					if (res.statusCode >= 200 && res.statusCode < 300) {
+						resolve(data);
+					} else {
+						reject(new Error(`HTTP ${res.statusCode}`));
+					}
+				});
+			})
+			.on('error', reject);
+	});
+}
+
 // Wait for a crate to be available on crates.io
 function waitForCrateAvailability(crateName, maxWaitSeconds = 120) {
 	console.log(colorize(`    Waiting for ${crateName} to be available on crates.io...`, 'cyan'));
@@ -164,12 +184,10 @@ function waitForCrateAvailability(crateName, maxWaitSeconds = 120) {
 	const checkInterval = 5000; // Check every 5 seconds
 
 	return new Promise((resolve, reject) => {
-		const checkAvailability = () => {
+		const checkAvailability = async () => {
 			try {
-				// Use curl to check crates.io API directly
-				execSync(`curl -s -f "https://crates.io/api/v1/crates/${crateName}" > /dev/null`, {
-					stdio: 'pipe'
-				});
+				// Use native HTTPS instead of curl for cross-platform compatibility
+				await httpGet(`https://crates.io/api/v1/crates/${crateName}`);
 				console.log(colorize(`    ✓ ${crateName} is now available on crates.io`, 'green'));
 				resolve();
 			} catch (error) {
@@ -186,14 +204,10 @@ function waitForCrateAvailability(crateName, maxWaitSeconds = 120) {
 	});
 }
 
-// Check if a specific version of a crate is already published on crates.io
-function isVersionPublished(crateName, version) {
+// Check if a specific version of a crate is already published on crates.io (async)
+async function isVersionPublished(crateName, version) {
 	try {
-		// Use curl to check crates.io API and get the newest version
-		const result = execSync(`curl.exe -s "https://crates.io/api/v1/crates/${crateName}"`, {
-			stdio: 'pipe',
-			encoding: 'utf8'
-		});
+		const result = await httpGet(`https://crates.io/api/v1/crates/${crateName}`);
 		const data = JSON.parse(result);
 		const newestVersion = data.crate?.newest_version || data.crate?.max_version;
 		return newestVersion === version;
@@ -224,13 +238,14 @@ async function main() {
 	}
 
 	console.log(colorize('\n📦 Crates to publish (in dependency order):', 'blue'));
-	CRATES_TO_PUBLISH.forEach((crate, index) => {
+	for (let index = 0; index < CRATES_TO_PUBLISH.length; index++) {
+		const crate = CRATES_TO_PUBLISH[index];
 		const version = getVersion(crate.path);
-		const published = isVersionPublished(crate.name, version);
+		const published = await isVersionPublished(crate.name, version);
 		console.log(
 			`  ${index + 1}. ${colorize(crate.name, published ? 'yellow' : 'green')} v${version} ${published ? '(already published)' : ''}`
 		);
-	});
+	}
 
 	console.log(colorize('\n' + '='.repeat(60), 'cyan'));
 
@@ -252,7 +267,7 @@ async function main() {
 		const version = getVersion(crate.path);
 
 		// Skip if already published (unless force mode)
-		if (!force && isVersionPublished(crate.name, version)) {
+		if (!force && (await isVersionPublished(crate.name, version))) {
 			console.log(
 				colorize(
 					`\n⏭️  [${i + 1}/${CRATES_TO_PUBLISH.length}] Skipping ${crate.name} v${version} - already published`,
