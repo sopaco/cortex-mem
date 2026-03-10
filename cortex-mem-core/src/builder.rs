@@ -22,7 +22,7 @@ pub struct CortexMemBuilder {
     qdrant_config: Option<crate::config::QdrantConfig>,
     llm_client: Option<Arc<dyn LLMClient>>,
     session_config: SessionConfig,
-    /// v2.5: 事件协调器配置
+    /// 事件协调器配置
     coordinator_config: Option<CoordinatorConfig>,
 }
 
@@ -63,7 +63,7 @@ impl CortexMemBuilder {
         self
     }
 
-    /// v2.5: 配置事件协调器
+    /// 配置事件协调器
     pub fn with_coordinator_config(mut self, config: CoordinatorConfig) -> Self {
         self.coordinator_config = Some(config);
         self
@@ -71,7 +71,7 @@ impl CortexMemBuilder {
 
     /// 🎯 构建完整的cortex-mem实例
     pub async fn build(self) -> Result<CortexMem> {
-        info!("Building Cortex Memory with v2.5 incremental update support");
+        info!("Building Cortex Memory with incremental update support");
 
         // 1. 初始化文件系统
         let filesystem = Arc::new(CortexFilesystem::new(
@@ -113,7 +113,7 @@ impl CortexMemBuilder {
         let (event_bus, _old_event_rx) = EventBus::new();
         let event_bus = Arc::new(event_bus);
 
-        // 5. v2.5: 创建 MemoryEventCoordinator（如果配置了所有必需组件）
+        // 5. 创建 MemoryEventCoordinator（如果配置了所有必需组件）
         let (coordinator_handle, memory_event_tx) = 
             if let (Some(llm), Some(emb), Some(_vs)) = 
                 (&self.llm_client, &embedding, &vector_store) 
@@ -174,7 +174,7 @@ impl CortexMemBuilder {
 
                 // 启动事件协调器
                 let handle = tokio::spawn(coordinator.start(rx));
-                info!("✅ MemoryEventCoordinator started for v2.5 incremental updates");
+                info!("✅ MemoryEventCoordinator started for incremental updates");
 
                 (Some(handle), Some(tx))
             } else {
@@ -182,9 +182,9 @@ impl CortexMemBuilder {
                 (None, None)
             };
 
-        // 6. 创建SessionManager（带 v2.5 memory_event_tx）
+        // 6. 创建SessionManager（带 memory_event_tx）
         let session_manager = if let Some(tx) = memory_event_tx {
-            // v2.5: 使用 MemoryEventCoordinator 的事件通道
+            // 使用 MemoryEventCoordinator 的事件通道
             if let Some(ref llm) = self.llm_client {
                 SessionManager::with_llm_and_events(
                     filesystem.clone(),
@@ -242,7 +242,7 @@ pub struct CortexMem {
     pub llm_client: Option<Arc<dyn LLMClient>>,
     #[allow(dead_code)]
     event_bus: Arc<EventBus>,
-    /// v2.5: MemoryEventCoordinator 的后台任务句柄
+    /// MemoryEventCoordinator 的后台任务句柄
     coordinator_handle: Option<tokio::task::JoinHandle<()>>,
 }
 

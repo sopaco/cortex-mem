@@ -41,11 +41,11 @@ pub struct MemoryOperations {
     pub(crate) default_user_id: String,
     pub(crate) default_agent_id: String,
 
-    /// v2.5: 事件发送器，用于异步触发层级生成
+    /// 事件发送器，用于异步触发层级生成
     pub(crate) memory_event_tx:
         Option<tokio::sync::mpsc::UnboundedSender<cortex_mem_core::memory_events::MemoryEvent>>,
 
-    /// v2.5: 事件协调器引用，用于同步等待后台处理完成
+    /// 事件协调器引用，用于同步等待后台处理完成
     pub(crate) event_coordinator: Option<Arc<cortex_mem_core::MemoryEventCoordinator>>,
 }
 
@@ -150,7 +150,7 @@ impl MemoryOperations {
         let embedding_client = Arc::new(EmbeddingClient::new(embedding_config)?);
         tracing::info!("Embedding client initialized");
 
-        // v2.5: Create MemoryEventCoordinator BEFORE SessionManager
+        // Create MemoryEventCoordinator BEFORE SessionManager
         let (coordinator, memory_event_tx, event_rx) = cortex_mem_core::MemoryEventCoordinator::new(
             filesystem.clone(),
             llm_client.clone(),
@@ -163,10 +163,10 @@ impl MemoryOperations {
 
         // Start the coordinator event loop in background
         tokio::spawn(coordinator.start(event_rx));
-        tracing::info!("MemoryEventCoordinator started for v2.5 incremental updates");
+        tracing::info!("MemoryEventCoordinator started for incremental updates");
 
         let config = SessionConfig::default();
-        // Create SessionManager with memory_event_tx for v2.5 integration
+        // Create SessionManager with memory_event_tx for integration
         let session_manager = SessionManager::with_llm_and_events(
             filesystem.clone(),
             config,

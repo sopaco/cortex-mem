@@ -68,7 +68,7 @@ pub mod search;
 pub mod session;
 pub mod vector_store;
 
-// New modules for v2.5 incremental update system
+// New modules for incremental update system
 pub mod memory_index;
 pub mod memory_events;
 pub mod memory_index_manager;
@@ -103,8 +103,7 @@ pub use session::{
 };
 pub use vector_store::{QdrantVectorStore, VectorStore, parse_vector_id, uri_to_vector_id};
 
-// New re-exports for v2.5
-// MemoryType from memory_index is the primary type for v2.5
+// MemoryType from memory_index is the primary type for
 pub use memory_index::{
     MemoryIndex, MemoryMetadata, MemoryScope, MemoryType, MemoryUpdateResult,
     SessionExtractionSummary,

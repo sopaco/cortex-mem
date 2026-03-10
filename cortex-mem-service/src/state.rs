@@ -60,13 +60,13 @@ impl AppState {
             builder = builder.with_qdrant(qdrant_cfg);
         }
 
-        // v2.5: 使用 MemoryEventCoordinator 进行记忆提取和层级更新
+        // 使用 MemoryEventCoordinator 进行记忆提取和层级更新
         // 配置协调器（可选，使用默认配置即可）
         // builder = builder.with_coordinator_config(CoordinatorConfig::default());
 
         // 构建Cortex Memory
         let cortex = builder.build().await?;
-        tracing::info!("✅ Cortex Memory initialized with v2.5 MemoryEventCoordinator");
+        tracing::info!("✅ Cortex Memory initialized with MemoryEventCoordinator");
 
         // 从Cortex Memory获取组件
         let filesystem = cortex.filesystem();

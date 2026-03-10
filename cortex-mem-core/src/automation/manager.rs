@@ -35,7 +35,7 @@ impl Default for AutomationConfig {
 
 /// 自动化管理器
 ///
-/// 职责（v2.5 重构后）：
+/// 职责
 /// - 监听 `MessageAdded` 事件，将新消息内容（L2 级别）索引到向量数据库
 ///
 /// 不再负责：

@@ -18,7 +18,6 @@ use std::io;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
-// use cortex_mem_core::automation::{AutoExtractor, AutoExtractConfig}; // removed in v2.5
 
 // 音频相关导入
 use crate::audio_input;

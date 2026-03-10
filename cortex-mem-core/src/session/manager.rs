@@ -192,7 +192,7 @@ pub struct SessionManager {
     config: SessionConfig,
     llm_client: Option<Arc<dyn LLMClient>>,
     event_bus: Option<EventBus>,
-    /// Optional event sender for v2.5 incremental update system
+    /// Optional event sender for incremental update system
     memory_event_tx: Option<tokio::sync::mpsc::UnboundedSender<crate::memory_events::MemoryEvent>>,
 }
 
@@ -274,7 +274,7 @@ impl SessionManager {
         }
     }
     
-    /// Set the memory event sender for v2.5 incremental update system
+    /// Set the memory event sender for incremental update system
     pub fn with_memory_event_tx(mut self, tx: tokio::sync::mpsc::UnboundedSender<crate::memory_events::MemoryEvent>) -> Self {
         self.memory_event_tx = Some(tx);
         self
@@ -360,7 +360,7 @@ impl SessionManager {
     pub async fn close_session(&mut self, thread_id: &str) -> Result<SessionMetadata> {
         let metadata = self.close_session_metadata_only(thread_id).await?;
 
-        // v2.5: fire-and-forget via channel
+        // fire-and-forget via channel
         if let Some(ref tx) = self.memory_event_tx {
             let user_id = metadata.user_id.clone().unwrap_or_else(|| "default".to_string());
             let agent_id = metadata.agent_id.clone().unwrap_or_else(|| "default".to_string());

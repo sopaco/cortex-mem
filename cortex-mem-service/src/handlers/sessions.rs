@@ -123,7 +123,7 @@ pub async fn add_message(
         )),
     };
 
-    // v2.5: Use SessionManager::add_message to trigger MemoryEventCoordinator events
+    // Use SessionManager::add_message to trigger MemoryEventCoordinator events
     // This ensures proper event chain for automatic indexing and layer generation
     let session_mgr = state.session_manager.read().await;
     let message = session_mgr.add_message(&thread_id, role, payload.content).await?;

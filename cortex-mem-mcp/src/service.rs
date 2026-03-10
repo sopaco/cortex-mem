@@ -834,7 +834,7 @@ impl ServerHandler for MemoryMcpService {
             instructions: Some(
                 "Cortex Memory MCP Server - Provides memory management tools for AI assistants.\n\
                 \n\
-                **Automatic Processing (v2.5):**\n\
+                **Automatic Processing:**\n\
                 The server automatically triggers memory extraction and layer generation when:\n\
                 - Message count reaches threshold (default: 10 messages)\n\
                 - Session becomes inactive (default: 2 minutes without new messages)\n\
