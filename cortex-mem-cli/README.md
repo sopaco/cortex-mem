@@ -126,17 +126,19 @@ cortex-mem list --include-abstracts
 #### Get Memory
 
 ```bash
-cortex-mem get <uri> [--abstract-only]
+cortex-mem get <uri> [--abstract-only] [--overview]
 
 # Examples
 cortex-mem get cortex://session/tech-support/timeline/2024/01/15/14_30_00_abc123.md
 cortex-mem get cortex://session/tech-support/timeline/2024/01/15/14_30_00_abc123.md --abstract-only
+cortex-mem get cortex://session/tech-support/timeline/2024/01/15/14_30_00_abc123.md --overview
 ```
 
 | Argument | Short | Default | Description |
 |----------|-------|---------|-------------|
 | `uri` | | (required) | Memory URI to retrieve |
-| `--abstract-only` | `-a` | false | Show L0 abstract instead of full content |
+| `--abstract-only` | `-a` | false | Show L0 abstract (~100 tokens) instead of full content |
+| `--overview` | `-o` | false | Show L1 overview (structured summary) instead of full content |
 
 #### Delete Memory
 
@@ -146,6 +148,22 @@ cortex-mem delete <uri>
 # Example
 cortex-mem delete cortex://session/tech-support/timeline/2024/01/15/14_30_00_abc123.md
 ```
+
+#### Session Close
+
+Close a session and trigger memory extraction, L0/L1 layer generation, and vector indexing.
+
+```bash
+cortex-mem session close <thread-id>
+
+# Example
+cortex-mem session close customer-support
+```
+
+This is the key command for finalizing a conversation — it runs the full processing pipeline:
+1. **Memory Extraction**: LLM analyzes the conversation and extracts structured facts, decisions, and entities.
+2. **Layer Generation**: L0 (abstract) and L1 (overview) files are generated or updated.
+3. **Vector Indexing**: All layers are embedded and indexed in Qdrant for future semantic search.
 
 ### Layer Commands
 
@@ -318,6 +336,18 @@ cortex-mem --verbose session create debug-test
 # View full error stack trace
 RUST_BACKTRACE=1 cortex-mem search "test"
 ```
+
+## 🧪 Testing
+
+```bash
+# Run basic tests (no external services needed)
+cargo test -p cortex-mem-cli
+
+# Run all tests including integration tests (requires Qdrant + LLM + Embedding)
+CONFIG_PATH=./config.toml TENANT_ID=testcase_user cargo test -p cortex-mem-cli -- --include-ignored
+```
+
+Tests are automatically run in single-threaded mode (configured in `.cargo/config.toml`) to avoid Qdrant collection creation race conditions.
 
 ## 📚 Related Resources
 

@@ -22,7 +22,7 @@
 cd cortex-mem
 cargo build --release -p cortex-mem-service
 
-# 使用默认配置启动
+# 使用默认配置启动（默认端口 8085）
 ./target/release/cortex-mem-service
 
 # 指定端口和数据目录
@@ -38,7 +38,7 @@ docker build -t cortex-mem-service -f docker/Dockerfile .
 # 运行容器
 docker run -d \
   --name cortex-mem \
-  -p 8080:8080 \
+  -p 8085:8085 \
   -v $(pwd)/cortex-data:/app/cortex-data \
   cortex-mem-service
 ```
@@ -268,12 +268,10 @@ Content-Type: application/json
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `--port` | `8080` | 监听端口 |
+| `--port` / `-p` | `8085` | 监听端口 |
 | `--host` | `127.0.0.1` | 绑定地址 |
-| `--data-dir` | `./cortex-data` | 数据目录 |
-| `--workers` | `CPU 核心数` | 工作线程数 |
-| `--log-level` | `info` | 日志级别 |
-| `--cors` | `*` | CORS 允许的源 |
+| `--data-dir` / `-d` | `./cortex-data` | 数据目录 |
+| `--verbose` / `-v` | `false` | 启用详细日志 |
 
 ### 环境变量
 
@@ -287,7 +285,7 @@ export LLM_API_BASE_URL="https://api.openai.com/v1"
 export LLM_API_KEY="your-api-key"
 
 # 服务配置
-export CORTEX_SERVICE_PORT=8080
+export CORTEX_SERVICE_PORT=8085
 export CORTEX_SERVICE_HOST="0.0.0.0"
 export RUST_LOG="cortex_service=debug"
 ```

@@ -112,6 +112,8 @@ cortex://resources/{resource_name}/
 - <strong>Multi-Tenancy Support:</strong> Isolated memory spaces for different users and agents within a single deployment via tenant-aware collection naming.
 - <strong>Event-Driven Automation:</strong> File watchers and auto-indexers for background processing, synchronization, and profile enrichment.
 - <strong>LLM Result Caching:</strong> Intelligent caching with LRU eviction and TTL expiration reduces redundant LLM API calls by 50-75%, with cascade layer debouncing for 70-90% reduction in layer updates.
+- <strong>Incremental Memory Updates:</strong> Introduced an event-driven incremental update system (`MemoryEventCoordinator`, `CascadeLayerUpdater`) that keeps L0/L1 layers in sync automatically as memories change.
+- <strong>Memory Forgetting Mechanism:</strong> Introduced `MemoryCleanupService` based on the Ebbinghaus forgetting curve — automatically archives or deletes low-strength memories to control storage growth in long-running agents.
 - <strong>Agent Framework Integration:</strong> Built-in support for Rig framework and Model Context Protocol (MCP).
 - <strong>Web Dashboard:</strong> Svelte 5 SPA (Insights) for monitoring, tenant management, and semantic search visualization.
 
@@ -232,9 +234,9 @@ graph TD
     Core --> LLM
 ```
 
-- <strong>`cortex-mem-core`</strong>: The heart of the system. Contains business logic for filesystem abstraction (`cortex://` URI), LLM client wrappers, embedding generation, Qdrant integration, session management, layer generation (L0/L1/L2), extraction engine, search engine, and automation orchestrator.
-- <strong>`cortex-mem-service`</strong>: High-performance REST API server (Axum-based) exposing all memory operations via `/api/v2/*` endpoints.
-- <strong>`cortex-mem-cli`</strong>: Command-line tool for developers and administrators to interact with the memory store directly.
+- <strong>`cortex-mem-core`</strong>: The heart of the system. Contains business logic for filesystem abstraction (`cortex://` URI), LLM client wrappers, embedding generation, Qdrant integration, session management, layer generation (L0/L1/L2), extraction engine, search engine, automation orchestrator, and incremental update system (`MemoryEventCoordinator`, `CascadeLayerUpdater`, `LlmResultCache`, `IncrementalMemoryUpdater`) as well as forgetting mechanism (`MemoryCleanupService`).
+- <strong>`cortex-mem-service`</strong>: High-performance REST API server (Axum-based) exposing all memory operations via `/api/v2/*` endpoints. Runs on port 8085 by default.
+- <strong>`cortex-mem-cli`</strong>: Command-line tool (`cortex-mem` binary) for developers and administrators to interact with the memory store directly.
 - <strong>`cortex-mem-insights`</strong>: Pure frontend Svelte 5 SPA for monitoring, analytics, and memory management through a web interface.
 - <strong>`cortex-mem-mcp`</strong>: Model Context Protocol server for integration with AI assistants (Claude Desktop, Cursor, etc.).
 - <strong>`cortex-mem-rig`</strong>: Integration layer with the rig-core agent framework for tool registration.
@@ -460,47 +462,48 @@ The CLI provides a powerful interface for direct interaction with the memory sys
 Adds a new message to a session thread, automatically storing it in the memory system.
 
 ```sh
-cortex-mem-cli --config config.toml --tenant acme add --thread thread-123 --role user --content "The user is interested in Rust programming."
+cortex-mem --config config.toml --tenant acme add --thread thread-123 --role user "The user is interested in Rust programming."
 ```
 - `--thread <id>`: (Required) The thread/session ID.
 - `--role <role>`: Message role (user/assistant/system). Default: "user"
-- `--content <text>`: The text content of the message.
+- `content`: The text content of the message (positional argument).
 
 #### Search for Memories
 Performs a semantic vector search across the memory store with weighted L0/L1/L2 scoring.
 
 ```sh
-cortex-mem-cli --config config.toml --tenant acme search "what are the user's hobbies?" --thread thread-123 --limit 10
+cortex-mem --config config.toml --tenant acme search "what are the user's hobbies?" --thread thread-123 --limit 10
 ```
 - `query`: The natural language query for the search.
 - `--thread <id>`: Filter memories by thread ID.
-- `--limit <n>`: Maximum number of results. Default: 10
-- `--min-score <score>`: Minimum relevance score (0.0-1.0). Default: 0.3
+- `--limit <n>` / `-n`: Maximum number of results. Default: 10
+- `--min-score <score>` / `-s`: Minimum relevance score (0.0-1.0). Default: 0.4
 - `--scope <scope>`: Search scope: "session", "user", or "agent". Default: "session"
 
 #### List Memories
 Retrieves a list of memories from a specific URI path.
 
 ```sh
-cortex-mem-cli --config config.toml --tenant acme list --uri "cortex://session" --include-abstracts
+cortex-mem --config config.toml --tenant acme list --uri "cortex://session" --include-abstracts
 ```
-- `--uri <path>`: URI path to list (e.g., "cortex://session" or "cortex://user/preferences").
+- `--uri <path>` / `-u`: URI path to list (e.g., "cortex://session" or "cortex://user/preferences"). Default: `cortex://session`
 - `--include-abstracts`: Include L0 abstracts in results.
 
 #### Get a Specific Memory
 Retrieves a specific memory by its URI.
 
 ```sh
-cortex-mem-cli --config config.toml --tenant acme get "cortex://session/thread-123/memory-456.md"
+cortex-mem --config config.toml --tenant acme get "cortex://session/thread-123/memory-456.md"
 ```
 - `uri`: The memory URI.
-- `--abstract-only`: Show L0 abstract instead of full content.
+- `--abstract-only` / `-a`: Show L0 abstract instead of full content.
+- `--overview` / `-o`: Show L1 overview instead of full content.
 
 #### Delete a Memory
 Removes a memory from the store by its URI.
 
 ```sh
-cortex-mem-cli --config config.toml --tenant acme delete "cortex://session/thread-123/memory-456.md"
+cortex-mem --config config.toml --tenant acme delete "cortex://session/thread-123/memory-456.md"
 ```
 
 #### Session Management
@@ -508,30 +511,33 @@ Manage conversation sessions.
 
 ```sh
 # List all sessions
-cortex-mem-cli --config config.toml --tenant acme session list
+cortex-mem --config config.toml --tenant acme session list
 
 # Create a new session
-cortex-mem-cli --config config.toml --tenant acme session create thread-456 --title "My Session"
+cortex-mem --config config.toml --tenant acme session create thread-456 --title "My Session"
 
-# Close a session (triggers extraction)
-cortex-mem-cli --config config.toml --tenant acme session close thread-456
+# Close a session (triggers extraction, layer generation, and vector indexing)
+cortex-mem --config config.toml --tenant acme session close thread-456
 ```
 
-#### Sync, Layers, and Stats
-Synchronize filesystem with vector store, manage layer files, and display system statistics.
+#### Layers and Stats
+Manage layer files and display system statistics.
 
 ```sh
 # Display system statistics
-cortex-mem-cli --config config.toml --tenant acme stats
+cortex-mem --config config.toml --tenant acme stats
 
 # List available tenants
-cortex-mem-cli --config config.toml tenant list
+cortex-mem --config config.toml tenant list
 
 # Show L0/L1 layer file coverage status
-cortex-mem-cli --config config.toml --tenant acme layers status
+cortex-mem --config config.toml --tenant acme layers status
 
 # Generate missing L0/L1 layer files
-cortex-mem-cli --config config.toml --tenant acme layers ensure-all
+cortex-mem --config config.toml --tenant acme layers ensure-all
+
+# Regenerate oversized L0 abstract files (> 2K characters)
+cortex-mem --config config.toml --tenant acme layers regenerate-oversized
 ```
 
 ### REST API (`cortex-mem-service`)
@@ -540,11 +546,11 @@ The REST API allows you to integrate Cortex Memory into any application, regardl
 
 #### Starting the Service
 ```sh
-# Start the API server with default settings
-cortex-mem-service --data-dir ./cortex-data --host 127.0.0.1 --port 8085
+# Start the API server with default settings (port 8085)
+cortex-mem-service --config config.toml --host 127.0.0.1 --port 8085
 
 # Enable verbose logging
-cortex-mem-service -d ./cortex-data -h 127.0.0.1 -p 8085 --verbose
+cortex-mem-service --config config.toml -h 127.0.0.1 -p 8085 --verbose
 ```
 
 #### API Endpoints

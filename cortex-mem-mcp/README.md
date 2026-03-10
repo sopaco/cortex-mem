@@ -267,6 +267,10 @@ cargo build --release --bin cortex-mem-mcp
 |----------|---------|-------------|
 | `--config` / `-c` | `config.toml` | Path to configuration file |
 | `--tenant` | `default` | Tenant ID for memory isolation |
+| `--auto-trigger-threshold` | `10` | Message count threshold to auto-trigger memory extraction |
+| `--auto-trigger-interval` | `300` | Minimum seconds between auto-trigger executions |
+| `--auto-trigger-inactivity` | `120` | Inactivity timeout in seconds to trigger extraction |
+| `--no-auto-trigger` | `false` | Disable the auto-trigger feature entirely |
 
 ### Configure Claude Desktop
 
@@ -291,7 +295,9 @@ Add configuration:
       "command": "/path/to/cortex-mem-mcp",
       "args": [
         "--config", "/path/to/config.toml",
-        "--tenant", "default"
+        "--tenant", "default",
+        "--auto-trigger-threshold", "10",
+        "--auto-trigger-interval", "300"
       ],
       "env": {
         "RUST_LOG": "info"

@@ -11,6 +11,8 @@ Cortex Memory Core implements:
 - Vector search integration with Qdrant
 - LLM-based memory extraction and profiling
 - Event-driven automation system
+- Incremental memory update system with event coordination, cascade layer updates, and LLM result caching
+- Memory forgetting mechanism based on the Ebbinghaus forgetting curve
 
 ## 🏗️ Architecture
 
@@ -29,6 +31,16 @@ Cortex Memory Core implements:
 | **`embedding`** | Embedding generation | `EmbeddingClient`, `EmbeddingCache` |
 | **`events`** | Event system for automation | `CortexEvent`, `EventBus` |
 | **`builder`** | Unified initialization API | `CortexMemBuilder`, `CortexMem` |
+| **`memory_index`** | Memory index and version tracking | `MemoryIndex`, `MemoryMetadata`, `MemoryScope`, `MemoryType` |
+| **`memory_events`** | Memory change event types | `MemoryEvent`, `ChangeType`, `DeleteReason` |
+| **`memory_index_manager`** | Persistent index management | `MemoryIndexManager` |
+| **`incremental_memory_updater`** | Incremental diff-based updates | `IncrementalMemoryUpdater` |
+| **`cascade_layer_updater`** | Cascading L0/L1 layer updates | `CascadeLayerUpdater`, `UpdateStats` |
+| **`cascade_layer_debouncer`** | Batch debouncing for layer updates | `LayerUpdateDebouncer`, `DebouncerConfig` |
+| **`llm_result_cache`** | LRU+TTL cache for LLM results | `LlmResultCache`, `CacheConfig`, `CacheStats` |
+| **`vector_sync_manager`** | Vector store sync coordination | `VectorSyncManager`, `VectorSyncStats` |
+| **`memory_event_coordinator`** | Central event orchestration hub | `MemoryEventCoordinator`, `CoordinatorConfig` |
+| **`memory_cleanup`** | Forgetting mechanism | `MemoryCleanupService`, `MemoryCleanupConfig`, `CleanupStats` |
 
 ## 🚀 Quick Start
 
@@ -445,6 +457,34 @@ pub enum FilesystemEvent {
     FileModified { uri: String },
     FileDeleted { uri: String },
 }
+```
+
+## ⚡ Incremental Update System
+
+Introduced an event-driven incremental update pipeline that keeps memory layers in sync efficiently:
+
+- **`MemoryEventCoordinator`**: Central hub that receives `MemoryEvent`s (create/update/delete) and orchestrates downstream processing.
+- **`IncrementalMemoryUpdater`**: Computes content diffs to only re-process changed memories, skipping unchanged content.
+- **`CascadeLayerUpdater`**: When a memory changes, cascades L0/L1 layer updates up the directory tree. Uses content hash check (Phase 1) and LLM result cache (Phase 3) to minimize redundant work.
+- **`LayerUpdateDebouncer`**: Batches rapid successive updates to the same directory (Phase 2), reducing LLM calls by 70-90%.
+- **`LlmResultCache`**: LRU + TTL cache for generated L0/L1 content. Reduces LLM API costs by 50-75% for repeated content.
+- **`VectorSyncManager`**: Keeps the Qdrant vector store synchronized with filesystem changes.
+
+## 🧹 Memory Cleanup (Forgetting Mechanism)
+
+The `MemoryCleanupService` which implements the Ebbinghaus forgetting curve:
+
+- Periodically scans the memory index and calculates **memory strength** based on recency and access frequency.
+- Memories with strength below `archive_threshold` (default: 0.1) are **archived** (marked but not deleted).
+- Archived memories with strength below `delete_threshold` (default: 0.02) are **permanently deleted**.
+- Prevents unbounded storage growth in long-running AI agents.
+
+```rust
+use cortex_mem_core::{MemoryCleanupService, MemoryCleanupConfig, MemoryScope};
+
+let svc = MemoryCleanupService::new(index_manager, MemoryCleanupConfig::default());
+let stats = svc.run_cleanup(&MemoryScope::User, "alice").await?;
+println!("Archived: {}, Deleted: {}", stats.archived, stats.deleted);
 ```
 
 ## 🔗 Integration with Other Crates
