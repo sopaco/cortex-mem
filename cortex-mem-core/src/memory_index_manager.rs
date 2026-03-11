@@ -179,13 +179,14 @@ impl MemoryIndexManager {
     }
 
     /// Calculate content hash for change detection
+    ///
+    /// Uses SHA-256 to ensure stable hashes across Rust versions and platforms.
+    /// (DefaultHasher is not guaranteed to be stable across versions)
     pub fn calculate_content_hash(content: &str) -> String {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-        
-        let mut hasher = DefaultHasher::new();
-        content.hash(&mut hasher);
-        format!("{:x}", hasher.finish())
+        use sha2::{Digest, Sha256};
+        let mut hasher = Sha256::new();
+        hasher.update(content.as_bytes());
+        format!("{:x}", hasher.finalize())
     }
 
     /// Generate a summary from content (for quick comparison)

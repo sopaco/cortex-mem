@@ -1,6 +1,8 @@
 use cortex_mem_core::{
     CortexFilesystem, CortexMem, CortexMemBuilder, EmbeddingClient,
-    EmbeddingConfig, LLMClient, QdrantConfig, SessionManager, VectorSearchEngine,
+    EmbeddingConfig, LLMClient, MemoryIndexManager, QdrantConfig,
+    SessionManager, VectorSearchEngine,
+    memory_events::MemoryEvent,
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -27,6 +29,10 @@ pub struct AppState {
     pub current_tenant_root: Arc<RwLock<Option<PathBuf>>>,
     /// Current tenant ID (for recreating tenant-specific vector store)
     pub current_tenant_id: Arc<RwLock<Option<String>>>,
+    /// Memory event sender — used by close_session handler to trigger memory extraction.
+    /// Sending `MemoryEvent::SessionClosed` triggers the full extraction pipeline via
+    /// `MemoryEventCoordinator`.
+    pub memory_event_tx: Option<tokio::sync::mpsc::UnboundedSender<MemoryEvent>>,
 }
 
 impl AppState {
@@ -74,36 +80,37 @@ impl AppState {
         let embedding_client = cortex.embedding();
         let vector_store = cortex.vector_store();
 
-        // Vector search engine由Cortex Memory管理，这里我们需要重新创建一个
-        // 因为Cortex Memory内部没有暴露VectorSearchEngine
-        let vector_engine = if let (Some(_vs), Some(ec)) = (&vector_store, &embedding_client) {
-            // 需要downcast到具体类型QdrantVectorStore
-            // 由于vs是trait对象，这里重新从配置创建
-            let (_, _, qdrant_cfg_opt) = Self::load_configs()?;
-            if let Some(qdrant_cfg) = qdrant_cfg_opt {
-                if let Ok(qdrant_store) = cortex_mem_core::QdrantVectorStore::new(&qdrant_cfg).await
-                {
-                    let qdrant_arc = Arc::new(qdrant_store);
-                    if let Some(llm) = &llm_client {
-                        Some(Arc::new(VectorSearchEngine::with_llm(
-                            qdrant_arc,
-                            ec.clone(),
-                            filesystem.clone(),
-                            llm.clone(),
-                        )))
-                    } else {
-                        Some(Arc::new(VectorSearchEngine::new(
-                            qdrant_arc,
-                            ec.clone(),
-                            filesystem.clone(),
-                        )))
-                    }
-                } else {
-                    None
-                }
+        let memory_event_tx = cortex.memory_event_tx();
+
+        // Vector search engine — reuse the Qdrant connection from CortexMem builder
+        // instead of creating a third connection from config.
+        let qdrant_store_typed = cortex.qdrant_store();
+        let index_manager = Arc::new(MemoryIndexManager::new(filesystem.clone()));
+
+        let vector_engine = if let (Some(qdrant_arc), Some(ec)) =
+            (qdrant_store_typed, &embedding_client)
+        {
+            let mut engine = if let Some(llm) = &llm_client {
+                VectorSearchEngine::with_llm(
+                    qdrant_arc,
+                    ec.clone(),
+                    filesystem.clone(),
+                    llm.clone(),
+                )
             } else {
-                None
+                VectorSearchEngine::new(
+                    qdrant_arc,
+                    ec.clone(),
+                    filesystem.clone(),
+                )
+            };
+            // Wire up forgetting-mechanism event tracking and archived-memory filter.
+            // Clone the sender so we can still store the original in AppState.
+            if let Some(ref tx) = memory_event_tx {
+                engine = engine.with_memory_event_tx(tx.clone());
             }
+            engine = engine.with_index_manager(index_manager.clone());
+            Some(Arc::new(engine))
         } else {
             None
         };
@@ -119,6 +126,7 @@ impl AppState {
             data_dir,
             current_tenant_root: Arc::new(RwLock::new(None)),
             current_tenant_id: Arc::new(RwLock::new(None)),
+            memory_event_tx,
         })
     }
 
@@ -321,12 +329,20 @@ impl AppState {
                         tenant_root.to_string_lossy().as_ref(),
                     ));
 
-                    let new_vector_engine = Arc::new(VectorSearchEngine::with_llm(
-                        qdrant_arc,
-                        ec.clone(),
-                        tenant_filesystem,
-                        llm.clone(),
-                    ));
+                    let new_vector_engine = Arc::new(
+                        VectorSearchEngine::with_llm(
+                            qdrant_arc,
+                            ec.clone(),
+                            tenant_filesystem,
+                            llm.clone(),
+                        )
+                        // Re-wire forgetting-mechanism tracking.
+                        // Note: no per-tenant memory_event_tx here (the coordinator is global);
+                        // we reuse the global index_manager with the tenant filesystem scope.
+                        .with_index_manager(Arc::new(MemoryIndexManager::new(
+                            self.filesystem.clone(),
+                        ))),
+                    );
 
                     // Update vector_engine
                     let mut engine = self.vector_engine.write().await;

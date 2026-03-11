@@ -2,6 +2,7 @@ use crate::{errors::*, types::*};
 use cortex_mem_core::{
     CortexFilesystem,
     FilesystemOperations,
+    MemoryIndexManager,
     SessionConfig,
     SessionManager,
     automation::{
@@ -179,14 +180,25 @@ impl MemoryOperations {
         // LLM-enabled LayerManager for high-quality L0/L1 generation
         let layer_manager = Arc::new(LayerManager::new(filesystem.clone(), llm_client.clone()));
 
-        // Create vector search engine with LLM support for query rewriting
-        let vector_engine = Arc::new(VectorSearchEngine::with_llm(
-            vector_store.clone(),
-            embedding_client.clone(),
-            filesystem.clone(),
-            llm_client.clone(),
-        ));
-        tracing::info!("Vector search engine created with LLM support for query rewriting");
+        // Create shared MemoryIndexManager (used by VectorSearchEngine for archived filtering
+        // and by MemoryCleanupService for forgetting curve evictions)
+        let index_manager = Arc::new(MemoryIndexManager::new(filesystem.clone()));
+
+        // Create vector search engine with LLM support for query rewriting.
+        // Wire up:
+        //   - memory_event_tx  → search hits emit MemoryAccessed events (forgetting mechanism)
+        //   - index_manager    → archived memories are filtered from search results
+        let vector_engine = Arc::new(
+            VectorSearchEngine::with_llm(
+                vector_store.clone(),
+                embedding_client.clone(),
+                filesystem.clone(),
+                llm_client.clone(),
+            )
+            .with_memory_event_tx(memory_event_tx.clone())
+            .with_index_manager(index_manager.clone()),
+        );
+        tracing::info!("Vector search engine created with LLM, event tracking, and archived filter");
 
         // 使用传入的user_id，如果没有则使用tenant_id
         let actual_user_id = user_id.unwrap_or_else(|| tenant_id.clone());
@@ -206,13 +218,20 @@ impl MemoryOperations {
 
         // 创建 AutomationManager：仅负责 L2 消息实时索引
         // L0/L1 生成、记忆提取、向量同步均由 MemoryEventCoordinator 处理
+        //
+        // 使用 `with_memory_events` 路径，将 L2 索引请求路由到 MemoryEventCoordinator
+        // 而不是直接调用 AutoIndexer，实现统一调度和可观测性。
         let automation_config = AutomationConfig {
             auto_index: true,
             index_on_message: true, // 消息添加时实时索引 L2
             index_batch_delay: 1,
             max_concurrent_tasks: 3,
         };
-        let automation_manager = AutomationManager::new(auto_indexer.clone(), automation_config);
+        let automation_manager = AutomationManager::with_memory_events(
+            auto_indexer.clone(),
+            automation_config,
+            memory_event_tx.clone(),
+        );
 
         // 启动 AutomationManager（直接消费 EventBus 事件，无需分裂转发）
         let tenant_id_for_automation = tenant_id.clone();
@@ -273,6 +292,68 @@ impl MemoryOperations {
                 }
             }
         });
+
+        // Build VectorSyncManager for MemoryCleanupService.
+        // The embedding client is required by the constructor but only used for Add/Update
+        // operations; Delete calls (the only ones cleanup makes) don't touch it.
+        let vector_sync_for_cleanup = Arc::new(
+            cortex_mem_core::vector_sync_manager::VectorSyncManager::new(
+                filesystem.clone(),
+                embedding_client.clone(),
+                vector_store.clone(),
+            ),
+        );
+
+        // Launch background MemoryCleanupService (Ebbinghaus forgetting curve eviction).
+        // Runs every 24 hours; removes archived memories whose strength has decayed below
+        // the delete threshold and syncs deletions to Qdrant.
+        {
+            use cortex_mem_core::{
+                memory_cleanup::{MemoryCleanupConfig, MemoryCleanupService},
+                memory_index::MemoryScope,
+            };
+
+            let cleanup_svc = MemoryCleanupService::new(
+                index_manager.clone(),
+                MemoryCleanupConfig::default(),
+                Some(vector_sync_for_cleanup),
+            );
+            let cleanup_user_id = actual_user_id.clone();
+
+            tokio::spawn(async move {
+                // Give the rest of the system time to finish initialising before
+                // the first cleanup sweep.
+                tokio::time::sleep(std::time::Duration::from_secs(60)).await;
+                tracing::info!("MemoryCleanupService background task started");
+
+                let interval = std::time::Duration::from_secs(24 * 60 * 60);
+                loop {
+                    // Clean both User-scoped memories (preferences, entities, …)
+                    // and Agent-scoped memories (cases, …).
+                    match cleanup_svc
+                        .run_cleanup(&MemoryScope::User, &cleanup_user_id)
+                        .await
+                    {
+                        Ok(stats) => tracing::info!(
+                            "MemoryCleanup[User]: scanned={}, archived={}, deleted={}",
+                            stats.total_scanned, stats.archived, stats.deleted
+                        ),
+                        Err(e) => tracing::warn!("MemoryCleanup[User] failed: {}", e),
+                    }
+                    match cleanup_svc
+                        .run_cleanup(&MemoryScope::Agent, &cleanup_user_id)
+                        .await
+                    {
+                        Ok(stats) => tracing::info!(
+                            "MemoryCleanup[Agent]: scanned={}, archived={}, deleted={}",
+                            stats.total_scanned, stats.archived, stats.deleted
+                        ),
+                        Err(e) => tracing::warn!("MemoryCleanup[Agent] failed: {}", e),
+                    }
+                    tokio::time::sleep(interval).await;
+                }
+            });
+        }
 
         Ok(Self {
             filesystem,

@@ -592,8 +592,20 @@ impl App {
             }
         }
 
-        if self.infrastructure.is_none() {
-            log::warn!("Agent 未初始化");
+        // 如果 rig_agent 为 None（初始化失败），给用户明确的 UI 提示
+        if self.rig_agent.is_none() {
+            log::warn!("Agent 未初始化，无法处理用户消息");
+            // 只推送一次，避免每次发消息都重复显示
+            let already_notified = self.ui.messages.iter().any(|m| {
+                m.role == crate::agent::MessageRole::System
+                    && m.content.contains("基础设施初始化失败")
+            });
+            if !already_notified {
+                self.ui.messages.push(ChatMessage::system(
+                    "⚠️ Agent 尚未初始化。请检查日志或按照上面的提示解决配置问题后重新选择机器人。",
+                ));
+                self.ui.auto_scroll = true;
+            }
         }
 
         // 滚动到底部 - 将在渲染时自动计算
@@ -814,11 +826,27 @@ impl App {
                     }
                     Err(e) => {
                         log::error!("❌ 初始化 AI Agent 失败: {}", e);
+                        self.ui.messages.push(ChatMessage::system(format!(
+                            "❌ AI Agent 初始化失败：{}\n\n请检查配置文件中的 [llm] / [qdrant] / [embedding] 配置项是否正确。",
+                            e
+                        )));
+                        self.ui.auto_scroll = true;
                         return;
                     }
                 }
             } else {
                 log::error!("❌ 基础设施未初始化，无法创建 Agent");
+                // 向 UI 推送详细的错误提示，让用户知道原因和解决方法
+                let config_path = directories::ProjectDirs::from("com", "cortex-mem", "tars")
+                    .map(|d| d.data_dir().join("config.toml").to_string_lossy().to_string())
+                    .unwrap_or_else(|| "~/Library/Application Support/com.cortex-mem.tars/config.toml".to_string());
+                self.ui.messages.push(ChatMessage::system(
+                    format!(
+                        "❌ 基础设施初始化失败，Agent 无法启动。\n\n可能的原因：\n  1. Qdrant 向量数据库未运行（默认地址: http://localhost:6334）\n     → 请先启动 Qdrant：docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant\n  2. 配置文件中 API Key / URL 不正确\n     → 请检查配置文件: {}\n\n配置文件检查项：\n  [qdrant] url / api_key\n  [llm] api_base_url / api_key\n  [embedding] api_base_url / api_key",
+                        config_path
+                    )
+                ));
+                self.ui.auto_scroll = true;
                 return;
             }
         }

@@ -112,7 +112,7 @@ pub use memory_events::{
     ChangeType, DeleteReason, EventStats, MemoryEvent,
 };
 pub use memory_index_manager::MemoryIndexManager;
-pub use incremental_memory_updater::IncrementalMemoryUpdater;
+pub use incremental_memory_updater::{IncrementalMemoryUpdater, MemoryItem};
 pub use cascade_layer_updater::{CascadeLayerUpdater, UpdateStats};
 pub use cascade_layer_debouncer::{LayerUpdateDebouncer, DebouncerConfig};  // Phase 2
 pub use llm_result_cache::{LlmResultCache, CacheConfig, CacheStats};      // Phase 3

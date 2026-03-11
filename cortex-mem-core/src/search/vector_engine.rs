@@ -3,6 +3,9 @@ use crate::{
     embedding::EmbeddingClient,
     filesystem::CortexFilesystem,
     llm::LLMClient,
+    memory_events::MemoryEvent,
+    memory_index::MemoryScope,
+    memory_index_manager::MemoryIndexManager,
     vector_store::{QdrantVectorStore, VectorStore, uri_to_vector_id},
 };
 use crate::llm::prompts::Prompts;
@@ -10,6 +13,7 @@ use super::{EnhancedQueryIntent, QueryIntentType, TimeConstraint};
 use super::weight_model;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 
 /// Search options
@@ -56,6 +60,10 @@ pub struct VectorSearchEngine {
     filesystem: Arc<CortexFilesystem>,
     /// Optional LLM client for intent analysis
     llm_client: Option<Arc<dyn LLMClient>>,
+    /// Optional event sender for MemoryAccessed events (drives forgetting mechanism)
+    memory_event_tx: Option<mpsc::UnboundedSender<MemoryEvent>>,
+    /// Optional index manager for archived-memory filtering
+    index_manager: Option<Arc<MemoryIndexManager>>,
 }
 
 impl VectorSearchEngine {
@@ -70,6 +78,8 @@ impl VectorSearchEngine {
             embedding,
             filesystem,
             llm_client: None,
+            memory_event_tx: None,
+            index_manager: None,
         }
     }
 
@@ -85,7 +95,156 @@ impl VectorSearchEngine {
             embedding,
             filesystem,
             llm_client: Some(llm_client),
+            memory_event_tx: None,
+            index_manager: None,
         }
+    }
+
+    /// Set the memory event sender for access tracking (enables forgetting mechanism)
+    pub fn with_memory_event_tx(mut self, tx: mpsc::UnboundedSender<MemoryEvent>) -> Self {
+        self.memory_event_tx = Some(tx);
+        self
+    }
+
+    /// Set the memory index manager for archived-memory filtering
+    ///
+    /// When configured, search results whose corresponding `MemoryMetadata.archived == true`
+    /// will be removed from the result set, preventing stale/forgotten memories from
+    /// surfacing in semantic search.
+    pub fn with_index_manager(mut self, index_manager: Arc<MemoryIndexManager>) -> Self {
+        self.index_manager = Some(index_manager);
+        self
+    }
+
+    /// Filter out archived memories from a result list.
+    ///
+    /// Loads the index for each unique (scope, owner_id) combination found in the
+    /// results and removes any item whose memory ID is marked as archived.
+    /// Results whose URIs cannot be parsed are kept (conservative approach).
+    async fn filter_archived(&self, results: Vec<SearchResult>) -> Vec<SearchResult> {
+        let im = match &self.index_manager {
+            Some(im) => im,
+            None => return results,
+        };
+
+        // Build a cache of (scope, owner_id) → MemoryIndex to avoid repeated I/O
+        let mut index_cache: std::collections::HashMap<
+            (MemoryScope, String),
+            crate::memory_index::MemoryIndex,
+        > = std::collections::HashMap::new();
+
+        let total_before = results.len();
+        let mut filtered = Vec::with_capacity(total_before);
+
+        for result in results {
+            let keep = match Self::parse_scope_owner_from_uri(&result.uri) {
+                None => true, // Cannot parse URI → keep conservatively
+                Some((scope, owner_id, memory_id)) => {
+                    let key = (scope.clone(), owner_id.clone());
+                    let index = if let Some(idx) = index_cache.get(&key) {
+                        idx
+                    } else {
+                        match im.load_index(scope.clone(), owner_id.clone()).await {
+                            Ok(idx) => {
+                                index_cache.insert(key.clone(), idx);
+                                index_cache.get(&key).unwrap()
+                            }
+                            Err(e) => {
+                                warn!("Failed to load index for {}/{}: {}", scope, owner_id, e);
+                                filtered.push(result);
+                                continue;
+                            }
+                        }
+                    };
+
+                    !index
+                        .memories
+                        .get(&memory_id)
+                        .map(|m| m.archived)
+                        .unwrap_or(false)
+                }
+            };
+
+            if keep {
+                filtered.push(result);
+            } else {
+                debug!("Filtered archived memory: {}", result.uri);
+            }
+        }
+
+        let archived_count = total_before - filtered.len();
+        if archived_count > 0 {
+            info!(
+                "Filtered {}/{} archived memories from search results",
+                archived_count, total_before
+            );
+        }
+
+        filtered
+    }
+    ///
+    /// Extracts scope/owner from URI and sends events asynchronously.
+    /// Failures are logged but do not affect search results.
+    fn emit_access_events(&self, results: &[SearchResult], query: &str) {
+        let tx = match &self.memory_event_tx {
+            Some(tx) => tx,
+            None => return,
+        };
+
+        for result in results {
+            // Parse URI: cortex://{scope}/{owner_id}/...
+            if let Some(parsed) = Self::parse_scope_owner_from_uri(&result.uri) {
+                let (scope, owner_id, memory_id) = parsed;
+                let _ = tx.send(MemoryEvent::MemoryAccessed {
+                    scope,
+                    owner_id,
+                    memory_id,
+                    context: query.to_string(),
+                });
+            }
+        }
+    }
+
+    /// Parse scope, owner_id and memory_id from a cortex:// URI.
+    ///
+    /// URI format: `cortex://{scope}/{owner_id}/{type_dir}/{memory_file}.md`
+    ///
+    /// The returned `memory_id` is the **file name stem** of the last path segment
+    /// (e.g. `"pref_abc123"` from `"cortex://user/u1/preferences/pref_abc123.md"`).
+    ///
+    /// This matches `MemoryMetadata.id` because `IncrementalMemoryUpdater` generates
+    /// the ID first and then writes the file as `{id}.md`.  The invariant is:
+    ///   `MemoryMetadata.id == file_stem(MemoryMetadata.file)`
+    ///
+    /// If the URI cannot be parsed the caller should keep the result (conservative approach).
+    fn parse_scope_owner_from_uri(uri: &str) -> Option<(MemoryScope, String, String)> {
+        let stripped = uri.strip_prefix("cortex://")?;
+        let parts: Vec<&str> = stripped.splitn(4, '/').collect();
+        if parts.len() < 3 {
+            return None;
+        }
+
+        let scope = match parts[0] {
+            "user" => MemoryScope::User,
+            "agent" => MemoryScope::Agent,
+            "session" => MemoryScope::Session,
+            "resources" => MemoryScope::Resources,
+            _ => return None,
+        };
+        let owner_id = parts[1].to_string();
+        // Use the file name stem as memory_id hint (e.g., "pref_abc123" from "preferences/pref_abc123.md")
+        let memory_id = if parts.len() == 4 {
+            parts[3]
+                .rsplit('/')
+                .next()
+                .unwrap_or(parts[3])
+                .trim_end_matches(".md")
+                .to_string()
+        } else {
+            parts[2].trim_end_matches(".md").to_string()
+        };
+
+        Some((scope, owner_id, memory_id))
     }
 
     /// Semantic search using vector similarity
@@ -156,11 +315,16 @@ impl VectorSearchEngine {
             });
         }
 
+        // 4. Filter archived memories (before emitting access events)
+        let results = self.filter_archived(results).await;
+
+        // 5. Emit MemoryAccessed events (fire-and-forget for forgetting mechanism)
+        self.emit_access_events(&results, query);
+
         Ok(results)
     }
 
-    /// Layered semantic search - utilizes L0/L1/L2 three-layer architecture
-    ///
+    /// Layered semantic search - utilizes L0/L1/L2 three-layer architecture    ///
     /// Three-stage retrieval strategy:
     /// 1. Stage 1 (L0): Fast positioning using .abstract.md files
     /// 2. Stage 2 (L1): Deep exploration using .overview.md files
@@ -396,10 +560,17 @@ impl VectorSearchEngine {
         final_results.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
         final_results.truncate(options.limit);
 
+        // Filter out archived memories
+        let final_results = self.filter_archived(final_results).await;
+
         info!(
             "Layered search completed: {} final results",
             final_results.len()
         );
+
+        // Emit MemoryAccessed events for final results (fire-and-forget)
+        self.emit_access_events(&final_results, &intent.original_query);
+
         Ok(final_results)
     }
 

@@ -47,7 +47,11 @@ async fn main() -> Result<()> {
             Some(Arc::new(inf))
         }
         Err(e) => {
-            log::warn!("基础设施初始化失败，将使用 Mock Agent: {}", e);
+            log::error!("基础设施初始化失败: {:#}", e);
+            log::warn!(
+                "常见原因: Qdrant 未启动（请运行 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant）\
+                 或 config.toml 中 API 配置不正确"
+            );
             None
         }
     };

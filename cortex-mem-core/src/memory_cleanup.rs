@@ -2,10 +2,15 @@
 //!
 //! 负责定期扫描记忆索引，根据记忆强度（Ebbinghaus 遗忘曲线）
 //! 将低强度记忆归档或彻底删除，控制长程 Agent 的记忆空间膨胀。
+//!
+//! ## 向量同步
+//! 删除记忆时会同步从 Qdrant 向量库中移除对应向量（所有 L0/L1/L2 层），
+//! 确保归档/遗忘后的记忆不再出现在语义检索结果中。
 
 use crate::{
     memory_index::{MemoryMetadata, MemoryScope},
     memory_index_manager::MemoryIndexManager,
+    vector_sync_manager::VectorSyncManager,
     Result,
 };
 use std::sync::Arc;
@@ -48,20 +53,27 @@ pub struct CleanupStats {
 /// 使用方式：
 /// ```rust,no_run
 /// // 在 Agent 启动时创建，定期手动调用 run_cleanup，或用 tokio::spawn + interval 运行
-/// let svc = MemoryCleanupService::new(index_manager, MemoryCleanupConfig::default());
+/// let svc = MemoryCleanupService::new(index_manager, config, Some(vector_sync));
 /// let stats = svc.run_cleanup(&MemoryScope::User, "alice").await?;
 /// println!("Archived: {}, Deleted: {}", stats.archived, stats.deleted);
 /// ```
 pub struct MemoryCleanupService {
     index_manager: Arc<MemoryIndexManager>,
     config: MemoryCleanupConfig,
+    /// Optional vector sync manager for cleaning up Qdrant vectors on delete
+    vector_sync: Option<Arc<VectorSyncManager>>,
 }
 
 impl MemoryCleanupService {
-    pub fn new(index_manager: Arc<MemoryIndexManager>, config: MemoryCleanupConfig) -> Self {
+    pub fn new(
+        index_manager: Arc<MemoryIndexManager>,
+        config: MemoryCleanupConfig,
+        vector_sync: Option<Arc<VectorSyncManager>>,
+    ) -> Self {
         Self {
             index_manager,
             config,
+            vector_sync,
         }
     }
 
@@ -125,6 +137,27 @@ impl MemoryCleanupService {
                         "Deleting archived memory '{}' (strength < {:.3}, key='{}')",
                         id, self.config.delete_threshold, meta.key
                     );
+                    // Sync-delete vectors from Qdrant so the memory no longer
+                    // appears in semantic search results.
+                    // MemoryScope implements Display as lowercase ("user", "agent", ...)
+                    if let Some(ref vs) = self.vector_sync {
+                        let file_uri = format!(
+                            "cortex://{}/{}/{}",
+                            scope, owner_id, meta.file
+                        );
+                        if let Err(e) = vs
+                            .sync_file_change(
+                                &file_uri,
+                                crate::memory_events::ChangeType::Delete,
+                            )
+                            .await
+                        {
+                            warn!(
+                                "Failed to delete vectors for memory '{}': {}",
+                                id, e
+                            );
+                        }
+                    }
                 }
             }
             self.index_manager.save_index(&index).await?;
@@ -135,6 +168,11 @@ impl MemoryCleanupService {
             "Cleanup complete for {}/{}: scanned={}, archived={}, deleted={}",
             scope, owner_id, stats.total_scanned, stats.archived, stats.deleted
         );
+
+        // Invalidate the in-memory cache so subsequent loads see the updated index.
+        // This is important when multiple MemoryIndexManager instances share the same
+        // filesystem (e.g., cortex-mem-tools and cortex-mem-service in the same process).
+        self.index_manager.invalidate_cache(scope, owner_id).await;
 
         Ok(stats)
     }

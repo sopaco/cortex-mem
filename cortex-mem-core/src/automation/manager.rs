@@ -2,6 +2,7 @@ use crate::{
     Result,
     automation::AutoIndexer,
     events::{CortexEvent, SessionEvent},
+    memory_events::{ChangeType, MemoryEvent},
 };
 use std::collections::HashSet;
 use std::sync::Arc;
@@ -35,10 +36,15 @@ impl Default for AutomationConfig {
 
 /// 自动化管理器
 ///
-/// 职责
-/// - 监听 `MessageAdded` 事件，将新消息内容（L2 级别）索引到向量数据库
+/// ## 职责
+/// 监听 `MessageAdded` 事件，将新消息内容（L2 级别）索引到向量数据库。
 ///
-/// 不再负责：
+/// ## 事件系统集成
+/// - 输入：旧的 `EventBus`（`CortexEvent`）—— 来自 `SessionManager` 的消息通知
+/// - 输出（可选）：向 `MemoryEventCoordinator` 的 `MemoryEvent::VectorSyncNeeded` 通道
+///   发送索引请求，由协调器统一调度；若未配置则直接调用 `AutoIndexer`（兼容旧路径）
+///
+/// ## 不再负责
 /// - 记忆提取（由 `MemoryEventCoordinator` 统一处理）
 /// - L0/L1 层级文件生成（由 `CascadeLayerUpdater` 统一处理）
 /// - Session 关闭时的全量索引（由 `VectorSyncManager` 统一处理）
@@ -47,16 +53,38 @@ pub struct AutomationManager {
     config: AutomationConfig,
     /// 并发限制信号量
     semaphore: Arc<Semaphore>,
+    /// Optional: 向 MemoryEventCoordinator 发送 VectorSyncNeeded 事件
+    /// 若已配置，优先通过协调器调度，而非直接调用 AutoIndexer
+    memory_event_tx: Option<mpsc::UnboundedSender<MemoryEvent>>,
 }
 
 impl AutomationManager {
-    /// 创建自动化管理器
+    /// 创建自动化管理器（兼容旧路径，不使用 MemoryEventCoordinator）
     pub fn new(indexer: Arc<AutoIndexer>, config: AutomationConfig) -> Self {
         let semaphore = Arc::new(Semaphore::new(config.max_concurrent_tasks));
         Self {
             indexer,
             config,
             semaphore,
+            memory_event_tx: None,
+        }
+    }
+
+    /// 创建自动化管理器，并接入 MemoryEventCoordinator 通道
+    ///
+    /// 推荐：当 `MemoryEventCoordinator` 可用时使用此构造函数，
+    /// 将 L2 索引请求路由到协调器，实现统一调度。
+    pub fn with_memory_events(
+        indexer: Arc<AutoIndexer>,
+        config: AutomationConfig,
+        memory_event_tx: mpsc::UnboundedSender<MemoryEvent>,
+    ) -> Self {
+        let semaphore = Arc::new(Semaphore::new(config.max_concurrent_tasks));
+        Self {
+            indexer,
+            config,
+            semaphore,
+            memory_event_tx: Some(memory_event_tx),
         }
     }
 
@@ -155,7 +183,22 @@ impl AutomationManager {
     }
 
     /// 索引单个 session 的 L2 消息内容
+    ///
+    /// 优先通过 `MemoryEventCoordinator` 调度（`VectorSyncNeeded` 事件）；
+    /// 若未配置则直接调用 `AutoIndexer`（兼容旧路径）。
     async fn index_session_l2(&self, session_id: &str) -> Result<()> {
+        // 优先路径：通过 MemoryEventCoordinator 统一调度
+        if let Some(ref tx) = self.memory_event_tx {
+            let session_uri = format!("cortex://session/{}", session_id);
+            let _ = tx.send(MemoryEvent::VectorSyncNeeded {
+                file_uri: session_uri,
+                change_type: ChangeType::Update,
+            });
+            info!("AutomationManager: dispatched VectorSyncNeeded for session {}", session_id);
+            return Ok(());
+        }
+
+        // 兼容路径：直接调用 AutoIndexer
         let _permit = self.semaphore.acquire().await;
         match self.indexer.index_thread(session_id).await {
             Ok(stats) => {

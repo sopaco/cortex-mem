@@ -94,74 +94,35 @@ impl CortexMemBuilder {
         };
 
         // 3. 初始化Qdrant向量存储（可选）
-        let vector_store: Option<Arc<dyn VectorStore>> = if let Some(ref cfg) = self.qdrant_config {
-            match QdrantVectorStore::new(cfg).await {
-                Ok(store) => {
-                    info!("Qdrant vector store connected: {}", cfg.url);
-                    Some(Arc::new(store))
+        // 同时保留具体类型（供 MemoryEventCoordinator 使用）和 trait object（供 VectorStore 接口使用）
+        let (qdrant_store_typed, vector_store): (Option<Arc<QdrantVectorStore>>, Option<Arc<dyn VectorStore>>) =
+            if let Some(ref cfg) = self.qdrant_config {
+                match QdrantVectorStore::new(cfg).await {
+                    Ok(store) => {
+                        info!("Qdrant vector store connected: {}", cfg.url);
+                        let typed = Arc::new(store);
+                        let dyn_store: Arc<dyn VectorStore> = typed.clone();
+                        (Some(typed), Some(dyn_store))
+                    }
+                    Err(e) => {
+                        warn!("Failed to connect to Qdrant, vector search disabled: {}", e);
+                        (None, None)
+                    }
                 }
-                Err(e) => {
-                    warn!("Failed to connect to Qdrant, vector search disabled: {}", e);
-                    None
-                }
-            }
-        } else {
-            None
-        };
+            } else {
+                (None, None)
+            };
 
         // 4. 创建事件总线（用于向后兼容）
         let (event_bus, _old_event_rx) = EventBus::new();
         let event_bus = Arc::new(event_bus);
 
         // 5. 创建 MemoryEventCoordinator（如果配置了所有必需组件）
-        let (coordinator_handle, memory_event_tx) = 
-            if let (Some(llm), Some(emb), Some(_vs)) = 
-                (&self.llm_client, &embedding, &vector_store) 
+        let (coordinator_handle, memory_event_tx) =
+            if let (Some(llm), Some(emb), Some(qdrant_store)) =
+                (&self.llm_client, &embedding, &qdrant_store_typed)
             {
-                // 将 VectorStore trait object 转换为 QdrantVectorStore
-                // 由于我们需要具体类型，这里重新从配置创建
-                let qdrant_store = if let Some(ref cfg) = self.qdrant_config {
-                    match QdrantVectorStore::new(cfg).await {
-                        Ok(store) => Arc::new(store),
-                        Err(e) => {
-                            warn!("Failed to create QdrantVectorStore for coordinator: {}", e);
-                            let fs = filesystem.clone();
-                            return Ok(CortexMem {
-                                filesystem: fs.clone(),
-                                session_manager: Arc::new(RwLock::new(
-                                    SessionManager::with_event_bus(
-                                        fs,
-                                        self.session_config,
-                                        event_bus.as_ref().clone(),
-                                    )
-                                )),
-                                embedding,
-                                vector_store,
-                                llm_client: self.llm_client,
-                                event_bus,
-                                coordinator_handle: None,
-                            });
-                        }
-                    }
-                } else {
-                    warn!("No Qdrant config available for coordinator");
-                    let fs = filesystem.clone();
-                    return Ok(CortexMem {
-                        filesystem: fs.clone(),
-                        session_manager: Arc::new(RwLock::new(
-                            SessionManager::with_event_bus(
-                                fs,
-                                self.session_config,
-                                event_bus.as_ref().clone(),
-                            )
-                        )),
-                        embedding,
-                        vector_store,
-                        llm_client: self.llm_client,
-                        event_bus,
-                        coordinator_handle: None,
-                    });
-                };
+                let qdrant_store = qdrant_store.clone();
 
                 let config = self.coordinator_config.unwrap_or_default();
                 let (coordinator, tx, rx) = MemoryEventCoordinator::new_with_config(
@@ -183,7 +144,9 @@ impl CortexMemBuilder {
             };
 
         // 6. 创建SessionManager（带 memory_event_tx）
-        let session_manager = if let Some(tx) = memory_event_tx {
+        // Clone the sender so we can keep one for CortexMem's public getter.
+        let memory_event_tx_for_session = memory_event_tx.clone();
+        let session_manager = if let Some(tx) = memory_event_tx_for_session {
             // 使用 MemoryEventCoordinator 的事件通道
             if let Some(ref llm) = self.llm_client {
                 SessionManager::with_llm_and_events(
@@ -228,6 +191,8 @@ impl CortexMemBuilder {
             vector_store,
             llm_client: self.llm_client,
             event_bus,
+            qdrant_store_typed,
+            memory_event_tx,
             coordinator_handle,
         })
     }
@@ -242,6 +207,10 @@ pub struct CortexMem {
     pub llm_client: Option<Arc<dyn LLMClient>>,
     #[allow(dead_code)]
     event_bus: Arc<EventBus>,
+    /// Typed Qdrant store (for consumers that need Arc<QdrantVectorStore>)
+    qdrant_store_typed: Option<Arc<QdrantVectorStore>>,
+    /// Memory event sender (for VectorSearchEngine / AutomationManager wiring)
+    memory_event_tx: Option<tokio::sync::mpsc::UnboundedSender<crate::memory_events::MemoryEvent>>,
     /// MemoryEventCoordinator 的后台任务句柄
     coordinator_handle: Option<tokio::task::JoinHandle<()>>,
 }
@@ -270,6 +239,18 @@ impl CortexMem {
     /// 获取LLM客户端
     pub fn llm_client(&self) -> Option<Arc<dyn LLMClient>> {
         self.llm_client.clone()
+    }
+
+    /// 获取具体类型的 Qdrant 存储（供需要 Arc<QdrantVectorStore> 的消费者使用）
+    pub fn qdrant_store(&self) -> Option<Arc<QdrantVectorStore>> {
+        self.qdrant_store_typed.clone()
+    }
+
+    /// 获取 memory event sender（用于 VectorSearchEngine / AutomationManager 接入遗忘机制）
+    pub fn memory_event_tx(
+        &self,
+    ) -> Option<tokio::sync::mpsc::UnboundedSender<crate::memory_events::MemoryEvent>> {
+        self.memory_event_tx.clone()
     }
 
     /// 优雅关闭
