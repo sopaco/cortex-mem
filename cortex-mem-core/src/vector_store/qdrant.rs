@@ -106,6 +106,51 @@ impl QdrantVectorStore {
         Ok(store)
     }
 
+    /// Ensure the collection exists, create if not.
+    ///
+    /// `embedding_dim` is the vector dimension to use when creating a new collection.
+    /// This is used by callers (e.g. `MemoryOperations`) that probe the actual
+    /// embedding dimension at runtime when the config does not specify it.
+    pub async fn ensure_collection_with_dim(&self, embedding_dim: usize) -> Result<()> {
+        let collections = self
+            .client
+            .list_collections()
+            .await
+            .map_err(|e| crate::error::Error::VectorStore(e))?;
+
+        let collection_exists = collections
+            .collections
+            .iter()
+            .any(|c| c.name == self.collection_name);
+
+        if !collection_exists {
+            info!(
+                "Creating collection: {} with dimension: {} (probed at runtime)",
+                self.collection_name, embedding_dim
+            );
+            let vectors_config = VectorsConfig {
+                config: Some(vectors_config::Config::Params(VectorParams {
+                    size: embedding_dim as u64,
+                    distance: Distance::Cosine.into(),
+                    ..Default::default()
+                })),
+            };
+            self.client
+                .create_collection(CreateCollection {
+                    collection_name: self.collection_name.clone(),
+                    vectors_config: Some(vectors_config),
+                    ..Default::default()
+                })
+                .await
+                .map_err(|e| crate::error::Error::VectorStore(e))?;
+            info!("Collection created successfully: {}", self.collection_name);
+        } else {
+            debug!("Collection already exists: {}", self.collection_name);
+            self.verify_collection_dimension(embedding_dim).await?;
+        }
+        Ok(())
+    }
+
     /// Ensure the collection exists, create if not
     async fn ensure_collection(&self) -> Result<()> {
         let collections = self

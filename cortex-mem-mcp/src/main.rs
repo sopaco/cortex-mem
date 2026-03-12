@@ -25,6 +25,14 @@ struct Cli {
     #[arg(long, default_value = "default")]
     tenant: String,
 
+    /// User identifier for memory storage (e.g. your username or unique user ID).
+    /// If not specified, defaults to "default".
+    /// Note: do NOT use the same value as --tenant. The tenant is an infrastructure
+    /// isolation key (e.g. "local-XeStation_zed_agent") while user is the identity
+    /// under which memories are stored (cortex://user/{user_id}/...).
+    #[arg(long)]
+    user: Option<String>,
+
     /// Message count threshold for auto-trigger (default: 10)
     #[arg(long, default_value = "10")]
     auto_trigger_threshold: usize,
@@ -54,6 +62,9 @@ async fn main() -> Result<()> {
     info!("Starting Cortex Memory MCP Server");
     info!("Using configuration file: {:?}", cli.config);
     info!("Tenant ID: {}", cli.tenant);
+    if let Some(ref uid) = cli.user {
+        info!("User ID: {}", uid);
+    }
 
     // Load configuration
     let config = Config::load(&cli.config)?;
@@ -86,7 +97,7 @@ async fn main() -> Result<()> {
         &config.embedding.api_key,
         &config.embedding.model_name,
         config.qdrant.embedding_dim,
-        None,  // user_id parameter
+        cli.user,  // explicit user_id; None → "default" (see MemoryOperations::new)
     ).await?;
     
     let operations = Arc::new(operations);

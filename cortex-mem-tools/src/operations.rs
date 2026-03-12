@@ -151,6 +151,29 @@ impl MemoryOperations {
         let embedding_client = Arc::new(EmbeddingClient::new(embedding_config)?);
         tracing::info!("Embedding client initialized");
 
+        // 🔧 Fix: ensure Qdrant collection exists even when embedding_dim is not in config.
+        // When embedding_dim is None, QdrantVectorStore::new skips ensure_collection.
+        // We probe the real dimension by running a test embedding and create the collection.
+        if embedding_dim.is_none() {
+            tracing::info!("embedding_dim not configured, probing from embedding service...");
+            match embedding_client.embed("probe").await {
+                Ok(probe_vec) => {
+                    let probed_dim = probe_vec.len();
+                    tracing::info!("Probed embedding dimension: {}", probed_dim);
+                    if let Err(e) = vector_store.ensure_collection_with_dim(probed_dim).await {
+                        tracing::warn!("Failed to ensure collection with probed dim {}: {}", probed_dim, e);
+                    } else {
+                        tracing::info!("Collection ensured with probed dimension {}", probed_dim);
+                    }
+                }
+                Err(e) => {
+                    tracing::warn!(
+                        "Failed to probe embedding dimension, collection may not exist: {}", e
+                    );
+                }
+            }
+        }
+
         // Create MemoryEventCoordinator BEFORE SessionManager
         let (coordinator, memory_event_tx, event_rx) = cortex_mem_core::MemoryEventCoordinator::new(
             filesystem.clone(),
@@ -200,8 +223,11 @@ impl MemoryOperations {
         );
         tracing::info!("Vector search engine created with LLM, event tracking, and archived filter");
 
-        // 使用传入的user_id，如果没有则使用tenant_id
-        let actual_user_id = user_id.unwrap_or_else(|| tenant_id.clone());
+        // 使用传入的user_id。
+        // 注意：不要回退到 tenant_id —— tenant_id 是用于隔离 Qdrant collection 的部署标识
+        // （如 "local-XeStation_zed_agent"），不应作为用户身份存入 cortex://user/{id}/ 目录。
+        // 若未显式传入 user_id，则使用稳定的默认值 "default"，确保记忆归属于一致的用户维度。
+        let actual_user_id = user_id.unwrap_or_else(|| "default".to_string());
 
         // 创建 AutoIndexer 用于 L2 消息实时索引
         let indexer_config = IndexerConfig {

@@ -14,6 +14,7 @@
  *           "enabled": true,
  *           "config": {
  *             "serviceUrl": "http://127.0.0.1:8085",
+ *             "tenantId": "tenant_claw",
  *             "defaultSessionId": "default",
  *             "searchLimit": 10,
  *             "minScore": 0.6
@@ -33,6 +34,7 @@ interface PluginConfig {
   defaultSessionId?: string;
   searchLimit?: number;
   minScore?: number;
+  tenantId?: string;
 }
 
 // OpenClaw Plugin API types — aligned with OpenClawPluginApi in openclaw/src/plugins/types.ts
@@ -78,11 +80,30 @@ export default function cortexMemPlugin(api: PluginAPI) {
   const defaultSessionId = config.defaultSessionId ?? 'default';
   const searchLimit = config.searchLimit ?? 10;
   const minScore = config.minScore ?? 0.6;
+  const tenantId = config.tenantId ?? 'tenant_claw';
 
   const client = new CortexMemClient(serviceUrl);
 
   api.logger.info('Cortex Memory plugin initializing...');
   api.logger.info(`Service URL: ${serviceUrl}`);
+  api.logger.info(`Tenant ID: ${tenantId}`);
+
+  // Switch to the configured tenant on startup
+  fetch(`${serviceUrl}/api/v2/tenants/switch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tenant_id: tenantId }),
+  })
+    .then(res => {
+      if (res.ok) {
+        api.logger.info(`✅ Switched to tenant: ${tenantId}`);
+      } else {
+        api.logger.warn(`Failed to switch tenant (${res.status}): ${tenantId}`);
+      }
+    })
+    .catch(err => {
+      api.logger.warn(`Tenant switch request failed: ${err instanceof Error ? err.message : String(err)}`);
+    });
 
   // Register cortex_search tool
   api.registerTool({
@@ -262,6 +283,7 @@ export const plugin = {
       defaultSessionId: { type: 'string', default: 'default' },
       searchLimit: { type: 'integer', default: 10 },
       minScore: { type: 'number', default: 0.6 },
+      tenantId: { type: 'string', default: 'tenant_claw' },
     },
     required: ['serviceUrl'],
   },
