@@ -30,6 +30,11 @@
         "default": 0.6,
         "minimum": 0,
         "maximum": 1
+      },
+      "tenantId": {
+        "type": "string",
+        "description": "Tenant ID for data isolation. Switches the service to the specified tenant on startup.",
+        "default": "tenant_claw"
       }
     },
     "required": ["serviceUrl"]
@@ -50,6 +55,10 @@
     "minScore": {
       "label": "Minimum Score",
       "description": "Filter results below this relevance threshold"
+    },
+    "tenantId": {
+      "label": "Tenant ID",
+      "description": "Tenant identifier for data isolation (default: tenant_claw)"
     }
   }
 }
