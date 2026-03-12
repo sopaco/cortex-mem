@@ -1,64 +1,65 @@
 {
-  "id": "cortex-mem",
-  "name": "Cortex Memory",
-  "version": "0.1.0",
-  "description": "Layered semantic memory with L0/L1/L2 tiered retrieval for OpenClaw agents",
-  "kind": "memory",
-  "configSchema": {
-    "type": "object",
-    "properties": {
-      "serviceUrl": {
-        "type": "string",
-        "description": "Cortex Memory service URL",
-        "default": "http://127.0.0.1:8085"
-      },
-      "defaultSessionId": {
-        "type": "string",
-        "description": "Default session ID for memory operations (defaults to 'default')",
-        "default": "default"
-      },
-      "searchLimit": {
-        "type": "integer",
-        "description": "Default number of search results",
-        "default": 10,
-        "minimum": 1,
-        "maximum": 50
-      },
-      "minScore": {
-        "type": "number",
-        "description": "Minimum relevance score for search results",
-        "default": 0.6,
-        "minimum": 0,
-        "maximum": 1
-      },
-      "tenantId": {
-        "type": "string",
-        "description": "Tenant ID for data isolation. Switches the service to the specified tenant on startup.",
-        "default": "tenant_claw"
-      }
-    },
-    "required": ["serviceUrl"]
-  },
-  "uiHints": {
-    "serviceUrl": {
-      "label": "Service URL",
-      "description": "The HTTP endpoint of your cortex-mem-service instance"
-    },
-    "defaultSessionId": {
-      "label": "Default Session",
-      "description": "Session ID to use when no thread is specified"
-    },
-    "searchLimit": {
-      "label": "Search Limit",
-      "description": "Maximum number of results to return from search"
-    },
-    "minScore": {
-      "label": "Minimum Score",
-      "description": "Filter results below this relevance threshold"
-    },
-    "tenantId": {
-      "label": "Tenant ID",
-      "description": "Tenant identifier for data isolation (default: tenant_claw)"
-    }
-  }
+	"id": "cortex-mem",
+	"name": "Cortex Memory",
+	"version": "0.9.0",
+	"description": "Layered semantic memory with L0/L1/L2 tiered retrieval for OpenClaw agents",
+	"kind": "memory",
+	"skills": ["../skill/cortex-mem-skill-claw"],
+	"configSchema": {
+		"type": "object",
+		"properties": {
+			"serviceUrl": {
+				"type": "string",
+				"description": "Cortex Memory service URL",
+				"default": "http://127.0.0.1:8085"
+			},
+			"defaultSessionId": {
+				"type": "string",
+				"description": "Default session ID for memory operations (defaults to 'default')",
+				"default": "default"
+			},
+			"searchLimit": {
+				"type": "integer",
+				"description": "Default number of search results",
+				"default": 10,
+				"minimum": 1,
+				"maximum": 50
+			},
+			"minScore": {
+				"type": "number",
+				"description": "Minimum relevance score for search results",
+				"default": 0.6,
+				"minimum": 0,
+				"maximum": 1
+			},
+			"tenantId": {
+				"type": "string",
+				"description": "Tenant ID for data isolation. Switches the service to the specified tenant on startup.",
+				"default": "tenant_claw"
+			}
+		},
+		"required": ["serviceUrl"]
+	},
+	"uiHints": {
+		"serviceUrl": {
+			"label": "Service URL",
+			"description": "The HTTP endpoint of your cortex-mem-service instance"
+		},
+		"defaultSessionId": {
+			"label": "Default Session",
+			"description": "Session ID to use when no thread is specified"
+		},
+		"searchLimit": {
+			"label": "Search Limit",
+			"description": "Maximum number of results to return from search"
+		},
+		"minScore": {
+			"label": "Minimum Score",
+			"description": "Filter results below this relevance threshold"
+		},
+		"tenantId": {
+			"label": "Tenant ID",
+			"description": "Tenant identifier for data isolation (default: tenant_claw)"
+		}
+	}
 }

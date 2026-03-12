@@ -298,8 +298,20 @@ impl AppState {
             }
         }
 
-        let tenant_root =
-            tenant_root.ok_or_else(|| anyhow::anyhow!("Tenant {} not found", tenant_id))?;
+        // Auto-provision: if tenant doesn't exist, create it under cortex/tenants/
+        let tenant_root = match tenant_root {
+            Some(p) => p,
+            None => {
+                let new_tenant_root = self.data_dir.join("cortex").join("tenants").join(tenant_id);
+                tracing::info!("Tenant {} not found, auto-provisioning at {:?}", tenant_id, new_tenant_root);
+                for subdir in &["agent", "resources", "session", "user"] {
+                    std::fs::create_dir_all(new_tenant_root.join(subdir))
+                        .map_err(|e| anyhow::anyhow!("Failed to create tenant dir: {}", e))?;
+                }
+                tracing::info!("✅ Tenant {} auto-provisioned successfully", tenant_id);
+                new_tenant_root
+            }
+        };
 
         // Update current tenant root
         let mut current = self.current_tenant_root.write().await;

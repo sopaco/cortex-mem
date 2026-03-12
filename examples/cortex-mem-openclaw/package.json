@@ -1,41 +1,41 @@
 {
-  "name": "@cortex-mem/openclaw-plugin",
-  "version": "0.1.0",
-  "description": "Cortex Memory plugin for OpenClaw - Layered semantic memory with L0/L1/L2 tiered retrieval",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "lint": "eslint src/**/*.ts",
-    "test": "vitest"
-  },
-  "keywords": [
-    "openclaw",
-    "memory",
-    "semantic-search",
-    "vector-search",
-    "ai",
-    "agent"
-  ],
-  "author": "Cortex-Mem Contributors",
-  "license": "MIT",
-  "openclaw": {
-    "extensions": [
-      "dist/index.js"
-    ]
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
-    "typescript": "^5.7.0",
-    "vitest": "^2.0.0"
-  },
-  "engines": {
-    "node": ">=22.0.0"
-  },
-  "files": [
-    "dist/",
-    "openclaw.plugin.json",
-    "README.md"
-  ]
+	"name": "cortex-mem",
+	"version": "0.9.0",
+	"description": "Cortex Memory plugin for OpenClaw - Layered semantic memory with L0/L1/L2 tiered retrieval",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"lint": "eslint src/**/*.ts",
+		"test": "vitest"
+	},
+	"keywords": [
+		"openclaw",
+		"memory",
+		"semantic-search",
+		"vector-search",
+		"ai",
+		"agent"
+	],
+	"author": "Cortex-Mem Contributors",
+	"license": "MIT",
+	"openclaw": {
+		"extensions": [
+			"dist/index.js"
+		]
+	},
+	"devDependencies": {
+		"@types/node": "^22.0.0",
+		"typescript": "^5.7.0",
+		"vitest": "^2.0.0"
+	},
+	"engines": {
+		"node": ">=22.0.0"
+	},
+	"files": [
+		"dist/",
+		"openclaw.plugin.json",
+		"README.md"
+	]
 }

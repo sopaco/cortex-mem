@@ -111,7 +111,7 @@ export default function cortexMemPlugin(api: PluginAPI) {
     description: toolSchemas.cortex_search.description,
     parameters: toolSchemas.cortex_search.inputSchema,
     execute: async (_id: string, params: Record<string, unknown>) => {
-      const input = params as CortexSearchInput;
+      const input = params as unknown as CortexSearchInput;
 
       try {
         const results = await client.search({
@@ -148,7 +148,7 @@ export default function cortexMemPlugin(api: PluginAPI) {
     description: toolSchemas.cortex_recall.description,
     parameters: toolSchemas.cortex_recall.inputSchema,
     execute: async (_id: string, params: Record<string, unknown>) => {
-      const input = params as CortexRecallInput;
+      const input = params as unknown as CortexRecallInput;
 
       try {
         const results = await client.recall(
@@ -203,7 +203,7 @@ export default function cortexMemPlugin(api: PluginAPI) {
     description: toolSchemas.cortex_add_memory.description,
     parameters: toolSchemas.cortex_add_memory.inputSchema,
     execute: async (_id: string, params: Record<string, unknown>) => {
-      const input = params as CortexAddMemoryInput;
+      const input = params as unknown as CortexAddMemoryInput;
 
       try {
         const sessionId = input.session_id ?? defaultSessionId;

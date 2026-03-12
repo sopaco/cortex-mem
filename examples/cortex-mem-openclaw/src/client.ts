@@ -179,7 +179,7 @@ export class CortexMemClient {
     if (!response.ok) {
       throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
-    const data: ApiResponse<T> = await response.json();
+    const data = await response.json() as ApiResponse<T>;
     if (!data.success) {
       throw new Error(data.error || 'API request failed');
     }
@@ -197,7 +197,7 @@ export class CortexMemClient {
     if (!response.ok) {
       throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
-    const data: ApiResponse<T> = await response.json();
+    const data = await response.json() as ApiResponse<T>;
     if (!data.success) {
       throw new Error(data.error || 'API request failed');
     }
