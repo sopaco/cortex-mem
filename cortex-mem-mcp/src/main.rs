@@ -98,6 +98,7 @@ async fn main() -> Result<()> {
         &config.embedding.model_name,
         config.qdrant.embedding_dim,
         cli.user,  // explicit user_id; None → "default" (see MemoryOperations::new)
+        config.cortex.enable_intent_analysis,
     ).await?;
     
     let operations = Arc::new(operations);

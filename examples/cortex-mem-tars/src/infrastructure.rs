@@ -46,6 +46,7 @@ impl Infrastructure {
             &config.embedding.model_name,
             config.qdrant.embedding_dim,
             None,  // user_id = None，使用tenant_id作为user_id
+            config.cortex.enable_intent_analysis,
         )
         .await
         .context("Failed to initialize MemoryOperations")?;

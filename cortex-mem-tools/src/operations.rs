@@ -109,6 +109,7 @@ impl MemoryOperations {
         embedding_model_name: &str,
         embedding_dim: Option<usize>,
         user_id: Option<String>,
+        enable_intent_analysis: bool,
     ) -> Result<Self> {
         let tenant_id = tenant_id.into();
         let filesystem = Arc::new(CortexFilesystem::with_tenant(data_dir, &tenant_id));
@@ -219,7 +220,8 @@ impl MemoryOperations {
                 llm_client.clone(),
             )
             .with_memory_event_tx(memory_event_tx.clone())
-            .with_index_manager(index_manager.clone()),
+            .with_index_manager(index_manager.clone())
+            .with_intent_analysis(enable_intent_analysis),
         );
         tracing::info!("Vector search engine created with LLM, event tracking, and archived filter");
 

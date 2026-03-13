@@ -83,6 +83,39 @@ pub async fn create_memory_tools_with_tenant_and_vector(
     embedding_dim: Option<usize>,
     user_id: Option<String>,
 ) -> Result<MemoryTools, Box<dyn std::error::Error>> {
+    create_memory_tools_with_config(
+        data_dir,
+        tenant_id,
+        llm_client,
+        qdrant_url,
+        qdrant_collection,
+        qdrant_api_key,
+        embedding_api_base_url,
+        embedding_api_key,
+        embedding_model_name,
+        embedding_dim,
+        user_id,
+        true, // enable_intent_analysis default
+    ).await
+}
+
+/// Create memory tools with full features (LLM + Vector Search) and explicit config
+///
+/// Use this when you want to control intent analysis behaviour from config.
+pub async fn create_memory_tools_with_config(
+    data_dir: impl AsRef<std::path::Path>,
+    tenant_id: impl Into<String>,
+    llm_client: Arc<dyn LLMClient>,
+    qdrant_url: &str,
+    qdrant_collection: &str,
+    qdrant_api_key: Option<&str>,
+    embedding_api_base_url: &str,
+    embedding_api_key: &str,
+    embedding_model_name: &str,
+    embedding_dim: Option<usize>,
+    user_id: Option<String>,
+    enable_intent_analysis: bool,
+) -> Result<MemoryTools, Box<dyn std::error::Error>> {
     let operations = MemoryOperations::new(
         data_dir.as_ref().to_str().unwrap(),
         tenant_id,
@@ -95,6 +128,7 @@ pub async fn create_memory_tools_with_tenant_and_vector(
         embedding_model_name,
         embedding_dim,
         user_id,
+        enable_intent_analysis,
     )
     .await?;
     Ok(MemoryTools::new(Arc::new(operations)))

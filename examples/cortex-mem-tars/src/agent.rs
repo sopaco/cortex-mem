@@ -1,6 +1,6 @@
 use anyhow::Result;
 use chrono::{DateTime, Local};
-use cortex_mem_rig::create_memory_tools_with_tenant_and_vector;
+use cortex_mem_rig::create_memory_tools_with_config;
 use cortex_mem_tools::MemoryOperations;
 use futures::StreamExt;
 use rig::agent::MultiTurnStreamItem;
@@ -80,7 +80,7 @@ pub async fn create_memory_agent(
         config.embedding.model_name,
         config.qdrant.embedding_dim
     );
-    let memory_tools = create_memory_tools_with_tenant_and_vector(
+    let memory_tools = create_memory_tools_with_config(
         data_dir,
         agent_id,
         cortex_llm_client,
@@ -92,6 +92,7 @@ pub async fn create_memory_agent(
         &config.embedding.model_name,
         config.qdrant.embedding_dim,
         Some(user_id.to_string()),
+        config.cortex.enable_intent_analysis,
     )
     .await?;
 

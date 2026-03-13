@@ -37,6 +37,9 @@ pub struct AppState {
     /// AutomationManager's tx handle — updated on tenant switch so AutomationManager
     /// routes VectorSyncNeeded to the correct tenant coordinator.
     pub automation_tx_handle: Option<Arc<RwLock<Option<tokio::sync::mpsc::UnboundedSender<MemoryEvent>>>>>,
+    /// Whether to use LLM intent analysis before each search (from config.toml [cortex] section).
+    /// When false, raw query is used directly — much faster but no query rewriting.
+    pub enable_intent_analysis: bool,
 }
 
 impl AppState {
@@ -51,6 +54,11 @@ impl AppState {
 
         // 获取配置（优先从config.toml，否则从环境变量）
         let (llm_client, embedding_config, qdrant_config) = Self::load_configs()?;
+
+        // 读取 cortex section 配置（enable_intent_analysis 等）
+        let enable_intent_analysis = cortex_mem_config::Config::load("config.toml")
+            .map(|c| c.cortex.enable_intent_analysis)
+            .unwrap_or(true);
 
         // 构建Cortex Memory
         let mut builder = CortexMemBuilder::new(&cortex_dir);
@@ -115,6 +123,7 @@ impl AppState {
                 engine = engine.with_memory_event_tx(tx.clone());
             }
             engine = engine.with_index_manager(index_manager.clone());
+            engine = engine.with_intent_analysis(enable_intent_analysis);
             Some(Arc::new(engine))
         } else {
             None
@@ -133,6 +142,7 @@ impl AppState {
             current_tenant_id: Arc::new(RwLock::new(None)),
             memory_event_tx: Arc::new(RwLock::new(memory_event_tx)),
             automation_tx_handle: cortex_automation_tx,
+            enable_intent_analysis,
         })
     }
 
@@ -385,7 +395,8 @@ impl AppState {
                         )
                         .with_index_manager(Arc::new(MemoryIndexManager::new(
                             tenant_filesystem.clone(),
-                        ))),
+                        )))
+                        .with_intent_analysis(self.enable_intent_analysis),
                     );
 
                     let mut engine = self.vector_engine.write().await;

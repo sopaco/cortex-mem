@@ -20,6 +20,26 @@ pub struct CortexConfig {
     /// If not specified, will use system application data directory
     #[serde(default)]
     pub data_dir: Option<String>,
+
+    /// Whether to enable LLM-based intent analysis before vector search.
+    ///
+    /// When enabled (default), each search call makes an LLM request to:
+    ///   1. Rewrite the query for better vector matching
+    ///   2. Detect intent type (entity_lookup / factual / temporal / search / ...)
+    ///   3. Dynamically tune L0 threshold and L0/L1/L2 scoring weights
+    ///
+    /// Disable this (`enable_intent_analysis = false`) to skip the LLM call
+    /// and use the raw query directly.  Vector search latency drops from ~15-25s
+    /// to < 500ms; recall quality is slightly lower without query rewriting.
+    ///
+    /// Recommended: `false` for latency-sensitive interactive use (e.g. chat plugins),
+    ///              `true` for batch / offline recall where quality matters most.
+    #[serde(default = "default_enable_intent_analysis")]
+    pub enable_intent_analysis: bool,
+}
+
+fn default_enable_intent_analysis() -> bool {
+    true
 }
 
 impl CortexConfig {
@@ -135,6 +155,7 @@ impl Default for CortexConfig {
     fn default() -> Self {
         CortexConfig {
             data_dir: None,  // Use None to trigger smart default
+            enable_intent_analysis: true,
         }
     }
 }

@@ -241,6 +241,7 @@ async fn main() -> Result<()> {
         &config.embedding.model_name,
         config.qdrant.embedding_dim,
         None,  // user_id parameter
+        config.cortex.enable_intent_analysis,
     )
     .await?;
 
