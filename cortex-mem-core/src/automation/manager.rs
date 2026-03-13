@@ -7,7 +7,7 @@ use crate::{
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{mpsc, Semaphore};
+use tokio::sync::{RwLock, mpsc, Semaphore};
 use tracing::{info, warn};
 
 /// 自动化配置
@@ -54,8 +54,8 @@ pub struct AutomationManager {
     /// 并发限制信号量
     semaphore: Arc<Semaphore>,
     /// Optional: 向 MemoryEventCoordinator 发送 VectorSyncNeeded 事件
-    /// 若已配置，优先通过协调器调度，而非直接调用 AutoIndexer
-    memory_event_tx: Option<mpsc::UnboundedSender<MemoryEvent>>,
+    /// 使用 Arc<RwLock> 支持 tenant 切换时动态替换 coordinator 的 sender
+    memory_event_tx: Arc<RwLock<Option<mpsc::UnboundedSender<MemoryEvent>>>>,
 }
 
 impl AutomationManager {
@@ -66,7 +66,7 @@ impl AutomationManager {
             indexer,
             config,
             semaphore,
-            memory_event_tx: None,
+            memory_event_tx: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -84,8 +84,13 @@ impl AutomationManager {
             indexer,
             config,
             semaphore,
-            memory_event_tx: Some(memory_event_tx),
+            memory_event_tx: Arc::new(RwLock::new(Some(memory_event_tx))),
         }
+    }
+
+    /// 获取 memory_event_tx 的共享句柄（用于 tenant 切换时替换 coordinator sender）
+    pub fn memory_event_tx_handle(&self) -> Arc<RwLock<Option<mpsc::UnboundedSender<MemoryEvent>>>> {
+        self.memory_event_tx.clone()
     }
 
     /// 获取并发限制信号量（供外部使用）
@@ -188,7 +193,8 @@ impl AutomationManager {
     /// 若未配置则直接调用 `AutoIndexer`（兼容旧路径）。
     async fn index_session_l2(&self, session_id: &str) -> Result<()> {
         // 优先路径：通过 MemoryEventCoordinator 统一调度
-        if let Some(ref tx) = self.memory_event_tx {
+        let tx_guard = self.memory_event_tx.read().await;
+        if let Some(ref tx) = *tx_guard {
             let session_uri = format!("cortex://session/{}", session_id);
             let _ = tx.send(MemoryEvent::VectorSyncNeeded {
                 file_uri: session_uri,
@@ -197,6 +203,7 @@ impl AutomationManager {
             info!("AutomationManager: dispatched VectorSyncNeeded for session {}", session_id);
             return Ok(());
         }
+        drop(tx_guard);
 
         // 兼容路径：直接调用 AutoIndexer
         let _permit = self.semaphore.acquire().await;

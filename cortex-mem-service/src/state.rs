@@ -3,6 +3,7 @@ use cortex_mem_core::{
     EmbeddingConfig, LLMClient, MemoryIndexManager, QdrantConfig,
     SessionManager, VectorSearchEngine,
     memory_events::MemoryEvent,
+    memory_event_coordinator::{CoordinatorConfig, MemoryEventCoordinator},
 };
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -29,10 +30,13 @@ pub struct AppState {
     pub current_tenant_root: Arc<RwLock<Option<PathBuf>>>,
     /// Current tenant ID (for recreating tenant-specific vector store)
     pub current_tenant_id: Arc<RwLock<Option<String>>>,
-    /// Memory event sender — used by close_session handler to trigger memory extraction.
-    /// Sending `MemoryEvent::SessionClosed` triggers the full extraction pipeline via
-    /// `MemoryEventCoordinator`.
-    pub memory_event_tx: Option<tokio::sync::mpsc::UnboundedSender<MemoryEvent>>,
+    /// Memory event sender — used by close_session handler and add_message handler
+    /// to trigger memory extraction and vector indexing via `MemoryEventCoordinator`.
+    /// Wrapped in RwLock to support tenant switches (coordinator is rebuilt per-tenant).
+    pub memory_event_tx: Arc<RwLock<Option<tokio::sync::mpsc::UnboundedSender<MemoryEvent>>>>,
+    /// AutomationManager's tx handle — updated on tenant switch so AutomationManager
+    /// routes VectorSyncNeeded to the correct tenant coordinator.
+    pub automation_tx_handle: Option<Arc<RwLock<Option<tokio::sync::mpsc::UnboundedSender<MemoryEvent>>>>>,
 }
 
 impl AppState {
@@ -81,6 +85,7 @@ impl AppState {
         let vector_store = cortex.vector_store();
 
         let memory_event_tx = cortex.memory_event_tx();
+        let cortex_automation_tx = cortex.automation_tx_handle();
 
         // Vector search engine — reuse the Qdrant connection from CortexMem builder
         // instead of creating a third connection from config.
@@ -126,7 +131,8 @@ impl AppState {
             data_dir,
             current_tenant_root: Arc::new(RwLock::new(None)),
             current_tenant_id: Arc::new(RwLock::new(None)),
-            memory_event_tx,
+            memory_event_tx: Arc::new(RwLock::new(memory_event_tx)),
+            automation_tx_handle: cortex_automation_tx,
         })
     }
 
@@ -323,47 +329,71 @@ impl AppState {
         *current_id = Some(tenant_id.to_string());
         drop(current_id);
 
+        // Switch SessionManager's filesystem to the tenant root
+        // This ensures all session reads/writes go to the tenant directory
+        let tenant_filesystem = Arc::new(CortexFilesystem::new(
+            tenant_root.to_string_lossy().as_ref(),
+        ));
+        {
+            let mut session_mgr = self.session_manager.write().await;
+            session_mgr.switch_filesystem(tenant_filesystem.clone());
+        }
+
         tracing::info!("Switched to tenant root: {:?}", tenant_root);
 
-        // Recreate VectorSearchEngine with tenant-specific collection
+        // Recreate MemoryEventCoordinator + VectorSearchEngine with tenant filesystem/collection
         if let (Some(ec), Some(llm)) = (&self.embedding_client, &self.llm_client) {
             let (_, _, qdrant_cfg_opt) = Self::load_configs()?;
             if let Some(mut qdrant_cfg) = qdrant_cfg_opt {
-                // Set tenant ID in config
                 qdrant_cfg.tenant_id = Some(tenant_id.to_string());
 
                 if let Ok(qdrant_store) = cortex_mem_core::QdrantVectorStore::new(&qdrant_cfg).await
                 {
                     let qdrant_arc = Arc::new(qdrant_store);
 
-                    // Create tenant-specific filesystem
-                    let tenant_filesystem = Arc::new(CortexFilesystem::new(
-                        tenant_root.to_string_lossy().as_ref(),
-                    ));
+                    // Rebuild MemoryEventCoordinator with tenant filesystem so that
+                    // VectorSyncManager and CascadeLayerUpdater all read/write from
+                    // the correct tenant directory (not the global cortex/ root).
+                    let (new_coordinator, new_tx, new_rx) =
+                        MemoryEventCoordinator::new_with_config(
+                            tenant_filesystem.clone(),
+                            llm.clone(),
+                            ec.clone(),
+                            qdrant_arc.clone(),
+                            CoordinatorConfig::default(),
+                        );
+                    tokio::spawn(new_coordinator.start(new_rx));
+
+                    // Replace the event sender so add_message / close_session use the new coordinator
+                    {
+                        let mut tx_guard = self.memory_event_tx.write().await;
+                        *tx_guard = Some(new_tx.clone());
+                    }
+
+                    // Also update AutomationManager's tx so it routes to the tenant coordinator
+                    if let Some(ref atx_handle) = self.automation_tx_handle {
+                        let mut atx = atx_handle.write().await;
+                        *atx = Some(new_tx);
+                    }
 
                     let new_vector_engine = Arc::new(
                         VectorSearchEngine::with_llm(
                             qdrant_arc,
                             ec.clone(),
-                            tenant_filesystem,
+                            tenant_filesystem.clone(),
                             llm.clone(),
                         )
-                        // Re-wire forgetting-mechanism tracking.
-                        // Note: no per-tenant memory_event_tx here (the coordinator is global);
-                        // we reuse the global index_manager with the tenant filesystem scope.
                         .with_index_manager(Arc::new(MemoryIndexManager::new(
-                            self.filesystem.clone(),
+                            tenant_filesystem.clone(),
                         ))),
                     );
 
-                    // Update vector_engine
                     let mut engine = self.vector_engine.write().await;
                     *engine = Some(new_vector_engine);
 
                     tracing::info!(
-                        "✅ VectorSearchEngine recreated for tenant: {} with collection: {}",
-                        tenant_id,
-                        qdrant_cfg.get_collection_name()
+                        "✅ MemoryEventCoordinator + VectorSearchEngine recreated for tenant: {}",
+                        tenant_id
                     );
                 }
             }

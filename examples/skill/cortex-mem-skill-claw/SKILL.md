@@ -44,7 +44,7 @@ Ensure the plugin is configured in `~/.openclaw/openclaw.json` (you can read and
 
 ## Plugin Setup
 
-The Cortex Memory plugin provides four tools. All tools communicate with the `cortex-mem-service` running locally over HTTP.
+The Cortex Memory plugin provides **five tools**. All tools communicate with the `cortex-mem-service` running locally over HTTP.
 
 **Required:** The `cortex-mem` plugin must be enabled in your `~/.openclaw/openclaw.json`:
 
@@ -162,6 +162,30 @@ List all available memory sessions with their status and message counts.
 
 ---
 
+### `cortex_close_session` — Close Session & Extract Memories
+
+Close a session and trigger the **full memory extraction pipeline**:
+1. LLM extracts user preferences, entities, decisions → stored in `user/` directory
+2. Complete L0/L1 summaries regenerated for the entire session
+3. All extracted memories indexed into the vector database
+
+**When to use:**
+- At the end of a meaningful conversation or task
+- When you want user preferences/entities to be persistently stored
+- When you need complete L0/L1 summaries (not just the per-message incremental ones)
+
+**Parameters:**
+- `session_id` (optional): Session to close; uses `defaultSessionId` if omitted
+
+**Example:**
+```json
+{ "session_id": "project-frontend" }
+```
+
+> ⚠️ This triggers LLM calls and may take 30–60 seconds. Call it once when a conversation is complete, not after every message.
+
+---
+
 ## Usage Patterns
 
 ### Pattern 1: Context-aware response
@@ -171,6 +195,7 @@ Before answering a complex question, search for relevant past context:
 1. Call `cortex_search` with the topic as query
 2. Use returned snippets to enrich your response
 3. After the conversation, call `cortex_add_memory` to store new insights
+4. When the conversation is complete, call `cortex_close_session` to extract and consolidate all memories
 
 ### Pattern 2: Progressive detail retrieval
 
@@ -215,5 +240,6 @@ cortex-mem-service (Rust)
 
 - Memories are organized by **tenant** (`tenantId` config) and **session** (`session_id`)
 - L0 and L1 layers are generated asynchronously after `cortex_add_memory` — they may not be immediately available
+- **User preferences and entities** are only extracted when `cortex_close_session` is called
 - `minScore` of `0.6` is a good starting point; lower it if results are too sparse, raise it for higher precision
 - The service must be running at `serviceUrl` before any tool calls will succeed

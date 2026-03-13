@@ -55,13 +55,37 @@ impl VectorSyncManager {
     /// Sync a file change to the vector database
     ///
     /// This is the main entry point for handling file changes.
+    /// Accepts both file URIs and directory URIs (the latter are scanned recursively).
     pub async fn sync_file_change(
         &self,
         file_uri: &str,
         change_type: ChangeType,
     ) -> Result<VectorSyncStats> {
         let mut stats = VectorSyncStats::default();
-        
+
+        // Check if this is a directory by trying to list it
+        if let Ok(entries) = self.filesystem.list(file_uri).await {
+            // It's a directory — recursively sync all .md files inside
+            for entry in entries {
+                if entry.is_directory {
+                    let sub_stats = Box::pin(self.sync_file_change(&entry.uri, change_type.clone())).await?;
+                    stats.indexed += sub_stats.indexed;
+                    stats.updated += sub_stats.updated;
+                    stats.deleted += sub_stats.deleted;
+                    stats.skipped += sub_stats.skipped;
+                    stats.errors += sub_stats.errors;
+                } else if entry.name.ends_with(".md") && !entry.name.starts_with('.') {
+                    match change_type {
+                        ChangeType::Add => self.index_file(&entry.uri, &mut stats).await?,
+                        ChangeType::Update => self.update_file(&entry.uri, &mut stats).await?,
+                        ChangeType::Delete => self.delete_file(&entry.uri, &mut stats).await?,
+                    }
+                }
+            }
+            return Ok(stats);
+        }
+
+        // It's a single file
         match change_type {
             ChangeType::Add => {
                 self.index_file(file_uri, &mut stats).await?;
@@ -91,7 +115,7 @@ impl VectorSyncManager {
         let content = match self.filesystem.read(file_uri).await {
             Ok(c) => c,
             Err(e) => {
-                warn!("Failed to read file {}: {}", file_uri, e);
+                warn!("❌ VectorSync: failed to read file {}: {}", file_uri, e);
                 stats.errors += 1;
                 return Ok(());
             }
@@ -101,7 +125,7 @@ impl VectorSyncManager {
         let embedding = match self.embedding.embed(&content).await {
             Ok(e) => e,
             Err(e) => {
-                warn!("Failed to generate embedding for {}: {}", file_uri, e);
+                warn!("❌ VectorSync: failed to generate embedding for {}: {}", file_uri, e);
                 stats.errors += 1;
                 return Ok(());
             }

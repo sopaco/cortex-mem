@@ -116,5 +116,31 @@ Shows session IDs, message counts, and creation/update times.`,
             properties: {},
         },
     },
+    cortex_close_session: {
+        name: 'cortex_close_session',
+        description: `Close a memory session and trigger full memory extraction.
+
+This triggers the complete memory processing pipeline:
+1. Extracts structured memories (user preferences, entities, decisions) from conversation into the user/ directory
+2. Generates complete L0/L1 layer summaries for the entire session
+3. Indexes all extracted memories into the vector database
+4. Marks the session as closed
+
+Use this when:
+- A conversation or task is complete and you want to consolidate memories
+- You need user/ directory memories (preferences, entities) to be generated
+- You want to ensure all L0/L1 summaries are up to date
+
+Note: This is a potentially long-running operation (may take 30-60s due to LLM calls).`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                session_id: {
+                    type: 'string',
+                    description: 'Session/thread ID to close (uses default if not specified)',
+                },
+            },
+        },
+    },
 };
 //# sourceMappingURL=tools.js.map

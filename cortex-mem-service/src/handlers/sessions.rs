@@ -138,8 +138,9 @@ pub async fn add_message(
     // This ensures proper event chain for automatic indexing and layer generation
     let session_mgr = state.session_manager.read().await;
     let message = session_mgr.add_message(&thread_id, role, payload.content).await?;
-    
-    // Build message URI
+    drop(session_mgr);
+
+    // Build message URI (matches what MessageStorage actually writes)
     let message_uri = format!(
         "cortex://session/{}/timeline/{}/{}/{}_{}.md",
         thread_id,
@@ -148,6 +149,37 @@ pub async fn add_message(
         message.timestamp.format("%H_%M_%S"),
         &message.id[..8]
     );
+
+    // Emit LayerUpdateNeeded so the tenant-aware MemoryEventCoordinator
+    // (re)generates L0/L1 layer summaries for the session's timeline directory.
+    // VectorSyncNeeded is handled automatically by AutomationManager (via SessionManager's
+    // MessageAdded event → CortexEvent → AutomationManager::index_session_l2).
+    {
+        use cortex_mem_core::memory_events::{ChangeType, MemoryEvent};
+        use cortex_mem_core::memory_index::MemoryScope;
+
+        let tx_guard = state.memory_event_tx.read().await;
+        if let Some(ref tx) = *tx_guard {
+            let day_dir_uri = format!(
+                "cortex://session/{}/timeline/{}/{}",
+                thread_id,
+                message.timestamp.format("%Y-%m"),
+                message.timestamp.format("%d"),
+            );
+            match tx.send(MemoryEvent::LayerUpdateNeeded {
+                scope: MemoryScope::Session,
+                owner_id: thread_id.clone(),
+                directory_uri: day_dir_uri,
+                change_type: ChangeType::Add,
+                changed_file: message_uri.clone(),
+            }) {
+                Ok(_) => tracing::info!("📤 Dispatched LayerUpdateNeeded for session {}", thread_id),
+                Err(e) => tracing::error!("❌ Failed to dispatch LayerUpdateNeeded: {}", e),
+            }
+        } else {
+            tracing::warn!("⚠️ No memory_event_tx available, skipping event dispatch");
+        }
+    }
 
     Ok(Json(ApiResponse::success(format!("Message saved to {}", message_uri))))
 }
@@ -159,10 +191,12 @@ pub async fn close_session(
 ) -> Result<Json<ApiResponse<SessionResponse>>> {
     let mut session_mgr = state.session_manager.write().await;
     let metadata = session_mgr.close_session(&thread_id).await?;
+    drop(session_mgr);
 
     // Emit SessionClosed event to trigger full memory extraction pipeline.
     // This mirrors what cortex-mem-tools does in close_session_sync.
-    if let Some(ref tx) = state.memory_event_tx {
+    let tx_guard = state.memory_event_tx.read().await;
+    if let Some(ref tx) = *tx_guard {
         // Load user_id / agent_id from metadata; fall back to "default" if not set.
         let user_id = metadata.user_id.clone().unwrap_or_else(|| "default".to_string());
         let agent_id = metadata.agent_id.clone().unwrap_or_else(|| "default".to_string());
@@ -173,6 +207,7 @@ pub async fn close_session(
         });
         tracing::info!("SessionClosed event emitted for thread {}", thread_id);
     }
+    drop(tx_guard);
 
     let response = SessionResponse {
         thread_id: metadata.thread_id,

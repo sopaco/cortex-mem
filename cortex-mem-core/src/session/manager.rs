@@ -280,6 +280,14 @@ impl SessionManager {
         self
     }
 
+    /// Switch the underlying filesystem (used for tenant isolation in long-running services)
+    ///
+    /// After calling this, all session reads/writes will use the new filesystem root.
+    pub fn switch_filesystem(&mut self, filesystem: Arc<CortexFilesystem>) {
+        self.message_storage = MessageStorage::new(filesystem.clone());
+        self.filesystem = filesystem;
+    }
+
     /// 获取 LLM client（如果存在）
     pub fn llm_client(&self) -> Option<&Arc<dyn LLMClient>> {
         self.llm_client.as_ref()

@@ -196,6 +196,33 @@ function cortexMemPlugin(api) {
             }
         },
     });
+    // Register cortex_close_session tool
+    api.registerTool({
+        name: tools_js_1.toolSchemas.cortex_close_session.name,
+        description: tools_js_1.toolSchemas.cortex_close_session.description,
+        parameters: tools_js_1.toolSchemas.cortex_close_session.inputSchema,
+        execute: async (_id, params) => {
+            const input = params;
+            try {
+                const sessionId = input.session_id ?? defaultSessionId;
+                const result = await client.closeSession(sessionId);
+                return {
+                    content: `Session "${sessionId}" closed successfully.\nStatus: ${result.status}, Messages: ${result.message_count}\n\nMemory extraction pipeline triggered — user preferences, entities, and L0/L1 summaries will be generated asynchronously.`,
+                    success: true,
+                    session: {
+                        thread_id: result.thread_id,
+                        status: result.status,
+                        message_count: result.message_count,
+                    },
+                };
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                api.logger.error(`cortex_close_session failed: ${message}`);
+                return { error: `Failed to close session: ${message}` };
+            }
+        },
+    });
     api.logger.info('Cortex Memory plugin initialized successfully');
     return {
         id: 'cortex-mem',

@@ -2,6 +2,7 @@
 /// 提供Builder模式的一站式初始化接口
 use crate::{
     Result,
+    automation::{AutoIndexer, AutomationConfig, AutomationManager, IndexerConfig},
     embedding::{EmbeddingClient, EmbeddingConfig},
     events::EventBus,
     filesystem::CortexFilesystem,
@@ -113,8 +114,8 @@ impl CortexMemBuilder {
                 (None, None)
             };
 
-        // 4. 创建事件总线（用于向后兼容）
-        let (event_bus, _old_event_rx) = EventBus::new();
+        // 4. 创建事件总线
+        let (event_bus, event_rx) = EventBus::new();
         let event_bus = Arc::new(event_bus);
 
         // 5. 创建 MemoryEventCoordinator（如果配置了所有必需组件）
@@ -182,6 +183,49 @@ impl CortexMemBuilder {
             }
         };
 
+        // 7. 启动 AutomationManager（监听 MessageAdded 事件触发实时 L2 向量索引）
+        let (automation_handle, automation_tx_handle) = if let (Some(emb), Some(qdrant_store)) = (&embedding, &qdrant_store_typed) {
+            let indexer = Arc::new(AutoIndexer::new(
+                filesystem.clone(),
+                emb.clone(),
+                qdrant_store.clone(),
+                IndexerConfig::default(),
+            ));
+            let automation_manager = if let Some(ref tx) = memory_event_tx {
+                AutomationManager::with_memory_events(
+                    indexer,
+                    AutomationConfig {
+                        auto_index: true,
+                        index_on_message: true,
+                        ..AutomationConfig::default()
+                    },
+                    tx.clone(),
+                )
+            } else {
+                AutomationManager::new(
+                    indexer,
+                    AutomationConfig {
+                        auto_index: true,
+                        index_on_message: true,
+                        ..AutomationConfig::default()
+                    },
+                )
+            };
+            let tx_handle = automation_manager.memory_event_tx_handle();
+            let handle = tokio::spawn(async move {
+                if let Err(e) = automation_manager.start(event_rx).await {
+                    tracing::error!("AutomationManager failed: {}", e);
+                }
+            });
+            info!("✅ AutomationManager started (real-time L2 indexing on MessageAdded)");
+            (Some(handle), Some(tx_handle))
+        } else {
+            // No embedding/qdrant → drop the event_rx; AutomationManager is not needed
+            drop(event_rx);
+            warn!("AutomationManager not started: Qdrant or Embedding not configured");
+            (None, None)
+        };
+
         info!("✅ CortexMem initialized successfully");
 
         Ok(CortexMem {
@@ -194,6 +238,8 @@ impl CortexMemBuilder {
             qdrant_store_typed,
             memory_event_tx,
             coordinator_handle,
+            automation_handle,
+            automation_tx_handle,
         })
     }
 }
@@ -213,6 +259,10 @@ pub struct CortexMem {
     memory_event_tx: Option<tokio::sync::mpsc::UnboundedSender<crate::memory_events::MemoryEvent>>,
     /// MemoryEventCoordinator 的后台任务句柄
     coordinator_handle: Option<tokio::task::JoinHandle<()>>,
+    /// AutomationManager 的后台任务句柄
+    automation_handle: Option<tokio::task::JoinHandle<()>>,
+    /// AutomationManager 的 memory_event_tx 句柄（用于 tenant 切换时更新 coordinator sender）
+    automation_tx_handle: Option<Arc<tokio::sync::RwLock<Option<tokio::sync::mpsc::UnboundedSender<crate::memory_events::MemoryEvent>>>>>,
 }
 
 impl CortexMem {
@@ -253,9 +303,22 @@ impl CortexMem {
         self.memory_event_tx.clone()
     }
 
+    /// 获取 AutomationManager 的 tx 句柄（用于 tenant 切换时替换 coordinator sender）
+    pub fn automation_tx_handle(
+        &self,
+    ) -> Option<Arc<tokio::sync::RwLock<Option<tokio::sync::mpsc::UnboundedSender<crate::memory_events::MemoryEvent>>>>> {
+        self.automation_tx_handle.clone()
+    }
+
     /// 优雅关闭
     pub async fn shutdown(self) -> Result<()> {
         info!("Shutting down CortexMem...");
+
+        // 停止 AutomationManager
+        if let Some(handle) = self.automation_handle {
+            handle.abort();
+            info!("AutomationManager stopped");
+        }
 
         // 停止 MemoryEventCoordinator
         if let Some(handle) = self.coordinator_handle {

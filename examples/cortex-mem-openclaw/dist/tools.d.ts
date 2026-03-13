@@ -95,6 +95,19 @@ export declare const toolSchemas: {
             readonly properties: {};
         };
     };
+    readonly cortex_close_session: {
+        readonly name: "cortex_close_session";
+        readonly description: "Close a memory session and trigger full memory extraction.\n\nThis triggers the complete memory processing pipeline:\n1. Extracts structured memories (user preferences, entities, decisions) from conversation into the user/ directory\n2. Generates complete L0/L1 layer summaries for the entire session\n3. Indexes all extracted memories into the vector database\n4. Marks the session as closed\n\nUse this when:\n- A conversation or task is complete and you want to consolidate memories\n- You need user/ directory memories (preferences, entities) to be generated\n- You want to ensure all L0/L1 summaries are up to date\n\nNote: This is a potentially long-running operation (may take 30-60s due to LLM calls).";
+        readonly inputSchema: {
+            readonly type: "object";
+            readonly properties: {
+                readonly session_id: {
+                    readonly type: "string";
+                    readonly description: "Session/thread ID to close (uses default if not specified)";
+                };
+            };
+        };
+    };
 };
 export interface CortexSearchInput {
     query: string;
@@ -114,6 +127,9 @@ export interface CortexAddMemoryInput {
     session_id?: string;
 }
 export interface CortexListSessionsInput {
+}
+export interface CortexCloseSessionInput {
+    session_id?: string;
 }
 export interface CortexSearchOutput {
     results: Array<{
@@ -144,5 +160,13 @@ export interface CortexListSessionsOutput {
         message_count: number;
         created_at: string;
     }>;
+}
+export interface CortexCloseSessionOutput {
+    success: boolean;
+    session: {
+        thread_id: string;
+        status: string;
+        message_count: number;
+    };
 }
 //# sourceMappingURL=tools.d.ts.map

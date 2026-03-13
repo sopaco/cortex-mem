@@ -868,11 +868,35 @@ impl MemoryEventCoordinator {
 
     /// Handle vector sync needed event
     async fn on_vector_sync_needed(&self, file_uri: &str, change_type: &ChangeType) -> Result<()> {
-        debug!("Vector sync needed for {}: {:?}", file_uri, change_type);
+        info!("🔍 VectorSync: processing {} ({:?})", file_uri, change_type);
 
-        self.vector_sync
+        match self.vector_sync
             .sync_file_change(file_uri, change_type.clone())
-            .await?;
+            .await
+        {
+            Ok(stats) => {
+                if stats.indexed > 0 || stats.updated > 0 {
+                    info!(
+                        "✅ VectorSync: {} indexed, {} updated, {} skipped, {} errors for {}",
+                        stats.indexed, stats.updated, stats.skipped, stats.errors, file_uri
+                    );
+                } else if stats.errors > 0 {
+                    warn!(
+                        "⚠️ VectorSync: {} errors, {} skipped for {}",
+                        stats.errors, stats.skipped, file_uri
+                    );
+                } else {
+                    info!(
+                        "⏭️ VectorSync: all {} skipped (already indexed) for {}",
+                        stats.skipped, file_uri
+                    );
+                }
+            }
+            Err(e) => {
+                error!("❌ VectorSync: failed for {}: {}", file_uri, e);
+                return Err(e);
+            }
+        }
 
         Ok(())
     }
