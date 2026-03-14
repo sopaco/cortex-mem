@@ -1,0 +1,21 @@
+{
+	"name": "@memclaw/bin-win-x64",
+	"version": "0.1.0",
+	"description": "MemClaw binaries for Windows x64",
+	"os": [
+		"win32"
+	],
+	"cpu": [
+		"x64"
+	],
+	"files": [
+		"bin/"
+	],
+	"author": "Sopaco",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/sopaco/cortex-mem.git",
+		"directory": "examples/@memclaw/bin-win-x64"
+	}
+}

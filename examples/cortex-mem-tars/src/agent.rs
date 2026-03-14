@@ -841,7 +841,8 @@ impl AgentChatHandler {
                                 tool_call_count,
                                 full_response.len()
                             );
-                            let _ = tx.send(full_response.clone()).await;
+                            // 🔧 修复：不再发送完整响应到 stream channel
+                            // 流式输出期间已经逐块发送了所有内容，避免重复输出
                             break;
                         }
                         _ => {

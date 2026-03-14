@@ -65,5 +65,5 @@ clap = { version = "4.5", features = ["derive"] }
 # Audio input
 cpal = "0.17"
 rubato = "0.16"
-whisper-rs = "0.15"
+whisper-rs = "0.16"
 libc = "0.2"

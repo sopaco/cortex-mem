@@ -56,7 +56,7 @@ impl WhisperTranscriber {
         #[cfg(unix)]
         let null_file = std::fs::File::create("/dev/null")?;
         #[cfg(windows)]
-        let null_file = std::fs::File::create("NUL")?;
+        let _null_file = std::fs::File::create("NUL")?;
 
         #[cfg(unix)]
         let saved_stderr = unsafe {

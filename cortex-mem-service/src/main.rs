@@ -25,7 +25,7 @@ struct Cli {
     data_dir: String,
 
     /// Server host
-    #[arg(long, default_value = "127.0.0.1")]
+    #[arg(long, default_value = "localhost")]
     host: String,
 
     /// Server port
