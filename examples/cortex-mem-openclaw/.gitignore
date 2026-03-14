@@ -1,1 +1,5 @@
 node_modules/
+bun.lock
+pnpm.lock
+npm.lock
+yarn.lock

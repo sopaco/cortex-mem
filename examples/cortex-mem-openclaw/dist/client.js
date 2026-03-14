@@ -11,14 +11,14 @@ exports.CortexMemClient = void 0;
  */
 class CortexMemClient {
     baseUrl;
-    constructor(baseUrl = 'http://127.0.0.1:8085') {
-        this.baseUrl = baseUrl.replace(/\/$/, '');
+    constructor(baseUrl = "http://localhost:8085") {
+        this.baseUrl = baseUrl.replace(/\/$/, "");
     }
     /**
      * Layered semantic search (L0 -> L1 -> L2 tiered retrieval)
      */
     async search(request) {
-        const response = await this.post('/api/v2/search', request);
+        const response = await this.post("/api/v2/search", request);
         return response;
     }
     /**
@@ -40,7 +40,7 @@ class CortexMemClient {
      * @param scope - Optional session/thread scope
      * @param limit - Maximum results
      */
-    async recall(query, layers = ['L0'], scope, limit = 10) {
+    async recall(query, layers = ["L0"], scope, limit = 10) {
         // First do search to get URIs
         const searchResults = await this.search({
             query,
@@ -50,7 +50,7 @@ class CortexMemClient {
         // For now, return search results with snippets
         // In a full implementation, we would make additional calls
         // to get L1 overview and L2 content based on requested layers
-        return searchResults.map(result => ({
+        return searchResults.map((result) => ({
             uri: result.uri,
             score: result.score,
             abstract: result.snippet, // L0 from snippet
@@ -62,14 +62,14 @@ class CortexMemClient {
      * List all sessions
      */
     async listSessions() {
-        const response = await this.get('/api/v2/sessions');
+        const response = await this.get("/api/v2/sessions");
         return response;
     }
     /**
      * Create a new session
      */
     async createSession(request = {}) {
-        const response = await this.post('/api/v2/sessions', request);
+        const response = await this.post("/api/v2/sessions", request);
         return response;
     }
     /**
@@ -104,26 +104,26 @@ class CortexMemClient {
         if (!response.ok) {
             throw new Error(`API error: ${response.status} ${response.statusText}`);
         }
-        const data = await response.json();
+        const data = (await response.json());
         if (!data.success) {
-            throw new Error(data.error || 'API request failed');
+            throw new Error(data.error || "API request failed");
         }
         return data.data;
     }
     async post(path, body) {
         const response = await fetch(`${this.baseUrl}${path}`, {
-            method: 'POST',
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
             },
             body: JSON.stringify(body),
         });
         if (!response.ok) {
             throw new Error(`API error: ${response.status} ${response.statusText}`);
         }
-        const data = await response.json();
+        const data = (await response.json());
         if (!data.success) {
-            throw new Error(data.error || 'API request failed');
+            throw new Error(data.error || "API request failed");
         }
         return data.data;
     }

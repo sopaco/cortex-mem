@@ -1,0 +1,72 @@
+{
+  "id": "memclaw",
+  "name": "MemClaw",
+  "version": "0.1.0",
+  "description": "Layered semantic memory for OpenClaw with L0/L1/L2 tiered retrieval, easy setup, and migration from native memory",
+  "kind": "memory",
+  "skills": ["skill/memclaw-guide", "skill/memclaw-admin"],
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "serviceUrl": {
+        "type": "string",
+        "description": "Cortex Memory service URL",
+        "default": "http://127.0.0.1:8085"
+      },
+      "defaultSessionId": {
+        "type": "string",
+        "description": "Default session ID for memory operations",
+        "default": "default"
+      },
+      "searchLimit": {
+        "type": "integer",
+        "description": "Default number of search results",
+        "default": 10,
+        "minimum": 1,
+        "maximum": 50
+      },
+      "minScore": {
+        "type": "number",
+        "description": "Minimum relevance score for search results",
+        "default": 0.6,
+        "minimum": 0,
+        "maximum": 1
+      },
+      "tenantId": {
+        "type": "string",
+        "description": "Tenant ID for data isolation",
+        "default": "tenant_claw"
+      },
+      "autoStartServices": {
+        "type": "boolean",
+        "description": "Automatically start Qdrant and cortex-mem-service if not running",
+        "default": true
+      },
+      "qdrantPort": {
+        "type": "integer",
+        "description": "Qdrant port (default: 6333 for HTTP, 6334 for gRPC)",
+        "default": 6334
+      },
+      "servicePort": {
+        "type": "integer",
+        "description": "cortex-mem-service port",
+        "default": 8085
+      }
+    },
+    "required": []
+  },
+  "uiHints": {
+    "serviceUrl": {
+      "label": "Service URL",
+      "description": "The HTTP endpoint of your cortex-mem-service instance"
+    },
+    "tenantId": {
+      "label": "Tenant ID",
+      "description": "Tenant identifier for data isolation"
+    },
+    "autoStartServices": {
+      "label": "Auto-start Services",
+      "description": "Automatically start Qdrant and cortex-mem-service when plugin loads"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "@memclaw/bin-darwin-arm64",
+  "version": "0.1.0",
+  "description": "MemClaw binaries for macOS Apple Silicon",
+  "os": ["darwin"],
+  "cpu": ["arm64"],
+  "files": ["bin/"],
+  "author": "Cortex-Mem Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sopaco/cortex-mem.git",
+    "directory": "examples/@memclaw/bin-darwin-arm64"
+  }
+}

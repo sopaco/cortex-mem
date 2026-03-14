@@ -41,7 +41,7 @@ openclaw plugins install --link $(pwd)
 ### Option 2: Install from npm (After Publishing)
 
 ```bash
-openclaw plugins install @cortex-mem/openclaw-plugin
+openclaw plugins install @cortex-mem-openclaw/openclaw-plugin
 ```
 
 ## Configuration
@@ -52,7 +52,7 @@ Add the following to your OpenClaw configuration file (`~/.openclaw/openclaw.jso
 {
   "plugins": {
     "entries": {
-      "cortex-mem": {
+      "cortex-mem-openclaw": {
         "enabled": true,
         "config": {
           "serviceUrl": "http://127.0.0.1:8085",

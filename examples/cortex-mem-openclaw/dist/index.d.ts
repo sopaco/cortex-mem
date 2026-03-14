@@ -4,13 +4,13 @@
  * Provides layered semantic memory with L0/L1/L2 tiered retrieval.
  *
  * Installation:
- *   openclaw plugins install @cortex-mem/openclaw-plugin
+ *   openclaw plugins install @cortex-mem-openclaw/openclaw-plugin
  *
  * Configuration (in openclaw.json):
  *   {
  *     "plugins": {
  *       "entries": {
- *         "cortex-mem": {
+ *         "cortex-mem-openclaw": {
  *           "enabled": true,
  *           "config": {
  *             "serviceUrl": "http://127.0.0.1:8085",

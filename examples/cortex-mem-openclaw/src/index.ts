@@ -4,13 +4,13 @@
  * Provides layered semantic memory with L0/L1/L2 tiered retrieval.
  *
  * Installation:
- *   openclaw plugins install @cortex-mem/openclaw-plugin
+ *   openclaw plugins install @cortex-mem-openclaw/openclaw-plugin
  *
  * Configuration (in openclaw.json):
  *   {
  *     "plugins": {
  *       "entries": {
- *         "cortex-mem": {
+ *         "cortex-mem-openclaw": {
  *           "enabled": true,
  *           "config": {
  *             "serviceUrl": "http://127.0.0.1:8085",
@@ -25,8 +25,14 @@
  *   }
  */
 
-import { CortexMemClient } from './client.js';
-import { toolSchemas, type CortexSearchInput, type CortexRecallInput, type CortexAddMemoryInput, type CortexCloseSessionInput } from './tools.js';
+import { CortexMemClient } from "./client.js";
+import {
+  toolSchemas,
+  type CortexSearchInput,
+  type CortexRecallInput,
+  type CortexAddMemoryInput,
+  type CortexCloseSessionInput,
+} from "./tools.js";
 
 // Plugin configuration
 interface PluginConfig {
@@ -76,33 +82,35 @@ interface PluginAPI {
 // Export plugin as a default function — matches OpenClaw's resolvePluginModuleExport behavior
 export default function cortexMemPlugin(api: PluginAPI) {
   const config = (api.pluginConfig ?? {}) as PluginConfig;
-  const serviceUrl = config.serviceUrl ?? 'http://127.0.0.1:8085';
-  const defaultSessionId = config.defaultSessionId ?? 'default';
+  const serviceUrl = config.serviceUrl ?? "http://localhost:8085";
+  const defaultSessionId = config.defaultSessionId ?? "default";
   const searchLimit = config.searchLimit ?? 10;
   const minScore = config.minScore ?? 0.6;
-  const tenantId = config.tenantId ?? 'tenant_claw';
+  const tenantId = config.tenantId ?? "tenant_claw";
 
   const client = new CortexMemClient(serviceUrl);
 
-  api.logger.info('Cortex Memory plugin initializing...');
+  api.logger.info("Cortex Memory plugin initializing...");
   api.logger.info(`Service URL: ${serviceUrl}`);
   api.logger.info(`Tenant ID: ${tenantId}`);
 
   // Switch to the configured tenant on startup
   fetch(`${serviceUrl}/api/v2/tenants/switch`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tenant_id: tenantId }),
   })
-    .then(res => {
+    .then((res) => {
       if (res.ok) {
         api.logger.info(`✅ Switched to tenant: ${tenantId}`);
       } else {
         api.logger.warn(`Failed to switch tenant (${res.status}): ${tenantId}`);
       }
     })
-    .catch(err => {
-      api.logger.warn(`Tenant switch request failed: ${err instanceof Error ? err.message : String(err)}`);
+    .catch((err) => {
+      api.logger.warn(
+        `Tenant switch request failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     });
 
   // Register cortex_search tool
@@ -122,12 +130,15 @@ export default function cortexMemPlugin(api: PluginAPI) {
         });
 
         const formattedResults = results
-          .map((r, i) => `${i + 1}. [Score: ${r.score.toFixed(2)}] ${r.snippet}\n   URI: ${r.uri}`)
-          .join('\n\n');
+          .map(
+            (r, i) =>
+              `${i + 1}. [Score: ${r.score.toFixed(2)}] ${r.snippet}\n   URI: ${r.uri}`,
+          )
+          .join("\n\n");
 
         return {
           content: `Found ${results.length} results for "${input.query}":\n\n${formattedResults}`,
-          results: results.map(r => ({
+          results: results.map((r) => ({
             uri: r.uri,
             score: r.score,
             snippet: r.snippet,
@@ -153,36 +164,36 @@ export default function cortexMemPlugin(api: PluginAPI) {
       try {
         const results = await client.recall(
           input.query,
-          input.layers ?? ['L0'],
+          input.layers ?? ["L0"],
           input.scope,
-          input.limit ?? 5
+          input.limit ?? 5,
         );
 
         const layerLabels: Record<string, string> = {
-          L0: 'Abstract',
-          L1: 'Overview',
-          L2: 'Full Content',
+          L0: "Abstract",
+          L1: "Overview",
+          L2: "Full Content",
         };
 
-        const requestedLayers = input.layers ?? ['L0'];
+        const requestedLayers = input.layers ?? ["L0"];
 
         const formattedResults = results
           .map((r, i) => {
             let content = `${i + 1}. [Score: ${r.score.toFixed(2)}] URI: ${r.uri}\n`;
 
-            if (requestedLayers.includes('L0') && r.abstract) {
-              content += `   [${layerLabels['L0']}]: ${r.abstract}\n`;
+            if (requestedLayers.includes("L0") && r.abstract) {
+              content += `   [${layerLabels["L0"]}]: ${r.abstract}\n`;
             }
-            if (requestedLayers.includes('L1') && r.overview) {
-              content += `   [${layerLabels['L1']}]: ${r.overview.substring(0, 500)}...\n`;
+            if (requestedLayers.includes("L1") && r.overview) {
+              content += `   [${layerLabels["L1"]}]: ${r.overview.substring(0, 500)}...\n`;
             }
-            if (requestedLayers.includes('L2') && r.content) {
-              content += `   [${layerLabels['L2']}]: ${r.content.substring(0, 500)}...\n`;
+            if (requestedLayers.includes("L2") && r.content) {
+              content += `   [${layerLabels["L2"]}]: ${r.content.substring(0, 500)}...\n`;
             }
 
             return content;
           })
-          .join('\n');
+          .join("\n");
 
         return {
           content: `Recalled ${results.length} memories:\n\n${formattedResults}`,
@@ -208,7 +219,7 @@ export default function cortexMemPlugin(api: PluginAPI) {
       try {
         const sessionId = input.session_id ?? defaultSessionId;
         const result = await client.addMessage(sessionId, {
-          role: input.role ?? 'user',
+          role: input.role ?? "user",
           content: input.content,
         });
 
@@ -235,7 +246,7 @@ export default function cortexMemPlugin(api: PluginAPI) {
         const sessions = await client.listSessions();
 
         if (sessions.length === 0) {
-          return { content: 'No sessions found.' };
+          return { content: "No sessions found." };
         }
 
         const formattedSessions = sessions
@@ -243,11 +254,11 @@ export default function cortexMemPlugin(api: PluginAPI) {
             const created = new Date(s.created_at).toLocaleDateString();
             return `${i + 1}. ${s.thread_id} (${s.status}, ${s.message_count} messages, created ${created})`;
           })
-          .join('\n');
+          .join("\n");
 
         return {
           content: `Found ${sessions.length} sessions:\n\n${formattedSessions}`,
-          sessions: sessions.map(s => ({
+          sessions: sessions.map((s) => ({
             thread_id: s.thread_id,
             status: s.status,
             message_count: s.message_count,
@@ -291,30 +302,30 @@ export default function cortexMemPlugin(api: PluginAPI) {
     },
   });
 
-  api.logger.info('Cortex Memory plugin initialized successfully');
+  api.logger.info("Cortex Memory plugin initialized successfully");
 
   return {
-    id: 'cortex-mem',
-    name: 'Cortex Memory',
-    version: '0.1.0',
+    id: "cortex-mem-openclaw",
+    name: "Cortex Memory",
+    version: "0.1.0",
   };
 }
 
 // Also support object export style (register method calls the default function above)
 export const plugin = {
-  id: 'cortex-mem',
-  name: 'Cortex Memory',
-  version: '0.1.0',
+  id: "cortex-mem-openclaw",
+  name: "Cortex Memory",
+  version: "0.1.0",
   configSchema: {
-    type: 'object',
+    type: "object",
     properties: {
-      serviceUrl: { type: 'string', default: 'http://127.0.0.1:8085' },
-      defaultSessionId: { type: 'string', default: 'default' },
-      searchLimit: { type: 'integer', default: 10 },
-      minScore: { type: 'number', default: 0.6 },
-      tenantId: { type: 'string', default: 'tenant_claw' },
+      serviceUrl: { type: "string", default: "http://localhost:8085" },
+      defaultSessionId: { type: "string", default: "default" },
+      searchLimit: { type: "integer", default: 10 },
+      minScore: { type: "number", default: 0.6 },
+      tenantId: { type: "string", default: "tenant_claw" },
     },
-    required: ['serviceUrl'],
+    required: ["serviceUrl"],
   },
   register(api: PluginAPI) {
     return cortexMemPlugin(api);

@@ -30,10 +30,10 @@ export interface CreateSessionRequest {
     agent_id?: string;
 }
 export interface AddMessageRequest {
-    role: 'user' | 'assistant' | 'system';
+    role: "user" | "assistant" | "system";
     content: string;
 }
-export type ContextLayer = 'L0' | 'L1' | 'L2';
+export type ContextLayer = "L0" | "L1" | "L2";
 export interface LayeredRecallResult {
     uri: string;
     score: number;
