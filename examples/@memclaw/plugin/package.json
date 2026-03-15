@@ -1,7 +1,7 @@
 {
 	"name": "@memclaw/plugin",
-	"version": "0.9.2",
-	"description": "MemClaw - The Cortex Memory' plugin for OpenClaw. Layered semantic memory for OpenClaw with easy setup and migration",
+	"version": "0.9.3",
+	"description": "MemClaw - The Cortex Memory plugin for OpenClaw. Layered semantic memory for OpenClaw with easy setup and migration",
 	"publishConfig": {
 		"access": "public"
 	},

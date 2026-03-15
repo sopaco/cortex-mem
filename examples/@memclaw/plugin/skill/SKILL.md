@@ -21,7 +21,22 @@ MemClaw provides **three-layer semantic memory** with tiered retrieval:
 
 The search engine queries all three layers internally and returns unified results with `snippet` and `content`.
 
-## Quick Decision Flow
+## Pre-Use Requirements
+
+**IMPORTANT**: Before using MemClaw for the first time, you MUST ensure:
+
+1. **Qdrant** is running on port 6333/6334
+2. **cortex-mem-service** is running on port 8085 with `--data-dir` and valid `config.toml`
+3. **LLM/Embedding API keys** are configured in `config.toml`
+
+**Manual Configuration Required**: Users must manually configure the following in `config.toml`:
+- `llm.api_key` — LLM API key for memory processing
+- `embedding.api_key` — Embedding API key for vector search
+- `llm.api_base_url` / `embedding.api_base_url` — API endpoints (if not using OpenAI default)
+
+> **See `references/setup.md`** for complete installation, service setup, and configuration instructions.
+
+## Decision Flow
 
 1. **Need to find something** → `cortex_search`
 2. **Need more context** → `cortex_recall`
@@ -64,11 +79,14 @@ The search engine queries all three layers internally and returns unified result
 | Services won't start | Check ports 6333, 6334, 8085; verify `api_key` in config.toml |
 | Search returns no results | Run `cortex_list_sessions` to verify; lower `min_score` threshold |
 | Migration fails | Ensure OpenClaw workspace at `~/.openclaw/workspace` |
+| cortex-mem-service fails | Ensure `--data-dir` is set and `config.toml` exists in that directory |
+| LLM/Embedding errors | Verify `llm.api_key` and `embedding.api_key` are configured in `config.toml` |
+| Platform not supported | MemClaw supports macOS Apple Silicon and Windows x64 only |
 
 ## References
 
 For detailed information, see:
 
-- **`references/setup.md`** — Installation and configuration guide
+- **`references/setup.md`** — Installation, service setup, and configuration guide
 - **`references/tools.md`** — Detailed tool parameters and examples
 - **`references/maintenance.md`** — CLI commands for data maintenance and optimization
