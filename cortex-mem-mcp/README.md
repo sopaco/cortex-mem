@@ -318,7 +318,7 @@ data_dir = "/path/to/cortex-data"
 # LLM API configuration
 api_base_url = "https://api.openai.com/v1"
 api_key = "your-api-key"
-model_efficient = "gpt-4o-mini"
+model_efficient = "gpt-5-mini"
 temperature = 0.1
 max_tokens = 4096
 

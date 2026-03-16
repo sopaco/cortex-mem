@@ -44,7 +44,7 @@ impl ConfigManager {
         // 使用系统应用数据目录（macOS: ~/Library/Application Support/com.cortex-mem.tars）
         let config_dir = directories::ProjectDirs::from("com", "cortex-mem", "tars")
             .context("无法获取项目目录")?
-            .data_dir()  // 使用 data_dir 而不是 config_dir
+            .data_dir() // 使用 data_dir 而不是 config_dir
             .to_path_buf();
 
         // 确保配置目录存在
@@ -60,8 +60,12 @@ impl ConfigManager {
 
         // 加载或创建 cortex-mem 配置
         let cortex_config = if cortex_config_file.exists() {
-            let config = CortexConfig::load(&cortex_config_file).context("无法加载 cortex-mem 配置")?;
-            log::info!("已加载配置: embedding_dim={:?}", config.qdrant.embedding_dim);
+            let config =
+                CortexConfig::load(&cortex_config_file).context("无法加载 cortex-mem 配置")?;
+            log::info!(
+                "已加载配置: embedding_dim={:?}",
+                config.qdrant.embedding_dim
+            );
             config
         } else {
             // 创建默认配置
@@ -77,7 +81,7 @@ impl ConfigManager {
                 llm: cortex_mem_config::LLMConfig {
                     api_base_url: "https://api.openai.com/v1".to_string(),
                     api_key: "".to_string(),
-                    model_efficient: "gpt-4o-mini".to_string(),
+                    model_efficient: "gpt-5-mini".to_string(),
                     temperature: 0.7,
                     max_tokens: 2000,
                 },

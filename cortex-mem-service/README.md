@@ -297,7 +297,7 @@ export RUST_LOG="cortex_service=debug"
 ```toml
 [server]
 host = "127.0.0.1"
-port = 8080
+port = 8085
 workers = 4
 max_connections = 1024
 

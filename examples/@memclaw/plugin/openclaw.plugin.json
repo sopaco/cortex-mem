@@ -12,7 +12,7 @@
 			"serviceUrl": {
 				"type": "string",
 				"description": "Cortex Memory service URL",
-				"default": "http://127.0.0.1:8085"
+				"default": "http://localhost:8085"
 			},
 			"defaultSessionId": {
 				"type": "string",
@@ -65,7 +65,7 @@
 			"llmModel": {
 				"type": "string",
 				"description": "LLM model name for memory processing",
-				"default": "gpt-4o-mini"
+				"default": "gpt-5-mini"
 			},
 			"embeddingApiBaseUrl": {
 				"type": "string",

@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let llm_config = LLMConfig {
         api_base_url: "https://api.openai.com/v1".to_string(),
         api_key: "your-api-key".to_string(),
-        model_efficient: "gpt-4o-mini".to_string(),
+        model_efficient: "gpt-5-mini".to_string(),
         temperature: 0.1,
         max_tokens: 4096,
     };

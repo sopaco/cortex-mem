@@ -125,7 +125,7 @@ Edit your `openclaw.json`:
       "memclaw": {
         "enabled": true,
         "config": {
-          "serviceUrl": "http://127.0.0.1:8085",
+          "serviceUrl": "http://localhost:8085",
           "tenantId": "tenant_claw",
           "autoStartServices": true
         }
@@ -222,7 +222,7 @@ Migrate from OpenClaw native memory to MemClaw. Run once during initial setup.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `serviceUrl` | string | `http://127.0.0.1:8085` | Cortex Memory service URL |
+| `serviceUrl` | string | `http://localhost:8085` | Cortex Memory service URL |
 | `tenantId` | string | `tenant_claw` | Tenant ID for data isolation |
 | `autoStartServices` | boolean | `true` | Auto-start Qdrant and service |
 | `defaultSessionId` | string | `default` | Default session for memory operations |

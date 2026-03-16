@@ -16,7 +16,7 @@
  *         "memclaw": {
  *           "enabled": true,
  *           "config": {
- *             "serviceUrl": "http://127.0.0.1:8085",
+ *             "serviceUrl": "http://localhost:8085",
  *             "tenantId": "tenant_claw",
  *             "autoStartServices": true
  *           }

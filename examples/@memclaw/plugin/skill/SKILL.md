@@ -43,7 +43,7 @@ Configure LLM and Embedding API directly in OpenClaw plugin settings (`openclaw.
         "config": {
           "llmApiKey": "your-llm-api-key",
           "llmApiBaseUrl": "https://api.openai.com/v1",
-          "llmModel": "gpt-4o-mini",
+          "llmModel": "gpt-5-mini",
           "embeddingApiKey": "your-embedding-api-key",
           "embeddingApiBaseUrl": "https://api.openai.com/v1",
           "embeddingModel": "text-embedding-3-small"

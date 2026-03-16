@@ -84,8 +84,7 @@ fn config_path() -> String {
 
 /// 从环境变量读取 Tenant ID，如未设置则使用默认值
 fn tenant_id() -> String {
-    std::env::var("TENANT_ID")
-        .unwrap_or_else(|_| "default".to_string())
+    std::env::var("TENANT_ID").unwrap_or_else(|_| "default".to_string())
 }
 
 /// 创建临时数据目录，并在其中生成一个最简配置文件（不含外部服务配置）
@@ -125,7 +124,7 @@ temperature = 0.1
 max_tokens = 4096
 
 [server]
-host = "127.0.0.1"
+host = "localhost"
 port = 3000
 cors_origins = ["*"]
 
@@ -193,29 +192,21 @@ fn test_search_subcommand_help() {
 /// B05: session 子命令的 --help 应包含子命令说明
 #[test]
 fn test_session_subcommand_help() {
-    cli()
-        .args(["session", "--help"])
-        .assert()
-        .success()
-        .stdout(
-            predicate::str::contains("list")
-                .or(predicate::str::contains("create"))
-                .or(predicate::str::contains("close")),
-        );
+    cli().args(["session", "--help"]).assert().success().stdout(
+        predicate::str::contains("list")
+            .or(predicate::str::contains("create"))
+            .or(predicate::str::contains("close")),
+    );
 }
 
 /// B06: layers 子命令的 --help 应包含子命令说明
 #[test]
 fn test_layers_subcommand_help() {
-    cli()
-        .args(["layers", "--help"])
-        .assert()
-        .success()
-        .stdout(
-            predicate::str::contains("status")
-                .or(predicate::str::contains("ensure-all"))
-                .or(predicate::str::contains("regenerate-oversized")),
-        );
+    cli().args(["layers", "--help"]).assert().success().stdout(
+        predicate::str::contains("status")
+            .or(predicate::str::contains("ensure-all"))
+            .or(predicate::str::contains("regenerate-oversized")),
+    );
 }
 
 /// B07: tenant 子命令的 --help 应包含 list 子命令
@@ -261,10 +252,7 @@ fn test_delete_subcommand_help() {
 /// B11: stats 子命令的 --help 应成功
 #[test]
 fn test_stats_subcommand_help() {
-    cli()
-        .args(["stats", "--help"])
-        .assert()
-        .success();
+    cli().args(["stats", "--help"]).assert().success();
 }
 
 // ─── 2. Tenant 命令测试 ──────────────────────────────────────────────────────
@@ -312,7 +300,7 @@ temperature = 0.1
 max_tokens = 4096
 
 [server]
-host = "127.0.0.1"
+host = "localhost"
 port = 3000
 cors_origins = ["*"]
 
@@ -351,10 +339,7 @@ fn test_tenant_list_missing_config() {
 /// V01: add 命令缺少必要参数 --thread 时应以错误退出
 #[test]
 fn test_add_missing_thread_arg() {
-    cli()
-        .args(["add", "some content"])
-        .assert()
-        .failure();
+    cli().args(["add", "some content"]).assert().failure();
 }
 
 /// V02: add 命令缺少 content 位置参数时应以错误退出
@@ -369,46 +354,31 @@ fn test_add_missing_content_arg() {
 /// V03: search 命令缺少 query 位置参数时应以错误退出
 #[test]
 fn test_search_missing_query_arg() {
-    cli()
-        .args(["search"])
-        .assert()
-        .failure();
+    cli().args(["search"]).assert().failure();
 }
 
 /// V04: get 命令缺少 URI 位置参数时应以错误退出
 #[test]
 fn test_get_missing_uri_arg() {
-    cli()
-        .args(["get"])
-        .assert()
-        .failure();
+    cli().args(["get"]).assert().failure();
 }
 
 /// V05: delete 命令缺少 URI 位置参数时应以错误退出
 #[test]
 fn test_delete_missing_uri_arg() {
-    cli()
-        .args(["delete"])
-        .assert()
-        .failure();
+    cli().args(["delete"]).assert().failure();
 }
 
 /// V06: session create 缺少 thread 参数时应以错误退出
 #[test]
 fn test_session_create_missing_thread() {
-    cli()
-        .args(["session", "create"])
-        .assert()
-        .failure();
+    cli().args(["session", "create"]).assert().failure();
 }
 
 /// V07: session close 缺少 thread 参数时应以错误退出
 #[test]
 fn test_session_close_missing_thread() {
-    cli()
-        .args(["session", "close"])
-        .assert()
-        .failure();
+    cli().args(["session", "close"]).assert().failure();
 }
 
 /// V08: search 命令的 --min-score 参数超出范围（>1.0）应以错误退出
@@ -432,9 +402,10 @@ fn test_search_invalid_min_score_over_limit() {
         ])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("min_score must be between").or(
-            predicate::str::contains("between 0.0 and 1.0"),
-        ));
+        .stderr(
+            predicate::str::contains("min_score must be between")
+                .or(predicate::str::contains("between 0.0 and 1.0")),
+        );
 }
 
 /// V09: get 命令使用无效的 URI scheme 时应以错误退出
@@ -456,9 +427,10 @@ fn test_get_invalid_uri_scheme() {
         ])
         .assert()
         .failure()
-        .stderr(predicate::str::contains("Invalid URI scheme").or(
-            predicate::str::contains("invalid").or(predicate::str::contains("error")),
-        ));
+        .stderr(
+            predicate::str::contains("Invalid URI scheme")
+                .or(predicate::str::contains("invalid").or(predicate::str::contains("error"))),
+        );
 }
 
 /// V10: list 命令不带任何选项时应以错误退出（需要配置才能初始化 MemoryOperations）
@@ -740,7 +712,7 @@ fn test_delete_after_add() {
 }
 
 /// F09: search 命令 - 基本搜索
-/// 
+///
 /// search 命令需要调用 Embedding API 将查询转为向量，若 Embedding 服务不可达则会失败。
 /// 本测试验证命令能够正常执行（参数解析正确），对 Embedding 服务的可用性不做强依赖要求。
 #[test]
@@ -750,14 +722,7 @@ fn test_search_basic() {
     let tenant = tenant_id();
 
     let output = cli()
-        .args([
-            "-c",
-            &config,
-            "--tenant",
-            &tenant,
-            "search",
-            "test query",
-        ])
+        .args(["-c", &config, "--tenant", &tenant, "search", "test query"])
         .output()
         .expect("Failed to run command");
 
@@ -784,7 +749,10 @@ fn test_search_basic() {
             "Unexpected failure (not a network/service error): stderr={}",
             stderr
         );
-        println!("INFO: search failed due to service unavailability (acceptable): {}", stderr.trim());
+        println!(
+            "INFO: search failed due to service unavailability (acceptable): {}",
+            stderr.trim()
+        );
     }
 }
 
@@ -879,14 +847,7 @@ fn test_search_in_thread() {
     // 在该 thread 内搜索（允许因 Embedding 服务不可达而失败）
     let search_output = cli()
         .args([
-            "-c",
-            &config,
-            "--tenant",
-            &tenant,
-            "search",
-            "Rust",
-            "--thread",
-            &thread_id,
+            "-c", &config, "--tenant", &tenant, "search", "Rust", "--thread", &thread_id,
         ])
         .output()
         .expect("Failed to run search command");
@@ -897,8 +858,15 @@ fn test_search_in_thread() {
             || search_stderr.contains("HTTP request failed")
             || search_stderr.contains("connection refused")
             || search_stderr.contains("Vector store error");
-        assert!(is_service_error, "Unexpected search failure: {}", search_stderr);
-        println!("INFO: search in thread failed due to service unavailability: {}", search_stderr.trim());
+        assert!(
+            is_service_error,
+            "Unexpected search failure: {}",
+            search_stderr
+        );
+        println!(
+            "INFO: search in thread failed due to service unavailability: {}",
+            search_stderr.trim()
+        );
     }
 }
 
@@ -930,13 +898,7 @@ fn test_session_create() {
 
     cli()
         .args([
-            "-c",
-            &config,
-            "--tenant",
-            &tenant,
-            "session",
-            "create",
-            &thread_id,
+            "-c", &config, "--tenant", &tenant, "session", "create", &thread_id,
         ])
         .assert()
         .success()
@@ -994,13 +956,7 @@ fn test_session_close_after_create() {
     // 关闭会话（触发记忆提取流水线）
     cli()
         .args([
-            "-c",
-            &config,
-            "--tenant",
-            &tenant,
-            "session",
-            "close",
-            &thread_id,
+            "-c", &config, "--tenant", &tenant, "session", "close", &thread_id,
         ])
         .assert()
         .success()
@@ -1110,14 +1066,7 @@ fn test_full_workflow() {
     // Step 1: add 消息
     let add_output = cli()
         .args([
-            "-c",
-            &config,
-            "--tenant",
-            &tenant,
-            "add",
-            "--thread",
-            &thread_id,
-            &content,
+            "-c", &config, "--tenant", &tenant, "add", "--thread", &thread_id, &content,
         ])
         .assert()
         .success()
@@ -1180,18 +1129,16 @@ fn uuid_short() -> String {
 
 /// 从命令输出中提取第一个 `cortex://` URI
 fn extract_uri_from_output(output: &str) -> Option<String> {
-    output
-        .lines()
-        .find_map(|line| {
-            if let Some(pos) = line.find("cortex://") {
-                // 截取到空白字符或行末
-                let uri_start = &line[pos..];
-                let uri_end = uri_start
-                    .find(|c: char| c.is_whitespace())
-                    .unwrap_or(uri_start.len());
-                Some(uri_start[..uri_end].to_string())
-            } else {
-                None
-            }
-        })
+    output.lines().find_map(|line| {
+        if let Some(pos) = line.find("cortex://") {
+            // 截取到空白字符或行末
+            let uri_start = &line[pos..];
+            let uri_end = uri_start
+                .find(|c: char| c.is_whitespace())
+                .unwrap_or(uri_start.len());
+            Some(uri_start[..uri_end].to_string())
+        } else {
+            None
+        }
+    })
 }
