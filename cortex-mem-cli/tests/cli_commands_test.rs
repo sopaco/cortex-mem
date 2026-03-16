@@ -121,11 +121,11 @@ api_base_url = "http://localhost:18080"
 api_key = "test-key"
 model_efficient = "test-model"
 temperature = 0.1
-max_tokens = 4096
+max_tokens = 65536
 
 [server]
 host = "localhost"
-port = 3000
+port = 8085
 cors_origins = ["*"]
 
 [cortex]
@@ -297,11 +297,11 @@ api_base_url = "http://localhost:18080"
 api_key = "test-key"
 model_efficient = "test-model"
 temperature = 0.1
-max_tokens = 4096
+max_tokens = 65536
 
 [server]
 host = "localhost"
-port = 3000
+port = 8085
 cors_origins = ["*"]
 
 [cortex]

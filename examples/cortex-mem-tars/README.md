@@ -105,12 +105,12 @@ api_base_url = "https://api.openai.com/v1"
 api_key = "your-api-key-here"
 model_efficient = "gpt-5-mini"
 temperature = 0.1
-max_tokens = 40960
+max_tokens = 65536
 
 # HTTP 服务器配置（预留）
 [server]
 host = "0.0.0.0"
-port = 3000
+port = 8085
 cors_origins = ["*"]
 
 # Cortex Memory 数据目录

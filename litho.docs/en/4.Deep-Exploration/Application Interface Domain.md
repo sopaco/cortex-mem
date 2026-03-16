@@ -307,7 +307,7 @@ dimensions = 1536
 **Single-Node Deployment**:
 ```bash
 # Terminal 1: Start API server
-cargo run --bin cortex-mem-service -- --port 3000
+cargo run --bin cortex-mem-service -- --port 8085
 
 # Terminal 2: Start MCP server (stdio)
 cargo run --bin cortex-mem-mcp
@@ -317,7 +317,7 @@ cortex-mem-cli search --query "project requirements" --tenant acme-corp
 ```
 
 **Containerized Deployment**:
-- HTTP Service: Exposes port 3000, requires Qdrant and LLM API connectivity
+- HTTP Service: Exposes port 8085, requires Qdrant and LLM API connectivity
 - MCP Server: Runs as sidecar container with stdio bridge
 - Web Dashboard: Static files served via nginx or embedded in HTTP service
 

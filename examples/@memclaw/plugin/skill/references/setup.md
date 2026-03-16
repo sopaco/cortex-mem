@@ -29,6 +29,34 @@ MemClaw binaries (Qdrant, cortex-mem-service, cortex-mem-cli) are distributed vi
 
 These packages are installed automatically as optional dependencies when installing `@memclaw/memclaw`.
 
+### Binary Locations After Installation
+
+When installed via OpenClaw (`openclaw plugins install @memclaw/memclaw`), binaries are located at:
+
+| Platform | Path |
+|----------|------|
+| macOS | `{claw-data-dir}/extensions/memclaw/node_modules/@memclaw/bin-darwin-arm64/bin/` |
+| Windows | `{claw-data-dir}\extensions\memclaw\node_modules\@memclaw\bin-win-x64\bin\` |
+
+> **Note**: `{claw-data-dir}` is typically `~/.openclaw` for standard OpenClaw. For custom or modified Claw versions, replace with your actual Claw data directory (e.g., `~/.claw`, `~/.myclaw`, etc.).
+
+**Binaries included:**
+- `qdrant` (or `qdrant.exe`) — Vector database server
+- `cortex-mem-service` (or `cortex-mem-service.exe`) — Memory extraction service
+- `cortex-mem-cli` (or `cortex-mem-cli.exe`) — Command-line maintenance tool
+
+### Verify Binary Installation
+
+Check if binaries exist:
+
+```bash
+# macOS (adjust claw-data-dir as needed)
+ls ~/.openclaw/extensions/memclaw/node_modules/@memclaw/bin-darwin-arm64/bin/
+
+# Windows (adjust claw-data-dir as needed)
+dir %USERPROFILE%\.openclaw\extensions\memclaw\node_modules\@memclaw\bin-win-x64\bin\
+```
+
 ### Manual Binary Installation
 
 If binaries are not installed, run:
@@ -103,7 +131,7 @@ api_base_url = "https://your-llm-provider.com/v1"
 api_key = "your-api-key-here"
 model_efficient = "gpt-5-mini"
 temperature = 0.1
-max_tokens = 4096
+max_tokens = 65536
 
 # Embedding Configuration [REQUIRED]
 [embedding]

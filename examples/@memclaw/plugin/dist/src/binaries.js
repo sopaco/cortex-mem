@@ -190,12 +190,28 @@ async function startQdrant(log) {
         fs.mkdirSync(storagePath, { recursive: true });
     }
     log?.(`Starting Qdrant with storage at ${storagePath}...`);
+    log?.(`Binary path: ${binaryPath}`);
     const proc = (0, child_process_1.spawn)(binaryPath, ['--storage-path', storagePath, '--http-port', '6333', '--grpc-port', '6334'], {
         stdio: ['ignore', 'pipe', 'pipe'],
         detached: true
     });
+    // Drain stdout/stderr to prevent buffer blocking
+    proc.stdout?.on('data', (data) => {
+        log?.(`[qdrant stdout] ${data.toString().trim()}`);
+    });
+    proc.stderr?.on('data', (data) => {
+        log?.(`[qdrant stderr] ${data.toString().trim()}`);
+    });
     proc.on('error', (err) => {
         log?.(`Qdrant error: ${err.message}`);
+    });
+    proc.on('exit', (code, signal) => {
+        if (code !== null && code !== 0) {
+            log?.(`Qdrant exited with code ${code}`);
+        }
+        if (signal) {
+            log?.(`Qdrant killed by signal ${signal}`);
+        }
     });
     proc.unref();
     runningProcesses.set('qdrant', proc);
@@ -224,13 +240,29 @@ async function startCortexMemService(log) {
     }
     const dataDir = (0, config_js_1.getDataDir)();
     log?.(`Starting cortex-mem-service with data-dir ${dataDir}...`);
+    log?.(`Binary path: ${binaryPath}`);
     // cortex-mem-service automatically reads config.toml from --data-dir
     const proc = (0, child_process_1.spawn)(binaryPath, ['--data-dir', dataDir], {
         stdio: ['ignore', 'pipe', 'pipe'],
         detached: true
     });
+    // Drain stdout/stderr to prevent buffer blocking
+    proc.stdout?.on('data', (data) => {
+        log?.(`[cortex-mem-service stdout] ${data.toString().trim()}`);
+    });
+    proc.stderr?.on('data', (data) => {
+        log?.(`[cortex-mem-service stderr] ${data.toString().trim()}`);
+    });
     proc.on('error', (err) => {
         log?.(`cortex-mem-service error: ${err.message}`);
+    });
+    proc.on('exit', (code, signal) => {
+        if (code !== null && code !== 0) {
+            log?.(`cortex-mem-service exited with code ${code}`);
+        }
+        if (signal) {
+            log?.(`cortex-mem-service killed by signal ${signal}`);
+        }
     });
     proc.unref();
     runningProcesses.set('cortex-mem-service', proc);

@@ -231,7 +231,7 @@ api_base_url = "https://api.openai.com/v1"
 api_key = "your-api-key"
 model_efficient = "gpt-5-mini"
 temperature = 0.7
-max_tokens = 4096
+max_tokens = 65536
 
 [embedding]
 api_base_url = "https://api.openai.com/v1"

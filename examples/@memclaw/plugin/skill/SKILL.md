@@ -28,8 +28,10 @@ The search engine queries all three layers internally and returns unified result
 ### Step 1: Check if Plugin is Installed
 
 Check if `@memclaw/memclaw` is in the OpenClaw plugins list:
-- Look for `memclaw` in `~/.openclaw/extensions/`
-- Or check `plugins.installs` in `openclaw.json`
+- Look for `memclaw` in `{claw-data-dir}/extensions/`
+- Or check `plugins.installs` in your Claw config file
+
+> **Note**: `{claw-data-dir}` is typically `~/.openclaw` for standard OpenClaw. Use your actual Claw data directory for custom versions.
 
 ### Step 2: Install if Missing
 
@@ -64,7 +66,23 @@ Enable MemClaw in your `openclaw.json`:
 
 Restart OpenClaw to activate the plugin and start services.
 
-> **Note**: The plugin auto-installs platform binaries as optional dependencies. If binaries are missing, see `references/setup.md` for manual installation.
+## Binary File Locations
+
+The platform-specific binaries (Qdrant, cortex-mem-service, cortex-mem-cli) are installed in:
+
+| Platform | Binary Path |
+|----------|-------------|
+| macOS | `{claw-data-dir}/extensions/memclaw/node_modules/@memclaw/bin-darwin-arm64/bin/` |
+| Windows | `{claw-data-dir}\extensions\memclaw\node_modules\@memclaw\bin-win-x64\bin\` |
+
+> **Note**: `{claw-data-dir}` is typically `~/.openclaw` for standard OpenClaw. For custom or modified versions, check your Claw's actual data directory name.
+
+**Binaries included:**
+- `qdrant` / `qdrant.exe` — Vector database
+- `cortex-mem-service` / `cortex-mem-service.exe` — Memory service
+- `cortex-mem-cli` / `cortex-mem-cli.exe` — CLI tool
+
+> **Note**: The plugin auto-starts these services. You don't need to run them manually.
 
 ## Pre-Use Requirements
 

@@ -26,7 +26,7 @@ cargo build --release -p cortex-mem-service
 ./target/release/cortex-mem-service
 
 # 指定端口和数据目录
-./cortex-mem-service --port 3000 --data-dir /var/lib/cortex-data
+./cortex-mem-service --port 8085 --data-dir /var/lib/cortex-data
 ```
 
 ### Docker 部署

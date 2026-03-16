@@ -179,6 +179,7 @@ export async function startQdrant(log?: (msg: string) => void): Promise<void> {
 	}
 
 	log?.(`Starting Qdrant with storage at ${storagePath}...`);
+	log?.(`Binary path: ${binaryPath}`);
 
 	const proc = spawn(
 		binaryPath,
@@ -189,8 +190,26 @@ export async function startQdrant(log?: (msg: string) => void): Promise<void> {
 		}
 	);
 
+	// Drain stdout/stderr to prevent buffer blocking
+	proc.stdout?.on('data', (data) => {
+		log?.(`[qdrant stdout] ${data.toString().trim()}`);
+	});
+
+	proc.stderr?.on('data', (data) => {
+		log?.(`[qdrant stderr] ${data.toString().trim()}`);
+	});
+
 	proc.on('error', (err) => {
 		log?.(`Qdrant error: ${err.message}`);
+	});
+
+	proc.on('exit', (code, signal) => {
+		if (code !== null && code !== 0) {
+			log?.(`Qdrant exited with code ${code}`);
+		}
+		if (signal) {
+			log?.(`Qdrant killed by signal ${signal}`);
+		}
 	});
 
 	proc.unref();
@@ -226,6 +245,7 @@ export async function startCortexMemService(log?: (msg: string) => void): Promis
 	const dataDir = getDataDir();
 
 	log?.(`Starting cortex-mem-service with data-dir ${dataDir}...`);
+	log?.(`Binary path: ${binaryPath}`);
 
 	// cortex-mem-service automatically reads config.toml from --data-dir
 	const proc = spawn(binaryPath, ['--data-dir', dataDir], {
@@ -233,8 +253,26 @@ export async function startCortexMemService(log?: (msg: string) => void): Promis
 		detached: true
 	});
 
+	// Drain stdout/stderr to prevent buffer blocking
+	proc.stdout?.on('data', (data) => {
+		log?.(`[cortex-mem-service stdout] ${data.toString().trim()}`);
+	});
+
+	proc.stderr?.on('data', (data) => {
+		log?.(`[cortex-mem-service stderr] ${data.toString().trim()}`);
+	});
+
 	proc.on('error', (err) => {
 		log?.(`cortex-mem-service error: ${err.message}`);
+	});
+
+	proc.on('exit', (code, signal) => {
+		if (code !== null && code !== 0) {
+			log?.(`cortex-mem-service exited with code ${code}`);
+		}
+		if (signal) {
+			log?.(`cortex-mem-service killed by signal ${signal}`);
+		}
 	});
 
 	proc.unref();

@@ -34,12 +34,12 @@ api_base_url = ""
 api_key = ""
 model_efficient = ""
 temperature = 0.1
-max_tokens = 40960
+max_tokens = 65536
 
 # HTTP 服务器配置
 [server]
 host = "0.0.0.0"
-port = 3000
+port = 8085
 cors_origins = ["*"]
 
 [cortex]
