@@ -4,7 +4,6 @@
  * Handles platform-specific config paths, config file generation,
  * and auto-opening config files for user editing.
  */
-export declare function getConfigDir(): string;
 export declare function getDataDir(): string;
 export declare function getConfigPath(): string;
 export interface MemClawConfig {
@@ -31,8 +30,12 @@ export interface MemClawConfig {
         host: string;
         port: number;
     };
+    logging: {
+        enabled: boolean;
+        log_directory: string;
+        level: string;
+    };
     cortex: {
-        data_dir: string;
         enable_intent_analysis: boolean;
     };
 }

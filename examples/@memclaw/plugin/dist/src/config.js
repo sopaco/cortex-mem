@@ -39,7 +39,6 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getConfigDir = getConfigDir;
 exports.getDataDir = getDataDir;
 exports.getConfigPath = getConfigPath;
 exports.generateConfigTemplate = generateConfigTemplate;
@@ -52,39 +51,26 @@ const path = __importStar(require("path"));
 const os = __importStar(require("os"));
 const child_process_1 = require("child_process");
 // Platform-specific paths
-function getConfigDir() {
+function getDataDir() {
     const platform = process.platform;
     if (platform === "win32") {
-        return path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), "memclaw");
+        return path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"), "memclaw");
     }
     else if (platform === "darwin") {
         return path.join(os.homedir(), "Library", "Application Support", "memclaw");
     }
     else {
-        return path.join(os.homedir(), ".config", "memclaw");
-    }
-}
-function getDataDir() {
-    const platform = process.platform;
-    if (platform === "win32") {
-        return path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"), "memclaw", "data");
-    }
-    else if (platform === "darwin") {
-        return path.join(os.homedir(), "Library", "Application Support", "memclaw", "data");
-    }
-    else {
-        return path.join(os.homedir(), ".local", "share", "memclaw", "data");
+        return path.join(os.homedir(), ".local", "share", "memclaw");
     }
 }
 function getConfigPath() {
-    return path.join(getConfigDir(), "config.toml");
+    return path.join(getDataDir(), "config.toml");
 }
 function generateConfigTemplate() {
-    const dataDir = getDataDir().replace(/\\/g, "/");
     return `# MemClaw Configuration
 #
 # This file was auto-generated. Please fill in the required values below.
-# Required fields are marked with [REQUIRED]
+# All sections are required - missing sections will cause config to be ignored.
 
 # Qdrant Vector Database Configuration
 [qdrant]
@@ -94,20 +80,15 @@ timeout_secs = 30
 
 # LLM Configuration [REQUIRED for memory processing]
 [llm]
-# Your LLM API endpoint (OpenAI-compatible)
 api_base_url = "https://api.openai.com/v1"
-# Your API key [REQUIRED]
 api_key = ""
-# Model for memory extraction and layer generation
-model_efficient = "gpt-4o-mini"
+model_efficient = "gpt-5-mini"
 temperature = 0.1
 max_tokens = 4096
 
 # Embedding Configuration [REQUIRED for vector search]
 [embedding]
-# Your embedding API endpoint (OpenAI-compatible)
 api_base_url = "https://api.openai.com/v1"
-# Your API key [REQUIRED - can be same as llm.api_key]
 api_key = ""
 model_name = "text-embedding-3-small"
 batch_size = 10
@@ -118,17 +99,22 @@ timeout_secs = 30
 host = "localhost"
 port = 8085
 
+# Logging Configuration
+[logging]
+enabled = false
+log_directory = "logs"
+level = "info"
+
 # Cortex Memory Settings
 [cortex]
-data_dir = "${dataDir}"
 enable_intent_analysis = false
 `;
 }
 function ensureConfigExists() {
-    const configDir = getConfigDir();
+    const dataDir = getDataDir();
     const configPath = getConfigPath();
-    if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true });
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
     }
     if (!fs.existsSync(configPath)) {
         const template = generateConfigTemplate();
@@ -199,7 +185,6 @@ function parseConfig(configPath) {
         }
     }
     // Apply defaults
-    const dataDir = getDataDir();
     return {
         qdrant: {
             url: "http://localhost:6334",
@@ -228,8 +213,13 @@ function parseConfig(configPath) {
             port: 8085,
             ...(config.server || {}),
         },
+        logging: {
+            enabled: false,
+            log_directory: "logs",
+            level: "info",
+            ...(config.logging || {}),
+        },
         cortex: {
-            data_dir: dataDir,
             enable_intent_analysis: false,
             ...(config.cortex || {}),
         },

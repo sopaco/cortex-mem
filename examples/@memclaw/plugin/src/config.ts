@@ -59,6 +59,11 @@ export interface MemClawConfig {
     host: string;
     port: number;
   };
+  logging: {
+    enabled: boolean;
+    log_directory: string;
+    level: string;
+  };
   cortex: {
     enable_intent_analysis: boolean;
   };
@@ -68,7 +73,7 @@ export function generateConfigTemplate(): string {
   return `# MemClaw Configuration
 #
 # This file was auto-generated. Please fill in the required values below.
-# Required fields are marked with [REQUIRED]
+# All sections are required - missing sections will cause config to be ignored.
 
 # Qdrant Vector Database Configuration
 [qdrant]
@@ -78,20 +83,15 @@ timeout_secs = 30
 
 # LLM Configuration [REQUIRED for memory processing]
 [llm]
-# Your LLM API endpoint (OpenAI-compatible)
 api_base_url = "https://api.openai.com/v1"
-# Your API key [REQUIRED]
 api_key = ""
-# Model for memory extraction and layer generation
-model_efficient = "gpt-4o-mini"
+model_efficient = "gpt-5-mini"
 temperature = 0.1
 max_tokens = 4096
 
 # Embedding Configuration [REQUIRED for vector search]
 [embedding]
-# Your embedding API endpoint (OpenAI-compatible)
 api_base_url = "https://api.openai.com/v1"
-# Your API key [REQUIRED - can be same as llm.api_key]
 api_key = ""
 model_name = "text-embedding-3-small"
 batch_size = 10
@@ -101,6 +101,12 @@ timeout_secs = 30
 [server]
 host = "localhost"
 port = 8085
+
+# Logging Configuration
+[logging]
+enabled = false
+log_directory = "logs"
+level = "info"
 
 # Cortex Memory Settings
 [cortex]
@@ -221,6 +227,12 @@ export function parseConfig(configPath: string): MemClawConfig {
       host: "localhost",
       port: 8085,
       ...(config.server || {}),
+    },
+    logging: {
+      enabled: false,
+      log_directory: "logs",
+      level: "info",
+      ...(config.logging || {}),
     },
     cortex: {
       enable_intent_analysis: false,

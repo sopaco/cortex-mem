@@ -228,10 +228,10 @@ async function startCortexMemService(log) {
     if (!binaryPath) {
         throw new Error(`cortex-mem-service binary not found. ${getInstallInstructions()}`);
     }
-    const configPath = (0, config_js_1.getConfigPath)();
     const dataDir = (0, config_js_1.getDataDir)();
-    log?.(`Starting cortex-mem-service with config ${configPath}...`);
-    const proc = (0, child_process_1.spawn)(binaryPath, ["--config", configPath, "--data-dir", dataDir], {
+    log?.(`Starting cortex-mem-service with data-dir ${dataDir}...`);
+    // cortex-mem-service automatically reads config.toml from --data-dir
+    const proc = (0, child_process_1.spawn)(binaryPath, ["--data-dir", dataDir], {
         stdio: ["ignore", "pipe", "pipe"],
         detached: true,
     });

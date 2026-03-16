@@ -27,11 +27,29 @@ The search engine queries all three layers internally and returns unified result
 
 1. **Qdrant** is running on port 6333/6334
 2. **cortex-mem-service** is running on port 8085 with `--data-dir`
-3. **LLM/Embedding API keys** are configured in `config.toml`
+3. **LLM/Embedding API** is configured in `config.toml`
 
-**User Configuration**: Only `llm.api_key` and `embedding.api_key` are required. All other settings use defaults.
+## First-Time Setup (Agent Action Required)
 
-> **See `references/setup.md`** for complete installation, service setup, and configuration instructions.
+When MemClaw is used for the first time, **YOU MUST**:
+
+1. **Ask the user for LLM/Embedding configuration**:
+   - `llm.api_base_url` — LLM API endpoint (e.g., OpenAI-compatible provider)
+   - `llm.api_key` — LLM API key
+   - `embedding.api_base_url` — Embedding API endpoint
+   - `embedding.api_key` — Embedding API key
+
+2. **Write the configuration file** to the platform-specific data directory:
+
+   | Platform | config.toml Path |
+   |----------|------------------|
+   | macOS | `~/Library/Application Support/memclaw/config.toml` |
+   | Windows | `%LOCALAPPDATA%\memclaw\config.toml` |
+   | Linux | `~/.local/share/memclaw/config.toml` |
+
+3. **Use the full configuration template** from `references/setup.md`
+
+> **See `references/setup.md`** for the complete configuration file template and service setup details.
 
 ## Decision Flow
 

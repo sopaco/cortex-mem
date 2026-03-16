@@ -51,42 +51,40 @@ npm install @memclaw/bin-win-x64
 
 Ensure you are on a supported platform (macOS Apple Silicon or Windows x86/x64).
 
-### Step 2: Prepare Data Directory
+### Step 2: Create Data Directory
 
-The `--data-dir` parameter specifies the root directory for MemClaw data. By default, use the system's application data directory:
+Create the data directory if it does not exist:
 
-| Platform | Default `--data-dir` |
-|----------|----------------------|
-| macOS | `~/Library/Application Support/memclaw` |
-| Windows | `%LOCALAPPDATA%\memclaw` |
-| Linux | `~/.local/share/memclaw` |
+| Platform | Command |
+|----------|---------|
+| macOS | `mkdir -p ~/Library/Application\ Support/memclaw` |
+| Windows | `mkdir %LOCALAPPDATA%\memclaw` |
+| Linux | `mkdir -p ~/.local/share/memclaw` |
 
-The `config.toml` file should be placed directly in this directory.
+### Step 3: Ask User for Configuration
 
-### Step 3: Create Configuration File
+**Agent MUST ask the user for the following information:**
 
-**CRITICAL**: The `config.toml` file MUST be placed in the data directory BEFORE starting cortex-mem-service.
+1. **LLM Configuration**:
+   - API endpoint URL (OpenAI-compatible)
+   - API key
 
-Users only need to configure LLM/Embedding API keys. All other settings use sensible defaults.
+2. **Embedding Configuration**:
+   - API endpoint URL (OpenAI-compatible)
+   - API key
+   - Model name (default: `text-embedding-3-small`)
 
-Create `config.toml` with the following minimal content:
+### Step 4: Write Configuration File
 
-```toml
-# MemClaw Configuration
-# Only llm.api_key and embedding.api_key are required.
+Write `config.toml` to the data directory with all required sections:
 
-# LLM Configuration [REQUIRED]
-[llm]
-api_base_url = "https://api.openai.com/v1"
-api_key = "your-api-key-here"
+| Platform | config.toml Path |
+|----------|------------------|
+| macOS | `~/Library/Application Support/memclaw/config.toml` |
+| Windows | `%LOCALAPPDATA%\memclaw\config.toml` |
+| Linux | `~/.local/share/memclaw/config.toml` |
 
-# Embedding Configuration [REQUIRED]
-[embedding]
-api_base_url = "https://api.openai.com/v1"
-api_key = "your-api-key-here"
-```
-
-**Full configuration with all defaults:**
+**Full configuration template:**
 
 ```toml
 # Qdrant Vector Database Configuration
@@ -97,7 +95,7 @@ timeout_secs = 30
 
 # LLM Configuration [REQUIRED]
 [llm]
-api_base_url = "https://api.openai.com/v1"
+api_base_url = "https://your-llm-provider.com/v1"
 api_key = "your-api-key-here"
 model_efficient = "gpt-5-mini"
 temperature = 0.1
@@ -105,7 +103,7 @@ max_tokens = 4096
 
 # Embedding Configuration [REQUIRED]
 [embedding]
-api_base_url = "https://api.openai.com/v1"
+api_base_url = "https://your-embedding-provider.com/v1"
 api_key = "your-api-key-here"
 model_name = "text-embedding-3-small"
 batch_size = 10
@@ -116,12 +114,20 @@ timeout_secs = 30
 host = "localhost"
 port = 8085
 
+# Logging Configuration
+[logging]
+enabled = false
+log_directory = "logs"
+level = "info"
+
 # Cortex Memory Settings
 [cortex]
 enable_intent_analysis = false
 ```
 
-### Step 4: Verify Services
+> **CRITICAL**: All sections are required. If any section is missing, cortex-mem-service will silently fall back to environment variables and the configuration will be ignored.
+
+### Step 5: Verify Services
 
 Check that Qdrant and cortex-mem-service are accessible:
 
@@ -130,7 +136,7 @@ Check that Qdrant and cortex-mem-service are accessible:
 | Qdrant | 6333 (HTTP), 6334 (gRPC) | HTTP GET to `http://localhost:6333` should return Qdrant version info |
 | cortex-mem-service | 8085 | HTTP GET to `http://localhost:8085/health` should return `{"status":"ok"}` |
 
-### Step 5: Start Services (if not running)
+### Step 6: Start Services (if not running)
 
 **Starting Qdrant:**
 
