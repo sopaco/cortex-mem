@@ -11,7 +11,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { spawn, ChildProcess } from "child_process";
-import { getDataDir, getConfigPath } from "./config.js";
+import { getDataDir } from "./config.js";
 
 // Binary names type
 type BinaryName = "qdrant" | "cortex-mem-service" | "cortex-mem-cli";
@@ -236,14 +236,14 @@ export async function startCortexMemService(
     );
   }
 
-  const configPath = getConfigPath();
   const dataDir = getDataDir();
 
-  log?.(`Starting cortex-mem-service with config ${configPath}...`);
+  log?.(`Starting cortex-mem-service with data-dir ${dataDir}...`);
 
+  // cortex-mem-service automatically reads config.toml from --data-dir
   const proc = spawn(
     binaryPath,
-    ["--config", configPath, "--data-dir", dataDir],
+    ["--data-dir", dataDir],
     {
       stdio: ["ignore", "pipe", "pipe"],
       detached: true,

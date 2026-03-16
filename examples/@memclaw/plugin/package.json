@@ -1,7 +1,10 @@
 {
-	"name": "memclaw",
-	"version": "0.9.0",
-	"description": "MemClaw - The Cortex Memory' plugin for OpenClaw. Layered semantic memory for OpenClaw with easy setup and migration",
+	"name": "@memclaw/plugin",
+	"version": "0.9.6",
+	"description": "MemClaw - The Cortex Memory plugin for OpenClaw. Layered semantic memory for OpenClaw with easy setup and migration",
+	"publishConfig": {
+		"access": "public"
+	},
 	"main": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"scripts": {
@@ -39,7 +42,7 @@
 		"@memclaw/bin-win-x64": "0.1.0"
 	},
 	"engines": {
-		"node": ">=22.0.0"
+		"node": ">=20.0.0"
 	},
 	"files": [
 		"dist/",

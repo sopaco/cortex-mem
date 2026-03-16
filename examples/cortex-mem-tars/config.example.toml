@@ -55,6 +55,7 @@ cors_origins = ["*"]
 #
 # 留空或注释此行将使用默认值（应用数据目录）
 # data_dir = "/path/to/custom/cortex/data"
+enable_intent_analysis = false
 
 # 日志配置
 [logging]

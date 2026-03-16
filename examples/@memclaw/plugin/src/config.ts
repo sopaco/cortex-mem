@@ -11,21 +11,6 @@ import * as os from "os";
 import { spawn } from "child_process";
 
 // Platform-specific paths
-export function getConfigDir(): string {
-  const platform = process.platform;
-
-  if (platform === "win32") {
-    return path.join(
-      process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"),
-      "memclaw",
-    );
-  } else if (platform === "darwin") {
-    return path.join(os.homedir(), "Library", "Application Support", "memclaw");
-  } else {
-    return path.join(os.homedir(), ".config", "memclaw");
-  }
-}
-
 export function getDataDir(): string {
   const platform = process.platform;
 
@@ -33,7 +18,6 @@ export function getDataDir(): string {
     return path.join(
       process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"),
       "memclaw",
-      "data",
     );
   } else if (platform === "darwin") {
     return path.join(
@@ -41,15 +25,14 @@ export function getDataDir(): string {
       "Library",
       "Application Support",
       "memclaw",
-      "data",
     );
   } else {
-    return path.join(os.homedir(), ".local", "share", "memclaw", "data");
+    return path.join(os.homedir(), ".local", "share", "memclaw");
   }
 }
 
 export function getConfigPath(): string {
-  return path.join(getConfigDir(), "config.toml");
+  return path.join(getDataDir(), "config.toml");
 }
 
 export interface MemClawConfig {
@@ -76,19 +59,21 @@ export interface MemClawConfig {
     host: string;
     port: number;
   };
+  logging: {
+    enabled: boolean;
+    log_directory: string;
+    level: string;
+  };
   cortex: {
-    data_dir: string;
     enable_intent_analysis: boolean;
   };
 }
 
 export function generateConfigTemplate(): string {
-  const dataDir = getDataDir().replace(/\\/g, "/");
-
   return `# MemClaw Configuration
 #
 # This file was auto-generated. Please fill in the required values below.
-# Required fields are marked with [REQUIRED]
+# All sections are required - missing sections will cause config to be ignored.
 
 # Qdrant Vector Database Configuration
 [qdrant]
@@ -98,20 +83,15 @@ timeout_secs = 30
 
 # LLM Configuration [REQUIRED for memory processing]
 [llm]
-# Your LLM API endpoint (OpenAI-compatible)
 api_base_url = "https://api.openai.com/v1"
-# Your API key [REQUIRED]
 api_key = ""
-# Model for memory extraction and layer generation
-model_efficient = "gpt-4o-mini"
+model_efficient = "gpt-5-mini"
 temperature = 0.1
 max_tokens = 4096
 
 # Embedding Configuration [REQUIRED for vector search]
 [embedding]
-# Your embedding API endpoint (OpenAI-compatible)
 api_base_url = "https://api.openai.com/v1"
-# Your API key [REQUIRED - can be same as llm.api_key]
 api_key = ""
 model_name = "text-embedding-3-small"
 batch_size = 10
@@ -122,19 +102,24 @@ timeout_secs = 30
 host = "localhost"
 port = 8085
 
+# Logging Configuration
+[logging]
+enabled = false
+log_directory = "logs"
+level = "info"
+
 # Cortex Memory Settings
 [cortex]
-data_dir = "${dataDir}"
 enable_intent_analysis = false
 `;
 }
 
 export function ensureConfigExists(): { created: boolean; path: string } {
-  const configDir = getConfigDir();
+  const dataDir = getDataDir();
   const configPath = getConfigPath();
 
-  if (!fs.existsSync(configDir)) {
-    fs.mkdirSync(configDir, { recursive: true });
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
   }
 
   if (!fs.existsSync(configPath)) {
@@ -214,7 +199,6 @@ export function parseConfig(configPath: string): MemClawConfig {
   }
 
   // Apply defaults
-  const dataDir = getDataDir();
 
   return {
     qdrant: {
@@ -244,8 +228,13 @@ export function parseConfig(configPath: string): MemClawConfig {
       port: 8085,
       ...(config.server || {}),
     },
+    logging: {
+      enabled: false,
+      log_directory: "logs",
+      level: "info",
+      ...(config.logging || {}),
+    },
     cortex: {
-      data_dir: dataDir,
       enable_intent_analysis: false,
       ...(config.cortex || {}),
     },

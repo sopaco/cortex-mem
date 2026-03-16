@@ -59,7 +59,7 @@ OpenClaw + MemClaw Plugin
 ### Install Plugin
 
 ```bash
-openclaw plugins install memclaw
+openclaw plugins install @memclaw/plugin
 ```
 
 ### Local Development Installation
@@ -69,30 +69,44 @@ For developers who want to use a local version of memclaw or develop the plugin:
 ```bash
 # Clone the repository
 git clone https://github.com/sopaco/cortex-mem.git
-cd cortex-mem/examples/memclaw
+cd cortex-mem/examples/@memclaw/plugin
 
 # Install dependencies
 bun install
 
 # Build the plugin
 bun run build
-
-# Create a symlink to the plugin directory
-# This makes OpenClaw use your local version
-mkdir -p ~/.openclaw/plugins
-ln -sf "$(pwd)" ~/.openclaw/plugins/memclaw
 ```
 
-Then configure in `openclaw.json` with the local plugin path:
+**Option A: Use plugins.load.paths**
+
+```json
+{
+  "plugins": {
+    "load": {
+      "paths": ["/path/to/cortex-mem/examples/@memclaw/plugin"]
+    },
+    "entries": {
+      "memclaw": { "enabled": true }
+    }
+  }
+}
+```
+
+**Option B: Symlink to extensions directory**
+
+```bash
+mkdir -p ~/.openclaw/extensions
+ln -sf "$(pwd)" ~/.openclaw/extensions/memclaw
+```
+
+Then enable in `openclaw.json`:
 
 ```json
 {
   "plugins": {
     "entries": {
-      "memclaw": {
-        "enabled": true,
-        "path": "./plugins/memclaw"
-      }
+      "memclaw": { "enabled": true }
     }
   }
 }

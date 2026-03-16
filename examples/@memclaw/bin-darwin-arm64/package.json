@@ -2,6 +2,9 @@
 	"name": "@memclaw/bin-darwin-arm64",
 	"version": "0.1.0",
 	"description": "MemClaw binaries for macOS Apple Silicon",
+	"publishConfig": {
+		"access": "public"
+	},
 	"os": [
 		"darwin"
 	],

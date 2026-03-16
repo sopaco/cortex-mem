@@ -2,6 +2,9 @@
 	"name": "@memclaw/bin-win-x64",
 	"version": "0.1.0",
 	"description": "MemClaw binaries for Windows x64",
+	"publishConfig": {
+		"access": "public"
+	},
 	"os": [
 		"win32"
 	],
