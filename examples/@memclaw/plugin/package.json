@@ -1,62 +1,63 @@
 {
-	"name": "@memclaw/memclaw",
-	"version": "0.9.11",
-	"description": "MemClaw - The Cortex Memory plugin for OpenClaw. Layered semantic memory for OpenClaw with easy setup and migration",
-	"homepage": "https://github.com/sopaco/cortex-mem",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/sopaco/cortex-mem.git",
-		"directory": "examples/@memclaw/plugin"
-	},
-	"bugs": {
-		"url": "https://github.com/sopaco/cortex-mem/issues"
-	},
-	"publishConfig": {
-		"access": "public"
-	},
-	"main": "dist/index.js",
-	"types": "dist/index.d.ts",
-	"scripts": {
-		"build": "tsc",
-		"dev": "tsc --watch"
-	},
-	"keywords": [
-		"openclaw",
-		"memory",
-		"semantic-search",
-		"vector-search",
-		"ai",
-		"agent",
-		"cortex-mem"
-	],
-	"author": "Sopaco",
-	"license": "MIT",
-	"openclaw": {
-		"extensions": [
-			"dist/index.js"
-		],
-		"skills": [
-			"skill"
-		]
-	},
-	"devDependencies": {
-		"@types/node": "^22.0.0",
-		"typescript": "^5.7.0"
-	},
-	"dependencies": {
-		"glob": "^11.0.0"
-	},
-	"optionalDependencies": {
-		"@memclaw/bin-darwin-arm64": "0.1.0",
-		"@memclaw/bin-win-x64": "0.1.0"
-	},
-	"engines": {
-		"node": ">=20.0.0"
-	},
-	"files": [
-		"dist/",
-		"skill/",
-		"openclaw.plugin.json",
-		"README.md"
-	]
+  "name": "@memclaw/memclaw",
+  "version": "0.9.12",
+  "description": "MemClaw - The Cortex Memory plugin for OpenClaw. Layered semantic memory for OpenClaw with easy setup and migration",
+  "homepage": "https://github.com/sopaco/cortex-mem",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sopaco/cortex-mem.git",
+    "directory": "examples/@memclaw/plugin"
+  },
+  "bugs": {
+    "url": "https://github.com/sopaco/cortex-mem/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "keywords": [
+    "openclaw",
+    "memory",
+    "semantic-search",
+    "vector-search",
+    "ai",
+    "agent",
+    "cortex-mem"
+  ],
+  "author": "Sopaco",
+  "license": "MIT",
+  "openclaw": {
+    "extensions": [
+      "dist/index.js"
+    ],
+    "skills": [
+      "skill"
+    ]
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "glob": "^11.0.0"
+  },
+  "optionalDependencies": {
+    "@memclaw/bin-darwin-arm64": "0.1.0",
+    "@memclaw/bin-win-x64": "0.1.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist/",
+    "skill/",
+    "openclaw.plugin.json",
+    "README.md",
+    "SECURITY.md"
+  ]
 }

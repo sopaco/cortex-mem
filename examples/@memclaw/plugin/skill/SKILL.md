@@ -9,6 +9,20 @@ description: MemClaw — Advanced semantic memory for OpenClaw. This is a better
 
 Layered semantic memory system for OpenClaw with automatic service management.
 
+## Security & Trust
+
+**What this plugin does:**
+- Stores memory data locally in your user data directory
+- Starts local services (Qdrant vector DB, cortex-mem-service) on localhost ports 6333/6334/8085
+- Requires LLM/Embedding API keys (stored in OpenClaw plugin config, marked as sensitive)
+- Reads existing OpenClaw memory files only during migration
+
+**What this plugin does NOT do:**
+- Does NOT send your data to external servers (all processing is local)
+- Does NOT transmit your API keys anywhere except to your configured LLM/embedding provider
+
+**Binary packages:** Platform-specific binaries (`@memclaw/bin-darwin-arm64`, `@memclaw/bin-win-x64`) are distributed via npm registry and contain Qdrant, cortex-mem-service, and cortex-mem-cli.
+
 ## How Memory Works
 
 MemClaw provides **three-layer semantic memory** with tiered retrieval:
@@ -93,10 +107,17 @@ The platform-specific binaries (Qdrant, cortex-mem-service, cortex-mem-cli) are 
 
 ## Configuration
 
-### Recommended: Configure in OpenClaw Settings
+### Configure API Keys (REQUIRED)
 
-Configure LLM and Embedding API directly in OpenClaw plugin settings (`openclaw.json`):
+1. Open OpenClaw Settings (`openclaw.json` or via UI)
+2. Navigate to Plugins → MemClaw → Configuration
+3. Enter your API keys in the secure fields:
+   - `llmApiKey` — Your LLM API key (marked as sensitive)
+   - `embeddingApiKey` — Your Embedding API key (marked as sensitive)
+4. Optionally customize API endpoints and model names
+5. Save and restart OpenClaw
 
+**Example configuration in `openclaw.json`:**
 ```json
 {
   "plugins": {
@@ -117,7 +138,7 @@ Configure LLM and Embedding API directly in OpenClaw plugin settings (`openclaw.
 }
 ```
 
-**Configuration will be automatically synced to the service config file on startup.**
+> **Security Note**: API keys are stored in OpenClaw's configuration with the `sensitive` flag. Never share your `openclaw.json` file publicly.
 
 ### Advanced: Direct Config File
 
@@ -131,23 +152,13 @@ For advanced users, you can also edit the config file directly:
 
 > **See `references/setup.md`** for the complete configuration file template and service setup details.
 
-## First-Time Setup (Agent Action Required)
+## First-Time Setup
 
-**Before using MemClaw for the first time, you MUST verify the prerequisites are met:**
+**Before using MemClaw for the first time, complete these steps:**
 
-### Step 1: Check Prerequisites (REQUIRED)
+### Step 1: Verify Prerequisites
 
-Consult `references/setup.md` and verify:
-
-1. **Platform support**: macOS Apple Silicon or Windows x64 only
-2. **Binaries installed**: Check `@memclaw/bin-*` package is installed
-3. **LLM/Embedding API configured**: API keys are set in OpenClaw plugin settings
-4. **Services accessible**: Qdrant (ports 6333/6334) and cortex-mem-service (port 8085) can start
-
-**If any prerequisite is missing:**
-- Guide user through installation (see `references/setup.md`)
-- Help configure API keys in OpenClaw plugin settings
-- Do NOT proceed with memory operations until prerequisites are met
+1. **Plugin installed**: `@memclaw/memclaw` is in your OpenClaw plugins list
 
 ### Step 2: Verify Configuration
 
