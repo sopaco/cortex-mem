@@ -25,8 +25,8 @@
  *     }
  *   }
  */
-export type { CortexMemClient } from './src/client.js';
-export type { MemClawConfig } from './src/config.js';
+export type { CortexMemClient } from "./src/client.js";
+export type { MemClawConfig } from "./src/config.js";
 interface PluginLogger {
     debug?: (msg: string, ...args: unknown[]) => void;
     info: (msg: string, ...args: unknown[]) => void;
