@@ -34,14 +34,12 @@ The search engine queries all three tiers internally and returns unified results
 
 ## Configuration
 
-### Modifying API Configuration
-
-To modify API configuration:
+All configuration is managed through OpenClaw plugin settings. To view or modify:
 
 1. Open OpenClaw settings (`openclaw.json` or via UI)
 2. Navigate to Plugins → MemClaw → Configuration
-3. Modify the desired fields
-4. Save and restart OpenClaw
+3. Verify or update the required fields
+4. Save changes and **restart OpenClaw Gateway** for changes to take effect
 
 ## Usage Guide
 
@@ -80,15 +78,37 @@ To modify API configuration:
 { "content": "User prefers TypeScript with strict mode enabled", "role": "assistant" }
 ```
 
-## Common Issues
+## Troubleshooting
+
+If MemClaw is not working properly, follow these steps:
+
+### Step 1: Check Plugin Configuration
+
+Open OpenClaw settings and verify MemClaw plugin configuration:
+
+1. Open `openclaw.json` or navigate to Settings → Plugins → MemClaw
+2. Ensure all required fields are correctly filled, especially the configuration sections related to LLM and Embedding.
+3. Save the configuration file
+
+### Step 2: Restart OpenClaw Gateway
+
+After making configuration changes, **you MUST restart OpenClaw Gateway** for the changes to take effect.
+
+### Step 3: Verify Services
+
+If issues persist after restart:
+- Run `cortex_list_sessions` to check if the service is responding
+- Check if Qdrant and cortex-mem-service are running (auto-start should handle this)
 
 | Issue | Solution |
 |-------|----------|
-| No search results | Run `cortex_list_sessions` to verify; lower `min_score` threshold |
-| LLM/Embedding errors | Verify the fields of memclaw plugin in openclaw are configured correctly |
+| No search results | Run `cortex_list_sessions` to verify; lower `min_score` threshold; ensure memories have been stored |
+| Service connection errors | Verify `serviceUrl` is correct; check if services are running |
+| LLM/Embedding errors | Verify API URLs and credentials in plugin configuration; restart OpenClaw Gateway after changes |
 
 ## References
 
+- **`references/best-practices.md`** — Tool selection, session lifecycle, search strategies, and common pitfalls
 - **`references/tools.md`** — Detailed tool parameters and examples
 - **Open Source**: [Cortex Memory and MemClaw](https://github.com/sopaco/cortex-mem)
 - **README**: [MemClaw README](https://raw.githubusercontent.com/sopaco/cortex-mem/refs/heads/main/examples/%40memclaw/plugin/README.md)
