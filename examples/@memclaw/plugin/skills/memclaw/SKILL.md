@@ -48,13 +48,30 @@ All configuration is managed through OpenClaw plugin settings. However, when the
 | Complete a task/topic | `cortex_close_session` |
 | First-time use with existing memories | `cortex_migrate` |
 
-> **Key Tip**: OpenClaw's session lifecycle does not automatically trigger memory extraction. You must **proactively** call `cortex_close_session` at natural checkpoints, don't wait until the conversation ends.
+> **Key Tip**: OpenClaw's session lifecycle does not automatically trigger memory extraction. You must **proactively** call `cortex_close_session` based on the following rules:
+
+#### Conversation Rhythm Rules
+
+- When conversation accumulates over **15 exchanges** since the last `cortex_close_session` call, consider closing the session
+- Close session when detecting clear **task completion signals** (e.g., user expresses satisfaction/gratitude)
+- Close the old session before starting a new topic when the user's discussion **topic or question shifts**
+- Don't worry about calling `cortex_close_session` multiple times in one session. It helps MemClaw improve memory data quality with no side effects—you can call it whenever uncertain.
 
 ### Best Practices
 
 1. **Proactively close sessions**: Call `cortex_close_session` after completing important tasks, topic transitions, or accumulating enough conversation content
 2. **Don't overdo it**: No need to close sessions after every message
 3. **Suggested rhythm**: Once after each major topic is completed
+4. **Important**: `best-practices.md` is the core guide for using MemClaw. Agents **must familiarize themselves** with this document to use MemClaw correctly.
+
+#### When to Consult Best Practices
+
+| Timing | Description |
+|--------|-------------|
+| **Uncertain which tool to use** | Reference the tool selection decision tree |
+| **Search results are unsatisfactory** | Check search strategies and query optimization tips |
+| **Encountering common issues** | Review the Common Pitfalls section |
+| **Before first use** | Read thoroughly to establish correct usage habits |
 
 ### Quick Examples
 
