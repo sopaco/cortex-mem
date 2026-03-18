@@ -48,7 +48,7 @@
 		"glob": "^11.0.0"
 	},
 	"optionalDependencies": {
-		"@memclaw/bin-darwin-arm64": "0.1.0",
+		"@memclaw/bin-darwin-arm64": "0.1.2",
 		"@memclaw/bin-win-x64": "0.1.0"
 	},
 	"engines": {
