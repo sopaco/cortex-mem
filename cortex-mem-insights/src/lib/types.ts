@@ -15,6 +15,12 @@ export interface FileEntryResponse {
   modified: string;
 }
 
+export interface LsResponse {
+  uri: string;
+  total: number;
+  entries: FileEntryResponse[];
+}
+
 export interface SessionInfo {
   thread_id: string;
   status: string;

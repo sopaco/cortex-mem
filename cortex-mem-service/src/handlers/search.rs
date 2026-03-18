@@ -73,7 +73,8 @@ async fn search_layered(
     let base_dir = if let Some(ref root) = tenant_root {
         root.clone()
     } else {
-        state.data_dir.join("cortex")
+        // 直接使用 data_dir 作为根目录（不再添加 cortex 子目录）
+        state.data_dir.clone()
     };
 
     // Convert to response format with requested layers

@@ -72,7 +72,10 @@ class ApiClient {
 
 	// Filesystem endpoints
 	async listDirectory(path: string): Promise<FileEntryResponse[]> {
-		return this.request<FileEntryResponse[]>(`/filesystem/list?uri=${encodeURIComponent(path)}`);
+		const response = await this.request<{ uri: string; total: number; entries: FileEntryResponse[] }>(
+			`/filesystem/list?uri=${encodeURIComponent(path)}`
+		);
+		return response.entries;
 	}
 
 	async readFile(path: string): Promise<string> {

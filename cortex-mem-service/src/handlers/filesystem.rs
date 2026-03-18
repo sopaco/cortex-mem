@@ -27,9 +27,9 @@ pub async fn list_directory(
         let uri_path = params.uri.trim_start_matches("cortex://");
         root.join(uri_path)
     } else {
-        let cortex_dir = state.data_dir.join("cortex");
+        // 直接使用 data_dir 作为根目录（不再添加 cortex 子目录）
         let uri_path = params.uri.trim_start_matches("cortex://");
-        cortex_dir.join(uri_path)
+        state.data_dir.join(uri_path)
     };
     
     tracing::debug!("Listing directory: {:?} (recursive={}, include_abstracts={})", 
@@ -137,9 +137,9 @@ pub async fn read_file(
         let uri_path = path.trim_start_matches("cortex://");
         root.join(uri_path)
     } else {
-        let cortex_dir = state.data_dir.join("cortex");
+        // 直接使用 data_dir 作为根目录（不再添加 cortex 子目录）
         let uri_path = path.trim_start_matches("cortex://");
-        cortex_dir.join(uri_path)
+        state.data_dir.join(uri_path)
     };
     
     tracing::debug!("Reading file: {:?}", base_path);
@@ -164,9 +164,9 @@ pub async fn write_file(
         let uri_path = req.path.trim_start_matches("cortex://");
         root.join(uri_path)
     } else {
-        let cortex_dir = state.data_dir.join("cortex");
+        // 直接使用 data_dir 作为根目录（不再添加 cortex 子目录）
         let uri_path = req.path.trim_start_matches("cortex://");
-        cortex_dir.join(uri_path)
+        state.data_dir.join(uri_path)
     };
     
     tracing::debug!("Writing file: {:?}", base_path);
@@ -200,9 +200,9 @@ pub async fn get_directory_stats(
         let uri_path = params.uri.trim_start_matches("cortex://");
         root.join(uri_path)
     } else {
-        let cortex_dir = state.data_dir.join("cortex");
+        // 直接使用 data_dir 作为根目录（不再添加 cortex 子目录）
         let uri_path = params.uri.trim_start_matches("cortex://");
-        cortex_dir.join(uri_path)
+        state.data_dir.join(uri_path)
     };
     
     tracing::debug!("Getting stats for: {:?}", base_path);
@@ -359,9 +359,9 @@ pub async fn get_content(
         let uri_path = params.uri.trim_start_matches("cortex://");
         root.join(uri_path)
     } else {
-        let cortex_dir = state.data_dir.join("cortex");
+        // 直接使用 data_dir 作为根目录（不再添加 cortex 子目录）
         let uri_path = params.uri.trim_start_matches("cortex://");
-        cortex_dir.join(uri_path)
+        state.data_dir.join(uri_path)
     };
     
     tracing::debug!("Reading content layer: {:?}", base_path);
@@ -407,9 +407,9 @@ async fn resolve_layer_path(
         let uri_path = dir_uri.trim_start_matches("cortex://");
         root.join(uri_path)
     } else {
-        let cortex_dir = state.data_dir.join("cortex");
+        // 直接使用 data_dir 作为根目录（不再添加 cortex 子目录）
         let uri_path = dir_uri.trim_start_matches("cortex://");
-        cortex_dir.join(uri_path)
+        state.data_dir.join(uri_path)
     };
     
     // Layer file name
@@ -501,7 +501,8 @@ pub async fn explore(
     let base_dir = if let Some(ref root) = tenant_root {
         root.clone()
     } else {
-        state.data_dir.join("cortex")
+        // 直接使用 data_dir 作为根目录（不再添加 cortex 子目录）
+        state.data_dir.clone()
     };
 
     // Perform search within the start_uri scope

@@ -64,7 +64,8 @@ pub async fn list_sessions(
     let session_path = if let Some(root) = tenant_root {
         root.join("session")
     } else {
-        state.data_dir.join("cortex").join("session")
+        // 直接使用 data_dir 作为根目录（不再添加 cortex 子目录）
+        state.data_dir.join("session")
     };
     
     tracing::debug!("Listing sessions from: {:?}", session_path);

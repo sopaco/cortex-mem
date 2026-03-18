@@ -50,7 +50,8 @@ impl AppState {
         // 使用Cortex MemoryBuilder统一初始化
         tracing::info!("Initializing Cortex Memory with unified automation...");
 
-        let cortex_dir = data_dir.join("cortex");
+        // 直接使用 data_dir 作为根目录（不再添加 cortex 子目录）
+        let cortex_dir = data_dir.clone();
 
         // 获取配置（优先从config.toml，否则从环境变量）
         let (llm_client, embedding_config, qdrant_config) = Self::load_configs()?;
@@ -275,20 +276,15 @@ impl AppState {
 
     /// List all available tenants
     pub async fn list_tenants(&self) -> Vec<String> {
-        // Try both possible tenant locations
-        let possible_paths = vec![
-            self.data_dir.join("tenants"),
-            self.data_dir.join("cortex").join("tenants"),
-        ];
+        // 租户目录位于 data_dir/tenants/
+        let tenants_path = self.data_dir.join("tenants");
 
         let mut tenants = vec![];
-        for tenants_path in possible_paths {
-            if tenants_path.exists() {
-                if let Ok(entries) = std::fs::read_dir(&tenants_path) {
-                    for entry in entries.flatten() {
-                        if entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
-                            tenants.push(entry.file_name().to_string_lossy().to_string());
-                        }
+        if tenants_path.exists() {
+            if let Ok(entries) = std::fs::read_dir(&tenants_path) {
+                for entry in entries.flatten() {
+                    if entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
+                        tenants.push(entry.file_name().to_string_lossy().to_string());
                     }
                 }
             }
@@ -300,33 +296,20 @@ impl AppState {
     /// Switch to a different tenant
     /// Recreates VectorSearchEngine with tenant-specific collection
     pub async fn switch_tenant(&self, tenant_id: &str) -> anyhow::Result<()> {
-        // Try both possible tenant locations
-        let possible_paths = vec![
-            self.data_dir.join("tenants").join(tenant_id),
-            self.data_dir.join("cortex").join("tenants").join(tenant_id),
-        ];
+        // 租户目录直接位于 data_dir/tenants/{tenant_id}
+        let tenant_root_path = self.data_dir.join("tenants").join(tenant_id);
 
-        let mut tenant_root = None;
-        for path in possible_paths {
-            if path.exists() {
-                tenant_root = Some(path);
-                break;
+        let tenant_root = if tenant_root_path.exists() {
+            tenant_root_path
+        } else {
+            // Auto-provision: 如果租户不存在，在 data_dir/tenants/ 下创建
+            tracing::info!("Tenant {} not found, auto-provisioning at {:?}", tenant_id, tenant_root_path);
+            for subdir in &["agent", "resources", "session", "user"] {
+                std::fs::create_dir_all(tenant_root_path.join(subdir))
+                    .map_err(|e| anyhow::anyhow!("Failed to create tenant dir: {}", e))?;
             }
-        }
-
-        // Auto-provision: if tenant doesn't exist, create it under cortex/tenants/
-        let tenant_root = match tenant_root {
-            Some(p) => p,
-            None => {
-                let new_tenant_root = self.data_dir.join("cortex").join("tenants").join(tenant_id);
-                tracing::info!("Tenant {} not found, auto-provisioning at {:?}", tenant_id, new_tenant_root);
-                for subdir in &["agent", "resources", "session", "user"] {
-                    std::fs::create_dir_all(new_tenant_root.join(subdir))
-                        .map_err(|e| anyhow::anyhow!("Failed to create tenant dir: {}", e))?;
-                }
-                tracing::info!("✅ Tenant {} auto-provisioned successfully", tenant_id);
-                new_tenant_root
-            }
+            tracing::info!("✅ Tenant {} auto-provisioned successfully", tenant_id);
+            tenant_root_path
         };
 
         // Update current tenant root
