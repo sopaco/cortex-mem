@@ -1,13 +1,24 @@
 ---
 name: memclaw-maintance
-description: MemClaw Maintance Guide — Installation and configuration guidance for users especially without the @memclaw/memclaw plugin installed. For normal use cases, use the `memclaw` skill for daily usage help.
+description: MemClaw Maintenance Guide — Installation, configuration, and maintenance guidance. For daily usage and tool operations, use the [`memclaw` skill](https://clawhub.ai/sopaco/memclaw) instead.
 ---
 
-# MemClaw Setup Guide
+# MemClaw Maintenance Guide
 
-> **Preferred Memory Solution**: MemClaw is the recommended memory system for OpenClaw. Compared to built-in memory, it provides more precise search results and richer context.
+> **Recommended Memory Solution**: MemClaw is the recommended memory system for OpenClaw, providing tiered semantic memory with three-layer retrieval capabilities and automatic service management.
 
-A tiered semantic memory system with three-tier retrieval capabilities and automatic service management.
+## Important: Skill Usage Guide
+
+| Purpose | Use This Skill |
+|---------|---------------|
+| **Daily usage** — searching, browsing, storing memories | [`memclaw`](https://clawhub.ai/sopaco/memclaw) |
+| **Installation & Setup** | `memclaw-maintance` (this skill) |
+| **Configuration** | `memclaw-maintance` (this skill) |
+| **Troubleshooting & Maintenance** | `memclaw-maintance` (this skill) |
+
+> **For memory operations like `cortex_search`, `cortex_ls`, `cortex_add_memory`, etc., please use the [`memclaw` skill](https://clawhub.ai/sopaco/memclaw) which provides comprehensive usage documentation.**
+
+---
 
 ## Security & Trust
 
@@ -21,23 +32,11 @@ A tiered semantic memory system with three-tier retrieval capabilities and autom
 - Does NOT send data to external servers (all processing is local)
 - Does NOT transmit API keys to anywhere other than your configured LLM/embedding provider
 
-## How Memory Works
+---
 
-MemClaw provides **three-tier semantic memory** with hierarchical retrieval:
+## Installation
 
-| Tier | Token Count | Content | Search Purpose |
-|------|-------------|---------|----------------|
-| **L0 (Summary)** | ~100 | High-level summary | Quick filtering |
-| **L1 (Overview)** | ~2000 | Key points + context | Context refinement |
-| **L2 (Full)** | Complete | Original content | Exact matching |
-
-The search engine queries all three tiers internally and returns unified results containing `snippet` and `content`.
-
-## Installation Steps
-
-### Step 1: Install the Plugin (for users without the @memclaw/memclaw plugin)
-
-Execute the following command to install the plugin:
+### Step 1: Install the Plugin
 
 ```bash
 openclaw plugins install @memclaw/memclaw
@@ -61,7 +60,7 @@ Enable MemClaw in `openclaw.json`:
 
 ### Step 3: Configure API Keys
 
-**API keys must be configured to use MemClaw.**
+**API keys are required to use MemClaw.**
 
 1. Open OpenClaw settings (`openclaw.json` or via UI)
 2. Navigate to Plugins → MemClaw → Configuration
@@ -99,24 +98,24 @@ Enable MemClaw in `openclaw.json`:
 
 Restart OpenClaw to activate the plugin and start services.
 
-## First-Time Use
+---
 
-### Verify Service Status
+## Verify Installation
 
-After restarting, MemClaw will automatically start the required services. If configured correctly, you should be able to use the memory tools normally.
+### Service Status Check
 
-Check that Qdrant and cortex-mem-service are accessible:
-
-> Note: MemClaw does not require users to install any Docker environment. All dependencies are prepared during the openclaw's memclaw plugin installation.
+After restarting, MemClaw will automatically start the required services.
 
 | Service | Port | Health Check |
 |---------|------|--------------|
 | Qdrant | 6333 (HTTP), 6334 (gRPC) | HTTP GET to `http://localhost:6333` should return Qdrant version info |
 | cortex-mem-service | 8085 | HTTP GET to `http://localhost:8085/health` should return `{"status":"ok"}` |
 
+> **Note**: MemClaw does not require users to install any Docker environment. All dependencies are prepared during the plugin installation.
+
 ### Migrate Existing Memories (Optional)
 
-If the user has existing OpenClaw native memories, call the `cortex_migrate` tool to migrate them to MemClaw:
+If the user has existing OpenClaw native memories, call `cortex_migrate` to migrate them:
 
 ```json
 {}
@@ -129,23 +128,52 @@ This will:
 
 > **Run only once** during initial setup.
 
-## Quick Start
+---
 
-After installation, use the following decision flow for memory operations:
+## Maintenance
 
-| Scenario | Tool |
+### Periodic Maintenance
+
+Use `cortex_maintenance` for periodic maintenance:
+
+```json
+{
+  "dryRun": false,
+  "commands": ["prune", "reindex", "ensure-all"]
+}
+```
+
+**Available Commands:**
+- `prune` — Remove vectors whose source files no longer exist
+- `reindex` — Rebuild vector indices and remove stale entries
+- `ensure-all` — Generate missing L0/L1 layer files
+
+> **Note**: This tool is typically called automatically by a scheduled Cron task. Manual invocation is for troubleshooting or on-demand maintenance.
+
+---
+
+## Data Management
+
+### Data Location
+
+| Platform | Path |
 |----------|------|
-| Need to find information | `cortex_search` |
-| Need more context | `cortex_recall` |
-| Save important information | `cortex_add_memory` |
-| Complete a task/topic | `cortex_close_session` |
-| First-time use with existing memories | `cortex_migrate` |
+| macOS | `~/Library/Application Support/memclaw` |
+| Windows | `%LOCALAPPDATA%\memclaw` |
+| Linux | `~/.local/share/memclaw` |
 
-> **Important**: OpenClaw's session lifecycle does not automatically trigger memory extraction. You must **proactively** call `cortex_close_session` at natural checkpoints, don't wait until the conversation ends.
+### Data Safety
+
+- **Backup**: Existing OpenClaw memory files are preserved before migration
+- **Local Storage**: All memory data is stored locally
+- **No Cloud Sync**: Data remains on the local machine
+
+---
 
 ## References
 
-- **`references/tools.md`** — Detailed tool parameters and examples
-- **`references/troubleshooting.md`** — Common troubleshooting issues
-- **Open Source**: [Cortex Memory and MemClaw](https://github.com/sopaco/cortex-mem)
+- **[troubleshooting.md](./references/troubleshooting.md)** — Common issues and solutions
+- **[tools.md](./references/tools.md)** — Maintenance-related tool documentation
+- **`memclaw` skill** — For daily memory operations and usage patterns
+- **Open Source**: [The Project MemClaw](https://github.com/sopaco/cortex-mem)
 - **README**: [MemClaw README](https://raw.githubusercontent.com/sopaco/cortex-mem/refs/heads/main/examples/%40memclaw/plugin/README.md)
