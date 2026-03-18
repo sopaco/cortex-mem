@@ -48,16 +48,35 @@ struct Cli {
     /// Disable auto-trigger feature
     #[arg(long, default_value = "false")]
     no_auto_trigger: bool,
+
+    /// Path to log file. If specified, logs will be written to this file.
+    /// If not specified, logging is disabled (MCP protocol uses stdio).
+    #[arg(long)]
+    log_file: Option<PathBuf>,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    // Initialize logging
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .init();
+    // Initialize logging only if --log-file is specified
+    // MCP protocol uses stdio for JSON-RPC, so we avoid console output by default
+    if let Some(ref log_file) = cli.log_file {
+        // Create parent directory if needed
+        if let Some(parent) = log_file.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_file)?;
+        
+        tracing_subscriber::fmt()
+            .with_writer(std::sync::Arc::new(file))
+            .with_max_level(tracing::Level::INFO)
+            .init();
+    }
 
     info!("Starting Cortex Memory MCP Server");
     info!("Using configuration file: {:?}", cli.config);
