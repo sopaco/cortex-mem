@@ -7,7 +7,7 @@
 MemClaw provides OpenClaw with a powerful memory system that goes beyond simple storage:
 
 - **Three-Layer Architecture**: L0 (Abstract ~100 tokens) → L1 (Overview ~2000 tokens) → L2 (Full Content)
-- **Dual Access Paradigm**: Semantic search + Direct filesystem browsing
+- **Dual Access Paradigm**: Semantic search + Direct memory virtual-filesystem(in security sandbox) browsing
 - **Token Efficiency**: Retrieve only what you need, when you need it
 - **Automatic Processing**: Memory extraction and layer generation happens automatically
 
@@ -60,7 +60,7 @@ cortex_search(query="exact code implementation", return_layers=["L0","L1","L2"])
 Convenience wrapper that returns both abstract and full content.
 Equivalent to `cortex_search(return_layers=["L0","L2"])`.
 
-### 2. Filesystem Browsing
+### 2. Memory Virtual Filesystem Browsing
 
 #### `cortex_ls`
 List directory contents to explore memory structure.
@@ -94,8 +94,8 @@ Get full original content.
 
 **Workflow:**
 ```
-1. cortex_ls("cortex://session/abc123/timeline")
-2. cortex_get_abstract("cortex://session/abc123/timeline/2024-01-15_001.md")  # Quick check
+1. cortex_ls("cortex://session/default/timeline")
+2. cortex_get_abstract("cortex://session/default/timeline/2024-01-15_001.md")  # Quick check
 3. If relevant → cortex_get_overview(...)  # More context
 4. If needed → cortex_get_content(...)     # Full details
 ```
@@ -109,7 +109,7 @@ Combines search and browsing for guided discovery.
 ```
 cortex_explore(
   query="authentication flow",
-  start_uri="cortex://session/abc123",
+  start_uri="cortex://session/default",
   return_layers=["L0"]
 )
 ```
@@ -190,7 +190,7 @@ Recommended workflow:
 #### Pattern 2: Browse → Access
 ```
 1. cortex_ls(uri="cortex://session")
-2. cortex_ls(uri="cortex://session/{id}/timeline", include_abstracts=true)
+2. cortex_ls(uri="cortex://session/{id}/timeline", include_abstracts=true), the default id is `default` 
 3. cortex_get_content(uri="interesting_file") for full details
 ```
 
