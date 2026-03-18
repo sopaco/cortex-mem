@@ -38,9 +38,12 @@ Common MemClaw issues and their solutions.
 **Symptoms**: Service behavior doesn't change after modifying configuration
 
 **Solutions**:
-1. Ensure configuration file was saved
-2. Restart OpenClaw to apply changes
-3. Check configuration file syntax for errors (JSON format)
+Open OpenClaw settings and verify MemClaw plugin configuration:
+
+1. Open `openclaw.json` or navigate to Settings → Plugins → MemClaw
+2. Ensure all required fields are correctly filled, especially the configuration sections related to LLM and Embedding.
+3. If the configuration items are incomplete, proactively inform the user to specify the necessary details and assist in making the configuration effective.
+4. Save changes and **restart OpenClaw Gateway** for changes to take effect
 
 ## Service Issues
 

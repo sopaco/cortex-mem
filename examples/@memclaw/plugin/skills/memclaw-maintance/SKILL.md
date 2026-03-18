@@ -62,13 +62,12 @@ Enable MemClaw in `openclaw.json`:
 
 **API keys are required to use MemClaw.**
 
-1. Open OpenClaw settings (`openclaw.json` or via UI)
-2. Navigate to Plugins → MemClaw → Configuration
-3. Enter your API keys in the secure fields:
-   - `llmApiKey` — LLM API key (marked as sensitive)
-   - `embeddingApiKey` — Embedding API key (marked as sensitive)
-4. Optional: Customize API endpoints and model names
-5. Save and restart OpenClaw
+Open OpenClaw settings and verify MemClaw plugin configuration:
+
+1. Open `openclaw.json` or navigate to Settings → Plugins → MemClaw
+2. Ensure all required fields are correctly filled, especially the configuration sections related to LLM and Embedding.
+3. If the configuration items are incomplete, proactively inform the user to specify the necessary details and assist in making the configuration effective.
+4. Save changes and **restart OpenClaw Gateway** for changes to take effect
 
 **Configuration Example:**
 
