@@ -96,6 +96,7 @@ timeout_secs = 30
 [server]
 host = "localhost"
 port = 8085
+cors_origins = ["*"]
 
 # Logging Configuration
 [logging]

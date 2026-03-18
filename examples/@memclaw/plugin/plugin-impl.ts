@@ -303,8 +303,8 @@ export function createPlugin(api: PluginAPI) {
 		log('Opening configuration file for editing...');
 
 		openConfigFile(configPath).catch((err) => {
-			api.logger.warn(`Could not open config file: ${err}`);
-			api.logger.warn(`Please manually edit: ${configPath}`);
+			api.logger.warn(`[memclaw] Could not open config file: ${err}`);
+			api.logger.warn(`[memclaw] Please manually edit: ${configPath}`);
 		});
 
 		api.logger.info(`
@@ -369,9 +369,9 @@ export function createPlugin(api: PluginAPI) {
 			const validation = validateConfig(mergedConfig);
 
 			if (!validation.valid) {
-				api.logger.warn(`Configuration incomplete: ${validation.errors.join(', ')}`);
+				api.logger.warn(`[memclaw] Configuration incomplete: ${validation.errors.join(', ')}`);
 				api.logger.warn(
-					`Please configure LLM/Embedding API keys in OpenClaw plugin settings or edit: ${configPath}`
+					`[memclaw] Please configure LLM/Embedding API keys in OpenClaw plugin settings or edit: ${configPath}`
 				);
 				return;
 			}
@@ -416,8 +416,8 @@ export function createPlugin(api: PluginAPI) {
 
 				log('Maintenance timer started (runs every 3 hours)');
 			} catch (err) {
-				api.logger.error(`Failed to start services: ${err}`);
-				api.logger.warn('Memory features may not work correctly');
+				api.logger.error(`[memclaw] Failed to start services: ${err}`);
+				api.logger.warn('[memclaw] Memory features may not work correctly');
 			}
 		},
 		stop: async () => {
@@ -484,7 +484,7 @@ export function createPlugin(api: PluginAPI) {
 				};
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
-				api.logger.error(`cortex_search failed: ${message}`);
+				api.logger.error(`[memclaw] cortex_search failed: ${message}`);
 				return { error: `Search failed: ${message}` };
 			}
 		}
@@ -527,7 +527,7 @@ export function createPlugin(api: PluginAPI) {
 				};
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
-				api.logger.error(`cortex_recall failed: ${message}`);
+				api.logger.error(`[memclaw] cortex_recall failed: ${message}`);
 				return { error: `Recall failed: ${message}` };
 			}
 		}
@@ -561,7 +561,7 @@ export function createPlugin(api: PluginAPI) {
 				};
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
-				api.logger.error(`cortex_add_memory failed: ${message}`);
+				api.logger.error(`[memclaw] cortex_add_memory failed: ${message}`);
 				return { error: `Failed to add memory: ${message}` };
 			}
 		}
@@ -600,7 +600,7 @@ export function createPlugin(api: PluginAPI) {
 				};
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
-				api.logger.error(`cortex_list_sessions failed: ${message}`);
+				api.logger.error(`[memclaw] cortex_list_sessions failed: ${message}`);
 				return { error: `Failed to list sessions: ${message}` };
 			}
 		}
@@ -631,7 +631,7 @@ export function createPlugin(api: PluginAPI) {
 				};
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error);
-				api.logger.error(`cortex_close_session failed: ${message}`);
+				api.logger.error(`[memclaw] cortex_close_session failed: ${message}`);
 				return { error: `Failed to close session: ${message}` };
 			}
 		}
@@ -721,7 +721,7 @@ export function createPlugin(api: PluginAPI) {
 					});
 
 					if (!result.success) {
-						api.logger.warn(`[maintenance] ${description} failed: ${result.stderr}`);
+						api.logger.warn(`[memclaw] [maintenance] ${description} failed: ${result.stderr}`);
 					}
 				} catch (error) {
 					const message = error instanceof Error ? error.message : String(error);

@@ -1,5 +1,7 @@
 # MemClaw
 
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Layered semantic memory plugin for OpenClaw with L0/L1/L2 tiered retrieval, automatic service management, and migration support from OpenClaw native memory.
 
 ## Overview
@@ -13,6 +15,7 @@ MemClaw is an OpenClaw plugin that provides advanced semantic memory capabilitie
 - **Semantic Search**: Vector-based similarity search across all memory layers
 - **Session Management**: Create, list, and close memory sessions
 - **Migration Support**: One-click migration from OpenClaw native memory
+- **Easy Configuration**: Configure LLM/Embedding directly through OpenClaw plugin settings
 - **Cross-Platform**: Supports Windows x64 and macOS Apple Silicon
 
 ## Architecture
@@ -53,7 +56,7 @@ OpenClaw + MemClaw Plugin
 | Requirement | Details |
 |-------------|---------|
 | **Platforms** | Windows x64, macOS Apple Silicon |
-| **Node.js** | ≥ 22.0.0 |
+| **Node.js** | ≥ 20.0.0 |
 | **OpenClaw** | Installed and configured |
 
 ### Install Plugin
@@ -114,9 +117,11 @@ Then enable in `openclaw.json`:
 
 After making code changes, rebuild with `bun run build` and restart OpenClaw.
 
-### Configure OpenClaw
+## Configuration
 
-Edit your `openclaw.json`:
+### Plugin Configuration
+
+Configure MemClaw directly through OpenClaw plugin settings in `openclaw.json`:
 
 ```json
 {
@@ -127,7 +132,13 @@ Edit your `openclaw.json`:
         "config": {
           "serviceUrl": "http://localhost:8085",
           "tenantId": "tenant_claw",
-          "autoStartServices": true
+          "autoStartServices": true,
+          "llmApiBaseUrl": "https://api.openai.com/v1",
+          "llmApiKey": "your-llm-api-key",
+          "llmModel": "gpt-4o-mini",
+          "embeddingApiBaseUrl": "https://api.openai.com/v1",
+          "embeddingApiKey": "your-embedding-api-key",
+          "embeddingModel": "text-embedding-3-small"
         }
       }
     }
@@ -142,26 +153,33 @@ Edit your `openclaw.json`:
 
 > **Note**: Set `memorySearch.enabled: false` to disable OpenClaw's built-in memory search and use MemClaw instead.
 
-### Configure LLM
+### Configuration Options
 
-On first run, MemClaw creates a configuration file:
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `serviceUrl` | string | `http://localhost:8085` | Cortex Memory service URL |
+| `tenantId` | string | `tenant_claw` | Tenant ID for data isolation |
+| `autoStartServices` | boolean | `true` | Auto-start Qdrant and service |
+| `defaultSessionId` | string | `default` | Default session for memory operations |
+| `searchLimit` | number | `10` | Default number of search results |
+| `minScore` | number | `0.6` | Minimum relevance score (0-1) |
+| `qdrantPort` | number | `6334` | Qdrant port (gRPC) |
+| `servicePort` | number | `8085` | cortex-mem-service port |
+| `llmApiBaseUrl` | string | `https://api.openai.com/v1` | LLM API endpoint URL |
+| `llmApiKey` | string | - | LLM API key (required) |
+| `llmModel` | string | `gpt-5-mini` | LLM model name |
+| `embeddingApiBaseUrl` | string | `https://api.openai.com/v1` | Embedding API endpoint URL |
+| `embeddingApiKey` | string | - | Embedding API key (required) |
+| `embeddingModel` | string | `text-embedding-3-small` | Embedding model name |
 
-| Platform | Path |
-|----------|------|
-| Windows | `%APPDATA%\memclaw\config.toml` |
-| macOS | `~/Library/Application Support/memclaw/config.toml` |
+### Configuration via UI
 
-Edit the configuration file and fill in required fields:
+You can also configure the plugin through OpenClaw UI:
 
-```toml
-[llm]
-api_key = "xxx"  # REQUIRED: Your LLM API key
-
-[embedding]
-api_key = "xxx"  # REQUIRED: Your embedding API key (can be same as llm.api_key)
-```
-
-Then restart OpenClaw.
+1. Open OpenClaw Settings (`openclaw.json` or via UI)
+2. Navigate to Plugins → MemClaw → Configuration
+3. Fill in the required fields for LLM and Embedding
+4. Save and **restart OpenClaw Gateway** for changes to take effect
 
 ## Available Tools
 
@@ -214,42 +232,47 @@ Close a session and trigger memory extraction pipeline (takes 30-60 seconds).
 }
 ```
 
+> **Important**: Call this tool proactively at natural checkpoints, not just when the conversation ends. Ideal timing: after completing important tasks, topic transitions, or accumulating enough conversation content.
+
 ### cortex_migrate
 
 Migrate from OpenClaw native memory to MemClaw. Run once during initial setup.
 
-## Configuration Options
+### cortex_maintenance
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `serviceUrl` | string | `http://localhost:8085` | Cortex Memory service URL |
-| `tenantId` | string | `tenant_claw` | Tenant ID for data isolation |
-| `autoStartServices` | boolean | `true` | Auto-start Qdrant and service |
-| `defaultSessionId` | string | `default` | Default session for memory operations |
-| `searchLimit` | number | `10` | Default number of search results |
-| `minScore` | number | `0.6` | Minimum relevance score (0-1) |
+Perform periodic maintenance on MemClaw data (prune, reindex, ensure-all layers).
 
 ## Quick Decision Flow
 
-1. **Need to find something** → `cortex_search`
-2. **Need more context** → `cortex_recall`
-3. **Save important information** → `cortex_add_memory`
-4. **Conversation complete** → `cortex_close_session`
-5. **First time setup** → `cortex_migrate`
+| Scenario | Tool |
+|----------|------|
+| Need to find information | `cortex_search` |
+| Need more context | `cortex_recall` |
+| Save important information | `cortex_add_memory` |
+| Complete a task/topic | `cortex_close_session` |
+| First-time use with existing memories | `cortex_migrate` |
+
+For detailed guidance on tool selection, session lifecycle, and best practices, see the [Skills Documentation](skills/memclaw/SKILL.md).
 
 ## Troubleshooting
+
+### Plugin Not Working
+
+1. **Check Configuration**: Open OpenClaw settings and verify MemClaw plugin configuration, especially LLM and Embedding settings
+2. **Restart OpenClaw Gateway**: Configuration changes require a gateway restart to take effect
+3. **Verify Services**: Run `cortex_list_sessions` to check if the service is responding
 
 ### Services Won't Start
 
 1. Check that ports 6333, 6334, 8085 are available
-2. Verify `api_key` fields are filled in config.toml
+2. Verify LLM and Embedding credentials are configured correctly
 3. Run `openclaw skills` to check plugin status
 
 ### Search Returns No Results
 
 1. Run `cortex_list_sessions` to verify sessions exist
 2. Lower `min_score` threshold (default: 0.6)
-3. Check service health with `cortex-mem-cli stats`
+3. Ensure memories have been stored (run `cortex_close_session` to extract memories)
 
 ### Migration Fails
 
@@ -270,6 +293,12 @@ cortex-mem-cli --config config.toml --tenant tenant_claw layers ensure-all
 # Rebuild vector index
 cortex-mem-cli --config config.toml --tenant tenant_claw vector reindex
 ```
+
+## Documentation
+
+- **[Skills Documentation](skills/memclaw/SKILL.md)** — Agent skill guide with troubleshooting
+- **[Best Practices](skills/memclaw/references/best-practices.md)** — Tool selection, session lifecycle, search strategies
+- **[Tools Reference](skills/memclaw/references/tools.md)** — Detailed tool parameters and examples
 
 ## License
 

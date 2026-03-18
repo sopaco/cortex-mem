@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 /**
  * MemClaw - Layered Semantic Memory for OpenClaw
  *
@@ -26,33 +26,33 @@
  *     }
  *   }
  */
-Object.defineProperty(exports, "__esModule", { value: true });
+Object.defineProperty(exports, '__esModule', { value: true });
 exports.plugin = void 0;
 exports.default = memclawPlugin;
-const plugin_impl_js_1 = require("./plugin-impl.js");
+const plugin_impl_js_1 = require('./plugin-impl.js');
 // Default export - main plugin function
 function memclawPlugin(api) {
-    return (0, plugin_impl_js_1.createPlugin)(api);
+	return (0, plugin_impl_js_1.createPlugin)(api);
 }
 // Named export - object style registration
 exports.plugin = {
-    id: 'memclaw',
-    name: 'MemClaw',
-    version: '0.9.11',
-    configSchema: {
-        type: 'object',
-        properties: {
-            serviceUrl: { type: 'string', default: 'http://localhost:8085' },
-            defaultSessionId: { type: 'string', default: 'default' },
-            searchLimit: { type: 'integer', default: 10 },
-            minScore: { type: 'number', default: 0.6 },
-            tenantId: { type: 'string', default: 'tenant_claw' },
-            autoStartServices: { type: 'boolean', default: true }
-        },
-        required: []
-    },
-    register(api) {
-        return (0, plugin_impl_js_1.createPlugin)(api);
-    }
+	id: 'memclaw',
+	name: 'MemClaw',
+	version: '0.9.17',
+	configSchema: {
+		type: 'object',
+		properties: {
+			serviceUrl: { type: 'string', default: 'http://localhost:8085' },
+			defaultSessionId: { type: 'string', default: 'default' },
+			searchLimit: { type: 'integer', default: 10 },
+			minScore: { type: 'number', default: 0.6 },
+			tenantId: { type: 'string', default: 'tenant_claw' },
+			autoStartServices: { type: 'boolean', default: true }
+		},
+		required: []
+	},
+	register(api) {
+		return (0, plugin_impl_js_1.createPlugin)(api);
+	}
 };
 //# sourceMappingURL=index.js.map

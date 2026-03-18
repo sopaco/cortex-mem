@@ -13,7 +13,7 @@
 <p align="center">
     <strong>🧠 为构建智能、上下文感知应用而生的AI原生内存框架 🧠</strong>
 </p>
-<p align="center">基于Rust构建，Cortex Memory是一个高性能、持久化、智能的长期内存系统，赋予您的AI代理跨会话记住、学习和个性化交互的能力。</p>
+<p align="center">基于Rust构建，Cortex Memory是一个高性能、持久化、智能的长期内存系统，赋予您的OpenClaw等各类自主AI代理跨会话记住、学习和个性化交互的能力。</p>
 
 <p align="center">
     <a href="https://github.com/sopaco/cortex-mem/tree/main/litho.docs/en"><img alt="Litho Docs" src="https://img.shields.io/badge/Litho-Docs-green?logo=Gitbook&color=%23008a60"/></a>
@@ -278,7 +278,52 @@ bun run dev
 
 仪表板将在`http://localhost:5173`上可用，并将API请求代理到后端服务。
 
-# 🌟 社区展示：Cortex TARS
+# 🦞 社区Showcase：MemClaw
+
+**MemClaw** 是一款为 OpenClaw 生态深度定制的记忆增强插件，由本地化运行的 Cortex Memory 引擎驱动。相比 OpenClaw 内置记忆系统，MemClaw 提供更强大的记忆能力，**节省超过 80% 的 token 消耗**，同时保持卓越的记忆准确性、安全性和性能。
+
+## 为什么选择 MemClaw？
+
+| OpenClaw 原生记忆 | MemClaw |
+|-------------------|---------|
+| 基础记忆存储 | **三层 L0/L1/L2 架构** 实现智能检索 |
+| 较高的 token 消耗 | **节省 80%+ token** 通过分层上下文加载 |
+| 搜索精度有限 | **向量搜索 + Agentic VFS探索** 灵活应对各类复杂场景 |
+
+## 核心特性
+
+- **🎯 低Token与硬件资源消耗**：由Rust驱动的极致高性能内存组件，渐进式检索架构实现最优上下文加载
+- **🔒 完全数据隐私**：所有记忆存储在本地，零云端存储依赖
+- **🚀 一键迁移**：从 OpenClaw 原生记忆无缝迁移到 MemClaw
+- **⚙️ 便捷配置**：零运行时依赖，一行命令全部搞定安装，只需最简化配置即可使用。
+
+## 可用工具
+
+| 工具 | 用途 |
+|------|------|
+| `cortex_search` | 跨所有记忆的语义搜索，支持分层检索 |
+| `cortex_recall` | 带扩展上下文的记忆召回（摘要 + 完整内容） |
+| `cortex_add_memory` | 存储消息以供后续检索 |
+| `cortex_close_session` | 关闭会话并触发记忆提取流程 |
+| `cortex_migrate` | 从 OpenClaw 原生记忆一键迁移 |
+| `cortex_maintenance` | 定期维护（清理、重建索引、层生成） |
+
+## 快速开始
+
+```bash
+# 通过 OpenClaw 安装
+openclaw plugins install @memclaw/memclaw
+```
+
+> **注意**：设置 `memorySearch.enabled: false` 以禁用 OpenClaw 内置记忆系统，改用 MemClaw。
+
+## 文档
+
+详细的配置说明、故障排查和最佳实践，请参阅 [MemClaw README](examples/@memclaw/plugin/README_zh.md)。
+
+---
+
+# 🌟 社区Showcase：Cortex TARS
 
 认识**Cortex TARS** - 一个生产就绪的AI原生TUI（终端用户界面）应用程序，展示了Cortex Memory的真正强大功能。作为"第二大脑"同伴构建，Cortex TARS为您的AI体验带来**听觉存在感**，可以在现实世界中真正听到并记住您的声音，展示了持久内存如何将AI交互从短暂的聊天转变为持久的、智能的伙伴关系。
 

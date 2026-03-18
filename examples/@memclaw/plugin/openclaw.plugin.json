@@ -1,11 +1,12 @@
 {
 	"id": "memclaw",
 	"name": "MemClaw",
-	"version": "0.9.11",
+	"version": "0.9.17",
 	"description": "Layered semantic memory for OpenClaw with L0/L1/L2 tiered retrieval, easy setup, and migration from native memory",
 	"kind": "memory",
-	"skills": ["skill"],
+	"skills": ["skills/memclaw", "skills/memclaw-maintance"],
 	"platforms": ["darwin-arm64", "win32-x64"],
+	"osRestriction": ["darwin-arm64", "win32-x64"],
 	"configSchema": {
 		"type": "object",
 		"properties": {
@@ -60,7 +61,8 @@
 			},
 			"llmApiKey": {
 				"type": "string",
-				"description": "LLM API key for memory extraction and summarization"
+				"description": "LLM API key for memory extraction and summarization",
+				"sensitive": true
 			},
 			"llmModel": {
 				"type": "string",
@@ -74,7 +76,8 @@
 			},
 			"embeddingApiKey": {
 				"type": "string",
-				"description": "Embedding API key for vector generation"
+				"description": "Embedding API key for vector generation",
+				"sensitive": true
 			},
 			"embeddingModel": {
 				"type": "string",

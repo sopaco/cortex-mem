@@ -283,10 +283,12 @@ async function startCortexMemService(log) {
     const dataDir = (0, config_js_1.getDataDir)();
     log?.(`Starting cortex-mem-service with data-dir ${dataDir}...`);
     log?.(`Binary path: ${binaryPath}`);
-    // cortex-mem-service automatically reads config.toml from --data-dir
+    // cortex-mem-service reads config.toml from current working directory
+    // Set cwd to dataDir so it can find the config file
     const proc = (0, child_process_1.spawn)(binaryPath, ['--data-dir', dataDir], {
         stdio: ['ignore', 'pipe', 'pipe'],
-        detached: true
+        detached: true,
+        cwd: dataDir // Set working directory so config.toml can be found
     });
     // Drain stdout/stderr to prevent buffer blocking
     proc.stdout?.on('data', (data) => {
