@@ -1,319 +1,242 @@
 # MemClaw Best Practices
 
-This guide provides proven strategies and decision frameworks for using MemClaw effectively in OpenClaw.
+## Token Optimization Strategy
 
-## Tool Selection Decision Tree
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    What do you need to do?                      │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        ▼                     ▼                     ▼
-   Find Info            Save Info             Manage Sessions
-        │                     │                     │
-        ▼                     ▼                     ▼
-┌───────────────┐    ┌───────────────┐    ┌───────────────┐
-│ Need context? │    │   What kind?  │    │    What?      │
-└───────────────┘    └───────────────┘    └───────────────┘
-        │                     │                     │
-   ┌────┴────┐           ┌────┴────┐          ┌────┴────┐
-   ▼         ▼           ▼         ▼          ▼         ▼
- Quick    Full        Facts    Conversation  List    Close &
- Search   Context               History     Sessions  Extract
-   │         │           │         │           │         │
-   ▼         ▼           ▼         ▼           ▼         ▼
-cortex_   cortex_   cortex_   cortex_     cortex_   cortex_
-search    recall    add_      add_        list_     close_
-                    memory    memory      sessions  session
-```
-
-### Quick Reference
-
-| Scenario | Tool | Why |
-|----------|------|-----|
-| Quick lookup, need summary only | `cortex_search` | Fast, returns snippets |
-| Need full context/details | `cortex_recall` | Returns content + snippet |
-| User stated preference/decision | `cortex_add_memory` | Explicit persistence |
-| Important conversation content | Let it accumulate | Auto-stored in session |
-| Task/topic completed | `cortex_close_session` | Trigger extraction |
-| Check if memories exist | `cortex_list_sessions` | Verify before search |
-
-## Session Lifecycle Management
-
-### The Golden Rule
-
-> **OpenClaw does NOT automatically trigger memory extraction.** You must proactively call `cortex_close_session` at natural checkpoints.
-
-### When to Close a Session
+### The Layer Selection Decision Tree
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                    Timing Decision Flow                        │
-└────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-                    ┌─────────────────┐
-                    │ Task completed? │
-                    └─────────────────┘
-                         │      │
-                        Yes     No
-                         │      │
-                         ▼      ▼
-                  ┌──────────┐  ┌─────────────────┐
-                  │ CLOSE IT │  │ Topic shifted?  │
-                  └──────────┘  └─────────────────┘
-                                     │      │
-                                    Yes     No
-                                     │      │
-                                     ▼      ▼
-                              ┌──────────┐  ┌─────────────────┐
-                              │ CLOSE IT │  │ 10+ exchanges?  │
-                              └──────────┘  └─────────────────┘
-                                                 │      │
-                                                Yes     No
-                                                 │      │
-                                                 ▼      ▼
-                                          ┌──────────┐  ┌────────┐
-                                          │ CLOSE IT │  │ WAIT   │
-                                          └──────────┘  └────────┘
+Start → What do you need?
+           │
+           ├── Quick relevance check?
+           │   └── Use L0 (cortex_get_abstract or cortex_search with return_layers=["L0"])
+           │
+           ├── Understanding gist or context?
+           │   └── Use L1 (cortex_get_overview or return_layers=["L0","L1"])
+           │
+           └── Exact details, quotes, or full implementation?
+               └── Use L2 (cortex_get_content or return_layers=["L0","L1","L2"])
 ```
 
-### Rhythm Guidelines
+### Token Budget Guidelines
 
-| Conversation Type | Close Frequency | Reason |
-|-------------------|-----------------|--------|
-| Quick Q&A | End of conversation | Minimal content to extract |
-| Task-oriented | After each task completion | Captures task-specific memories |
-| Long discussion | Every 10-20 exchanges | Prevents memory loss |
-| Exploratory chat | When topic shifts | Organizes memories by topic |
+| Layer | Tokens | Use Case |
+|-------|--------|----------|
+| L0 | ~100 | Filtering, quick preview, relevance check |
+| L1 | ~2000 | Understanding context, moderate detail |
+| L2 | Full | Exact quotes, complete code, full conversation |
 
-### Anti-Patterns to Avoid
+**Recommended Pattern:**
+1. Start with L0 to filter candidates
+2. Use L1 for promising matches
+3. Use L2 only when absolutely necessary
 
-| ❌ Don't Do This | ✅ Do This Instead |
-|-------------------|-------------------|
-| Call `close_session` after every message | Call at natural checkpoints |
-| Wait until conversation ends (user may forget) | Proactively close during conversation |
-| Close without accumulating content | Let 5-10 exchanges happen first |
-| Never close sessions | Establish a rhythm |
+### Example: Efficient Search Flow
 
-## Memory Storage Strategy
+```typescript
+// Step 1: Quick search with L0 only
+const results = cortex_search({
+  query: "database schema design",
+  return_layers: ["L0"],
+  limit: 10
+});
 
-### What to Explicitly Store
+// Step 2: Identify top 2-3 relevant URIs
+const topUris = results.results
+  .filter(r => r.score > 0.7)
+  .slice(0, 3)
+  .map(r => r.uri);
 
-Use `cortex_add_memory` for:
+// Step 3: Get L1 overview for top candidates
+for (const uri of topUris) {
+  const overview = cortex_get_overview({ uri });
+  // Process overview...
+}
 
-1. **Explicit User Preferences**
-   ```
-   "User prefers dark theme in all editors"
-   "User wants commit messages in conventional format"
-   ```
-
-2. **Important Decisions**
-   ```
-   "Decided to use PostgreSQL instead of MySQL for this project"
-   "User chose React over Vue for the frontend"
-   ```
-
-3. **Key Information That May Be Lost**
-   ```
-   "User's timezone is UTC+8"
-   "Project deadline: March 30, 2026"
-   ```
-
-### What to Let Accumulate
-
-Don't use `cortex_add_memory` for:
-
-- Regular conversation content (auto-stored in session)
-- Contextual information (captured on close_session)
-- Temporary preferences (not worth persisting)
-
-### Role Parameter Usage
-
-| Role | When to Use |
-|------|-------------|
-| `user` | User's statements, preferences, questions (default) |
-| `assistant` | Your responses, explanations, code you wrote |
-| `system` | Important context, rules, constraints |
-
-## Search Strategies
-
-### Query Formulation
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│                    Query Formulation Tips                      │
-└────────────────────────────────────────────────────────────────┘
-
-BAD:  "it"                          — Too vague
-GOOD: "database choice"             — Specific topic
-
-BAD:  "the user said something"     — Unfocused
-GOOD: "user preference for testing" — Clear intent
-
-BAD:  "code"                        — Too broad
-GOOD: "authentication implementation" — Specific domain
+// Step 4: If needed, get L2 for the most relevant
+const fullContent = cortex_get_content({ uri: mostRelevantUri });
 ```
 
-### Score Threshold Guidelines
+## Tool Selection Patterns
 
-| Score | Use Case |
-|-------|----------|
-| 0.8+ | Need high-confidence matches only |
-| 0.6 (default) | Balanced precision/recall |
-| 0.4-0.5 | Exploratory search, finding related items |
-| <0.4 | Usually too noisy, not recommended |
-
-### Scope Parameter Usage
+### Pattern 1: Discovery (Don't know where information is)
 
 ```
-# Search across all sessions (default)
-{ "query": "database decisions" }
-
-# Search within specific session
-{ "query": "preferences", "scope": "project-alpha" }
+cortex_search(query="...", return_layers=["L0"])
+    ↓
+Identify relevant URIs
+    ↓
+cortex_get_overview(uri="...") for more context
+    ↓
+cortex_get_content(uri="...") if needed
 ```
 
-Use `scope` when:
-- You know the relevant session ID
-- Working within a specific project context
-- Want to limit noise from other sessions
-
-## Common Pitfalls
-
-### 1. Memory Not Found After Close
-
-**Symptom:** You closed a session but search returns nothing.
-
-**Cause:** Memory extraction is asynchronous and may take 30-60 seconds.
-
-**Solution:** Wait briefly after close_session before searching, or:
-```
-1. Close session
-2. Continue with other work
-3. Memory will be indexed automatically
-```
-
-### 2. Duplicate Memories
-
-**Symptom:** Same information appears multiple times.
-
-**Cause:** Both explicit `add_memory` and `close_session` extraction captured the same content.
-
-**Solution:** Use `add_memory` only for information that:
-- Won't naturally be captured in conversation
-- Needs explicit emphasis
-- Is a correction or override of previous information
-
-### 3. Irrelevant Search Results
-
-**Symptom:** Search returns unrelated content.
-
-**Cause:** Query too vague or score threshold too low.
-
-**Solution:**
-- Make queries more specific
-- Increase `min_score` threshold
-- Use `scope` to limit search range
-
-### 4. Lost Session Content
-
-**Symptom:** Important conversation not in memory.
-
-**Cause:** Session was never closed.
-
-**Solution:** Establish a habit of closing sessions at checkpoints. If you realize too late, the raw messages may still exist in the session - close it now.
-
-### 5. Configuration Issues
-
-**Symptom:** Tools return errors about service/API.
-
-**Cause:** LLM/Embedding credentials not configured.
-
-**Solution:** See SKILL.md → Troubleshooting section.
-
-## Workflow Examples
-
-### Example 1: New Project Discussion
+### Pattern 2: Browsing (Know the structure)
 
 ```
-1. User starts discussing a new project
-   → Just listen and respond naturally
-
-2. User makes architecture decisions
-   → Optionally: cortex_add_memory for explicit decisions
-
-3. Discussion shifts to another topic
-   → cortex_close_session (captures project discussion memories)
-
-4. Continue with new topic
-   → Fresh start, memories from step 3 are now searchable
+cortex_ls(uri="cortex://session")
+    ↓
+cortex_ls(uri="cortex://session/{id}", include_abstracts=true)
+    ↓
+cortex_get_abstract(uri="...") for quick check
+    ↓
+cortex_get_content(uri="...") for details
 ```
 
-### Example 2: Finding Previous Context
+### Pattern 3: Guided Exploration
 
 ```
-1. User asks: "What did we decide about auth?"
-
-2. cortex_search({ query: "authentication decision" })
-
-3. If results show snippets but need details:
-   cortex_recall({ query: "authentication implementation details" })
-
-4. Summarize findings to user
+cortex_explore(query="...", start_uri="...", return_layers=["L0"])
+    ↓
+Review exploration_path for relevance scores
+    ↓
+Use matches with higher return_layers if needed
 ```
 
-### Example 3: User States Preference
+## Session Management Best Practices
 
-```
-1. User: "I always want TypeScript strict mode"
+### When to Close Sessions
 
-2. cortex_add_memory({
-     content: "User requires TypeScript strict mode in all projects",
-     role: "user"
-   })
+**DO close sessions:**
+- ✅ After completing a significant task or topic
+- ✅ After user shares important preferences/decisions
+- ✅ When conversation topic shifts significantly
+- ✅ Every 10-20 exchanges during long conversations
 
-3. Acknowledge and remember for future
-```
+**DON'T close sessions:**
+- ❌ After every message (too frequent)
+- ❌ Only at the very end (user might forget)
 
-## Memory Architecture Reference
+### Memory Metadata
 
-### L0/L1/L2 Tier System
+Use metadata to enrich stored memories:
 
-| Tier | Content | Size | Purpose | Search Role |
-|------|---------|------|---------|-------------|
-| L0 | Abstract summary | ~100 tokens | Quick filtering | First pass |
-| L1 | Key points + context | ~2000 tokens | Context refinement | Second pass |
-| L2 | Full original content | Complete | Exact matching | Final retrieval |
-
-### How Search Works Internally
-
-```
-Query → L0 Filter → L1 Refine → L2 Retrieve → Ranked Results
-          │             │             │
-          ▼             ▼             ▼
-      Quick scan    Contextual    Full content
-      by summary    refinement    for precision
+```typescript
+cortex_add_memory({
+  content: "User prefers functional programming style over OOP",
+  role: "assistant",
+  metadata: {
+    tags: ["preference", "programming-style"],
+    importance: "high",
+    category: "technical-preference"
+  }
+})
 ```
 
-### Automatic Processes
+**Recommended metadata fields:**
+- `tags`: Array of searchable tags
+- `importance`: "high", "medium", "low"
+- `category`: Custom categorization
+- `source`: Where the information came from
 
-| Process | Trigger | Duration |
-|---------|---------|----------|
-| Vector embedding | On `add_memory` | Seconds |
-| L0/L1 generation | On `add_memory` (async) | Seconds |
-| Full extraction | On `close_session` | 30-60s |
-| Maintenance | Every 3 hours (auto) | Minutes |
+## Common Workflows
 
-## Summary Checklist
+### Finding User Preferences
 
-Before ending a conversation or topic transition, ask yourself:
+```typescript
+// 1. Search for preference-related content
+const results = cortex_search({
+  query: "user preferences settings configuration",
+  return_layers: ["L0"],
+  limit: 10
+});
 
-- [ ] Have we accumulated meaningful content?
-- [ ] Did the user share important preferences or decisions?
-- [ ] Is this a natural checkpoint?
-- [ ] Should I close the session now?
+// 2. Get overviews for relevant results
+for (const result of results.results.slice(0, 3)) {
+  if (result.snippet.includes("preference")) {
+    const overview = cortex_get_overview({ uri: result.uri });
+    // Extract preferences from overview
+  }
+}
+```
 
-If yes to any, call `cortex_close_session`.
+### Error Context Retrieval
+
+```typescript
+// Search for error-related content
+const results = cortex_search({
+  query: "TypeError: Cannot read property",
+  return_layers: ["L0"]
+});
+
+// If not found, try broader semantic search
+if (results.results.length === 0) {
+  const broader = cortex_search({
+    query: "property access error undefined object",
+    return_layers: ["L0", "L1"]
+  });
+}
+```
+
+### Timeline Reconstruction
+
+```typescript
+// 1. List timeline directory
+const timeline = cortex_ls({
+  uri: "cortex://session/{session_id}/timeline",
+  recursive: true,
+  include_abstracts: true
+});
+
+// 2. Sort by modified date (entries already sorted)
+// 3. Get full content for key moments
+for (const entry of timeline.entries) {
+  if (entry.abstract_text?.includes("important decision")) {
+    const content = cortex_get_content({ uri: entry.uri });
+    // Process important moment
+  }
+}
+```
+
+## Performance Tips
+
+### Minimize API Calls
+
+Instead of:
+```typescript
+// Bad: Multiple L2 calls
+for (const uri of uris) {
+  cortex_get_content({ uri });
+}
+```
+
+Do:
+```typescript
+// Good: Batch with search
+cortex_search({
+  query: "specific topic",
+  scope: session_id,
+  return_layers: ["L0", "L1", "L2"]
+});
+```
+
+### Use Scope Effectively
+
+```typescript
+// Faster: Search within known session
+cortex_search({
+  query: "authentication",
+  scope: "project-x-session",
+  return_layers: ["L0"]
+});
+
+// Slower: Search all sessions
+cortex_search({
+  query: "authentication",
+  return_layers: ["L0"]
+});
+```
+
+### Leverage Abstracts for Filtering
+
+```typescript
+// Get abstracts while browsing
+const entries = cortex_ls({
+  uri: "cortex://session",
+  include_abstracts: true
+});
+
+// Filter based on abstracts without additional calls
+const relevantEntries = entries.entries.filter(e => 
+  e.abstract_text?.includes("relevant keyword")
+);
+```

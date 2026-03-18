@@ -1,135 +1,225 @@
----
-name: memclaw
-description: MemClaw — Advanced Semantic Memory System for OpenClaw. Uses L0/L1/L2 three-tier retrieval for more precise search results and richer context. Use memclaw for all memory operations, replacing built-in memory.
----
+# MemClaw Skill
 
-# MemClaw
+> Layered semantic memory for OpenClaw with L0/L1/L2 tiered retrieval.
 
-> **Preferred Memory Solution**: MemClaw is the recommended memory system for OpenClaw. Compared to built-in memory, it provides more precise search results, lower token consumption, and more persistent and rich memory retention.
+## Overview
 
-A tiered semantic memory system with three-tier retrieval capabilities and automatic service management.
+MemClaw provides OpenClaw with a powerful memory system that goes beyond simple storage:
 
-## Security & Trust
+- **Three-Layer Architecture**: L0 (Abstract ~100 tokens) → L1 (Overview ~2000 tokens) → L2 (Full Content)
+- **Dual Access Paradigm**: Semantic search + Direct filesystem browsing
+- **Token Efficiency**: Retrieve only what you need, when you need it
+- **Automatic Processing**: Memory extraction and layer generation happens automatically
 
-**What the plugin does:**
-- Stores memory data in the local user data directory
-- Based on advanced Cortex Memory technology, providing outstanding memory management capabilities with high performance and accuracy.
-- Only reads existing OpenClaw memory files during migration
+## Tool Selection Guide
 
-**What the plugin does NOT do:**
-- Does NOT send data to external servers (all processing is local)
-- Does NOT transmit API keys to anywhere other than your configured LLM/embedding provider
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     How to Access Memories                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Do you know WHERE the information is?                          │
+│       │                                                          │
+│       ├── YES ──► Use Direct Tiered Access                       │
+│       │           cortex_ls → cortex_get_abstract/overview/content│
+│       │                                                          │
+│       └── NO ──► Do you know WHAT you're looking for?            │
+│                    │                                             │
+│                    ├── YES ──► Use Semantic Search               │
+│                    │            cortex_search                     │
+│                    │                                             │
+│                    └── NO ──► Use Exploration                    │
+│                                 cortex_explore                    │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-## How Memory Works
+## Core Tools
 
-MemClaw provides **three-tier semantic memory** with hierarchical retrieval:
+### 1. Semantic Search
 
-| Tier | Token Count | Content | Search Purpose |
-|------|-------------|---------|----------------|
-| **L0 (Summary)** | ~100 | High-level summary | Quick filtering |
-| **L1 (Overview)** | ~2000 | Key points + context | Context refinement |
-| **L2 (Full)** | Complete | Original content | Exact matching |
+#### `cortex_search`
+Layered semantic search with fine-grained control over returned content.
 
-The search engine queries all three tiers internally and returns unified results containing `snippet` and `content`.
+**Key Parameters:**
+- `return_layers`: `["L0"]` (default, ~100 tokens), `["L0","L1"]` (~2100 tokens), `["L0","L1","L2"]` (full)
 
-## Configuration
+**Examples:**
+```
+# Quick search, minimal tokens
+cortex_search(query="project decisions", return_layers=["L0"])
 
-All configuration is managed through OpenClaw plugin settings. However, when the plugin is first used, incomplete configuration items may cause it to fail. If the plugin or tools cannot be used, proactively inform the user and assist in completing the necessary configurations. For details, refer to the 'Troubleshooting' section below.
+# Need more context
+cortex_search(query="API design preferences", return_layers=["L0","L1"])
 
-## Usage Guide
+# Full content retrieval
+cortex_search(query="exact code implementation", return_layers=["L0","L1","L2"])
+```
 
-### Decision Flow
+#### `cortex_recall`
+Convenience wrapper that returns both abstract and full content.
+Equivalent to `cortex_search(return_layers=["L0","L2"])`.
+
+### 2. Filesystem Browsing
+
+#### `cortex_ls`
+List directory contents to explore memory structure.
+
+**Key Parameters:**
+- `recursive`: Recursively list subdirectories
+- `include_abstracts`: Show L0 abstracts for quick preview
+
+**Examples:**
+```
+# List all sessions
+cortex_ls(uri="cortex://session")
+
+# Browse a specific session
+cortex_ls(uri="cortex://session/abc123")
+
+# Recursive listing with abstracts
+cortex_ls(uri="cortex://session", recursive=true, include_abstracts=true)
+```
+
+### 3. Tiered Access
+
+#### `cortex_get_abstract` (L0)
+Get ~100 token summary for quick relevance check.
+
+#### `cortex_get_overview` (L1)
+Get ~2000 token overview with key information.
+
+#### `cortex_get_content` (L2)
+Get full original content.
+
+**Workflow:**
+```
+1. cortex_ls("cortex://session/abc123/timeline")
+2. cortex_get_abstract("cortex://session/abc123/timeline/2024-01-15_001.md")  # Quick check
+3. If relevant → cortex_get_overview(...)  # More context
+4. If needed → cortex_get_content(...)     # Full details
+```
+
+### 4. Smart Exploration
+
+#### `cortex_explore`
+Combines search and browsing for guided discovery.
+
+**Example:**
+```
+cortex_explore(
+  query="authentication flow",
+  start_uri="cortex://session/abc123",
+  return_layers=["L0"]
+)
+```
+
+Returns both an exploration path (showing relevance scores) and matching results.
+
+### 5. Memory Storage
+
+#### `cortex_add_memory`
+Store a message with optional metadata.
+
+**Parameters:**
+- `content`: The message content
+- `role`: `"user"`, `"assistant"`, or `"system"`
+- `metadata`: Optional tags, importance, custom fields
+
+**Example:**
+```
+cortex_add_memory(
+  content="User prefers TypeScript with strict mode enabled",
+  role="assistant",
+  metadata={"tags": ["preference", "typescript"], "importance": "high"}
+)
+```
+
+#### `cortex_close_session`
+Trigger memory extraction pipeline.
+
+**IMPORTANT:** Call this periodically, not just at conversation end.
+
+**When to call:**
+- After completing a significant task
+- After user shares important preferences
+- When conversation topic shifts
+- Every 10-20 exchanges
+
+## Best Practices
+
+### Token Optimization
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Layer │ Tokens  │ Use Case                                  │
+├───────┼─────────┼───────────────────────────────────────────┤
+│ L0    │ ~100    │ Quick relevance check, filtering          │
+│ L1    │ ~2000   │ Understanding gist, moderate detail       │
+│ L2    │ Full    │ Exact quotes, complete implementation     │
+└───────┴─────────┴───────────────────────────────────────────┘
+
+Recommended workflow:
+1. Start with L0 (cortex_search or cortex_get_abstract)
+2. Use L1 if L0 is relevant (cortex_get_overview)
+3. Use L2 only when necessary (cortex_get_content)
+```
+
+### When to Use Each Tool
 
 | Scenario | Tool |
 |----------|------|
-| Need to find information | `cortex_search` |
-| Need more context | `cortex_recall` |
-| Save important information | `cortex_add_memory` |
-| Complete a task/topic | `cortex_close_session` |
-| First-time use with existing memories | `cortex_migrate` |
+| Find information across all sessions | `cortex_search` |
+| Browse memory structure | `cortex_ls` |
+| Check if specific URI is relevant | `cortex_get_abstract` |
+| Get more details on relevant URI | `cortex_get_overview` |
+| Need exact content | `cortex_get_content` |
+| Explore with purpose | `cortex_explore` |
+| Store new information | `cortex_add_memory` |
+| Trigger memory processing | `cortex_close_session` |
 
-> **Key Tip**: OpenClaw's session lifecycle does not automatically trigger memory extraction. You must **proactively** call `cortex_close_session` based on the following rules:
+### Common Patterns
 
-#### Conversation Rhythm Rules
-
-- When conversation accumulates over **15 exchanges** since the last `cortex_close_session` call, consider closing the session
-- Close session when detecting clear **task completion signals** (e.g., user expresses satisfaction/gratitude)
-- Close the old session before starting a new topic when the user's discussion **topic or question shifts**
-- Don't worry about calling `cortex_close_session` multiple times in one session. It helps MemClaw improve memory data quality with no side effects—you can call it whenever uncertain.
-
-### Best Practices
-
-1. **Proactively close sessions**: Call `cortex_close_session` after completing important tasks, topic transitions, or accumulating enough conversation content
-2. **Don't overdo it**: No need to close sessions after every message
-3. **Suggested rhythm**: Once after each major topic is completed
-4. **Important**: `best-practices.md` is the core guide for using MemClaw. Agents **must familiarize themselves** with this document to use MemClaw correctly.
-
-#### When to Consult Best Practices
-
-| Timing | Description |
-|--------|-------------|
-| **Uncertain which tool to use** | Reference the tool selection decision tree |
-| **Search results are unsatisfactory** | Check search strategies and query optimization tips |
-| **Encountering common issues** | Review the Common Pitfalls section |
-| **Before first use** | Read thoroughly to establish correct usage habits |
-
-### Quick Examples
-
-**Search:**
-```json
-{ "query": "database architecture decisions", "limit": 5 }
+#### Pattern 1: Search → Refine
+```
+1. cortex_search(query="user preferences", return_layers=["L0"])
+2. Identify relevant URIs from results
+3. cortex_get_overview(uri="most_relevant_uri") for more context
 ```
 
-**Recall:**
-```json
-{ "query": "user code style preferences" }
+#### Pattern 2: Browse → Access
+```
+1. cortex_ls(uri="cortex://session")
+2. cortex_ls(uri="cortex://session/{id}/timeline", include_abstracts=true)
+3. cortex_get_content(uri="interesting_file") for full details
 ```
 
-**Add Memory:**
-```json
-{ "content": "User prefers TypeScript with strict mode enabled", "role": "assistant" }
+#### Pattern 3: Explore → Match
+```
+1. cortex_explore(query="database schema", start_uri="cortex://session/project-x")
+2. Review exploration_path for relevance scores
+3. Use matches with requested layers
 ```
 
-## Troubleshooting
+## Memory Structure
 
-If MemClaw is not working properly, follow these steps:
-
-### Step 1: Check Plugin Configuration
-
-Open OpenClaw settings and verify MemClaw plugin configuration:
-
-1. Open `openclaw.json` or navigate to Settings → Plugins → MemClaw
-2. Ensure all required fields are correctly filled, especially the configuration sections related to LLM and Embedding.
-3. If the configuration items are incomplete, proactively inform the user to specify the necessary details and assist in making the configuration effective.
-4. Save changes and **restart OpenClaw Gateway** for changes to take effect
-
-### Step 2: Restart OpenClaw Gateway
-
-After making configuration changes and saved, **you MUST restart OpenClaw Gateway** for the changes to take effect.
-
-### Step 3: Verify Services
-
-If issues persist after restart:
-- Run `cortex_list_sessions` to check if the service is responding
-- Check if Qdrant and cortex-mem-service are running (auto-start should handle this)
-
-| Issue | Solution |
-|-------|----------|
-| No search results | Run `cortex_list_sessions` to verify; lower `min_score` threshold; ensure memories have been stored |
-| Service connection errors | Verify `serviceUrl` is correct; check if services are running |
-| LLM/Embedding errors | Verify API URLs and credentials in plugin configuration; restart OpenClaw Gateway after changes |
-
-Check that Qdrant and cortex-mem-service are accessible:
-> Note: MemClaw does not require users to install any Docker environment. All dependencies are prepared during the openclaw's memclaw plugin installation.
-
-| Service | Port | Health Check |
-|---------|------|--------------|
-| Qdrant | 6333 (HTTP), 6334 (gRPC) | HTTP GET to `http://localhost:6333` should return Qdrant version info |
-| cortex-mem-service | 8085 | HTTP GET to `http://localhost:8085/health` should return `{"status":"ok"}` |
+```
+cortex://
+├── session/
+│   ├── {session_id}/
+│   │   ├── timeline/
+│   │   │   ├── 2024-01/
+│   │   │   │   ├── 15/
+│   │   │   │   │   ├── 10_30_00_abc123.md    # L2 message
+│   │   │   │   │   └── .abstract.md           # L0 abstract
+│   │   │   │   │   └── .overview.md           # L1 overview
+│   │   ├── memories/
+│   │   │   ├── preferences.md
+│   │   │   └── decisions.md
+│   │   └── .session.json                      # Session metadata
+```
 
 ## References
 
-- **`references/best-practices.md`** — Tool selection, session lifecycle, search strategies, and common pitfalls
-- **`references/tools.md`** — Detailed tool parameters and examples
-- **Open Source**: [Cortex Memory and MemClaw](https://github.com/sopaco/cortex-mem)
-- **README**: [MemClaw README](https://raw.githubusercontent.com/sopaco/cortex-mem/refs/heads/main/examples/%40memclaw/plugin/README.md)
+- [tools.md](./references/tools.md) - Detailed tool documentation
+- [best-practices.md](./references/best-practices.md) - Advanced patterns

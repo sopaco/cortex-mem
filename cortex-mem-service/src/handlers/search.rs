@@ -6,6 +6,7 @@ use crate::{
     models::{ApiResponse, SearchRequest, SearchResultResponse},
     state::AppState,
 };
+use crate::handlers::filesystem::load_layers_for_uri;
 
 /// Search endpoint using layered vector search (L0/L1/L2)
 pub async fn search(
@@ -14,8 +15,16 @@ pub async fn search(
 ) -> Result<Json<ApiResponse<Vec<SearchResultResponse>>>> {
     let limit = req.limit.unwrap_or(10);
     let min_score = req.min_score.unwrap_or(0.6);
+    let return_layers = req.return_layers.clone();
 
-    let results = search_layered(&state, &req.query, req.thread.as_deref(), limit, min_score).await?;
+    let results = search_layered(
+        &state,
+        &req.query,
+        req.thread.as_deref(),
+        limit,
+        min_score,
+        &return_layers,
+    ).await?;
 
     Ok(Json(ApiResponse::success(results)))
 }
@@ -30,6 +39,7 @@ async fn search_layered(
     thread: Option<&str>,
     limit: usize,
     min_score: f32,
+    return_layers: &[String],
 ) -> Result<Vec<SearchResultResponse>> {
     use cortex_mem_core::SearchOptions;
 
@@ -58,25 +68,36 @@ async fn search_layered(
         .await
         .map_err(|e| AppError::Internal(format!("Layered search failed: {}", e)))?;
 
-    // Convert to response format
-    let results: Vec<SearchResultResponse> = search_results
-        .into_iter()
-        .map(|result| {
-            let snippet = if result.snippet.len() > 200 {
-                format!("{}...", &result.snippet.chars().take(200).collect::<String>())
-            } else {
-                result.snippet
-            };
+    // Get tenant root for layer loading
+    let tenant_root = state.current_tenant_root.read().await.clone();
+    let base_dir = if let Some(ref root) = tenant_root {
+        root.clone()
+    } else {
+        state.data_dir.join("cortex")
+    };
 
-            SearchResultResponse {
-                uri: result.uri,
-                score: result.score,
-                snippet,
-                content: result.content,
-                source: "layered_vector".to_string(),
-            }
-        })
-        .collect();
+    // Convert to response format with requested layers
+    let mut results = Vec::new();
+    for result in search_results {
+        let snippet = if result.snippet.len() > 200 {
+            format!("{}...", &result.snippet.chars().take(200).collect::<String>())
+        } else {
+            result.snippet
+        };
+
+        // Use shared helper to load layers
+        let (overview, content, layers) = load_layers_for_uri(&base_dir, &result.uri, return_layers).await;
+
+        results.push(SearchResultResponse {
+            uri: result.uri,
+            score: result.score,
+            snippet,
+            overview,
+            content,
+            source: "layered_vector".to_string(),
+            layers,
+        });
+    }
 
     Ok(results)
 }

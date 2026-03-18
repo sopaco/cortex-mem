@@ -11,4 +11,10 @@ pub fn routes() -> Router<Arc<AppState>> {
         .route("/read/*path", get(crate::handlers::filesystem::read_file))
         .route("/write", post(crate::handlers::filesystem::write_file))
         .route("/stats", get(crate::handlers::filesystem::get_directory_stats))
+        // Layered access routes (L0/L1/L2)
+        .route("/abstract", get(crate::handlers::filesystem::get_abstract))
+        .route("/overview", get(crate::handlers::filesystem::get_overview))
+        .route("/content", get(crate::handlers::filesystem::get_content))
+        // Smart exploration
+        .route("/explore", post(crate::handlers::filesystem::explore))
 }
