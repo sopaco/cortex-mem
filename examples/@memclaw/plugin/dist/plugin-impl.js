@@ -4,7 +4,10 @@
  *
  * Provides layered semantic memory for OpenClaw with:
  * - Automatic service startup
- * - Memory tools (search, recall, add, list, close)
+ * - Memory tools (search, recall, add, close)
+ * - Tiered access (L0/L1/L2)
+ * - Filesystem browsing
+ * - Smart exploration
  * - Migration from OpenClaw native memory
  */
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -18,12 +21,18 @@ const toolSchemas = {
     cortex_search: {
         name: 'cortex_search',
         description: `Layered semantic search across memory using L0/L1/L2 tiered retrieval.
-Returns relevant memories ranked by relevance score.
 
-Use this tool when you need to:
-- Find past conversations or decisions
-- Search for specific information across all sessions
-- Discover related memories by semantic similarity`,
+**Key Features:**
+- Tiered retrieval: L0 (abstract) -> L1 (overview) -> L2 (full content)
+- Token-efficient: Control exactly which layers to return
+
+**Parameters:**
+- return_layers: ["L0"] (default, ~100 tokens), ["L0","L1"] (~2100 tokens), ["L0","L1","L2"] (full)
+
+**When to use:**
+- Finding past conversations or decisions
+- Searching across all sessions
+- Discovering related memories by semantic similarity`,
         inputSchema: {
             type: 'object',
             properties: {
@@ -44,6 +53,15 @@ Use this tool when you need to:
                     type: 'number',
                     description: 'Minimum relevance score threshold (0-1, default: 0.6)',
                     default: 0.6
+                },
+                return_layers: {
+                    type: 'array',
+                    items: {
+                        type: 'string',
+                        enum: ['L0', 'L1', 'L2']
+                    },
+                    description: 'Which layers to return. Default: ["L0"]. Use ["L0","L1"] for more context, ["L0","L1","L2"] for full content.',
+                    default: ['L0']
                 }
             },
             required: ['query']
@@ -51,16 +69,10 @@ Use this tool when you need to:
     },
     cortex_recall: {
         name: 'cortex_recall',
-        description: `Recall memories using L0/L1/L2 tiered retrieval.
+        description: `Recall memories with full context (L0 snippet + L2 content).
 
-The search engine internally performs tiered retrieval:
-- L0 (Abstract): Quick filtering by summary
-- L1 (Overview): Context refinement
-- L2 (Full): Precise matching with full content
-
-Returns results with snippet (summary) and content (if available).
-
-Use this when you need memories with more context than a simple search.`,
+This is a convenience wrapper that returns both abstract and full content.
+Use cortex_search with return_layers=["L0","L2"] for more control.`,
         inputSchema: {
             type: 'object',
             properties: {
@@ -84,9 +96,13 @@ Use this when you need memories with more context than a simple search.`,
     cortex_add_memory: {
         name: 'cortex_add_memory',
         description: `Add a message to memory for a specific session.
+
 This stores the message and automatically triggers:
 - Vector embedding for semantic search
 - L0/L1 layer generation (async)
+
+**Metadata support:**
+You can attach metadata like tags, importance, or custom fields.
 
 Use this to persist important information that should be searchable later.`,
         inputSchema: {
@@ -105,18 +121,14 @@ Use this to persist important information that should be searchable later.`,
                 session_id: {
                     type: 'string',
                     description: 'Session/thread ID (uses default if not specified)'
+                },
+                metadata: {
+                    type: 'object',
+                    description: 'Optional metadata (tags, importance, custom fields)',
+                    additionalProperties: true
                 }
             },
             required: ['content']
-        }
-    },
-    cortex_list_sessions: {
-        name: 'cortex_list_sessions',
-        description: `List all memory sessions with their status.
-Shows session IDs, message counts, and creation/update times.`,
-        inputSchema: {
-            type: 'object',
-            properties: {}
         }
     },
     cortex_close_session: {
@@ -154,6 +166,154 @@ This triggers the complete memory processing pipeline:
             }
         }
     },
+    // ==================== Filesystem Tools ====================
+    cortex_ls: {
+        name: 'cortex_ls',
+        description: `List directory contents to browse the memory space like a virtual filesystem.
+
+This allows you to explore the hierarchical structure of memories:
+- cortex://session - List all sessions
+- cortex://session/{session_id} - Browse a specific session's contents
+- cortex://session/{session_id}/timeline - View timeline messages
+- cortex://session/{session_id}/memories - View extracted memories
+
+**Parameters:**
+- recursive: List all subdirectories recursively
+- include_abstracts: Show L0 abstracts for each file (for quick preview)
+
+Use this when:
+- Semantic search doesn't find what you need
+- You want to understand the overall memory layout
+- You need to manually navigate to find specific information`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                uri: {
+                    type: 'string',
+                    description: 'Directory URI to list (default: cortex://session)',
+                    default: 'cortex://session'
+                },
+                recursive: {
+                    type: 'boolean',
+                    description: 'Whether to recursively list subdirectories',
+                    default: false
+                },
+                include_abstracts: {
+                    type: 'boolean',
+                    description: 'Whether to include L0 abstracts for each file',
+                    default: false
+                }
+            }
+        }
+    },
+    // ==================== Tiered Access Tools ====================
+    cortex_get_abstract: {
+        name: 'cortex_get_abstract',
+        description: `Get L0 abstract layer (~100 tokens) for quick relevance checking.
+
+Abstracts are short summaries ideal for quickly determining if content is relevant
+before committing to reading more. Use this to minimize token consumption.
+
+Use when:
+- You found a URI from cortex_ls and want to quickly check relevance
+- You need to filter many candidates before deep reading
+- You want the most token-efficient preview`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                uri: {
+                    type: 'string',
+                    description: 'Content URI (file or directory)'
+                }
+            },
+            required: ['uri']
+        }
+    },
+    cortex_get_overview: {
+        name: 'cortex_get_overview',
+        description: `Get L1 overview layer (~2000 tokens) with core information and context.
+
+Overviews contain key points and contextual information. Use this when:
+- The abstract was relevant but you need more details
+- You want to understand the gist without full content
+- You need moderate detail for decision making`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                uri: {
+                    type: 'string',
+                    description: 'Content URI (file or directory)'
+                }
+            },
+            required: ['uri']
+        }
+    },
+    cortex_get_content: {
+        name: 'cortex_get_content',
+        description: `Get L2 full content layer - the complete original content.
+
+Use this ONLY when you need the complete, unprocessed content.
+This returns the full content which may be large.
+
+Use when:
+- You need exact details or quotes
+- Abstract and overview don't provide enough information
+- You need to see the original, unsummarized content`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                uri: {
+                    type: 'string',
+                    description: 'Content URI (file only)'
+                }
+            },
+            required: ['uri']
+        }
+    },
+    // ==================== Exploration Tool ====================
+    cortex_explore: {
+        name: 'cortex_explore',
+        description: `Smart exploration of memory space, combining search and browsing.
+
+This tool performs a guided exploration:
+1. Searches within a specified scope (start_uri)
+2. Returns an exploration path showing relevance scores
+3. Returns matching results with requested layers
+
+**When to use:**
+- When you need to "wander" through memories with a purpose
+- When you want to discover related content in a specific area
+- When combining keyword hints with semantic discovery
+
+**Parameters:**
+- start_uri: Where to begin exploration (default: cortex://session)
+- return_layers: Which layers to include in matches`,
+        inputSchema: {
+            type: 'object',
+            properties: {
+                query: {
+                    type: 'string',
+                    description: 'Exploration query - what to look for'
+                },
+                start_uri: {
+                    type: 'string',
+                    description: 'Starting URI for exploration',
+                    default: 'cortex://session'
+                },
+                return_layers: {
+                    type: 'array',
+                    items: {
+                        type: 'string',
+                        enum: ['L0', 'L1', 'L2']
+                    },
+                    description: 'Which layers to return in matches',
+                    default: ['L0']
+                }
+            },
+            required: ['query']
+        }
+    },
+    // ==================== Migration & Maintenance ====================
     cortex_migrate: {
         name: 'cortex_migrate',
         description: `Migrate memories from OpenClaw's native memory system to MemClaw.
@@ -229,8 +389,8 @@ function createPlugin(api) {
         log(`Created configuration file: ${configPath}`);
         log('Opening configuration file for editing...');
         (0, config_js_1.openConfigFile)(configPath).catch((err) => {
-            api.logger.warn(`Could not open config file: ${err}`);
-            api.logger.warn(`Please manually edit: ${configPath}`);
+            api.logger.warn(`[memclaw] Could not open config file: ${err}`);
+            api.logger.warn(`[memclaw] Please manually edit: ${configPath}`);
         });
         api.logger.info(`
 ╔══════════════════════════════════════════════════════════╗
@@ -286,8 +446,8 @@ function createPlugin(api) {
             const mergedConfig = (0, config_js_1.mergeConfigWithPlugin)(fileConfig, pluginProvidedConfig);
             const validation = (0, config_js_1.validateConfig)(mergedConfig);
             if (!validation.valid) {
-                api.logger.warn(`Configuration incomplete: ${validation.errors.join(', ')}`);
-                api.logger.warn(`Please configure LLM/Embedding API keys in OpenClaw plugin settings or edit: ${configPath}`);
+                api.logger.warn(`[memclaw] Configuration incomplete: ${validation.errors.join(', ')}`);
+                api.logger.warn(`[memclaw] Please configure LLM/Embedding API keys in OpenClaw plugin settings or edit: ${configPath}`);
                 return;
             }
             // Start services
@@ -303,7 +463,7 @@ function createPlugin(api) {
                 maintenanceTimer = setInterval(async () => {
                     try {
                         log('Running scheduled maintenance...');
-                        const configPath = (0, config_js_1.getConfigPath)();
+                        const currentConfigPath = (0, config_js_1.getConfigPath)();
                         // Run maintenance commands
                         const commands = [
                             ['vector', 'prune'],
@@ -311,7 +471,7 @@ function createPlugin(api) {
                             ['layers', 'ensure-all']
                         ];
                         for (const cmd of commands) {
-                            const result = await (0, binaries_js_1.executeCliCommand)(cmd, configPath, tenantId, 300000);
+                            const result = await (0, binaries_js_1.executeCliCommand)(cmd, currentConfigPath, tenantId, 300000);
                             if (!result.success) {
                                 log(`Maintenance command '${cmd.join(' ')}' failed: ${result.stderr}`);
                             }
@@ -325,8 +485,8 @@ function createPlugin(api) {
                 log('Maintenance timer started (runs every 3 hours)');
             }
             catch (err) {
-                api.logger.error(`Failed to start services: ${err}`);
-                api.logger.warn('Memory features may not work correctly');
+                api.logger.error(`[memclaw] Failed to start services: ${err}`);
+                api.logger.warn('[memclaw] Memory features may not work correctly');
             }
         },
         stop: async () => {
@@ -349,7 +509,7 @@ function createPlugin(api) {
             }
         }
     };
-    // Register tools
+    // ==================== Register Tools ====================
     // cortex_search
     api.registerTool({
         name: toolSchemas.cortex_search.name,
@@ -363,24 +523,40 @@ function createPlugin(api) {
                     query: input.query,
                     thread: input.scope,
                     limit: input.limit ?? searchLimit,
-                    min_score: input.min_score ?? minScore
+                    min_score: input.min_score ?? minScore,
+                    return_layers: input.return_layers ?? ['L0']
                 });
                 const formatted = results
-                    .map((r, i) => `${i + 1}. [Score: ${r.score.toFixed(2)}] ${r.snippet}\n   URI: ${r.uri}`)
-                    .join('\n\n');
+                    .map((r, i) => {
+                    let content = `${i + 1}. [Score: ${r.score.toFixed(2)}] URI: ${r.uri}\n`;
+                    content += `   Layers: ${r.layers.join(', ')}\n`;
+                    content += `   Snippet: ${r.snippet}\n`;
+                    if (r.overview) {
+                        content += `   Overview: ${r.overview.substring(0, 200)}...\n`;
+                    }
+                    if (r.content) {
+                        const preview = r.content.length > 200 ? r.content.substring(0, 200) + '...' : r.content;
+                        content += `   Content: ${preview}\n`;
+                    }
+                    return content;
+                })
+                    .join('\n');
                 return {
                     content: `Found ${results.length} results for "${input.query}":\n\n${formatted}`,
                     results: results.map((r) => ({
                         uri: r.uri,
                         score: r.score,
-                        snippet: r.snippet
+                        snippet: r.snippet,
+                        overview: r.overview,
+                        content: r.content,
+                        layers: r.layers
                     })),
                     total: results.length
                 };
             }
             catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
-                api.logger.error(`cortex_search failed: ${message}`);
+                api.logger.error(`[memclaw] cortex_search failed: ${message}`);
                 return { error: `Search failed: ${message}` };
             }
         }
@@ -414,7 +590,7 @@ function createPlugin(api) {
             }
             catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
-                api.logger.error(`cortex_recall failed: ${message}`);
+                api.logger.error(`[memclaw] cortex_recall failed: ${message}`);
                 return { error: `Recall failed: ${message}` };
             }
         }
@@ -431,7 +607,8 @@ function createPlugin(api) {
                 const sessionId = input.session_id ?? defaultSessionId;
                 const result = await client.addMessage(sessionId, {
                     role: (input.role ?? 'user'),
-                    content: input.content
+                    content: input.content,
+                    metadata: input.metadata
                 });
                 return {
                     content: `Memory stored successfully in session "${sessionId}".\nResult: ${result}`,
@@ -441,43 +618,8 @@ function createPlugin(api) {
             }
             catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
-                api.logger.error(`cortex_add_memory failed: ${message}`);
+                api.logger.error(`[memclaw] cortex_add_memory failed: ${message}`);
                 return { error: `Failed to add memory: ${message}` };
-            }
-        }
-    });
-    // cortex_list_sessions
-    api.registerTool({
-        name: toolSchemas.cortex_list_sessions.name,
-        description: toolSchemas.cortex_list_sessions.description,
-        parameters: toolSchemas.cortex_list_sessions.inputSchema,
-        execute: async (_id, _params) => {
-            try {
-                await ensureServicesReady();
-                const sessions = await client.listSessions();
-                if (sessions.length === 0) {
-                    return { content: 'No sessions found.' };
-                }
-                const formatted = sessions
-                    .map((s, i) => {
-                    const created = new Date(s.created_at).toLocaleDateString();
-                    return `${i + 1}. ${s.thread_id} (${s.status}, ${s.message_count} messages, created ${created})`;
-                })
-                    .join('\n');
-                return {
-                    content: `Found ${sessions.length} sessions:\n\n${formatted}`,
-                    sessions: sessions.map((s) => ({
-                        thread_id: s.thread_id,
-                        status: s.status,
-                        message_count: s.message_count,
-                        created_at: s.created_at
-                    }))
-                };
-            }
-            catch (error) {
-                const message = error instanceof Error ? error.message : String(error);
-                api.logger.error(`cortex_list_sessions failed: ${message}`);
-                return { error: `Failed to list sessions: ${message}` };
             }
         }
     });
@@ -504,8 +646,185 @@ function createPlugin(api) {
             }
             catch (error) {
                 const message = error instanceof Error ? error.message : String(error);
-                api.logger.error(`cortex_close_session failed: ${message}`);
+                api.logger.error(`[memclaw] cortex_close_session failed: ${message}`);
                 return { error: `Failed to close session: ${message}` };
+            }
+        }
+    });
+    // cortex_ls
+    api.registerTool({
+        name: toolSchemas.cortex_ls.name,
+        description: toolSchemas.cortex_ls.description,
+        parameters: toolSchemas.cortex_ls.inputSchema,
+        execute: async (_id, params) => {
+            const input = params;
+            try {
+                await ensureServicesReady();
+                const result = await client.ls({
+                    uri: input.uri ?? 'cortex://session',
+                    recursive: input.recursive ?? false,
+                    include_abstracts: input.include_abstracts ?? false
+                });
+                if (result.entries.length === 0) {
+                    return { content: `Directory "${result.uri}" is empty or does not exist.` };
+                }
+                const formatted = result.entries
+                    .map((e, i) => {
+                    let content = `${i + 1}. ${e.is_directory ? '📁' : '📄'} ${e.name}\n`;
+                    content += `   URI: ${e.uri}\n`;
+                    if (e.is_directory) {
+                        content += `   Type: Directory\n`;
+                    }
+                    else {
+                        content += `   Size: ${e.size} bytes\n`;
+                    }
+                    if (e.abstract_text) {
+                        const preview = e.abstract_text.length > 100
+                            ? e.abstract_text.substring(0, 100) + '...'
+                            : e.abstract_text;
+                        content += `   Abstract: ${preview}\n`;
+                    }
+                    return content;
+                })
+                    .join('\n');
+                return {
+                    content: `Directory "${result.uri}" (${result.total} entries):\n\n${formatted}`,
+                    entries: result.entries,
+                    total: result.total
+                };
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                api.logger.error(`[memclaw] cortex_ls failed: ${message}`);
+                return { error: `List directory failed: ${message}` };
+            }
+        }
+    });
+    // cortex_get_abstract
+    api.registerTool({
+        name: toolSchemas.cortex_get_abstract.name,
+        description: toolSchemas.cortex_get_abstract.description,
+        parameters: toolSchemas.cortex_get_abstract.inputSchema,
+        execute: async (_id, params) => {
+            const input = params;
+            try {
+                await ensureServicesReady();
+                const result = await client.getAbstract(input.uri);
+                return {
+                    content: `L0 Abstract for "${result.uri}" (~${result.token_count} tokens):\n\n${result.content}`,
+                    uri: result.uri,
+                    abstract: result.content,
+                    token_count: result.token_count,
+                    layer: result.layer
+                };
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                api.logger.error(`[memclaw] cortex_get_abstract failed: ${message}`);
+                return { error: `Get abstract failed: ${message}` };
+            }
+        }
+    });
+    // cortex_get_overview
+    api.registerTool({
+        name: toolSchemas.cortex_get_overview.name,
+        description: toolSchemas.cortex_get_overview.description,
+        parameters: toolSchemas.cortex_get_overview.inputSchema,
+        execute: async (_id, params) => {
+            const input = params;
+            try {
+                await ensureServicesReady();
+                const result = await client.getOverview(input.uri);
+                return {
+                    content: `L1 Overview for "${result.uri}" (~${result.token_count} tokens):\n\n${result.content}`,
+                    uri: result.uri,
+                    overview: result.content,
+                    token_count: result.token_count,
+                    layer: result.layer
+                };
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                api.logger.error(`[memclaw] cortex_get_overview failed: ${message}`);
+                return { error: `Get overview failed: ${message}` };
+            }
+        }
+    });
+    // cortex_get_content
+    api.registerTool({
+        name: toolSchemas.cortex_get_content.name,
+        description: toolSchemas.cortex_get_content.description,
+        parameters: toolSchemas.cortex_get_content.inputSchema,
+        execute: async (_id, params) => {
+            const input = params;
+            try {
+                await ensureServicesReady();
+                const result = await client.getContent(input.uri);
+                return {
+                    content: `L2 Full Content for "${result.uri}" (~${result.token_count} tokens):\n\n${result.content}`,
+                    uri: result.uri,
+                    full_content: result.content,
+                    token_count: result.token_count,
+                    layer: result.layer
+                };
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                api.logger.error(`[memclaw] cortex_get_content failed: ${message}`);
+                return { error: `Get content failed: ${message}` };
+            }
+        }
+    });
+    // cortex_explore
+    api.registerTool({
+        name: toolSchemas.cortex_explore.name,
+        description: toolSchemas.cortex_explore.description,
+        parameters: toolSchemas.cortex_explore.inputSchema,
+        execute: async (_id, params) => {
+            const input = params;
+            try {
+                await ensureServicesReady();
+                const result = await client.explore({
+                    query: input.query,
+                    start_uri: input.start_uri ?? 'cortex://session',
+                    return_layers: input.return_layers ?? ['L0']
+                });
+                // Format exploration path
+                const pathFormatted = result.exploration_path
+                    .map((item, i) => {
+                    let content = `${i + 1}. [${item.relevance_score.toFixed(2)}] ${item.uri}\n`;
+                    if (item.abstract_text) {
+                        const preview = item.abstract_text.length > 80
+                            ? item.abstract_text.substring(0, 80) + '...'
+                            : item.abstract_text;
+                        content += `   Abstract: ${preview}\n`;
+                    }
+                    return content;
+                })
+                    .join('\n');
+                // Format matches
+                const matchesFormatted = result.matches
+                    .map((m, i) => {
+                    let content = `${i + 1}. [${m.score.toFixed(2)}] ${m.uri}\n`;
+                    content += `   Layers: ${m.layers.join(', ')}\n`;
+                    content += `   Snippet: ${m.snippet}\n`;
+                    return content;
+                })
+                    .join('\n');
+                return {
+                    content: `Exploration for "${input.query}" starting from "${input.start_uri ?? 'cortex://session'}":\n\n` +
+                        `**Exploration Path** (${result.total_explored} items):\n${pathFormatted}\n\n` +
+                        `**Matches** (${result.total_matches} found):\n${matchesFormatted}`,
+                    exploration_path: result.exploration_path,
+                    matches: result.matches,
+                    total_explored: result.total_explored,
+                    total_matches: result.total_matches
+                };
+            }
+            catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                api.logger.error(`[memclaw] cortex_explore failed: ${message}`);
+                return { error: `Explore failed: ${message}` };
             }
         }
     });
@@ -577,7 +896,7 @@ function createPlugin(api) {
                         output: result.stdout || result.stderr
                     });
                     if (!result.success) {
-                        api.logger.warn(`[maintenance] ${description} failed: ${result.stderr}`);
+                        api.logger.warn(`[memclaw] [maintenance] ${description} failed: ${result.stderr}`);
                     }
                 }
                 catch (error) {

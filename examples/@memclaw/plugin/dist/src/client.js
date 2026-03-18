@@ -1,130 +1,188 @@
 "use strict";
 /**
- * Cortex Memory API Client
+ * Cortex Mem Client
  *
- * HTTP client for cortex-mem-service REST API
+ * HTTP client for cortex-mem-service REST API.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CortexMemClient = void 0;
-/**
- * Cortex Memory API Client
- */
 class CortexMemClient {
     baseUrl;
-    constructor(baseUrl = "http://localhost:8085") {
-        this.baseUrl = baseUrl.replace(/\/$/, "");
+    constructor(baseUrl = 'http://localhost:8085') {
+        this.baseUrl = baseUrl;
+    }
+    // ==================== Search ====================
+    /**
+     * Layered semantic search with L0/L1/L2 tiered retrieval
+     */
+    async search(options) {
+        const response = await this.fetchJson('/api/v2/search', {
+            method: 'POST',
+            body: JSON.stringify({
+                query: options.query,
+                thread: options.thread,
+                limit: options.limit ?? 10,
+                min_score: options.min_score ?? 0.6,
+                return_layers: options.return_layers ?? ['L0']
+            })
+        });
+        if (!response.success || !response.data) {
+            throw new Error(response.error ?? 'Search failed');
+        }
+        return response.data;
     }
     /**
-     * Layered semantic search (L0 -> L1 -> L2 tiered retrieval)
+     * Recall memories with more context (L0 + L2)
      */
-    async search(request) {
-        const response = await this.post("/api/v2/search", request);
-        return response;
-    }
-    /**
-     * Quick search returning only L0 abstracts
-     */
-    async find(query, scope, limit = 5) {
+    async recall(query, thread, limit = 10) {
         return this.search({
             query,
-            thread: scope,
+            thread,
             limit,
-            min_score: 0.5,
+            return_layers: ['L0', 'L2']
         });
+    }
+    // ==================== Filesystem ====================
+    /**
+     * List directory contents
+     */
+    async ls(options = {}) {
+        const params = new URLSearchParams();
+        params.set('uri', options.uri ?? 'cortex://session');
+        if (options.recursive)
+            params.set('recursive', 'true');
+        if (options.include_abstracts)
+            params.set('include_abstracts', 'true');
+        const response = await this.fetchJson(`/api/v2/filesystem/list?${params.toString()}`);
+        if (!response.success || !response.data) {
+            throw new Error(response.error ?? 'List directory failed');
+        }
+        return response.data;
     }
     /**
-     * Layered recall - uses L0/L1/L2 tiered search internally
-     *
-     * The search engine performs tiered retrieval (L0→L1→L2) internally,
-     * but returns unified results with snippet and content.
-     *
-     * @param query - Search query
-     * @param scope - Optional session/thread scope
-     * @param limit - Maximum results
+     * Smart exploration combining search and browsing
      */
-    async recall(query, scope, limit = 10) {
-        return this.search({
-            query,
-            thread: scope,
-            limit,
-            min_score: 0.5,
+    async explore(options) {
+        const response = await this.fetchJson('/api/v2/filesystem/explore', {
+            method: 'POST',
+            body: JSON.stringify({
+                query: options.query,
+                start_uri: options.start_uri ?? 'cortex://session',
+                return_layers: options.return_layers ?? ['L0']
+            })
         });
+        if (!response.success || !response.data) {
+            throw new Error(response.error ?? 'Explore failed');
+        }
+        return response.data;
     }
+    // ==================== Tiered Access ====================
+    /**
+     * Get L0 abstract (~100 tokens) for quick relevance check
+     */
+    async getAbstract(uri) {
+        const params = new URLSearchParams();
+        params.set('uri', uri);
+        const response = await this.fetchJson(`/api/v2/filesystem/abstract?${params.toString()}`);
+        if (!response.success || !response.data) {
+            throw new Error(response.error ?? 'Get abstract failed');
+        }
+        return response.data;
+    }
+    /**
+     * Get L1 overview (~2000 tokens) for core information
+     */
+    async getOverview(uri) {
+        const params = new URLSearchParams();
+        params.set('uri', uri);
+        const response = await this.fetchJson(`/api/v2/filesystem/overview?${params.toString()}`);
+        if (!response.success || !response.data) {
+            throw new Error(response.error ?? 'Get overview failed');
+        }
+        return response.data;
+    }
+    /**
+     * Get L2 full content
+     */
+    async getContent(uri) {
+        const params = new URLSearchParams();
+        params.set('uri', uri);
+        const response = await this.fetchJson(`/api/v2/filesystem/content?${params.toString()}`);
+        if (!response.success || !response.data) {
+            throw new Error(response.error ?? 'Get content failed');
+        }
+        return response.data;
+    }
+    // ==================== Session Management ====================
     /**
      * List all sessions
      */
     async listSessions() {
-        const response = await this.get("/api/v2/sessions");
-        return response;
-    }
-    /**
-     * Create a new session
-     */
-    async createSession(request = {}) {
-        const response = await this.post("/api/v2/sessions", request);
-        return response;
+        const response = await this.fetchJson('/api/v2/sessions');
+        if (!response.success || !response.data) {
+            throw new Error(response.error ?? 'List sessions failed');
+        }
+        return response.data;
     }
     /**
      * Add a message to a session
      */
     async addMessage(threadId, message) {
-        const response = await this.post(`/api/v2/sessions/${threadId}/messages`, message);
-        return response;
+        const response = await this.fetchJson('/api/v2/sessions/message', {
+            method: 'POST',
+            body: JSON.stringify({
+                thread_id: threadId,
+                role: message.role ?? 'user',
+                content: message.content,
+                metadata: message.metadata
+            })
+        });
+        if (!response.success || !response.data) {
+            throw new Error(response.error ?? 'Add message failed');
+        }
+        return response.data;
     }
     /**
-     * Close a session
+     * Close a session and trigger memory extraction
      */
     async closeSession(threadId) {
-        const response = await this.post(`/api/v2/sessions/${threadId}/close`, {});
-        return response;
+        const response = await this.fetchJson('/api/v2/sessions/close', {
+            method: 'POST',
+            body: JSON.stringify({ thread_id: threadId })
+        });
+        if (!response.success || !response.data) {
+            throw new Error(response.error ?? 'Close session failed');
+        }
+        return response.data;
     }
+    // ==================== Tenant ====================
     /**
-     * Switch tenant
+     * Switch tenant context
      */
     async switchTenant(tenantId) {
-        await this.post("/api/v2/tenants/switch", { tenant_id: tenantId });
-    }
-    /**
-     * Health check
-     */
-    async healthCheck() {
-        try {
-            const response = await fetch(`${this.baseUrl}/health`);
-            return response.ok;
-        }
-        catch {
-            return false;
+        const response = await this.fetchJson('/api/v2/tenants/switch', {
+            method: 'POST',
+            body: JSON.stringify({ tenant_id: tenantId })
+        });
+        if (!response.success) {
+            throw new Error(response.error ?? 'Switch tenant failed');
         }
     }
-    // Private helpers
-    async get(path) {
-        const response = await fetch(`${this.baseUrl}${path}`);
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status} ${response.statusText}`);
-        }
-        const data = (await response.json());
-        if (!data.success) {
-            throw new Error(data.error || "API request failed");
-        }
-        return data.data;
-    }
-    async post(path, body) {
-        const response = await fetch(`${this.baseUrl}${path}`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(body),
+    // ==================== Internal ====================
+    async fetchJson(path, options = {}) {
+        const url = `${this.baseUrl}${path}`;
+        const headers = {
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+        };
+        const response = await fetch(url, {
+            ...options,
+            headers
         });
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        const data = (await response.json());
-        if (!data.success) {
-            throw new Error(data.error || "API request failed");
-        }
-        return data.data;
+        return response.json();
     }
 }
 exports.CortexMemClient = CortexMemClient;

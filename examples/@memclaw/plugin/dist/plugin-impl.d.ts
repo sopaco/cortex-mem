@@ -3,7 +3,10 @@
  *
  * Provides layered semantic memory for OpenClaw with:
  * - Automatic service startup
- * - Memory tools (search, recall, add, list, close)
+ * - Memory tools (search, recall, add, close)
+ * - Tiered access (L0/L1/L2)
+ * - Filesystem browsing
+ * - Smart exploration
  * - Migration from OpenClaw native memory
  */
 interface PluginLogger {
