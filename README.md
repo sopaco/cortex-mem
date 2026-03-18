@@ -13,7 +13,7 @@
 <p align="center">
     <strong>🧠 The AI-native memory framework for building intelligent, context-aware applications 🧠</strong>
 </p>
-<p align="center">Built with Rust, Cortex Memory is a high-performance, persistent, and intelligent long-term memory system that gives your AI agents the ability to remember, learn, and personalize interactions across sessions.</p>
+<p align="center">Built with Rust, Cortex Memory is a high-performance, persistent, and intelligent long-term memory system that gives your AI agents / OpenClaw the ability to remember, learn, and personalize interactions across sessions.</p>
 
 <p align="center">
     <a href="https://github.com/sopaco/cortex-mem/tree/main/litho.docs/en"><img alt="Litho Docs" src="https://img.shields.io/badge/Litho-Docs-green?logo=Gitbook&color=%23008a60"/></a>
@@ -275,6 +275,55 @@ bun run dev
 ```
 
 The dashboard will be available at `http://localhost:5173` and will proxy API requests to the backend service.
+
+
+# 🦞 Community Showcase: MemClaw
+
+**MemClaw** is a deeply customized memory enhancement plugin for the OpenClaw ecosystem, powered by the locally-running Cortex Memory engine. It delivers superior memory capabilities compared to OpenClaw's built-in memory system, achieving **over 80% token savings** while maintaining exceptional memory accuracy, security, and performance.
+
+## Why MemClaw?
+
+| OpenClaw Native Memory | MemClaw |
+|------------------------|---------|
+| Basic memory storage | **Three-tier L0/L1/L2 architecture** for intelligent retrieval |
+| Higher token consumption | **80%+ token savings** with layered context loading |
+| Cloud-dependent | **100% local storage** — your memories stay on your machine |
+| Limited search precision | **Semantic vector search** with weighted scoring across layers |
+| Manual configuration | **Auto service management** — Qdrant & cortex-mem-service handled automatically |
+
+## Key Features
+
+- **🎯 Three-Layer Memory Architecture**: L0 (abstract → ~100 tokens), L1 (overview → ~2000 tokens), L2 (full content) for optimal context loading
+- **🔒 Complete Data Privacy**: All memories stored locally on your machine with no cloud dependency
+- **🚀 One-Click Migration**: Seamlessly migrate from OpenClaw native memory to MemClaw
+- **⚙️ Easy Configuration**: Configure LLM and Embedding settings directly through OpenClaw plugin UI
+- **🤖 Automatic Service Management**: Auto-starts Qdrant vector database and cortex-mem-service
+
+## Available Tools
+
+| Tool | Purpose |
+|------|---------|
+| `cortex_search` | Semantic search across all memories with tiered retrieval |
+| `cortex_recall` | Recall memories with extended context (snippet + full content) |
+| `cortex_add_memory` | Store messages for future retrieval |
+| `cortex_close_session` | Close session and trigger memory extraction pipeline |
+| `cortex_migrate` | One-click migration from OpenClaw native memory |
+| `cortex_maintenance` | Periodic maintenance (prune, reindex, layer generation) |
+
+## Quick Start
+
+```bash
+# Install via OpenClaw
+openclaw plugins install @memclaw/memclaw
+```
+
+> **Note**: Set `memorySearch.enabled: false` to disable OpenClaw's built-in memory and use MemClaw instead.
+
+## Documentation
+
+For detailed configuration, troubleshooting, and best practices, see the [MemClaw README](examples/@memclaw/plugin/README.md).
+
+---
 
 # 🌟 Community Showcase: Cortex TARS
 
