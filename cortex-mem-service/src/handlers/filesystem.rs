@@ -526,8 +526,16 @@ pub async fn explore(
     for result in search_results {
         // Add to exploration path
         if !explored_uris.contains(&result.uri) {
-            let abstract_text = load_abstract_for_uri(&base_dir, &result.uri).await;
-            
+            // For files: use snippet as abstract (it's already a relevant excerpt)
+            // For directories: load the directory's .abstract.md
+            let abstract_text = if result.uri.ends_with(".md") {
+                // File-level result: snippet is the relevant content excerpt
+                Some(result.snippet.clone())
+            } else {
+                // Directory-level result: load directory's abstract
+                load_abstract_for_uri(&base_dir, &result.uri).await
+            };
+
             exploration_path.push(ExplorationPathItem {
                 uri: result.uri.clone(),
                 relevance_score: result.score,
