@@ -382,7 +382,7 @@ The benchmark uses a professional memory system evaluation framework located in 
 - **Professional Metrics**: Recall@K, Precision@K, MRR, NDCG, and answer quality metrics
 - **Enhanced Dataset**: 50 conversations with 150 questions covering various scenarios
 - **Statistical Analysis**: 95% confidence intervals, standard deviation, and category-based statistics
-- **Multi-System Support**: Supports comparison between Cortex Memory, LangMem, and Simple RAG baselines
+- **Cortex-Only Evaluation**: Dedicated evaluation workflow for Cortex Memory using the LoCoMo methodology
 
 For more details on running the evaluation, see the [lomoco-evaluation README](examples/lomoco-evaluation/README.md).
 
