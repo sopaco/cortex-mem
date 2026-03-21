@@ -5,8 +5,8 @@
 	"description": "Layered semantic memory for OpenClaw with L0/L1/L2 tiered retrieval, easy setup, and migration from native memory",
 	"kind": "memory",
 	"skills": ["skills/memclaw", "skills/memclaw-maintance"],
-	"platforms": ["darwin-arm64", "win32-x64"],
-	"osRestriction": ["darwin-arm64", "win32-x64"],
+	"platforms": ["darwin-arm64", "win32-x64", "linux-x64"],
+	"osRestriction": ["darwin-arm64", "win32-x64", "linux-x64"],
 	"configSchema": {
 		"type": "object",
 		"properties": {
