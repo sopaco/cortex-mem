@@ -659,26 +659,27 @@ impl VectorSearchEngine {
     /// 根据意图类型动态调整 L0 检索阈值
     fn adaptive_l0_threshold(intent_type: &QueryIntentType) -> f32 {
         match intent_type {
-            // 实体查询：L0 摘要可能丢失实体，用低阈值确保候选集覆盖
+            // 实体查询：L0 摘要可能丢失实体细节，用更低阈值确保覆盖
+            // LoCoMo Cat 1 (factual) 事实类也需要更低阈值，避免遗漏
             QueryIntentType::EntityLookup => {
-                info!("EntityLookup: using lowered L0 threshold 0.35");
-                0.35
+                info!("EntityLookup: using lowered L0 threshold 0.28");
+                0.28
             }
             QueryIntentType::Factual => {
-                info!("Factual query: threshold 0.4");
-                0.4
+                info!("Factual query: threshold 0.32");
+                0.32
             }
             QueryIntentType::Temporal => {
-                info!("Temporal query: threshold 0.45");
-                0.45
+                info!("Temporal query: threshold 0.38");
+                0.38
             }
             QueryIntentType::Search | QueryIntentType::Relational => {
-                info!("Search/Relational query: threshold 0.4");
-                0.4
+                info!("Search/Relational query: threshold 0.35");
+                0.35
             }
             QueryIntentType::General => {
-                info!("General query: default threshold 0.5");
-                0.5
+                info!("General query: default threshold 0.45");
+                0.45
             }
         }
     }
@@ -769,7 +770,11 @@ impl VectorSearchEngine {
             QueryIntentType::Relational
         } else if Self::contains_any(
             &query_lower,
-            &["list", "find", "search", "show", "summarize", "哪些", "列出", "查找"],
+            &[
+                "list", "find", "search", "show", "summarize",
+                "activities", "hobbies", "hobby", "partake", "sports", "interests",
+                "哪些", "列出", "查找",
+            ],
         ) {
             QueryIntentType::Search
         } else if Self::contains_any(

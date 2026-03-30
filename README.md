@@ -1,8 +1,7 @@
 <p align="center">
     <img src="./assets/intro/TopBanner.webp">
+    <img src="./assets/benchmark/cortex_mem_vs_openclaw_1.png">
 </p>
-
-<h1 align="center">Cortex Memory</h1>
 
 <p align="center">
     <a href="./README.md">English</a>
@@ -18,7 +17,7 @@
 <p align="center">
     <a href="https://github.com/sopaco/cortex-mem/tree/main/litho.docs/en"><img alt="Litho Docs" src="https://img.shields.io/badge/Litho-Docs-green?logo=Gitbook&color=%23008a60"/></a>
     <a href="https://github.com/sopaco/cortex-mem/tree/main/litho.docs/zh"><img alt="Litho Docs" src="https://img.shields.io/badge/Litho-中文-green?logo=Gitbook&color=%23008a60"/></a>
-  <a href="https://raw.githubusercontent.com/sopaco/cortex-mem/refs/heads/main/assets/benchmark/cortex_mem_vs_langmem.png"><img alt="Benchmark" src="https://img.shields.io/badge/Benchmark-Perfect-green?logo=speedtest&labelColor=%231150af&color=%2300b89f"></a>
+  <a href="https://raw.githubusercontent.com/sopaco/cortex-mem/refs/heads/main/assets/benchmark/cortex_mem_vs_openclaw_3.png?raw=true"><img alt="Benchmark" src="https://img.shields.io/badge/Benchmark-Perfect-green?logo=speedtest&labelColor=%231150af&color=%2300b89f"></a>
   <a href="https://github.com/sopaco/cortex-mem/actions/workflows/rust.yml"><img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/sopaco/cortex-mem/rust.yml?label=Build"></a>
   <a href="./LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg?label=LICENSE" /></a>
 </p>
@@ -33,7 +32,7 @@ Cortex Memory uses a sophisticated pipeline to process and manage memories, cent
 
 | Blazing Fast **Layered Context Loading** | Context Organization as **Virtual Files** |  **Precision** Memory Retrieval |
 | :--- | :--- | :--- |
-| ![Layered Context Loading](./assets/intro/highlight_style_modern.jpg) |![architecture_style_modern](./assets/intro/architecture_style_modern.jpg) | ![architecture_style_classic](./assets/benchmark/cortex_mem_vs_langmem_thin.jpg) |
+| ![Layered Context Loading](./assets/intro/highlight_style_modern.jpg) |![architecture_style_modern](./assets/intro/architecture_style_modern.jpg) | ![architecture_style_classic](./assets/benchmark/cortex_mem_vs_openclaw_2.png) |
 
 **Cortex Memory** organizes data using a **virtual filesystem** approach with the `cortex://` URI scheme:
 
@@ -367,45 +366,17 @@ Check out the [Cortex TARS README](examples/cortex-mem-tars/README.md) for detai
 
 # 🏆 Benchmark
 
-Cortex Memory has been rigorously evaluated against LangMem using the **LOCOMO dataset** (50 conversations, 150 questions) through a standardized memory system evaluation framework. The results demonstrate Cortex Memory's superior performance across multiple dimensions.
+Cortex Memory has been rigorously evaluated against LangMem or OpenClaw's built-in memory using the **LOCOMO dataset** (50 conversations, 150 questions) through a standardized memory system evaluation framework. The results demonstrate Cortex Memory's superior performance across multiple dimensions.
 
 ## Performance Comparison
 
 <p align="center">
-  <img src="./assets/benchmark/cortex_mem_vs_langmem.png" alt="Cortex Memory vs LangMem Benchmark" width="800">
+  <img src="./assets/benchmark/cortex_mem_vs_openclaw_3.png" alt="Cortex Memory vs OpenViking/OpenClaw's Built-in Memory/LangMem Benchmark" width="800">
 </p>
 
 <p align="center">
   <em><strong>Overall Performance:</strong> Cortex Memory significantly outperforms LangMem across all key metrics</em>
 </p>
-
-### Key Metrics
-
-| Metric | Cortex Memory | LangMem | Improvement |
-|--------|---------------|---------|-------------|
-| **Recall@1** | 93.33% | 26.32% | **+67.02pp** |
-| **Recall@3** | 94.00% | 50.00% | +44.00pp |
-| **Recall@5** | 94.67% | 55.26% | +39.40pp |
-| **Recall@10** | 94.67% | 63.16% | +31.51pp |
-| **Precision@1** | 93.33% | 26.32% | +67.02pp |
-| **MRR** | 93.72% | 38.83% | **+54.90pp** |
-| **NDCG@5** | 80.73% | 18.72% | **+62.01pp** |
-| **NDCG@10** | 79.41% | 16.83% | **+62.58pp** |
-
-### Detailed Results
-
-<div style="text-align: center;">
-  <table style="width: 100%; margin: 0 auto;">
-    <tr>
-        <th style="width: 50%;"><strong>Cortex Memory Evaluation:</strong> Excellent retrieval performance with 93.33% Recall@1 and 93.72% MRR</td>
-        <th style="width: 50%;"><strong>LangMem Evaluation:</strong> Modest performance with 26.32% Recall@1 and 38.83% MRR</td>
-    </tr>
-    <tr>
-      <td style="width: 50%;"><img src="./assets/benchmark/evaluation_cortex_mem.webp" alt="Cortex Memory Evaluation" style="width: 100%; height: auto; display: block;"></td>
-      <td style="width: 50%;"><img src="./assets/benchmark/evaluation_langmem.webp" alt="LangMem Evaluation" style="width: 100%; height: auto; display: block;"></td>
-    </tr>
-  </table>
-</div>
 
 ### Key Findings
 

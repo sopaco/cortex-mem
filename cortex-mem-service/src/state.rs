@@ -201,12 +201,9 @@ impl AppState {
             return Ok(());
         };
 
-        let existing = qdrant_store.list(&Default::default(), Some(1)).await?;
-        if !existing.is_empty() {
-            return Ok(());
-        }
-
-        tracing::warn!("Vector collection is empty for current runtime, bootstrapping from filesystem");
+        // Always run sync_all to catch any files that were missed due to rate limits or interruptions.
+        // The SyncManager will skip files that are already indexed (based on URI hash check).
+        tracing::info!("Running bootstrap vector sync to catch any missing embeddings...");
         let sync_manager = SyncManager::new(
             filesystem,
             embedding_client,

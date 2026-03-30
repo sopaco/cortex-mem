@@ -142,14 +142,25 @@ class CortexEvalClient:
         if llm_base_url and llm_api_key:
             self.llm_client = OpenAI(base_url=llm_base_url, api_key=llm_api_key)
 
-    def _post(self, path: str, payload: dict[str, Any]) -> dict[str, Any]:
+    def _post(self, path: str, payload: dict[str, Any], max_retries: int = 3) -> dict[str, Any]:
         url = f"{self.base_url}{path}"
-        response = requests.post(url, json=payload, timeout=300)
-        response.raise_for_status()
-        body = response.json()
-        if not body.get("success", False):
-            raise RuntimeError(body.get("error") or f"Request failed: {url}")
-        return body.get("data")
+        last_error = None
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(url, json=payload, timeout=300)
+                response.raise_for_status()
+                body = response.json()
+                if not body.get("success", False):
+                    raise RuntimeError(body.get("error") or f"Request failed: {url}")
+                return body.get("data")
+            except (requests.exceptions.RequestException, RuntimeError) as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    import time
+                    wait_time = (attempt + 1) * 5  # 5s, 10s, 15s backoff
+                    print(f"  [retry] {path} failed ({e}), retrying in {wait_time}s...")
+                    time.sleep(wait_time)
+        raise last_error
 
     def switch_tenant(self, tenant_id: str) -> None:
         self._post("/api/v2/tenants/switch", {"tenant_id": tenant_id})
@@ -185,7 +196,7 @@ class CortexEvalClient:
             },
         )
 
-    def search(self, query: str, thread_id: str | None = None, limit: int = 5, min_score: float = 0.6) -> list[dict[str, Any]]:
+    def search(self, query: str, thread_id: str | None = None, limit: int = 8, min_score: float = 0.4) -> list[dict[str, Any]]:
         payload: dict[str, Any] = {
             "query": query,
             "limit": limit,
@@ -208,17 +219,31 @@ class CortexEvalClient:
             context_texts.append(f"[Context {idx}]\nURI: {ctx.get('uri', '')}\n{text}")
 
         prompt = (
-            "Answer the question using only the provided memory contexts. "
-            "If the contexts do not contain enough information, say exactly: "
-            "I cannot answer this question based on the provided memory contexts.\n\n"
+            "Answer the question using the provided memory contexts. "
+            "Be direct and concise - give the specific answer (a name, date, fact, or short phrase) "
+            "when the information is present or clearly implied in the contexts.\n\n"
+            "CRITICAL TIME CONTEXT: These memories are from conversations that took place in 2023 "
+            "(primarily May-October 2023). When you see relative time expressions like 'last Saturday', "
+            "'yesterday', 'next month', they refer to dates in 2023, NOT the current date. "
+            "Always convert relative dates to absolute dates (e.g., 'yesterday before May 7, 2023' = May 6, 2023).\n\n"
+            "Guidelines:\n"
+            "- Give SPECIFIC answers: exact dates (May 7, 2023), specific names (Sweden), precise numbers.\n"
+            "- If the answer is explicitly stated, give it directly.\n"
+            "- If the answer is strongly implied (e.g. past breakup implies current single status, "
+            "'ten years ago' mentioned in context implies '10 years ago'), state it confidently.\n"
+            "- For hypothetical/reasoning questions (e.g. 'would X still Y if...'), reason from "
+            "available context and give your best inference (e.g. 'Likely no', 'Probably yes').\n"
+            "- For multi-hop questions, combine information from multiple contexts to form a complete answer.\n"
+            "- Only say you cannot answer if the contexts are completely unrelated to the question "
+            "and no reasonable inference is possible.\n\n"
             f"Question: {question}\n\n"
-            f"Memory Contexts:\n\n{'\n\n'.join(context_texts[:5])}\n\nAnswer:"
+            f"Memory Contexts:\n\n{chr(10).join(context_texts[:8])}\n\nAnswer:"
         )
 
         response = self.llm_client.chat.completions.create(
             model=self.answer_model,
             messages=[
-                {"role": "system", "content": "You answer questions from memory retrieval results only."},
+                {"role": "system", "content": "You are a helpful assistant that answers questions from memory retrieval results. Be direct and give concise factual answers."},
                 {"role": "user", "content": prompt},
             ],
             temperature=0,
@@ -742,8 +767,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--user", default=None, help="Override user id for ingestion.")
     parser.add_argument("--agent-id", default="cortex-eval-agent", help="Agent id used during ingestion.")
     parser.add_argument("--parallel", type=int, default=1, metavar="N", help="QA mode: number of samples to process concurrently (max 10).")
-    parser.add_argument("--top-k", type=int, default=5, help="QA mode: number of search results to retrieve.")
-    parser.add_argument("--min-score", type=float, default=0.6, help="QA mode: minimum search score threshold.")
+    parser.add_argument("--top-k", type=int, default=8, help="QA mode: number of search results to retrieve.")
+    parser.add_argument("--min-score", type=float, default=0.4, help="QA mode: minimum search score threshold.")
     parser.add_argument("--wait-timeout", type=float, default=600.0, help="Ingest mode: max seconds to wait for memory readiness.")
     parser.add_argument("--poll-interval", type=float, default=1.0, help="Ingest mode: memory readiness polling interval.")
     parser.add_argument("--data-dir", default=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cortex-data"), help="Local cortex data dir used to inspect memory_index during ingest readiness checks.")

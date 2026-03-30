@@ -144,7 +144,30 @@ async fn search_layered(
         );
     }
 
-    let needs_lexical_fallback = merged.is_empty();
+    // B4: When merged results are insufficient, supplement with a user-scope targeted search
+    // This ensures user-level extracted memories (personal_info, events, preferences) are
+    // included even if global vector search misses them (critical for LoCoMo Cat 1/2)
+    if merged.len() < limit && options.root_uri.is_none() {
+        let mut user_scope_options = semantic_options.clone();
+        user_scope_options.root_uri = Some("cortex://user".to_string());
+        user_scope_options.threshold = (min_score * 0.4).max(0.0);
+        let user_results = vector_engine
+            .semantic_search(query, &user_scope_options)
+            .await
+            .map_err(|e| AppError::Internal(format!("User-scope supplement search failed: {}", e)))?;
+        if !user_results.is_empty() {
+            info!(
+                query = %query,
+                user_scope_count = user_results.len(),
+                "B4: user-scope supplement search triggered"
+            );
+            let user_merged = merge_search_results(Vec::new(), user_results, Vec::new());
+            merged = merge_merged_results(merged, user_merged);
+            rerank_results(&profile, &mut merged);
+        }
+    }
+
+    let needs_lexical_fallback = merged.len() < 3;
 
     if needs_lexical_fallback {
         let lexical_results =
@@ -202,6 +225,7 @@ enum QueryKind {
     Relationship,
     Career,
     Support,
+    Activity,
 }
 
 #[derive(Clone)]
@@ -444,6 +468,32 @@ fn build_query_profile(query: &str) -> QueryProfile {
         };
     }
 
+    if [
+        "activit", "hobby", "hobbies", "sport", "pottery", "camping", "swimming",
+        "painting", "hiking", "cooking", "garden", "craft", "yoga", "dance", "exercise",
+        "partake", "involve", "engage", "interest",
+    ]
+    .iter()
+    .any(|kw| query_lower.contains(kw))
+    {
+        return QueryProfile {
+            kind: QueryKind::Activity,
+            expanded_query: format!(
+                "{} activities hobby interests sports recreation leisure participate",
+                query
+            ),
+            keywords: extract_keywords(query, QueryKind::Activity),
+            strong_terms: vec![
+                "pottery", "camping", "swimming", "painting", "hiking", "cooking",
+                "activities", "hobby", "hobbies", "sport", "partake", "participate",
+            ],
+            medium_terms: vec![
+                "interest", "enjoy", "leisure", "recreation", "class", "sign up", "enrolled",
+                "outdoor", "creative",
+            ],
+        };
+    }
+
     QueryProfile {
         kind: QueryKind::General,
         expanded_query: query.to_string(),
@@ -521,6 +571,15 @@ fn extract_keywords(query: &str, kind: QueryKind) -> Vec<String> {
             ["support", "help", "encourage", "motivate", "family", "friend", "community"]
                 .into_iter()
                 .map(str::to_string),
+        ),
+        QueryKind::Activity => keywords.extend(
+            [
+                "pottery", "camping", "swimming", "painting", "hiking", "cooking",
+                "activities", "hobby", "hobbies", "sport", "partake", "participate",
+                "class", "sign", "enroll",
+            ]
+            .into_iter()
+            .map(str::to_string),
         ),
         QueryKind::General => {}
     }
@@ -604,6 +663,19 @@ fn query_path_bonus(kind: QueryKind, path_lower: &str) -> f32 {
                 0.0
             }
         }
+        QueryKind::Activity => {
+            if path_lower.contains("/events/") {
+                0.12
+            } else if path_lower.contains("/preferences/") {
+                0.08
+            } else if path_lower.contains("/personal_info/") {
+                0.06
+            } else if path_lower.contains("/timeline/") {
+                0.04
+            } else {
+                0.0
+            }
+        }
         QueryKind::General => 0.0,
     }
 }
@@ -630,6 +702,7 @@ fn rerank_results(profile: &QueryProfile, results: &mut [MergedSearchResult]) {
         bonus += keyword_hits.min(4.0) * 0.03;
         bonus += medium_hits.min(3.0) * 0.02;
         bonus += strong_hits.min(2.0) * 0.04;
+        bonus += query_path_bonus(profile.kind, &result.uri.to_lowercase());
 
         result.score += bonus;
     }

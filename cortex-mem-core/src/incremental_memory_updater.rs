@@ -89,10 +89,12 @@ impl MemoryItem for EventMemory {
     fn id_prefix(&self) -> &'static str { "event" }
     fn file_dir(&self) -> &'static str { "events" }
     fn format_content(&self) -> String {
+        // Put timestamp at the very beginning so it appears in vector embeddings
+        // and improves temporal query recall (LoCoMo Cat 2 time questions)
         let timestamp = self.timestamp.as_deref().unwrap_or("N/A");
         format!(
-            "# {}\n\n**Type**: {}\n\n**Summary**: {}\n\n**Timestamp**: {}",
-            self.title, self.event_type, self.summary, timestamp
+            "# {}\n\n**Date**: {}\n\n**Type**: {}\n\n**Summary**: {}",
+            self.title, timestamp, self.event_type, self.summary
         )
     }
 }

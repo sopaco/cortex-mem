@@ -53,12 +53,23 @@ List 5-10 important takeaways or insights (numbered or bullets)
 ## Entities
 Important people, organizations, technologies, or concepts mentioned
 
+## Timeline Events
+List ALL dated events with exact timestamps. Format each as:
+- [DATE/TIME]: Brief description of the event
+If no dated events are mentioned, write: (none)
+
+## Activities & Interests
+List ALL specific activities, hobbies, sports, arts, outdoor activities, or interests mentioned:
+- [PERSON]: activity/hobby
+If none mentioned, write: (none)
+
 ## Context
 Any relevant background, timeframe, or situational information
 
 Requirements:
 - Use clear markdown formatting
 - Be comprehensive but concise
+- **ALWAYS fill in Timeline Events and Activities & Interests sections** - these are critical for memory retrieval
 - Focus on information useful for understanding and decision-making
 - Aim for ~500-2000 tokens total
 - **CRITICAL: Use the SAME LANGUAGE as the input content**
@@ -78,19 +89,34 @@ Structured Overview (in the same language as the content):"#,
     /// Prompt for memory extraction from conversation
     pub fn memory_extraction(conversation: &str) -> String {
         format!(
-            r#"Analyze the following conversation and extract:
+            r#"Analyze the following conversation and extract structured memory information.
 
-1. **Facts**: Factual information that was shared or discovered
-2. **Decisions**: Decisions that were made during the conversation
-3. **Action Items**: Tasks or next steps that were identified
-4. **User Preferences**: Any preferences, habits, or patterns expressed by the user
-5. **Agent Learnings**: Insights or lessons learned that could help in future interactions
+Extract ALL of the following categories that are present:
 
-Format your response as JSON with the following structure:
+1. **Events** (with dates): Specific events, activities, or occurrences with their dates/times
+   - Include: meetings, trips, races, classes, ceremonies, conferences, appointments
+   - MUST include the exact date/time mentioned (e.g., "July 2, 2023", "last Sunday")
+2. **Personal Info**: Identity facts about the people in the conversation
+   - Include: career, job, profession, relationship status, identity, background, research topics
+   - Include: what someone studied, investigated, or is working on
+3. **Activities & Hobbies**: Specific activities, sports, hobbies, or interests
+   - Include: pottery, camping, swimming, painting, hiking, cooking, yoga, etc.
+   - Note if someone signed up for or enrolled in something
+4. **Future Plans & Schedule**: Upcoming events, conferences, or scheduled activities
+   - Include: events planned for specific future dates or months
+5. **Relationships**: Information about relationships between people
+6. **User Preferences**: Preferences, habits, or patterns expressed
+7. **Facts**: Other factual information shared
+8. **Agent Learnings**: Insights useful for future interactions
+
+Format your response as JSON:
 {{
+  "events": [{{ "title": "...", "date": "exact date/time string", "description": "...", "participants": [] }}],
+  "personal_info": [{{ "person": "...", "category": "career|relationship|identity|research|other", "content": "..." }}],
+  "activities": [{{ "person": "...", "activity": "...", "context": "signed up|participates in|enjoys|etc" }}],
+  "future_plans": [{{ "person": "...", "event": "...", "date": "...", "description": "..." }}],
+  "relationships": [{{ "persons": ["...", "..."], "type": "...", "description": "..." }}],
   "facts": [{{ "content": "...", "confidence": 0.9 }}],
-  "decisions": [{{ "description": "...", "rationale": "..." }}],
-  "action_items": [{{ "description": "...", "priority": "high|medium|low" }}],
   "user_preferences": [{{ "category": "...", "content": "..." }}],
   "agent_learnings": [{{ "task_type": "...", "learned_approach": "...", "success_rate": 0.8 }}]
 }}
@@ -116,7 +142,7 @@ Extracted Memories (JSON):"#,
 
 ## Output JSON Format
 {{
-  "rewritten_query": "expanded query for better vector retrieval (keep original meaning, add synonyms, max 80 chars)",
+  "rewritten_query": "expanded query for better vector retrieval (keep original meaning, add synonyms, max 150 chars)",
   "keywords": ["keyword1", "keyword2"],
   "entities": ["entity1", "entity2"],
   "intent_type": "entity_lookup|factual|temporal|relational|search|general",
@@ -124,15 +150,20 @@ Extracted Memories (JSON):"#,
 }}
 
 ## Field Rules
-- **rewritten_query**: Expand abbreviations and add relevant synonyms. If already clear, keep as-is. Max 80 chars.
-- **keywords**: 2-5 most important search terms. Must be in the same language as the query.
+- **rewritten_query**: Aggressively expand the query with synonyms and related concepts for maximum vector recall. Max 150 chars.
+  - For personal fact questions ("what did X do/research/study"): add domain synonyms, e.g. "Caroline research → Caroline studied investigated explored topic subject adoption agencies"
+  - For date/time questions ("when did X happen"): expand with event keywords, e.g. "when pottery class → pottery class signup enrolled date schedule July"
+  - For activity/hobby questions ("what activities/hobbies does X do"): add activity-type words, e.g. "Melanie activities → Melanie hobbies sports pottery camping swimming painting arts outdoor"
+  - For relationship/status questions: add inference keywords, e.g. "relationship status → single dating breakup partner"
+  - For conference/event questions: add scheduling words, e.g. "conference → conference event attend scheduled July 2023"
+- **keywords**: 3-6 most important search terms including expanded terms. Must be in the same language as the query.
 - **entities**: Named entities (person names, place names, tool names, technology names). Empty array if none.
 - **intent_type**: Choose ONE from:
   - `entity_lookup`: Query asks about a specific named entity ("王明是谁", "who is Alice", "React框架")
-  - `factual`: Asking for a specific fact ("X是什么", "what is X", "how does X work")
-  - `temporal`: Involves time reference ("最近", "上周", "recently", "last week", "yesterday")
-  - `relational`: Comparison or relationship ("X vs Y", "X和Y的关系", "difference between X and Y")
-  - `search`: Looking to find/list content ("查找", "列出", "find", "show me", "list all")
+  - `factual`: Asking for a specific personal fact about someone ("what did X research", "what is X's job", "what did X do")
+  - `temporal`: Involves time reference ("最近", "上周", "recently", "last week", "when did", "what date")
+  - `relational`: Comparison or relationship ("X vs Y", "X和Y的关系", "difference between X and Y", "relationship status")
+  - `search`: Looking to find/list content ("查找", "列出", "find", "show me", "list all", "what activities", "what hobbies")
   - `general`: Everything else
 - **time_constraint**: Set to `null` if no time reference in query. Otherwise fill start/end as descriptive strings.
 
