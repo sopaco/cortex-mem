@@ -1,24 +1,24 @@
 {
-	"name": "@memclaw/bin-linux-x64",
-	"version": "0.1.6",
-	"description": "MemClaw binaries for Linux x64",
-	"publishConfig": {
-		"access": "public"
-	},
-	"os": [
-		"linux"
-	],
-	"cpu": [
-		"x64"
-	],
-	"files": [
-		"bin/"
-	],
-	"author": "Sopaco",
-	"license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/sopaco/cortex-mem.git",
-		"directory": "examples/@memclaw/bin-linux-x64"
-	}
+  "name": "@memclaw/bin-linux-x64",
+  "version": "0.1.7",
+  "description": "MemClaw binaries for Linux x64",
+  "publishConfig": {
+    "access": "public"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "bin/"
+  ],
+  "author": "Sopaco",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sopaco/cortex-mem.git",
+    "directory": "examples/@memclaw/bin-linux-x64"
+  }
 }

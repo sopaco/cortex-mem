@@ -63,6 +63,8 @@ impl AppState {
             )
             .await?,
         );
+        // Ensure collection exists even when embedding_dim is not configured
+        Self::ensure_collection_with_probed_dim(&cortex).await?;
         Self::bootstrap_vectors_if_collection_empty(&cortex).await?;
         tracing::info!("✅ Cortex Memory initialized with MemoryEventCoordinator");
 
@@ -239,6 +241,50 @@ impl AppState {
         Ok(())
     }
 
+    /// Ensure Qdrant collection exists by probing embedding dimension if not configured.
+    ///
+    /// When `embedding_dim` is not set in config, `QdrantVectorStore::new` skips collection creation.
+    /// This method probes the actual embedding dimension from the embedding service and ensures
+    /// the collection is created. This is critical for first-time users who don't have
+    /// `embedding_dim` in their config file.
+    async fn ensure_collection_with_probed_dim(cortex: &Arc<CortexMem>) -> anyhow::Result<()> {
+        let Some(qdrant_store) = cortex.qdrant_store() else {
+            tracing::debug!("No Qdrant store available, skipping collection ensure");
+            return Ok(());
+        };
+
+        // If embedding_dim is already set, collection was already ensured in QdrantVectorStore::new
+        if qdrant_store.embedding_dim().is_some() {
+            tracing::debug!("embedding_dim already configured, collection already ensured");
+            return Ok(());
+        }
+
+        let Some(embedding_client) = cortex.embedding() else {
+            tracing::warn!("No embedding client available, cannot probe embedding dimension");
+            return Ok(());
+        };
+
+        tracing::info!("embedding_dim not configured, probing from embedding service...");
+        match embedding_client.embed("probe").await {
+            Ok(probe_vec) => {
+                let probed_dim = probe_vec.len();
+                tracing::info!("Probed embedding dimension: {}", probed_dim);
+                if let Err(e) = qdrant_store.ensure_collection_with_dim(probed_dim).await {
+                    tracing::warn!("Failed to ensure collection with probed dim {}: {}", probed_dim, e);
+                } else {
+                    tracing::info!("Collection ensured with probed dimension {}", probed_dim);
+                }
+            }
+            Err(e) => {
+                tracing::warn!(
+                    "Failed to probe embedding dimension, collection may not be created: {}", e
+                );
+            }
+        }
+
+        Ok(())
+    }
+
     /// Load configurations from config file or environment variables
     fn load_configs(
         config_path: &Path,
@@ -391,6 +437,9 @@ impl AppState {
             )
             .await?,
         );
+
+        // Ensure collection exists even when embedding_dim is not configured
+        Self::ensure_collection_with_probed_dim(&new_cortex).await?;
 
         // Run bootstrap vector sync in background only if this tenant hasn't been bootstrapped yet
         if needs_bootstrap {
