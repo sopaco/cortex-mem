@@ -6,8 +6,57 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
+use std::sync::LazyLock;
 
-/// Embedding 速率限制器
+// ── 全局速率限制器注册表 ─────────────────────────────────────────────────────
+
+/// 全局速率限制器注册表
+/// 
+/// 使用 (api_base_url, api_key) 作为 key，确保同一个 embedding 服务
+/// 的所有 EmbeddingClient 实例共享同一个 RateLimiter。
+/// 这解决了多 tenant 场景下每个实例独立限流导致无法协调的问题。
+static GLOBAL_RATE_LIMITERS: LazyLock<RwLock<HashMap<String, Arc<RateLimiter>>>> = 
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// 生成全局 RateLimiter 的 key
+fn make_global_key(api_base_url: &str, api_key: &str) -> String {
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
+    let mut hasher = DefaultHasher::new();
+    api_base_url.hash(&mut hasher);
+    api_key.hash(&mut hasher);
+    format!("{:x}", hasher.finish())
+}
+
+/// 获取或创建全局 RateLimiter
+async fn get_or_create_global_rate_limiter(
+    api_base_url: &str, 
+    api_key: &str, 
+    calls_per_minute: u32
+) -> Arc<RateLimiter> {
+    let key = make_global_key(api_base_url, api_key);
+    
+    // 先尝试读锁获取
+    {
+        let registry = GLOBAL_RATE_LIMITERS.read().await;
+        if let Some(limiter) = registry.get(&key) {
+            return limiter.clone();
+        }
+    }
+    
+    // 需要写锁创建
+    let mut registry = GLOBAL_RATE_LIMITERS.write().await;
+    // 双重检查，避免重复创建
+    if let Some(limiter) = registry.get(&key) {
+        return limiter.clone();
+    }
+    
+    let limiter = Arc::new(RateLimiter::new(calls_per_minute));
+    registry.insert(key, limiter.clone());
+    limiter
+}
+
+// ── Embedding 速率限制器 ─────────────────────────────────────────────────────
 ///
 /// 实现非阻塞的速率限制，使用 CAS 循环确保最小间隔。
 /// 
@@ -38,42 +87,40 @@ impl RateLimiter {
     /// 等待直到可以安全发出下一次请求
     /// 
     /// 使用 CAS 循环确保：
-    /// 1. 不持有任何锁的同时等待
-    /// 2. 正确更新下次允许的时间
-    /// 3. 多个请求可以并行等待，不会互相阻塞
+    /// 1. 先用 CAS 保留一个时间槽
+    /// 2. 然后等待到该时间槽才返回
+    /// 3. 保证请求之间有最小间隔，避免请求爆发
     pub async fn acquire(&self) {
         loop {
             let now_nanos = Self::current_nanos();
             let next_allowed = self.next_allowed_nanos.load(Ordering::SeqCst);
             
-            // 如果当前时间已超过下次允许时间，尝试获取令牌
-            if now_nanos >= next_allowed {
-                let new_next = now_nanos + self.min_interval_nanos;
-                match self.next_allowed_nanos.compare_exchange(
-                    next_allowed,
-                    new_next,
-                    Ordering::SeqCst,
-                    Ordering::SeqCst,
-                ) {
-                    Ok(_) => {
-                        // 成功获取令牌
-                        return;
+            // 计算我们想要保留的时间槽
+            let our_slot = std::cmp::max(now_nanos, next_allowed) + self.min_interval_nanos;
+            
+            // 尝试用 CAS 保留时间槽
+            match self.next_allowed_nanos.compare_exchange(
+                next_allowed,
+                our_slot,
+                Ordering::SeqCst,
+                Ordering::SeqCst,
+            ) {
+                Ok(_) => {
+                    // 成功保留时间槽，等待到该时间
+                    let wait_nanos = our_slot.saturating_sub(now_nanos);
+                    if wait_nanos > 1_000_000 { // > 1ms
+                        let wait = Duration::from_nanos(wait_nanos);
+                        debug!("Rate limiter: acquired slot, waiting {:?}", wait);
+                        tokio::time::sleep(wait).await;
                     }
-                    Err(_) => {
-                        // 其他请求先更新了，重试
-                        continue;
-                    }
+                    return;
+                }
+                Err(_) => {
+                    // 其他请求先更新了，重试（会读取新的 next_allowed）
+                    // 短暂退避避免忙等
+                    tokio::time::sleep(Duration::from_millis(1)).await;
                 }
             }
-            
-            // 需要等待，计算等待时间（不持有任何锁）
-            let wait_nanos = next_allowed.saturating_sub(now_nanos);
-            let wait = Duration::from_nanos(wait_nanos.min(self.min_interval_nanos));
-            
-            debug!("Rate limiter: waiting {:?}", wait);
-            
-            // 短间隔轮询，避免错过
-            tokio::time::sleep(wait.min(Duration::from_millis(50))).await;
         }
     }
 
@@ -219,8 +266,11 @@ pub struct EmbeddingClient {
 
 impl EmbeddingClient {
     /// 创建新的 EmbeddingClient
+    /// 
+    /// 注意：所有使用相同 API endpoint 和 API key 的 EmbeddingClient 实例
+    /// 会共享同一个全局 RateLimiter，确保跨实例的速率控制正确性。
     pub fn new(config: EmbeddingConfig) -> Result<Self> {
-        let rate_limiter = Arc::new(RateLimiter::new(config.calls_per_minute));
+        let calls_per_minute = config.calls_per_minute;
         let cache = Arc::new(RwLock::new(InnerCache::new(
             config.cache_max_entries,
             config.cache_ttl_secs,
@@ -232,6 +282,40 @@ impl EmbeddingClient {
 
         info!(
             "EmbeddingClient initialized: model={}, rate_limit={}/min, cache={}entries/{}s",
+            config.model_name,
+            config.calls_per_minute,
+            config.cache_max_entries,
+            config.cache_ttl_secs,
+        );
+
+        Ok(Self {
+            config,
+            client,
+            rate_limiter: Arc::new(RateLimiter::new(calls_per_minute)),
+            cache,
+        })
+    }
+
+    /// 创建新的 EmbeddingClient（异步版本，使用全局 RateLimiter）
+    /// 
+    /// 推荐使用此方法创建 EmbeddingClient，确保跨实例的速率控制正确性。
+    pub async fn new_with_global_limiter(config: EmbeddingConfig) -> Result<Self> {
+        let rate_limiter = get_or_create_global_rate_limiter(
+            &config.api_base_url,
+            &config.api_key,
+            config.calls_per_minute,
+        ).await;
+        let cache = Arc::new(RwLock::new(InnerCache::new(
+            config.cache_max_entries,
+            config.cache_ttl_secs,
+        )));
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(config.timeout_secs))
+            .build()
+            .map_err(|e| crate::Error::Embedding(format!("Failed to create HTTP client: {}", e)))?;
+
+        info!(
+            "EmbeddingClient initialized (global limiter): model={}, rate_limit={}/min, cache={}entries/{}s",
             config.model_name,
             config.calls_per_minute,
             config.cache_max_entries,

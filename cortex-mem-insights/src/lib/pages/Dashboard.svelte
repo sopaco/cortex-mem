@@ -2,11 +2,11 @@
   import { onMount } from 'svelte';
   import apiClient from '../api';
   import type { HealthStatus, SessionInfo } from '../types';
-  import { tenants, tenantInfo, currentTenant, initTenants, switchTenant, loadTenantInfo, tenantLoading } from '../stores/tenant';
+  import { tenants, tenantInfo, currentTenant, initTenants, switchTenant, loadTenantInfo, tenantLoading, isInitialized, resetInitialization } from '../stores/tenant';
   import TenantSelector from '../components/TenantSelector.svelte';
 
   let health = $state<HealthStatus | null>(null);
-  let loading = $state(true);
+  let loading = $state(false);
   let error = $state('');
   let refreshing = $state(false);
   let loadingTenantInfo = $state(false);
@@ -20,7 +20,18 @@
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  async function loadData() {
+  async function loadData(force: boolean = false) {
+    // Skip if already initialized and not forcing refresh
+    if (!force && isInitialized()) {
+      // Just load health status, tenant info is already cached
+      try {
+        health = await apiClient.getHealth();
+      } catch (e) {
+        console.error('Failed to load health:', e);
+      }
+      return;
+    }
+    
     loading = true;
     error = '';
     
@@ -34,9 +45,10 @@
       tenants.set(tenantList);
       
       // Load info for each tenant sequentially (not in parallel to avoid race conditions)
+      // Use force=true to bypass cache when explicitly refreshing
       for (const tenant of tenantList) {
         try {
-          await loadTenantInfo(tenant);
+          await loadTenantInfo(tenant, force);
         } catch (e) {
           console.error(`Failed to load info for tenant ${tenant}:`, e);
         }
@@ -57,7 +69,8 @@
     loadingTenantInfo = true;
     try {
       await switchTenant(tenantId);
-      await loadData();
+      // Force refresh tenant info for selected tenant
+      await loadTenantInfo(tenantId, true);
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to switch tenant';
     } finally {
@@ -66,12 +79,15 @@
   }
 
   onMount(() => {
-    loadData();
+    loadData(false);
   });
 
   function handleRefresh() {
     refreshing = true;
-    loadData();
+    resetInitialization();
+    loadData(true).finally(() => {
+      refreshing = false;
+    });
   }
 </script>
 

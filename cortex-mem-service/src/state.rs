@@ -3,12 +3,12 @@ use cortex_mem_core::{
     MemoryIndexManager, QdrantConfig, SessionManager, VectorSearchEngine,
     automation::{SyncConfig, SyncManager},
     memory_events::MemoryEvent,
-    vector_store::VectorStore,
 };
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use std::time::Duration;
+use tokio::sync::RwLock;
 
 /// Application state shared across all handlers
 #[derive(Clone)]
@@ -33,24 +33,35 @@ pub struct AppState {
     pub memory_event_tx: Arc<RwLock<Option<tokio::sync::mpsc::UnboundedSender<MemoryEvent>>>>,
     /// Whether to use LLM intent analysis before each search (from config.toml [cortex] section).
     pub enable_intent_analysis: bool,
+    /// Set of tenant IDs that have already had their bootstrap vector sync executed.
+    /// Prevents duplicate bootstrap runs when the same tenant is switched multiple times.
+    bootstrapped_tenants: Arc<RwLock<HashSet<String>>>,
+    /// Path to the configuration file
+    config_path: PathBuf,
 }
 
 impl AppState {
     /// Create new application state with unified automation
-    pub async fn new(data_dir: &str) -> anyhow::Result<Self> {
+    pub async fn new(data_dir: &str, config_path: &Path) -> anyhow::Result<Self> {
         let data_dir = PathBuf::from(data_dir);
 
         tracing::info!("Initializing Cortex Memory with unified automation...");
 
-        let (llm_client, embedding_config, qdrant_config) = Self::load_configs()?;
+        let (llm_client, embedding_config, qdrant_config) = Self::load_configs(config_path)?;
 
-        let enable_intent_analysis = cortex_mem_config::Config::load("config.toml")
+        let enable_intent_analysis = cortex_mem_config::Config::load(config_path)
             .map(|c| c.cortex.enable_intent_analysis)
             .unwrap_or(true);
 
         let cortex = Arc::new(
-            Self::build_runtime(&data_dir, None, llm_client.clone(), embedding_config, qdrant_config)
-                .await?,
+            Self::build_runtime(
+                &data_dir,
+                None,
+                llm_client.clone(),
+                embedding_config,
+                qdrant_config,
+            )
+            .await?,
         );
         Self::bootstrap_vectors_if_collection_empty(&cortex).await?;
         tracing::info!("✅ Cortex Memory initialized with MemoryEventCoordinator");
@@ -73,6 +84,8 @@ impl AppState {
             current_tenant_id: Arc::new(RwLock::new(None)),
             memory_event_tx: Arc::new(RwLock::new(memory_event_tx)),
             enable_intent_analysis,
+            bootstrapped_tenants: Arc::new(RwLock::new(HashSet::new())),
+            config_path: config_path.to_path_buf(),
         })
     }
 
@@ -136,7 +149,9 @@ impl AppState {
 
             match builder.build().await {
                 Ok(cortex) => {
-                    if expected_vector && (cortex.vector_store().is_none() || cortex.memory_event_tx().is_none()) {
+                    if expected_vector
+                        && (cortex.vector_store().is_none() || cortex.memory_event_tx().is_none())
+                    {
                         let err = anyhow::anyhow!(
                             "runtime built without vector/coordinator capability for {:?}",
                             runtime_root
@@ -187,7 +202,9 @@ impl AppState {
             }
         }
         if !has_bootstrap_content {
-            tracing::info!("Skipping bootstrap vector sync because no bootstrap content exists yet");
+            tracing::info!(
+                "Skipping bootstrap vector sync because no bootstrap content exists yet"
+            );
             return Ok(());
         }
 
@@ -222,15 +239,17 @@ impl AppState {
         Ok(())
     }
 
-    /// Load configurations from config.toml or environment variables
-    fn load_configs() -> anyhow::Result<(
+    /// Load configurations from config file or environment variables
+    fn load_configs(
+        config_path: &Path,
+    ) -> anyhow::Result<(
         Option<Arc<dyn LLMClient>>,
         Option<EmbeddingConfig>,
         Option<QdrantConfig>,
     )> {
-        // Try to load from config.toml first
-        if let Ok(config) = cortex_mem_config::Config::load("config.toml") {
-            tracing::info!("Loaded configuration from config.toml");
+        // Try to load from config file first
+        if let Ok(config) = cortex_mem_config::Config::load(config_path) {
+            tracing::info!("Loaded configuration from {}", config_path.display());
 
             // LLM client
             let llm_client = {
@@ -348,6 +367,12 @@ impl AppState {
 
     /// Switch to a different tenant by rebuilding a complete tenant-scoped runtime.
     pub async fn switch_tenant(&self, tenant_id: &str) -> anyhow::Result<()> {
+        // Check if this tenant has already been bootstrapped
+        let needs_bootstrap = {
+            let bootstrapped = self.bootstrapped_tenants.read().await;
+            !bootstrapped.contains(tenant_id)
+        };
+
         let tenant_root = self.data_dir.join("tenants").join(tenant_id);
 
         std::fs::create_dir_all(tenant_root.join("agent"))?;
@@ -355,7 +380,7 @@ impl AppState {
         std::fs::create_dir_all(tenant_root.join("session"))?;
         std::fs::create_dir_all(tenant_root.join("user"))?;
 
-        let (llm_client, embedding_config, qdrant_config) = Self::load_configs()?;
+        let (llm_client, embedding_config, qdrant_config) = Self::load_configs(&self.config_path)?;
         let new_cortex = Arc::new(
             Self::build_runtime(
                 &tenant_root,
@@ -366,13 +391,28 @@ impl AppState {
             )
             .await?,
         );
-        // Run bootstrap vector sync in background to avoid blocking tenant switch
-        let cortex_for_bg = new_cortex.clone();
-        tokio::spawn(async move {
-            if let Err(e) = Self::bootstrap_vectors_if_collection_empty(&cortex_for_bg).await {
-                tracing::warn!("Background bootstrap vector sync failed: {}", e);
+
+        // Run bootstrap vector sync in background only if this tenant hasn't been bootstrapped yet
+        if needs_bootstrap {
+            // Mark as bootstrapped before starting the background task
+            {
+                let mut bootstrapped = self.bootstrapped_tenants.write().await;
+                bootstrapped.insert(tenant_id.to_string());
             }
-        });
+
+            let cortex_for_bg = new_cortex.clone();
+            let tenant_id_for_log = tenant_id.to_string();
+            tokio::spawn(async move {
+                if let Err(e) = Self::bootstrap_vectors_if_collection_empty(&cortex_for_bg).await {
+                    tracing::warn!(
+                        "Background bootstrap vector sync failed for tenant {}: {}",
+                        tenant_id_for_log,
+                        e
+                    );
+                }
+            });
+        }
+
         let new_session_manager = new_cortex.session_manager();
         let new_vector_store = new_cortex.vector_store();
         let new_memory_event_tx = new_cortex.memory_event_tx();
@@ -407,7 +447,11 @@ impl AppState {
             *current_id = Some(tenant_id.to_string());
         }
 
-        tracing::info!("✅ Switched to tenant runtime: {} ({:?})", tenant_id, tenant_root);
+        tracing::info!(
+            "✅ Switched to tenant runtime: {} ({:?})",
+            tenant_id,
+            tenant_root
+        );
         Ok(())
     }
 

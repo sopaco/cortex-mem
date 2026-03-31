@@ -23,8 +23,31 @@ export const tenantInfo = writable<Map<string, TenantInfo>>(new Map());
 // Loading state
 export const tenantLoading = writable<boolean>(false);
 
+// Track if initial load has been done
+let initialized = false;
+
+// Check if already initialized
+export function isInitialized(): boolean {
+  return initialized;
+}
+
+// Mark as initialized
+export function markInitialized(): void {
+  initialized = true;
+}
+
+// Reset initialization state (for refresh)
+export function resetInitialization(): void {
+  initialized = false;
+}
+
 // Initialize tenant store
 export async function initTenants(): Promise<void> {
+  // Skip if already initialized
+  if (initialized) {
+    return;
+  }
+  
   tenantLoading.set(true);
   try {
     const tenantList = await apiClient.listTenants();
@@ -40,6 +63,8 @@ export async function initTenants(): Promise<void> {
         await apiClient.switchTenant(tenantList[0]);
       }
     }
+    
+    initialized = true;
   } catch (e) {
     console.error('Failed to load tenants:', e);
   } finally {
@@ -49,6 +74,13 @@ export async function initTenants(): Promise<void> {
 
 // Switch tenant and update global state
 export async function switchTenant(tenantId: string): Promise<void> {
+  // Skip if already on this tenant
+  let currentTenantValue = '';
+  currentTenant.subscribe(v => currentTenantValue = v)();
+  if (currentTenantValue === tenantId) {
+    return;
+  }
+  
   tenantLoading.set(true);
   try {
     await apiClient.switchTenant(tenantId);
@@ -61,10 +93,27 @@ export async function switchTenant(tenantId: string): Promise<void> {
   }
 }
 
-// Load info for a specific tenant
-export async function loadTenantInfo(tenantId: string): Promise<TenantInfo> {
-  // Switch to tenant first to get its data
-  await apiClient.switchTenant(tenantId);
+// Load info for a specific tenant (optimized: don't switch tenant)
+export async function loadTenantInfo(tenantId: string, force: boolean = false): Promise<TenantInfo> {
+  // Check cache first (unless force refresh)
+  if (!force) {
+    let cachedInfo: TenantInfo | undefined;
+    tenantInfo.subscribe(map => cachedInfo = map.get(tenantId))();
+    if (cachedInfo) {
+      return cachedInfo;
+    }
+  }
+  
+  // Get current tenant
+  let currentTenantValue = '';
+  currentTenant.subscribe(v => currentTenantValue = v)();
+  
+  // Only switch if we're not already on this tenant
+  const needSwitch = currentTenantValue !== tenantId;
+  
+  if (needSwitch) {
+    await apiClient.switchTenant(tenantId);
+  }
   
   try {
     const sessions = await apiClient.getSessions();
@@ -140,10 +189,9 @@ export async function loadTenantInfo(tenantId: string): Promise<TenantInfo> {
     
     return info;
   } finally {
-    // Switch back to current tenant
-    const current = getCurrentTenantValue();
-    if (current) {
-      await apiClient.switchTenant(current);
+    // Only switch back if we switched in the first place
+    if (needSwitch && currentTenantValue) {
+      await apiClient.switchTenant(currentTenantValue);
     }
   }
 }

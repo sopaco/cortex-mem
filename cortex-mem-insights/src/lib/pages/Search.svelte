@@ -1,38 +1,38 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import apiClient from '../api';
   import type { SearchResult } from '../types';
-  import { currentTenant, initTenants } from '../stores/tenant';
+  import { currentTenant } from '../stores/tenant';
+  import { searchState, setLoading, setResults, setError, updateKeyword, updateScope, updateLimit } from '../stores/search';
   import TenantSelector from '../components/TenantSelector.svelte';
 
-  let keyword = $state('');
-  let scope = $state('all');
-  let limit = $state(10);
-  let results = $state<SearchResult[]>([]);
-  let loading = $state(false);
-  let error = $state('');
-  let searched = $state(false);
+  // Use reactive state from store
+  let keyword = $derived($searchState.keyword);
+  let scope = $derived($searchState.scope);
+  let limit = $derived($searchState.limit);
+  let results = $derived($searchState.results);
+  let loading = $derived($searchState.loading);
+  let error = $derived($searchState.error);
+  let searched = $derived($searchState.searched);
 
   async function handleSearch() {
     if (!keyword.trim()) return;
     
-    loading = true;
-    error = '';
-    searched = true;
+    setLoading(true);
+    setError('');
     
     try {
-      results = await apiClient.search(keyword, scope, limit);
+      const searchResults = await apiClient.search(keyword, scope, limit);
+      setResults(searchResults);
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : 'Search failed';
       // Handle vector search not available
       if (errMsg.includes('Vector search not available') || errMsg.includes('not configured')) {
-        error = 'Search service is not configured. Please configure Qdrant and Embedding service in the backend.';
+        setError('Search service is not configured. Please configure Qdrant and Embedding service in the backend.');
       } else {
-        error = errMsg;
+        setError(errMsg);
       }
-      results = [];
     } finally {
-      loading = false;
+      setLoading(false);
     }
   }
 
@@ -41,15 +41,6 @@
       handleSearch();
     }
   }
-
-  // Reload when tenant changes - clear results
-  $effect(() => {
-    const tenant = $currentTenant;
-    if (tenant) {
-      results = [];
-      searched = false;
-    }
-  });
 </script>
 
 <h1>Search Test</h1>
@@ -65,14 +56,20 @@
         id="keyword"
         class="form-input"
         placeholder="Enter search keyword..."
-        bind:value={keyword}
+        value={keyword}
+        oninput={(e) => updateKeyword(e.currentTarget.value)}
         onkeydown={handleKeydown}
       />
     </div>
     
     <div class="form-group">
       <label for="scope">Scope</label>
-      <select id="scope" class="form-select" bind:value={scope}>
+      <select 
+        id="scope" 
+        class="form-select" 
+        value={scope}
+        onchange={(e) => updateScope(e.currentTarget.value)}
+      >
         <option value="all">All</option>
         <option value="user">User</option>
         <option value="session">Session</option>
@@ -88,7 +85,8 @@
         class="form-input"
         min="1"
         max="100"
-        bind:value={limit}
+        value={limit}
+        oninput={(e) => updateLimit(parseInt(e.currentTarget.value) || 10)}
       />
     </div>
     

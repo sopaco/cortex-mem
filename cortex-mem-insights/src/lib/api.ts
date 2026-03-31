@@ -49,6 +49,9 @@ class ApiClient {
 		llm_available: boolean;
 	}> {
 		const response = await fetch('/health');
+		if (!response.ok) {
+			throw new Error(`Health check failed: ${response.status}`);
+		}
 		return response.json();
 	}
 

@@ -62,21 +62,16 @@ pub async fn trigger_reindex(
         return Err(AppError::Internal("Vector store not available".to_string()));
     };
     let Some(embedding_client) = cortex.embedding() else {
-        return Err(AppError::Internal("Embedding client not available".to_string()));
+        return Err(AppError::Internal(
+            "Embedding client not available".to_string(),
+        ));
     };
 
     let filesystem = cortex.filesystem();
 
-    use cortex_mem_core::{
-        VectorSyncManager,
-        vector_store::VectorStore,
-    };
+    use cortex_mem_core::VectorSyncManager;
 
-    let sync_manager = VectorSyncManager::new(
-        filesystem,
-        embedding_client,
-        qdrant_store,
-    );
+    let sync_manager = VectorSyncManager::new(filesystem, embedding_client, qdrant_store);
 
     // Run full sync in background to avoid timeout
     tokio::spawn(async move {

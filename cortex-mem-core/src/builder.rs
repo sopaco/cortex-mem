@@ -81,9 +81,9 @@ impl CortexMemBuilder {
         filesystem.initialize().await?;
         info!("Filesystem initialized at: {:?}", self.data_dir);
 
-        // 2. 初始化Embedding客户端（可选）
+        // 2. 初始化Embedding客户端（可选，使用全局限流器）
         let embedding = if let Some(cfg) = self.embedding_config {
-            match EmbeddingClient::new(cfg) {
+            match EmbeddingClient::new_with_global_limiter(cfg).await {
                 Ok(client) => Some(Arc::new(client)),
                 Err(e) => {
                     warn!("Failed to create embedding client: {}", e);

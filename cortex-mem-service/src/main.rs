@@ -26,6 +26,11 @@ struct Cli {
     #[arg(short, long, default_value = "./cortex-data")]
     data_dir: String,
 
+    /// Path to configuration file (config.toml).
+    /// If not specified, will look for config.toml in --data-dir first, then current directory.
+    #[arg(short, long)]
+    config: Option<PathBuf>,
+
     /// Server host
     #[arg(long, default_value = "localhost")]
     host: String,
@@ -41,6 +46,30 @@ struct Cli {
     /// Log file path. When specified, logs will be written to both file and stdout
     #[arg(long, value_name = "PATH")]
     log_file: Option<PathBuf>,
+}
+
+impl Cli {
+    /// Resolve the config file path with the following priority:
+    /// 1. If --config is explicitly specified, use it
+    /// 2. If --data-dir is specified (not default), look for config.toml in data_dir
+    /// 3. Otherwise, use config.toml in current directory
+    fn resolve_config_path(&self) -> PathBuf {
+        // Case 1: Explicit --config specified
+        if let Some(ref config) = self.config {
+            return config.clone();
+        }
+
+        // Case 2: --data-dir is not the default, look for config.toml in data_dir
+        // Default data_dir is "./cortex-data", but user might specify a different path
+        let data_dir = PathBuf::from(&self.data_dir);
+        let config_in_data_dir = data_dir.join("config.toml");
+        if config_in_data_dir.exists() {
+            return config_in_data_dir;
+        }
+
+        // Case 3: Fall back to config.toml in current directory
+        PathBuf::from("config.toml")
+    }
 }
 
 #[tokio::main]
@@ -92,9 +121,13 @@ async fn main() -> anyhow::Result<()> {
 
     info!("Starting Cortex Memory Service");
     info!("Data directory: {}", cli.data_dir);
+    
+    // Resolve config path with priority: explicit --config > data_dir/config.toml > ./config.toml
+    let config_path = cli.resolve_config_path();
+    info!("Config file: {}", config_path.display());
 
-    // Initialize application state
-    let state = AppState::new(&cli.data_dir).await?;
+    // Initialize application state with config path
+    let state = AppState::new(&cli.data_dir, &config_path).await?;
     let state = Arc::new(state);
 
     // Build router

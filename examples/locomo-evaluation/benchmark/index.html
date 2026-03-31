@@ -44,17 +44,76 @@
       display: flex; align-items: center; justify-content: space-between;
       height: 56px;
     }
-    nav .logo { font-size: 16px; font-weight: 800; color: var(--brand); letter-spacing: -0.02em; }
+    nav .logo { display: inline-flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: var(--brand); letter-spacing: -0.02em; }
+    nav .logo img { width: 45px; height: 45px; object-fit: contain; }
     nav .logo span { color: var(--gray-800); }
     nav a.gh {
       display: inline-flex; align-items: center; gap: 6px;
-      font-size: 13px; font-weight: 600; color: var(--gray-700);
+      font-size: 15px; font-weight: 600; color: var(--gray-700);
       text-decoration: none;
       border: 1px solid var(--gray-200);
       border-radius: 8px;
       padding: 5px 14px;
     }
-    nav a.gh:hover { background: var(--gray-50); }
+    nav a.gh { transition: background 0.18s, border-color 0.18s, transform 0.18s, box-shadow 0.18s; }
+    nav a.gh:hover { background: var(--gray-50); border-color: var(--gray-400); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
+    nav .logo { transition: opacity 0.18s; cursor: default; }
+
+    /* ── GLOBAL INTERACTIVE ── */
+    a, button, [role="button"] { transition: all 0.2s cubic-bezier(.22,1,.36,1); }
+
+    /* ── HERO BUTTONS ── */
+    .hero-btn-primary {
+      transition: transform 0.2s cubic-bezier(.22,1,.36,1), box-shadow 0.2s cubic-bezier(.22,1,.36,1), filter 0.2s;
+    }
+    .hero-btn-primary:hover {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 8px 28px rgba(91,63,228,0.55) !important;
+      filter: brightness(1.1);
+    }
+    .hero-btn-secondary {
+      transition: transform 0.2s cubic-bezier(.22,1,.36,1), background 0.2s, border-color 0.2s;
+    }
+    .hero-btn-secondary:hover {
+      transform: translateY(-3px) scale(1.03);
+      background: rgba(255,255,255,0.16) !important;
+      border-color: rgba(255,255,255,0.4) !important;
+    }
+
+    /* ── CARDS ── */
+    .cat-card, .intent-card, .feat-card, .token-kpi {
+      transition: transform 0.22s cubic-bezier(.22,1,.36,1), box-shadow 0.22s cubic-bezier(.22,1,.36,1);
+    }
+    .cat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.1); }
+    .intent-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.1); }
+    .feat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(0,0,0,0.09); }
+    .token-kpi:hover { transform: translateY(-4px); }
+    .token-kpi.primary:hover { box-shadow: 0 16px 48px rgba(91,63,228,0.45), inset 0 1px 0 rgba(255,255,255,0.15); }
+    .token-kpi.green:hover  { box-shadow: 0 16px 40px rgba(16,185,129,0.25); }
+    .token-kpi.amber:hover  { box-shadow: 0 16px 40px rgba(245,158,11,0.2); }
+
+    /* ── TABLE ROWS ── */
+    table.comp tbody tr { transition: background 0.15s; }
+    table.comp tbody tr:hover td { background: #f5f3ff; cursor: default; }
+    table.comp tbody tr:hover td.best-col { background: #ede9ff; }
+
+    /* ── SCORE ROWS ── */
+    .sc-row { transition: transform 0.18s; border-radius: 8px; padding: 4px 6px; margin: 0 -6px; }
+    .sc-row:hover { transform: translateX(4px); background: var(--gray-50); }
+
+    /* ── STAT PILLS ── */
+    .stat-pill {
+      transition: transform 0.22s cubic-bezier(.22,1,.36,1), box-shadow 0.22s, background 0.22s;
+    }
+    .stat-pill:hover {
+      transform: translateY(-4px) scale(1.03);
+      background: rgba(255,255,255,0.1);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+    }
+
+    /* ── FOOTER LINKS ── */
+    footer a { transition: color 0.18s, text-decoration 0.18s; }
+    footer a:hover { color: #c4b5fd; }
 
     /* ── HERO ── */
     .hero {
@@ -75,7 +134,7 @@
     }
     .hero .eyebrow {
       display: inline-flex; align-items: center; gap: 6px;
-      font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
       color: #a78bfa;
       background: rgba(91,63,228,0.15);
       border: 1px solid rgba(167,139,250,0.3);
@@ -99,7 +158,7 @@
     }
     .hero-line2 {
       display: block;
-      font-size: clamp(18px, 3vw, 26px);
+      font-size: clamp(21px, 3.45vw, 30px);
       font-weight: 700;
       letter-spacing: -0.01em;
       color: rgba(255,255,255,0.55);
@@ -113,7 +172,7 @@
       font-weight: 900;
     }
     .hero .sub {
-      font-size: 16px;
+      font-size: 18px;
       color: rgba(255,255,255,0.5);
       max-width: 680px;
       margin: 0 auto 48px;
@@ -128,7 +187,7 @@
     .sub-row { display: block; white-space: nowrap; }
     @media (max-width: 700px) { .sub-row { white-space: normal; } }
     .sub-big {
-      font-size: 22px; font-weight: 800; letter-spacing: 0.05em;
+      font-size: 25px; font-weight: 800; letter-spacing: 0.02em;
       color: rgba(255,255,255,0.92);
     }
     .sub-green {
@@ -137,7 +196,7 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .sub-dim { font-size: 16px; color: rgba(255,255,255,0.62); }
+    .sub-dim { font-size: 18px; color: rgba(255,255,255,0.62); }
     .sub-dim .cmp { color: #f87171; font-weight: 700; }
     .hero-stats {
       display: inline-flex; gap: 16px; flex-wrap: wrap; justify-content: center;
@@ -151,28 +210,28 @@
       backdrop-filter: blur(8px);
       box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset;
     }
-    .stat-pill .num { font-size: 38px; font-weight: 900; letter-spacing: -0.03em; line-height: 1; color: rgba(255,255,255,0.7); }
+    .stat-pill .num { font-size: 44px; font-weight: 900; letter-spacing: -0.03em; line-height: 1; color: rgba(255,255,255,0.7); }
     .stat-pill .num.hi {
       background: linear-gradient(135deg, #e9d5ff, #a78bfa);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .stat-pill .desc { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.35); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.06em; }
-    .stat-pill .delta { font-size: 12px; font-weight: 600; color: #34d399; margin-top: 3px; }
+    .stat-pill .desc { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.35); margin-top: 5px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-pill .delta { font-size: 14px; font-weight: 600; color: #34d399; margin-top: 3px; }
 
     /* ── SECTIONS ── */
     section { padding: 72px 0; }
     section:nth-child(even) { background: var(--gray-50); }
     .section-label {
-      font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+      font-size: 13px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
       color: var(--brand); margin-bottom: 10px;
     }
     h2 {
-      font-size: 30px; font-weight: 800; letter-spacing: -0.02em;
+      font-size: 34px; font-weight: 800; letter-spacing: -0.02em;
       color: var(--gray-900); margin-bottom: 10px;
     }
-    .section-desc { font-size: 15px; color: var(--gray-600); max-width: 560px; margin-bottom: 44px; }
+    .section-desc { font-size: 17px; color: var(--gray-600); max-width: 560px; margin-bottom: 44px; }
 
     /* ── MAIN COMPARISON TABLE ── */
     .comp-wrap { overflow-x: auto; }
@@ -180,12 +239,12 @@
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      font-size: 14px;
+      font-size: 16px;
     }
     table.comp thead th {
       padding: 14px 20px;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 15px;
       color: var(--gray-600);
       border-bottom: 2px solid var(--gray-200);
       background: var(--gray-50);
@@ -206,26 +265,26 @@
     table.comp .val-best { font-weight: 800; color: var(--brand-dark); }
     .check { color: var(--green); font-weight: 700; }
     .dash { color: var(--gray-400); }
-    .crown { font-size: 15px; }
+    .crown { font-size: 17px; }
 
     /* ── SCORE CHART ── */
     .score-chart { display: flex; flex-direction: column; gap: 14px; }
     .sc-row { display: grid; grid-template-columns: 220px 1fr 80px; align-items: center; gap: 16px; }
-    .sc-name { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+    .sc-name { font-size: 16px; font-weight: 600; color: var(--gray-800); }
     .sc-name .badge {
-      font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
       margin-left: 6px; vertical-align: middle;
     }
     .badge-us { background: var(--brand-light); color: var(--brand-dark); }
     .badge-comp { background: #fef3c7; color: #92400e; }
     .sc-bar-bg { height: 10px; background: var(--gray-100); border-radius: 999px; overflow: hidden; }
     .sc-bar { height: 100%; border-radius: 999px; }
-    .sc-score { font-size: 15px; font-weight: 700; color: var(--gray-700); text-align: right; }
+    .sc-score { font-size: 17px; font-weight: 700; color: var(--gray-700); text-align: right; }
     .sc-score.hi { color: var(--brand-dark); }
     .sc-divider {
       margin: 8px 0;
       display: flex; align-items: center; gap: 10px;
-      font-size: 11px; font-weight: 700; color: var(--gray-400); letter-spacing: 0.05em;
+      font-size: 13px; font-weight: 700; color: var(--gray-400); letter-spacing: 0.05em;
     }
     .sc-divider::before, .sc-divider::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
 
@@ -239,14 +298,14 @@
       padding: 24px;
     }
     .cat-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 18px; }
-    .cat-title { font-size: 14px; font-weight: 700; color: var(--gray-900); }
-    .cat-score { font-size: 28px; font-weight: 900; color: var(--brand); letter-spacing: -0.02em; }
+    .cat-title { font-size: 16px; font-weight: 700; color: var(--gray-900); }
+    .cat-score { font-size: 32px; font-weight: 900; color: var(--brand); letter-spacing: -0.02em; }
     .cat-compare { display: flex; flex-direction: column; gap: 8px; }
-    .cat-compare-row { display: grid; grid-template-columns: 1fr auto 52px; align-items: center; gap: 10px; font-size: 13px; }
+    .cat-compare-row { display: grid; grid-template-columns: 1fr auto 52px; align-items: center; gap: 10px; font-size: 15px; }
     .cat-compare-row .label { color: var(--gray-600); }
     .cat-bar-bg { height: 6px; background: var(--gray-100); border-radius: 999px; overflow: hidden; }
     .cat-bar { height: 100%; border-radius: 999px; }
-    .cat-compare-row .pct { font-weight: 700; text-align: right; font-size: 13px; }
+    .cat-compare-row .pct { font-weight: 700; text-align: right; font-size: 15px; }
 
     /* ── INTENT ANALYSIS ── */
     .intent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -260,18 +319,18 @@
     .intent-card.on { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(91,63,228,0.12); }
     .intent-toggle { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
     .pill {
-      font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
       padding: 4px 12px; border-radius: 999px;
     }
     .pill-on { background: var(--brand); color: white; }
     .pill-off { background: var(--gray-200); color: var(--gray-600); }
-    .intent-title { font-size: 16px; font-weight: 700; color: var(--gray-900); }
-    .intent-score { font-size: 52px; font-weight: 900; letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
+    .intent-title { font-size: 18px; font-weight: 700; color: var(--gray-900); }
+    .intent-score { font-size: 60px; font-weight: 900; letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
     .intent-score.on { color: var(--brand); }
     .intent-score.off { color: var(--gray-500); }
-    .intent-meta { font-size: 13px; color: var(--gray-500); margin-bottom: 20px; }
+    .intent-meta { font-size: 15px; color: var(--gray-500); margin-bottom: 20px; }
     .intent-breakdown { display: flex; flex-direction: column; gap: 7px; }
-    .ib-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .ib-row { display: flex; align-items: center; gap: 8px; font-size: 15px; }
     .ib-row .cat { color: var(--gray-500); width: 90px; flex-shrink: 0; }
     .ib-row .bar-bg { flex: 1; height: 5px; background: var(--gray-100); border-radius: 999px; overflow: hidden; }
     .ib-row .bar { height: 100%; border-radius: 999px; }
@@ -287,9 +346,9 @@
       border-radius: 14px;
       padding: 22px;
     }
-    .feat-icon { font-size: 24px; margin-bottom: 10px; }
-    .feat-title { font-size: 14px; font-weight: 700; color: var(--gray-900); margin-bottom: 6px; }
-    .feat-body { font-size: 13px; color: var(--gray-600); line-height: 1.6; }
+    .feat-icon { font-size: 28px; margin-bottom: 10px; }
+    .feat-title { font-size: 16px; font-weight: 700; color: var(--gray-900); margin-bottom: 6px; }
+    .feat-body { font-size: 15px; color: var(--gray-600); line-height: 1.6; }
 
     /* ── TOKEN EFFICIENCY ── */
     .token-section {
@@ -337,39 +396,39 @@
       border-color: rgba(245,158,11,0.30);
     }
     .token-kpi .kpi-eyebrow {
-      font-size: 10px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+      font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
       margin-bottom: 10px;
     }
     .token-kpi.primary .kpi-eyebrow { color: #a78bfa; }
     .token-kpi.green  .kpi-eyebrow { color: #34d399; }
     .token-kpi.amber  .kpi-eyebrow { color: #fbbf24; }
     .token-kpi .kpi-num {
-      font-size: 64px; font-weight: 900; letter-spacing: -0.04em; line-height: 1;
+      font-size: 74px; font-weight: 900; letter-spacing: -0.04em; line-height: 1;
       margin-bottom: 6px;
     }
     .token-kpi.primary .kpi-num { color: #e9d5ff; }
     .token-kpi.green  .kpi-num { color: #6ee7b7; }
     .token-kpi.amber  .kpi-num { color: #fde68a; }
     .token-kpi .kpi-sub {
-      font-size: 13px; color: rgba(255,255,255,0.55); line-height: 1.5;
+      font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.5;
     }
 
     .token-bars { display: flex; flex-direction: column; gap: 22px; margin-bottom: 36px; }
     .tb-row { display: flex; flex-direction: column; gap: 7px; }
     .tb-head { display: flex; justify-content: space-between; align-items: center; }
     .tb-name {
-      font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.85);
+      font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.85);
       display: flex; align-items: center; gap: 8px;
     }
-    .tb-name .note { font-size: 12px; font-weight: 400; color: rgba(255,255,255,0.35); }
+    .tb-name .note { font-size: 14px; font-weight: 400; color: rgba(255,255,255,0.35); }
     .tb-name .winner-tag {
-      font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
       padding: 2px 8px; border-radius: 999px;
       background: rgba(91,63,228,0.5); color: #c4b5fd;
       border: 1px solid rgba(91,63,228,0.5);
     }
     .tb-val {
-      font-size: 15px; font-weight: 800;
+      font-size: 17px; font-weight: 800;
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
@@ -397,10 +456,10 @@
       font-size: 32px; flex-shrink: 0; line-height: 1; margin-top: 2px;
     }
     .token-verdict .v-title {
-      font-size: 17px; font-weight: 800; color: #6ee7b7; margin-bottom: 8px;
+      font-size: 20px; font-weight: 800; color: #6ee7b7; margin-bottom: 8px;
     }
     .token-verdict .v-body {
-      font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.7;
+      font-size: 16px; color: rgba(255,255,255,0.65); line-height: 1.7;
     }
     .token-verdict .v-body strong { color: #a7f3d0; }
 
@@ -409,7 +468,7 @@
       background: var(--gray-900);
       color: var(--gray-400);
       padding: 36px 28px;
-      font-size: 13px;
+      font-size: 15px;
       text-align: center;
     }
     footer a { color: #a78bfa; text-decoration: none; }
@@ -418,7 +477,7 @@
 
     @media (max-width: 640px) {
       .sc-row { grid-template-columns: 160px 1fr 64px; }
-      h2 { font-size: 24px; }
+      h2 { font-size: 28px; }
     }
   </style>
 </head>
@@ -427,7 +486,7 @@
 <!-- NAV -->
 <nav>
   <div class="inner">
-    <div class="logo">Cortex<span>Memory</span></div>
+    <div class="logo"><img src="../../../assets/icon_1.png" alt="Cortex Memory Logo" />Cortex Memory</div>
     <a class="gh" href="https://github.com/sopaco/cortex-mem" target="_blank">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
       GitHub
@@ -447,13 +506,13 @@
     <span class="sub-row"><span class="sub-big sub-green">~2,900 tokens/query</span> <span class="sub-dim">vs <span class="cmp">33,490</span> with OpenClaw's built-in memory &middot; upgrade it with <a href="https://github.com/sopaco/cortex-mem/tree/main/examples/%40memclaw/plugin" target="_blank" style="color:#a78bfa;font-weight:700;text-decoration:none">MemClaw</a></span></span>
   </p>
   <div style="margin-bottom:48px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative">
-    <a href="https://github.com/sopaco/cortex-mem" target="_blank"
-       style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:linear-gradient(135deg,#5b3fe4,#7c3aed);color:white;font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 4px 16px rgba(91,63,228,0.4)">
+    <a href="https://github.com/sopaco/cortex-mem" target="_blank" class="hero-btn-primary"
+       style="display:inline-flex;align-items:center;gap:8px;padding:14px 29px;background:linear-gradient(135deg,#5b3fe4,#7c3aed);color:white;font-size:20px;font-weight:700;border-radius:10px;text-decoration:none;box-shadow:0 4px 16px rgba(91,63,228,0.4)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
       Get Cortex Memory
     </a>
-    <a href="https://github.com/sopaco/cortex-mem/tree/main/examples/%40memclaw/plugin" target="_blank"
-       style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:14px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,0.18)">
+    <a href="https://github.com/sopaco/cortex-mem/tree/main/examples/%40memclaw/plugin" target="_blank" class="hero-btn-secondary"
+       style="display:inline-flex;align-items:center;gap:8px;padding:14px 29px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:20px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,0.18)">
       ⚡ Use MemClaw for OpenClaw
     </a>
   </div>
@@ -491,7 +550,8 @@
     <div class="score-chart">
       <div class="sc-row">
         <div class="sc-name">
-          Cortex Memory
+          Cortex Memory + OpenClaw
+          <br />
           <span class="badge badge-us">Intent ON</span>
         </div>
         <div class="sc-bar-bg"><div class="sc-bar" style="width:100%;background:var(--brand)"></div></div>
@@ -499,7 +559,8 @@
       </div>
       <div class="sc-row">
         <div class="sc-name">
-          Cortex Memory
+          Cortex Memory + OpenClaw
+          <br />
           <span class="badge" style="background:#f0fdf4;color:#166534">Intent OFF</span>
         </div>
         <div class="sc-bar-bg"><div class="sc-bar" style="width:72.5%;background:#86efac"></div></div>
@@ -525,7 +586,7 @@
         <div class="sc-score">51.23%</div>
       </div>
       <div class="sc-row">
-        <div class="sc-name">OpenClaw + LanceDB</div>
+        <div class="sc-name">LanceDB + OpenClaw</div>
         <div class="sc-bar-bg"><div class="sc-bar" style="width:65.1%;background:#d1d5db"></div></div>
         <div class="sc-score">44.55%</div>
       </div>
@@ -718,7 +779,7 @@
         <thead>
           <tr>
             <th style="width:260px">Capability</th>
-            <th class="best-col">Cortex Memory（Plugin for OpenClaw）</th>
+            <th class="best-col">Cortex Memory + OpenClaw</th>
             <th>OpenViking + OpenClaw</th>
             <th>OpenClaw built-in</th>
           </tr>
@@ -737,7 +798,7 @@
             <td>~15,982</td>
           </tr>
           <tr>
-            <td>Hierarchical Memory (L0 / L1 / L2)</td>
+            <td>Hierarchical Memory<br />(L0 / L1 / L2)</td>
             <td class="best-col"><span class="check">✓ 3 layered context loading</span></td>
             <td class="best-col"><span class="check">✓ 3 layered context loading</span></td>
             <td><span class="dash">—</span></td>
@@ -791,7 +852,7 @@
       <div class="tb-row">
         <div class="tb-head">
           <span class="tb-name">
-            Cortex Memory
+            Cortex Memory + OpenClaw (The MemClaw Plugin)
             <span class="winner-tag">This Work</span>
           </span>
           <span class="tb-val best">~2,900 tokens/Q</span>
@@ -829,7 +890,7 @@
       </div>
       <div class="tb-row">
         <div class="tb-head">
-          <span class="tb-name">OpenClaw + LanceDB <span class="note">(−memory-core)</span></span>
+          <span class="tb-name">LanceDB + OpenClaw <span class="note">(−memory-core)</span></span>
           <span class="tb-val bad">~33,490 tokens/Q</span>
         </div>
         <div class="tb-bar-track">
@@ -902,8 +963,8 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:32px">
       <a href="https://github.com/sopaco/cortex-mem/blob/main/examples/locomo-evaluation/benchmark/BENCHMARK.md"
          target="_blank"
-         style="display:flex;gap:14px;align-items:flex-start;background:white;border:1px solid #e5e7eb;border-radius:14px;padding:20px;text-decoration:none;transition:box-shadow 0.15s"
-         onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow=''">
+         style="display:flex;gap:14px;align-items:flex-start;background:white;border:1px solid #e5e7eb;border-radius:14px;padding:20px;text-decoration:none;transition:transform 0.22s cubic-bezier(.22,1,.36,1),box-shadow 0.22s,border-color 0.22s"
+         onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 10px 28px rgba(0,0,0,0.1)';this.style.borderColor='#a78bfa'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='#e5e7eb'">
         <span style="font-size:24px;flex-shrink:0">📊</span>
         <div>
           <div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:3px">BENCHMARK.md</div>
@@ -912,8 +973,8 @@
       </a>
       <a href="https://github.com/sopaco/cortex-mem/blob/main/examples/locomo-evaluation/benchmark/qa-s0-v5.judge.md"
          target="_blank"
-         style="display:flex;gap:14px;align-items:flex-start;background:white;border:1px solid #e5e7eb;border-radius:14px;padding:20px;text-decoration:none;transition:box-shadow 0.15s"
-         onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow=''">
+         style="display:flex;gap:14px;align-items:flex-start;background:white;border:1px solid #e5e7eb;border-radius:14px;padding:20px;text-decoration:none;transition:transform 0.22s cubic-bezier(.22,1,.36,1),box-shadow 0.22s,border-color 0.22s"
+         onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 10px 28px rgba(0,0,0,0.1)';this.style.borderColor='#a78bfa'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='#e5e7eb'">
         <span style="font-size:24px;flex-shrink:0">🗂️</span>
         <div>
           <div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:3px">qa-s0-v5.judge.md</div>
@@ -922,8 +983,8 @@
       </a>
       <a href="https://github.com/sopaco/cortex-mem/blob/main/examples/locomo-evaluation/eval.py"
          target="_blank"
-         style="display:flex;gap:14px;align-items:flex-start;background:white;border:1px solid #e5e7eb;border-radius:14px;padding:20px;text-decoration:none;transition:box-shadow 0.15s"
-         onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.08)'" onmouseout="this.style.boxShadow=''">
+         style="display:flex;gap:14px;align-items:flex-start;background:white;border:1px solid #e5e7eb;border-radius:14px;padding:20px;text-decoration:none;transition:transform 0.22s cubic-bezier(.22,1,.36,1),box-shadow 0.22s,border-color 0.22s"
+         onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 10px 28px rgba(0,0,0,0.1)';this.style.borderColor='#a78bfa'" onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderColor='#e5e7eb'">
         <span style="font-size:24px;flex-shrink:0">⚙️</span>
         <div>
           <div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:3px">eval.py</div>
