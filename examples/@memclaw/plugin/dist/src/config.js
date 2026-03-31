@@ -38,6 +38,9 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDataDir = getDataDir;
 exports.getConfigPath = getConfigPath;
@@ -52,6 +55,7 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const os = __importStar(require("os"));
 const child_process_1 = require("child_process");
+const smol_toml_1 = __importDefault(require("smol-toml"));
 // Platform-specific paths
 function getDataDir() {
     const platform = process.platform;
@@ -155,49 +159,29 @@ function openConfigFile(configPath) {
         resolve();
     });
 }
+/**
+ * Parse TOML config file using smol-toml library
+ * Supports full TOML syntax including arrays, nested tables, etc.
+ */
 function parseConfig(configPath) {
     const content = fs.readFileSync(configPath, 'utf-8');
-    const config = {};
-    let currentSection = '';
-    for (const line of content.split('\n')) {
-        const trimmed = line.trim();
-        // Skip comments and empty lines
-        if (trimmed.startsWith('#') || trimmed === '')
-            continue;
-        // Section header
-        const sectionMatch = trimmed.match(/^\[(\w+)\]$/);
-        if (sectionMatch) {
-            currentSection = sectionMatch[1];
-            config[currentSection] = {};
-            continue;
-        }
-        // Key-value pair
-        const kvMatch = trimmed.match(/^(\w+)\s*=\s*"([^"]*)"(?:\s*$|\s*#)/) ||
-            trimmed.match(/^(\w+)\s*=\s*(\d+(?:\.\d+)?)(?:\s*$|\s*#)/) ||
-            trimmed.match(/^(\w+)\s*=\s*(true|false)(?:\s*$|\s*#)/);
-        if (kvMatch && currentSection) {
-            const key = kvMatch[1];
-            let value = kvMatch[2];
-            // Convert to appropriate type
-            if (value === 'true')
-                value = true;
-            else if (value === 'false')
-                value = false;
-            else if (/^\d+$/.test(value))
-                value = parseInt(value, 10);
-            else if (/^\d+\.\d+$/.test(value))
-                value = parseFloat(value);
-            config[currentSection] = config[currentSection] || {};
-            config[currentSection][key] = value;
-        }
+    // Parse using smol-toml
+    let parsed;
+    try {
+        parsed = smol_toml_1.default.parse(content);
     }
-    // Apply defaults
+    catch (error) {
+        // If parsing fails, return defaults
+        console.error('Failed to parse config.toml:', error);
+        parsed = {};
+    }
+    // Apply defaults for missing sections
     return {
         qdrant: {
             url: 'http://localhost:6334',
             collection_name: 'memclaw',
             timeout_secs: 30,
-            ...(config.qdrant || {})
+            ...(parsed.qdrant || {})
         },
         llm: {
             api_base_url: 'https://api.openai.com/v1',
@@ -205,7 +189,7 @@ function parseConfig(configPath) {
             model_efficient: 'gpt-5-mini',
             temperature: 0.1,
             max_tokens: 4096,
-            ...(config.llm || {})
+            ...(parsed.llm || {})
         },
         embedding: {
             api_base_url: 'https://api.openai.com/v1',
@@ -213,22 +197,22 @@ function parseConfig(configPath) {
             model_name: 'text-embedding-3-small',
             batch_size: 10,
             timeout_secs: 30,
-            ...(config.embedding || {})
+            ...(parsed.embedding || {})
         },
         server: {
             host: 'localhost',
             port: 8085,
-            ...(config.server || {})
+            ...(parsed.server || {})
         },
         logging: {
             enabled: false,
             log_directory: 'logs',
             level: 'info',
-            ...(config.logging || {})
+            ...(parsed.logging || {})
         },
         cortex: {
             enable_intent_analysis: false,
-            ...(config.cortex || {})
+            ...(parsed.cortex || {})
         }
     };
 }
@@ -253,7 +237,7 @@ function validateConfig(config) {
 }
 /**
  * Update config.toml with values from OpenClaw plugin config
- * Only updates fields that are provided (non-empty) in pluginConfig
+ * Uses smol-toml for proper TOML serialization
  */
 function updateConfigFromPlugin(pluginConfig) {
     const configPath = getConfigPath();
@@ -261,67 +245,38 @@ function updateConfigFromPlugin(pluginConfig) {
     ensureConfigExists();
     // Parse existing config
     const existingConfig = parseConfig(configPath);
-    // Track if any changes were made
-    let updated = false;
-    // Build updated config sections
-    const updates = [];
-    // LLM config updates
-    if (pluginConfig.llmApiKey && pluginConfig.llmApiKey !== '') {
-        updates.push({ section: 'llm', key: 'api_key', value: pluginConfig.llmApiKey });
-        updated = true;
-    }
-    if (pluginConfig.llmApiBaseUrl && pluginConfig.llmApiBaseUrl !== '') {
-        updates.push({ section: 'llm', key: 'api_base_url', value: pluginConfig.llmApiBaseUrl });
-        updated = true;
-    }
-    if (pluginConfig.llmModel && pluginConfig.llmModel !== '') {
-        updates.push({ section: 'llm', key: 'model_efficient', value: pluginConfig.llmModel });
-        updated = true;
-    }
-    // Embedding config updates
-    if (pluginConfig.embeddingApiKey && pluginConfig.embeddingApiKey !== '') {
-        updates.push({ section: 'embedding', key: 'api_key', value: pluginConfig.embeddingApiKey });
-        updated = true;
-    }
-    if (pluginConfig.embeddingApiBaseUrl && pluginConfig.embeddingApiBaseUrl !== '') {
-        updates.push({
-            section: 'embedding',
-            key: 'api_base_url',
-            value: pluginConfig.embeddingApiBaseUrl
-        });
-        updated = true;
-    }
-    if (pluginConfig.embeddingModel && pluginConfig.embeddingModel !== '') {
-        updates.push({ section: 'embedding', key: 'model_name', value: pluginConfig.embeddingModel });
-        updated = true;
-    }
-    if (!updated) {
+    // Build updated config
+    const updatedConfig = {
+        qdrant: existingConfig.qdrant,
+        llm: {
+            ...existingConfig.llm,
+            api_base_url: pluginConfig.llmApiBaseUrl || existingConfig.llm.api_base_url,
+            api_key: pluginConfig.llmApiKey || existingConfig.llm.api_key,
+            model_efficient: pluginConfig.llmModel || existingConfig.llm.model_efficient
+        },
+        embedding: {
+            ...existingConfig.embedding,
+            api_base_url: pluginConfig.embeddingApiBaseUrl || existingConfig.embedding.api_base_url,
+            api_key: pluginConfig.embeddingApiKey || existingConfig.embedding.api_key,
+            model_name: pluginConfig.embeddingModel || existingConfig.embedding.model_name
+        },
+        server: existingConfig.server,
+        logging: existingConfig.logging,
+        cortex: existingConfig.cortex
+    };
+    // Check if any changes were made
+    const hasChanges = (pluginConfig.llmApiKey && pluginConfig.llmApiKey !== existingConfig.llm.api_key) ||
+        (pluginConfig.llmApiBaseUrl && pluginConfig.llmApiBaseUrl !== existingConfig.llm.api_base_url) ||
+        (pluginConfig.llmModel && pluginConfig.llmModel !== existingConfig.llm.model_efficient) ||
+        (pluginConfig.embeddingApiKey && pluginConfig.embeddingApiKey !== existingConfig.embedding.api_key) ||
+        (pluginConfig.embeddingApiBaseUrl && pluginConfig.embeddingApiBaseUrl !== existingConfig.embedding.api_base_url) ||
+        (pluginConfig.embeddingModel && pluginConfig.embeddingModel !== existingConfig.embedding.model_name);
+    if (!hasChanges) {
         return { updated: false, path: configPath };
     }
-    // Read current content
-    let content = fs.readFileSync(configPath, 'utf-8');
-    // Apply each update
-    for (const { section, key, value } of updates) {
-        // Escape value for TOML string
-        const escapedValue = value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-        // Pattern to match the key in the correct section
-        // This handles both existing keys and missing keys
-        const sectionPattern = new RegExp(`(\\[${section}\\][^\\[]*?)(${key}\\s*=\\s*)"[^"]*"`, 's');
-        const keyExistsInSection = sectionPattern.test(content);
-        if (keyExistsInSection) {
-            // Update existing key
-            content = content.replace(sectionPattern, `$1$2"${escapedValue}"`);
-        }
-        else {
-            // Add key to section
-            const sectionStartPattern = new RegExp(`(\\[${section}\\]\\n)`, '');
-            if (sectionStartPattern.test(content)) {
-                content = content.replace(sectionStartPattern, `$1${key} = "${escapedValue}"\n`);
-            }
-        }
-    }
-    // Write updated content
-    fs.writeFileSync(configPath, content, 'utf-8');
+    // Serialize and write using smol-toml
+    const tomlContent = smol_toml_1.default.stringify(updatedConfig);
+    fs.writeFileSync(configPath, tomlContent, 'utf-8');
     return { updated: true, path: configPath };
 }
 /**

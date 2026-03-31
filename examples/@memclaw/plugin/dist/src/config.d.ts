@@ -30,6 +30,7 @@ export interface MemClawConfig {
     server: {
         host: string;
         port: number;
+        cors_origins?: string[];
     };
     logging: {
         enabled: boolean;
@@ -46,6 +47,10 @@ export declare function ensureConfigExists(): {
     path: string;
 };
 export declare function openConfigFile(configPath: string): Promise<void>;
+/**
+ * Parse TOML config file using smol-toml library
+ * Supports full TOML syntax including arrays, nested tables, etc.
+ */
 export declare function parseConfig(configPath: string): MemClawConfig;
 export declare function validateConfig(config: MemClawConfig): {
     valid: boolean;
@@ -65,7 +70,7 @@ export interface PluginProvidedConfig {
 }
 /**
  * Update config.toml with values from OpenClaw plugin config
- * Only updates fields that are provided (non-empty) in pluginConfig
+ * Uses smol-toml for proper TOML serialization
  */
 export declare function updateConfigFromPlugin(pluginConfig: PluginProvidedConfig): {
     updated: boolean;

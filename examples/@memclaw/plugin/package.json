@@ -56,7 +56,8 @@
     "typescript": "^5.7.0"
   },
   "dependencies": {
-    "glob": "^11.0.0"
+    "glob": "^11.0.0",
+    "smol-toml": "^1.6.1"
   },
   "optionalDependencies": {
     "@memclaw/bin-darwin-arm64": "0.1.7",
