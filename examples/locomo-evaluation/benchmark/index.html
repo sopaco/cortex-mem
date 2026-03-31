@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cortex Memory — LoCoMo10 Benchmark</title>
+  <title>Cortex Memory</title>
   <style>
     :root {
       --brand: #5b3fe4;
@@ -44,7 +44,13 @@
       display: flex; align-items: center; justify-content: space-between;
       height: 56px;
     }
-    nav .logo { display: inline-flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 800; color: var(--brand); letter-spacing: -0.02em; }
+    nav .logo { 
+      display: inline-flex; align-items: center; gap: 8px; font-size: 22px; font-weight: 800; color: var(--brand); letter-spacing: -0.02em; 
+      background: linear-gradient(135deg, #7042f9 0%, #7f63d3 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
     nav .logo img { width: 45px; height: 45px; object-fit: contain; }
     nav .logo span { color: var(--gray-800); }
     nav a.gh {
@@ -511,7 +517,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
       Get Cortex Memory
     </a>
-    <a href="https://github.com/sopaco/cortex-mem/tree/main/examples/%40memclaw/plugin" target="_blank" class="hero-btn-secondary"
+    <a href="https://clawhub.ai/sopaco/memclaw-maintance" target="_blank" class="hero-btn-secondary"
        style="display:inline-flex;align-items:center;gap:8px;padding:14px 29px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.85);font-size:20px;font-weight:700;border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,0.18)">
       ⚡ Use MemClaw for OpenClaw
     </a>
