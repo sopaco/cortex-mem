@@ -112,10 +112,13 @@ async function migrateDailyLogs(
       const [year, month, day] = date.split('-');
       const sessionId = `migrated-oc-${date}`;
       
+      // Correct path for tenant isolation:
+      // dataDir/tenants/{tenant_id}/session/{session_id}/timeline/{year}/{month}/{day}/
       const timelineDir = path.join(
         dataDir,
-        'sessions',
+        'tenants',
         MIGRATION_TENANT,
+        'session',
         sessionId,
         'timeline',
         year,
@@ -177,7 +180,9 @@ async function migrateMemoryMd(
   }
   
   try {
-    const userDir = path.join(dataDir, 'users', MIGRATION_TENANT);
+    // Correct path for tenant isolation:
+    // dataDir/tenants/{tenant_id}/user/preferences.md
+    const userDir = path.join(dataDir, 'tenants', MIGRATION_TENANT, 'user');
     fs.mkdirSync(userDir, { recursive: true });
     
     const content = fs.readFileSync(memoryMdPath, 'utf-8');

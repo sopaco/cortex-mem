@@ -117,7 +117,9 @@ async function migrateDailyLogs(ocWorkspace, dataDir, log) {
             const date = path.basename(logPath, '.md'); // 2026-03-13
             const [year, month, day] = date.split('-');
             const sessionId = `migrated-oc-${date}`;
-            const timelineDir = path.join(dataDir, 'sessions', MIGRATION_TENANT, sessionId, 'timeline', year, month, day);
+            // Correct path for tenant isolation:
+            // dataDir/tenants/{tenant_id}/session/{session_id}/timeline/{year}/{month}/{day}/
+            const timelineDir = path.join(dataDir, 'tenants', MIGRATION_TENANT, 'session', sessionId, 'timeline', year, month, day);
             // Create directory
             fs.mkdirSync(timelineDir, { recursive: true });
             // Read and split content
@@ -159,7 +161,9 @@ async function migrateMemoryMd(ocWorkspace, dataDir, log) {
         return { migrated: false };
     }
     try {
-        const userDir = path.join(dataDir, 'users', MIGRATION_TENANT);
+        // Correct path for tenant isolation:
+        // dataDir/tenants/{tenant_id}/user/preferences.md
+        const userDir = path.join(dataDir, 'tenants', MIGRATION_TENANT, 'user');
         fs.mkdirSync(userDir, { recursive: true });
         const content = fs.readFileSync(memoryMdPath, 'utf-8');
         const targetPath = path.join(userDir, 'preferences.md');

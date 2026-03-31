@@ -10,6 +10,7 @@ export interface MemClawConfig {
     qdrant: {
         url: string;
         collection_name: string;
+        embedding_dim?: number;
         timeout_secs: number;
     };
     llm: {

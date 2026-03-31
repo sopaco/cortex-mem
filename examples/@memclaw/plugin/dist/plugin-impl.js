@@ -454,10 +454,11 @@ function createPlugin(api) {
             try {
                 log('Starting services...');
                 await (0, binaries_js_1.ensureAllServices)(log);
-                servicesStarted = true;
                 // Switch tenant
                 await client.switchTenant(tenantId);
                 log(`Switched to tenant: ${tenantId}`);
+                // Mark services as started only after tenant switch succeeds
+                servicesStarted = true;
                 log('MemClaw services started successfully');
                 // Start maintenance timer (runs every 3 hours)
                 maintenanceTimer = setInterval(async () => {

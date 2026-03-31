@@ -34,6 +34,7 @@ export interface MemClawConfig {
 	qdrant: {
 		url: string;
 		collection_name: string;
+		embedding_dim?: number;
 		timeout_secs: number;
 	};
 	llm: {
@@ -74,6 +75,10 @@ export function generateConfigTemplate(): string {
 [qdrant]
 url = "http://localhost:6334"
 collection_name = "memclaw"
+# Embedding dimension (optional, auto-detected if not set)
+# For text-embedding-3-small: 1536
+# For text-embedding-3-large: 3072
+# embedding_dim = 1536
 timeout_secs = 30
 
 # LLM Configuration [REQUIRED for memory processing]

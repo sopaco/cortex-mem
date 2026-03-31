@@ -548,11 +548,13 @@ export function createPlugin(api: PluginAPI) {
 			try {
 				log('Starting services...');
 				await ensureAllServices(log);
-				servicesStarted = true;
 
 				// Switch tenant
 				await client.switchTenant(tenantId);
 				log(`Switched to tenant: ${tenantId}`);
+
+				// Mark services as started only after tenant switch succeeds
+				servicesStarted = true;
 
 				log('MemClaw services started successfully');
 
