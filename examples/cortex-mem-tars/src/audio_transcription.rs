@@ -17,6 +17,60 @@ use std::os::unix::io::AsRawFd;
 /// Whisper 要求的采样率
 pub const WHISPER_SAMPLE_RATE: u32 = 16000;
 
+/// 解析 Whisper 模型路径
+///
+/// 按以下优先级查找模型文件：
+/// 1. 可执行文件所在目录
+/// 2. 当前工作目录
+///
+/// 如果传入的是绝对路径，直接返回原路径。
+/// 如果传入的是相对路径，按优先级查找存在的文件；如果都不存在，返回可执行文件目录下的路径。
+pub fn resolve_model_path(model_path: &str) -> String {
+    // 如果是绝对路径，直接返回
+    if std::path::Path::new(model_path).is_absolute() {
+        return model_path.to_string();
+    }
+
+    // 获取可执行文件所在目录
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(|p| p.to_path_buf()));
+
+    // 获取当前工作目录
+    let cwd = std::env::current_dir().ok();
+
+    // 优先级 1: 可执行文件所在目录
+    if let Some(ref exe_dir) = exe_dir {
+        let exe_path = exe_dir.join(model_path);
+        if exe_path.exists() {
+            log::info!("从可执行文件目录加载 Whisper 模型: {:?}", exe_path);
+            return exe_path.to_string_lossy().to_string();
+        }
+    }
+
+    // 优先级 2: 当前工作目录
+    if let Some(ref cwd) = cwd {
+        let cwd_path = cwd.join(model_path);
+        if cwd_path.exists() {
+            log::info!("从当前工作目录加载 Whisper 模型: {:?}", cwd_path);
+            return cwd_path.to_string_lossy().to_string();
+        }
+    }
+
+    // 如果都不存在，返回可执行文件目录下的路径（让后续加载时报错）
+    if let Some(ref exe_dir) = exe_dir {
+        let fallback_path = exe_dir.join(model_path);
+        log::warn!(
+            "Whisper 模型文件未找到，将尝试从可执行文件目录加载: {:?}",
+            fallback_path
+        );
+        return fallback_path.to_string_lossy().to_string();
+    }
+
+    // 最后回退到原路径
+    model_path.to_string()
+}
+
 /// Whisper 转录器配置
 #[derive(Debug, Clone)]
 pub struct TranscriptionConfig {
@@ -49,7 +103,9 @@ pub struct WhisperTranscriber {
 impl WhisperTranscriber {
     /// 创建新的转录器
     pub fn new(config: TranscriptionConfig) -> Result<Self> {
-        log::info!("加载 Whisper 模型: {}", config.model_path);
+        // 解析模型路径（优先从可执行文件目录查找）
+        let resolved_model_path = resolve_model_path(&config.model_path);
+        log::info!("加载 Whisper 模型: {} -> {}", config.model_path, resolved_model_path);
 
         // 🔇 禁用 Whisper 的控制台输出，避免干扰 TUI
         // 临时重定向 stderr 到 /dev/null
@@ -70,7 +126,7 @@ impl WhisperTranscriber {
         };
 
         let context_result = WhisperContext::new_with_params(
-            &config.model_path,
+            &resolved_model_path,
             whisper_rs::WhisperContextParameters::default(),
         );
 
@@ -84,9 +140,13 @@ impl WhisperTranscriber {
         }
 
         let context = context_result
-            .with_context(|| format!("无法加载 Whisper 模型: {}", config.model_path))?;
+            .with_context(|| format!("无法加载 Whisper 模型: {}", resolved_model_path))?;
 
         log::info!("Whisper 模型加载成功");
+
+        // 更新配置中的路径为解析后的路径
+        let mut config = config;
+        config.model_path = resolved_model_path;
 
         Ok(Self {
             context: Arc::new(context),
@@ -673,5 +733,20 @@ mod tests {
         assert!(!is_meaningful_text("[silence]", 0.1));
         assert!(!is_meaningful_text("", 0.1));
         assert!(!is_meaningful_text("abc", 0.001));
+    }
+
+    #[test]
+    fn test_resolve_model_path_absolute() {
+        // 绝对路径应该直接返回
+        let path = "/absolute/path/to/model.bin";
+        assert_eq!(resolve_model_path(path), path);
+    }
+
+    #[test]
+    fn test_resolve_model_path_relative() {
+        // 相对路径应该被解析（即使文件不存在，也应该返回一个路径）
+        let resolved = resolve_model_path("model.bin");
+        // 应该包含文件名
+        assert!(resolved.ends_with("model.bin"));
     }
 }
