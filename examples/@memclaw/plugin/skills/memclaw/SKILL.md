@@ -11,18 +11,6 @@ description: MemClaw — High-performance memory plugin for OpenClaw. Outperform
 
 Three-layer memory: L0 (abstract ~100t) → L1 (overview ~2000t) → L2 (full content). Supports semantic search + filesystem browsing.
 
-## ⚠️ Required: AGENTS.md Migration
-
-OpenClaw loads `AGENTS.md` as its working guidelines at startup. If the file still references the legacy memory system (MEMORY.md, daily logs, memory_write), **you MUST update it to use MemClaw instead**.
-
-### Detection
-Check if `AGENTS.md` contains any of these legacy patterns:
-- `MEMORY.md`
-- `daily/YYYY-MM-DD.md`
-- `memory_write`
-- `memory_search`
-- "Write things down" in context of daily logs
-
 ## Prerequisites
 1. Install via `openclaw plugins install @memclaw/memclaw` if not present (tools unavailable or memclaw missing in `openclaw.json`)
 2. Configure LLM/Embedding in plugin settings (see Troubleshooting if fails)

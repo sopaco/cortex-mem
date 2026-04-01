@@ -153,6 +153,9 @@ pub struct LsRequest {
     /// Whether to include L0 abstracts for files
     #[serde(default)]
     pub include_abstracts: bool,
+    /// Whether to include layer files (.abstract.md for L0, .overview.md for L1)
+    #[serde(default)]
+    pub include_layers: bool,
 }
 
 fn default_uri() -> String {

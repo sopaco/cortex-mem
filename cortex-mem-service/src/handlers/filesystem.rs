@@ -46,11 +46,12 @@ pub async fn list_directory(
     let uri = params.uri.clone();
     let recursive = params.recursive;
     let include_abstracts = params.include_abstracts;
+    let include_layers = params.include_layers;
     
     // Use spawn_blocking to avoid blocking the async runtime
     let entries = tokio::task::spawn_blocking(move || {
         let mut entries = Vec::new();
-        list_directory_recursive(&base_path, &uri, recursive, include_abstracts, &mut entries);
+        list_directory_recursive(&base_path, &uri, recursive, include_abstracts, include_layers, &mut entries);
         entries
     })
     .await
@@ -70,6 +71,7 @@ fn list_directory_recursive(
     base_uri: &str,
     recursive: bool,
     include_abstracts: bool,
+    include_layers: bool,
     entries: &mut Vec<FileEntryResponse>,
 ) {
     if !base_path.exists() || !base_path.is_dir() {
@@ -80,9 +82,15 @@ fn list_directory_recursive(
         for entry in dir.flatten() {
             let name = entry.file_name().to_string_lossy().to_string();
             
-            // Skip hidden files (layer files are accessed via dedicated endpoints)
+            // Skip hidden files unless include_layers is true and it's a layer file
             if name.starts_with('.') {
-                continue;
+                if !include_layers {
+                    continue;
+                }
+                // Only show .abstract.md (L0) and .overview.md (L1) when include_layers is true
+                if name != ".abstract.md" && name != ".overview.md" {
+                    continue;
+                }
             }
             
             if let Ok(metadata) = entry.metadata() {
@@ -115,7 +123,7 @@ fn list_directory_recursive(
                 // Recurse into subdirectories if requested
                 if recursive && is_dir {
                     let sub_path = base_path.join(&name);
-                    list_directory_recursive(&sub_path, &entry_uri, true, include_abstracts, entries);
+                    list_directory_recursive(&sub_path, &entry_uri, true, include_abstracts, include_layers, entries);
                 }
             }
         }

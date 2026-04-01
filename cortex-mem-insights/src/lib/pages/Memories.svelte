@@ -13,6 +13,7 @@
   let isEditing = $state(false);
   let loading = $state(true);
   let error = $state('');
+  let showLayers = $state(false);
 
   async function loadDirectory(path: string) {
     loading = true;
@@ -22,7 +23,7 @@
     fileContent = null;
     
     try {
-      entries = await apiClient.listDirectory(path);
+      entries = await apiClient.listDirectory(path, showLayers);
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load directory';
     } finally {
@@ -92,11 +93,19 @@
     isEditing = false;
   }
 
-  // Reload when tenant changes
+  // Reload when tenant changes - navigate to user root
   $effect(() => {
     const tenant = $currentTenant;
     if (tenant) {
       loadDirectory('cortex://user');
+    }
+  });
+
+  // Reload when showLayers changes - reload current path
+  $effect(() => {
+    const layers = showLayers; // Track showLayers dependency
+    if ($currentTenant) {
+      loadDirectory(currentPath);
     }
   });
 
@@ -160,6 +169,17 @@
   >
     📚 Resources
   </button>
+</div>
+
+<!-- Layer Visibility Toggle -->
+<div class="layer-toggle">
+  <label class="toggle-label">
+    <input type="checkbox" bind:checked={showLayers} />
+    <span class="toggle-text">📊 显示层级文件 (L0/L1)</span>
+  </label>
+  {#if showLayers}
+    <span class="layer-hint">.abstract.md (L0 ~100 tokens) | .overview.md (L1 ~2000 tokens)</span>
+  {/if}
 </div>
 
 <div class="file-browser">
@@ -271,5 +291,45 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1;
+  }
+
+  .layer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface-elevated, #1e1e2e);
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #313244);
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent-color, #89b4fa);
+    cursor: pointer;
+  }
+
+  .toggle-text {
+    font-size: 0.9rem;
+    color: var(--text-primary, #cdd6f4);
+    font-weight: 500;
+  }
+
+  .layer-hint {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #a6adc8);
+    background: var(--surface-base, #181825);
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
   }
 </style>

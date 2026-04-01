@@ -74,9 +74,9 @@ class ApiClient {
 	}
 
 	// Filesystem endpoints
-	async listDirectory(path: string): Promise<FileEntryResponse[]> {
+	async listDirectory(path: string, includeLayers: boolean = false): Promise<FileEntryResponse[]> {
 		const response = await this.request<{ uri: string; total: number; entries: FileEntryResponse[] }>(
-			`/filesystem/list?uri=${encodeURIComponent(path)}`
+			`/filesystem/list?uri=${encodeURIComponent(path)}&include_layers=${includeLayers}`
 		);
 		return response.entries;
 	}
