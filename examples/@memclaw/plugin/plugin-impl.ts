@@ -29,6 +29,7 @@ import {
 	executeCliCommand
 } from './src/binaries.js';
 import { migrateFromOpenClaw, canMigrate } from './src/migrate.js';
+import { ensureAgentsMdEnhanced } from './src/agents-md-injector.js';
 
 // Plugin configuration
 interface PluginConfig {
@@ -47,6 +48,8 @@ interface PluginConfig {
 	embeddingApiBaseUrl?: string;
 	embeddingApiKey?: string;
 	embeddingModel?: string;
+	// AGENTS.md enhancement
+	enhanceClawAgent?: boolean;
 }
 
 // OpenClaw Plugin API types
@@ -454,6 +457,7 @@ export function createPlugin(api: PluginAPI) {
 	const minScore = config.minScore ?? 0.6;
 	const tenantId = config.tenantId ?? 'tenant_claw';
 	const autoStartServices = config.autoStartServices ?? true;
+	const enhanceClawAgent = config.enhanceClawAgent ?? true;
 
 	const client = new CortexMemClient(serviceUrl);
 	let servicesStarted = false;
@@ -542,6 +546,16 @@ export function createPlugin(api: PluginAPI) {
 					`[memclaw] Please configure LLM/Embedding API keys in OpenClaw plugin settings or edit: ${configPath}`
 				);
 				return;
+			}
+
+			// Enhance AGENTS.md with MemClaw usage guidelines
+			const agentsMdResult = ensureAgentsMdEnhanced(api.logger, enhanceClawAgent);
+			if (agentsMdResult.injected) {
+				log(`AGENTS.md enhanced with MemClaw section: ${agentsMdResult.path}`);
+			} else if (agentsMdResult.reason === 'already_injected') {
+				log('AGENTS.md already contains MemClaw section');
+			} else if (agentsMdResult.reason === 'no_legacy_patterns') {
+				log('AGENTS.md has no legacy memory patterns, skipping enhancement');
 			}
 
 			// Start services

@@ -83,6 +83,11 @@
 				"type": "string",
 				"description": "Embedding model name for vector search",
 				"default": "text-embedding-3-small"
+			},
+			"enhanceClawAgent": {
+				"type": "boolean",
+				"description": "Automatically enhance AGENTS.md with MemClaw memory usage guide when legacy memory patterns are detected",
+				"default": true
 			}
 		},
 		"required": []
@@ -125,6 +130,10 @@
 		"embeddingModel": {
 			"label": "Embedding Model",
 			"description": "Model name for generating vector embeddings"
+		},
+		"enhanceClawAgent": {
+			"label": "Enhance AGENTS.md",
+			"description": "Automatically inject MemClaw usage guide into AGENTS.md when legacy memory patterns are found"
 		}
 	}
 }
