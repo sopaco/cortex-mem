@@ -60,9 +60,9 @@
 		"smol-toml": "^1.6.1"
 	},
 	"optionalDependencies": {
-		"@memclaw/bin-darwin-arm64": "0.1.8",
+		"@memclaw/bin-darwin-arm64": "0.1.9",
 		"@memclaw/bin-win-x64": "0.1.7",
-		"@memclaw/bin-linux-x64": "0.1.8"
+		"@memclaw/bin-linux-x64": "0.1.9"
 	},
 	"engines": {
 		"node": ">=20.0.0"

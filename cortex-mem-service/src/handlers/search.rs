@@ -64,7 +64,14 @@ async fn search_layered(
     semantic_options.threshold = (min_score * 0.5).max(0.0);
 
     if let Some(thread_id) = thread {
-        let scope_uri = format!("cortex://session/{}", thread_id);
+        // Support both session ID and full URI format
+        // - "abc" -> "cortex://session/abc" (backward compatible)
+        // - "cortex://user/default" -> "cortex://user/default" (full URI)
+        let scope_uri = if thread_id.starts_with("cortex://") {
+            thread_id.to_string()
+        } else {
+            format!("cortex://session/{}", thread_id)
+        };
         options.root_uri = Some(scope_uri.clone());
         semantic_options.root_uri = Some(scope_uri);
     }

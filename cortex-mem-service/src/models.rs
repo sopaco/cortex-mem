@@ -110,6 +110,10 @@ pub struct AddMessageRequest {
 #[derive(Debug, Deserialize)]
 pub struct SearchRequest {
     pub query: String,
+    /// Scope to limit search. Supports two formats:
+    /// - Session ID: "abc" -> searches within cortex://session/abc
+    /// - Full URI: "cortex://user/default" -> searches user memories
+    /// - Omit to search across all dimensions
     pub thread: Option<String>,
     pub limit: Option<usize>,
     pub min_score: Option<f32>,
