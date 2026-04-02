@@ -176,7 +176,9 @@ This allows you to explore the hierarchical structure of memories:
 - cortex://session - List all sessions
 - cortex://session/{session_id} - Browse a specific session's contents
 - cortex://session/{session_id}/timeline - View timeline messages
-- cortex://session/{session_id}/memories - View extracted memories
+- cortex://user/{user_id}/preferences - View user preferences (extracted memories)
+- cortex://user/{user_id}/entities - View user entities (people, projects, etc.)
+- cortex://agent/{agent_id}/cases - View agent problem-solution cases
 
 **Parameters:**
 - recursive: List all subdirectories recursively
