@@ -274,7 +274,9 @@ List directory contents to browse the memory space like a virtual filesystem.
 - `cortex://session` - List all sessions
 - `cortex://session/{session_id}` - Browse a specific session
 - `cortex://session/{session_id}/timeline` - View timeline messages
-- `cortex://session/{session_id}/memories` - View extracted memories
+- `cortex://user/preferences` - View user preferences (extracted memories)
+- `cortex://user/entities` - View user entities (people, projects, etc.)
+- `cortex://agent/{agent_id}/cases` - View agent problem-solution cases
 
 ### cortex_get_abstract
 
