@@ -147,8 +147,8 @@ sequenceDiagram
 Profiles utilize the **Cortex Filesystem Abstraction** with tenant-aware scoping:
 
 ### 8.1 Storage URIs
-- **User Profiles**: `cortex://user/{user_id}/profile.json`
-- **Agent Profiles**: `cortex://agent/{agent_id}/profile.json`
+- **User Memories**: `cortex://user/{user_id}/preferences/{name}.md`, `cortex://user/{user_id}/entities/{name}.md`, `cortex://user/{user_id}/events/{name}.md`
+- **Agent Memories**: `cortex://agent/{agent_id}/cases/{name}.md`, `cortex://agent/{agent_id}/skills/{name}.md`
 - **Tenant Isolation**: Automatically scoped to `/data/tenants/{tenant_id}/user/` or `/data/tenants/{tenant_id}/agent/`
 
 ### 8.2 Serialization Format

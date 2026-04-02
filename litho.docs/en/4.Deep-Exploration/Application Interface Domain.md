@@ -290,7 +290,7 @@ All interfaces load configuration via `cortex-mem-config` with the following pre
 **Required Configuration**:
 ```toml
 [llm]
-model = "gpt-4"
+model = "gpt-5-mini"
 api_key = "${OPENAI_API_KEY}"
 
 [qdrant]

@@ -20,9 +20,8 @@ from typing import Any
 import requests
 from openai import OpenAI
 
-
 DEFAULT_SERVICE_URL = "http://127.0.0.1:8085"
-DEFAULT_SEARCH_MODEL = os.getenv("EVAL_ANSWER_MODEL", "gpt-4o-mini")
+DEFAULT_SEARCH_MODEL = os.getenv("EVAL_ANSWER_MODEL", "gpt-5-mini")
 DEFAULT_JUDGE_MODEL = os.getenv("EVAL_JUDGE_MODEL", DEFAULT_SEARCH_MODEL)
 DEFAULT_TENANT_PREFIX = "locomo-eval"
 
@@ -71,13 +70,18 @@ def format_locomo_message(msg: dict[str, Any]) -> str:
     return line
 
 
-def load_locomo_data(path: str, sample_index: int | None = None) -> list[dict[str, Any]]:
+def load_locomo_data(
+    path: str, sample_index: int | None = None
+) -> list[dict[str, Any]]:
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     if sample_index is not None:
         if sample_index < 0 or sample_index >= len(data):
-            print(f"Error: sample index {sample_index} out of range (0-{len(data)-1})", file=sys.stderr)
+            print(
+                f"Error: sample index {sample_index} out of range (0-{len(data) - 1})",
+                file=sys.stderr,
+            )
             sys.exit(1)
         return [data[sample_index]]
     return data
@@ -135,14 +139,22 @@ def build_session_messages(
 
 
 class CortexEvalClient:
-    def __init__(self, base_url: str, answer_model: str, llm_base_url: str | None, llm_api_key: str | None):
+    def __init__(
+        self,
+        base_url: str,
+        answer_model: str,
+        llm_base_url: str | None,
+        llm_api_key: str | None,
+    ):
         self.base_url = base_url.rstrip("/")
         self.answer_model = answer_model
         self.llm_client = None
         if llm_base_url and llm_api_key:
             self.llm_client = OpenAI(base_url=llm_base_url, api_key=llm_api_key)
 
-    def _post(self, path: str, payload: dict[str, Any], max_retries: int = 3) -> dict[str, Any]:
+    def _post(
+        self, path: str, payload: dict[str, Any], max_retries: int = 3
+    ) -> dict[str, Any]:
         url = f"{self.base_url}{path}"
         last_error = None
         for attempt in range(max_retries):
@@ -157,6 +169,7 @@ class CortexEvalClient:
                 last_error = e
                 if attempt < max_retries - 1:
                     import time
+
                     wait_time = (attempt + 1) * 5  # 5s, 10s, 15s backoff
                     print(f"  [retry] {path} failed ({e}), retrying in {wait_time}s...")
                     time.sleep(wait_time)
@@ -165,7 +178,9 @@ class CortexEvalClient:
     def switch_tenant(self, tenant_id: str) -> None:
         self._post("/api/v2/tenants/switch", {"tenant_id": tenant_id})
 
-    def create_session(self, thread_id: str, user_id: str | None = None, agent_id: str | None = None) -> None:
+    def create_session(
+        self, thread_id: str, user_id: str | None = None, agent_id: str | None = None
+    ) -> None:
         payload: dict[str, Any] = {"thread_id": thread_id}
         if user_id:
             payload["user_id"] = user_id
@@ -196,7 +211,13 @@ class CortexEvalClient:
             },
         )
 
-    def search(self, query: str, thread_id: str | None = None, limit: int = 8, min_score: float = 0.4) -> list[dict[str, Any]]:
+    def search(
+        self,
+        query: str,
+        thread_id: str | None = None,
+        limit: int = 8,
+        min_score: float = 0.4,
+    ) -> list[dict[str, Any]]:
         payload: dict[str, Any] = {
             "query": query,
             "limit": limit,
@@ -207,9 +228,15 @@ class CortexEvalClient:
             payload["thread"] = thread_id
         return self._post("/api/v2/search", payload)
 
-    def answer_question(self, question: str, contexts: list[dict[str, Any]]) -> tuple[str, dict[str, int]]:
+    def answer_question(
+        self, question: str, contexts: list[dict[str, Any]]
+    ) -> tuple[str, dict[str, int]]:
         if self.llm_client is None:
-            return self.extract_answer_from_contexts(contexts), {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+            return self.extract_answer_from_contexts(contexts), {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+            }
 
         context_texts = []
         for idx, ctx in enumerate(contexts, start=1):
@@ -243,7 +270,10 @@ class CortexEvalClient:
         response = self.llm_client.chat.completions.create(
             model=self.answer_model,
             messages=[
-                {"role": "system", "content": "You are a helpful assistant that answers questions from memory retrieval results. Be direct and give concise factual answers."},
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that answers questions from memory retrieval results. Be direct and give concise factual answers.",
+                },
                 {"role": "user", "content": prompt},
             ],
             temperature=0,
@@ -282,7 +312,10 @@ class CortexEvalClient:
         completion = self.llm_client.chat.completions.create(
             model=judge_model,
             messages=[
-                {"role": "system", "content": "You are a strict but fair QA judge. Output JSON only."},
+                {
+                    "role": "system",
+                    "content": "You are a strict but fair QA judge. Output JSON only.",
+                },
                 {"role": "user", "content": prompt},
             ],
             temperature=0,
@@ -292,18 +325,34 @@ class CortexEvalClient:
         verdict = str(parsed.get("is_correct", "WRONG")).strip().upper() == "CORRECT"
         reasoning = str(parsed.get("reasoning", "")).strip()
         usage = completion.usage
-        return verdict, reasoning, {
-            "prompt_tokens": getattr(usage, "prompt_tokens", 0) if usage else 0,
-            "completion_tokens": getattr(usage, "completion_tokens", 0) if usage else 0,
-            "total_tokens": getattr(usage, "total_tokens", 0) if usage else 0,
-        }
+        return (
+            verdict,
+            reasoning,
+            {
+                "prompt_tokens": getattr(usage, "prompt_tokens", 0) if usage else 0,
+                "completion_tokens": getattr(usage, "completion_tokens", 0)
+                if usage
+                else 0,
+                "total_tokens": getattr(usage, "total_tokens", 0) if usage else 0,
+            },
+        )
 
     @staticmethod
     def extract_answer_from_contexts(contexts: list[dict[str, Any]]) -> str:
         if not contexts:
-            return "I cannot answer this question based on the provided memory contexts."
-        text = contexts[0].get("content") or contexts[0].get("overview") or contexts[0].get("snippet") or ""
-        return text.strip() or "I cannot answer this question based on the provided memory contexts."
+            return (
+                "I cannot answer this question based on the provided memory contexts."
+            )
+        text = (
+            contexts[0].get("content")
+            or contexts[0].get("overview")
+            or contexts[0].get("snippet")
+            or ""
+        )
+        return (
+            text.strip()
+            or "I cannot answer this question based on the provided memory contexts."
+        )
 
 
 async def wait_for_memory_ready(
@@ -342,9 +391,15 @@ async def wait_for_sample_memory_ready(
         try:
             all_sessions_processed = True
             for thread_id in expected_threads:
-                session_meta_path = os.path.join(tenant_root, "session", thread_id, ".session.json")
-                timeline_abstract = os.path.join(tenant_root, "session", thread_id, "timeline", ".abstract.md")
-                timeline_overview = os.path.join(tenant_root, "session", thread_id, "timeline", ".overview.md")
+                session_meta_path = os.path.join(
+                    tenant_root, "session", thread_id, ".session.json"
+                )
+                timeline_abstract = os.path.join(
+                    tenant_root, "session", thread_id, "timeline", ".abstract.md"
+                )
+                timeline_overview = os.path.join(
+                    tenant_root, "session", thread_id, "timeline", ".overview.md"
+                )
 
                 if not os.path.exists(session_meta_path):
                     all_sessions_processed = False
@@ -356,7 +411,10 @@ async def wait_for_sample_memory_ready(
                     all_sessions_processed = False
                     break
 
-                if not (os.path.exists(timeline_abstract) or os.path.exists(timeline_overview)):
+                if not (
+                    os.path.exists(timeline_abstract)
+                    or os.path.exists(timeline_overview)
+                ):
                     all_sessions_processed = False
                     break
 
@@ -369,7 +427,9 @@ async def wait_for_sample_memory_ready(
                 with open(index_path, "r", encoding="utf-8") as f:
                     index = json.load(f)
                 summaries = index.get("session_summaries", {})
-                summary_count = sum(1 for thread_id in expected_threads if thread_id in summaries)
+                summary_count = sum(
+                    1 for thread_id in expected_threads if thread_id in summaries
+                )
 
             client.switch_tenant(tenant_id)
             results = client.search(probe_query, limit=5, min_score=0.1)
@@ -403,7 +463,9 @@ async def run_ingest(args: argparse.Namespace) -> None:
         results = []
         for sample_idx, item in enumerate(samples, start=1):
             sample_id = item["sample_id"]
-            tenant_id = args.tenant or tenant_for_sample(args.tenant_prefix, sample_id, sample_idx)
+            tenant_id = args.tenant or tenant_for_sample(
+                args.tenant_prefix, sample_id, sample_idx
+            )
             user_id = args.user or f"{tenant_id}-user"
             sessions = build_session_messages(item, session_range, tail=args.tail)
 
@@ -419,9 +481,14 @@ async def run_ingest(args: argparse.Namespace) -> None:
                 thread_id = f"{sample_id}-{meta['session_key']}"
                 msg = sess["message"]
                 preview = msg.replace("\n", " | ")[:80]
-                print(f"  [{meta['session_key']} ({meta['date_time']})] {preview}...", file=sys.stderr)
+                print(
+                    f"  [{meta['session_key']} ({meta['date_time']})] {preview}...",
+                    file=sys.stderr,
+                )
 
-                client.create_session(thread_id, user_id=user_id, agent_id=args.agent_id)
+                client.create_session(
+                    thread_id, user_id=user_id, agent_id=args.agent_id
+                )
                 client.add_message(thread_id, "user", msg)
                 client.close_session(thread_id)
                 expected_threads.append(thread_id)
@@ -451,10 +518,14 @@ async def run_ingest(args: argparse.Namespace) -> None:
             )
 
         if args.output:
-            os.makedirs(os.path.dirname(args.output), exist_ok=True) if os.path.dirname(args.output) else None
+            os.makedirs(os.path.dirname(args.output), exist_ok=True) if os.path.dirname(
+                args.output
+            ) else None
             with open(args.output, "w", encoding="utf-8") as f:
                 for record in results:
-                    f.write(f"[{record['sample_id']}/{record['session']}] tenant={record['tenant_id']} user={record['user']}\n")
+                    f.write(
+                        f"[{record['sample_id']}/{record['session']}] tenant={record['tenant_id']} user={record['user']}\n"
+                    )
                     f.write(f"  {record['reply']}\n\n")
             json_path = f"{args.output}.json"
             with open(json_path, "w", encoding="utf-8") as f:
@@ -465,7 +536,10 @@ async def run_ingest(args: argparse.Namespace) -> None:
         sessions = parse_test_file(args.input)
         tenant_id = args.tenant or f"{args.tenant_prefix}-txt"
         user_id = args.user or f"{tenant_id}-user"
-        print(f"Running {len(sessions)} session(s) into tenant={tenant_id}", file=sys.stderr)
+        print(
+            f"Running {len(sessions)} session(s) into tenant={tenant_id}",
+            file=sys.stderr,
+        )
         client.switch_tenant(tenant_id)
         results = []
         for idx, session in enumerate(sessions, start=1):
@@ -478,7 +552,9 @@ async def run_ingest(args: argparse.Namespace) -> None:
                 timeout_secs=args.wait_timeout,
                 poll_interval=args.poll_interval,
             )
-            results.append({"index": idx, "thread_id": thread_id, "evals": session["evals"]})
+            results.append(
+                {"index": idx, "thread_id": thread_id, "evals": session["evals"]}
+            )
 
         if args.output:
             with open(args.output, "w", encoding="utf-8") as f:
@@ -499,7 +575,9 @@ async def run_sample_qa(
     semaphore: asyncio.Semaphore,
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     sample_id = item["sample_id"]
-    tenant_id = args.tenant or tenant_for_sample(args.tenant_prefix, sample_id, sample_idx)
+    tenant_id = args.tenant or tenant_for_sample(
+        args.tenant_prefix, sample_id, sample_idx
+    )
     qas = [qa for qa in item.get("qa", []) if str(qa.get("category", "")) != "5"]
     if args.count is not None:
         qas = qas[: args.count]
@@ -509,7 +587,10 @@ async def run_sample_qa(
     jsonl_path = f"{args.output}.{sample_idx}.jsonl" if args.output else None
 
     async with semaphore:
-        print(f"\n=== Sample {sample_id} [{sample_idx}] tenant={tenant_id} ===", file=sys.stderr)
+        print(
+            f"\n=== Sample {sample_id} [{sample_idx}] tenant={tenant_id} ===",
+            file=sys.stderr,
+        )
         print(f"    Running {len(qas)} QA question(s)...", file=sys.stderr)
         client.switch_tenant(tenant_id)
         jsonl_file = open(jsonl_path, "w", encoding="utf-8") if jsonl_path else None
@@ -519,17 +600,28 @@ async def run_sample_qa(
                 expected = str(qa["answer"])
                 category = qa.get("category", "")
                 evidence = qa.get("evidence", [])
-                print(f"  [{sample_idx}] Q{qi}/{len(qas)}: {question[:60]}{'...' if len(question) > 60 else ''}", file=sys.stderr)
+                print(
+                    f"  [{sample_idx}] Q{qi}/{len(qas)}: {question[:60]}{'...' if len(question) > 60 else ''}",
+                    file=sys.stderr,
+                )
 
                 started = time.time()
                 try:
-                    contexts = client.search(question, limit=args.top_k, min_score=args.min_score)
-                    response_text, token_usage = client.answer_question(question, contexts)
+                    contexts = client.search(
+                        question, limit=args.top_k, min_score=args.min_score
+                    )
+                    response_text, token_usage = client.answer_question(
+                        question, contexts
+                    )
                     elapsed = time.time() - started
                 except Exception as exc:
                     contexts = []
                     response_text = f"[ERROR] {exc}"
-                    token_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+                    token_usage = {
+                        "prompt_tokens": 0,
+                        "completion_tokens": 0,
+                        "total_tokens": 0,
+                    }
                     elapsed = time.time() - started
 
                 for key in usage_sum:
@@ -550,7 +642,10 @@ async def run_sample_qa(
                     "token_usage": token_usage,
                 }
                 records.append(record)
-                print(f"  [{sample_idx}] A: {response_text[:60]}{'...' if len(response_text) > 60 else ''}", file=sys.stderr)
+                print(
+                    f"  [{sample_idx}] A: {response_text[:60]}{'...' if len(response_text) > 60 else ''}",
+                    file=sys.stderr,
+                )
 
                 if jsonl_file:
                     jsonl_file.write(json.dumps(record, ensure_ascii=False) + "\n")
@@ -578,7 +673,10 @@ async def run_qa(args: argparse.Namespace) -> None:
     )
 
     semaphore = asyncio.Semaphore(parallel)
-    tasks = [run_sample_qa(item, idx + 1, args, client, semaphore) for idx, item in enumerate(samples)]
+    tasks = [
+        run_sample_qa(item, idx + 1, args, client, semaphore)
+        for idx, item in enumerate(samples)
+    ]
     results_list = await asyncio.gather(*tasks)
 
     total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
@@ -620,7 +718,9 @@ def extract_json_object(text: str) -> dict[str, Any]:
     return json.loads(cleaned)
 
 
-def summarize_judged_records(records: list[dict[str, Any]]) -> tuple[dict[str, Any], list[tuple[str, dict[str, Any]]]]:
+def summarize_judged_records(
+    records: list[dict[str, Any]],
+) -> tuple[dict[str, Any], list[tuple[str, dict[str, Any]]]]:
     total = len(records)
     correct = sum(1 for record in records if record.get("judge", {}).get("is_correct"))
     by_category: dict[str, dict[str, Any]] = {}
@@ -630,7 +730,10 @@ def summarize_judged_records(records: list[dict[str, Any]]) -> tuple[dict[str, A
         bucket["total"] += 1
         if record.get("judge", {}).get("is_correct"):
             bucket["correct"] += 1
-    ordered_categories = sorted(by_category.items(), key=lambda item: int(item[0]) if str(item[0]).isdigit() else 999)
+    ordered_categories = sorted(
+        by_category.items(),
+        key=lambda item: int(item[0]) if str(item[0]).isdigit() else 999,
+    )
     summary = {
         "total": total,
         "correct": correct,
@@ -638,7 +741,9 @@ def summarize_judged_records(records: list[dict[str, Any]]) -> tuple[dict[str, A
         "by_category": {
             key: {
                 **value,
-                "score": round((value["correct"] / value["total"]) * 100, 2) if value["total"] else 0.0,
+                "score": round((value["correct"] / value["total"]) * 100, 2)
+                if value["total"]
+                else 0.0,
             }
             for key, value in ordered_categories
         },
@@ -704,7 +809,9 @@ async def run_judge(args: argparse.Namespace) -> None:
 
     summary, ordered_categories = summarize_judged_records(judged_records)
     output_prefix = args.output or f"{args.input}.judge"
-    summary_path = output_prefix if output_prefix.endswith(".md") else f"{output_prefix}.md"
+    summary_path = (
+        output_prefix if output_prefix.endswith(".md") else f"{output_prefix}.md"
+    )
     judged_json_path = f"{output_prefix}.json"
 
     lines = [
@@ -723,10 +830,20 @@ async def run_judge(args: argparse.Namespace) -> None:
         "",
     ]
     for key, value in ordered_categories:
-        score = round((value['correct'] / value['total']) * 100, 2) if value['total'] else 0.0
-        lines.append(f"- category {key}: `{value['correct']}/{value['total']}` => `{score}`")
+        score = (
+            round((value["correct"] / value["total"]) * 100, 2)
+            if value["total"]
+            else 0.0
+        )
+        lines.append(
+            f"- category {key}: `{value['correct']}/{value['total']}` => `{score}`"
+        )
 
-    wrong_examples = [record for record in judged_records if not record.get("judge", {}).get("is_correct")][:8]
+    wrong_examples = [
+        record
+        for record in judged_records
+        if not record.get("judge", {}).get("is_correct")
+    ][:8]
     if wrong_examples:
         lines.extend(["", "## Wrong Examples", ""])
         for record in wrong_examples:
@@ -745,7 +862,12 @@ async def run_judge(args: argparse.Namespace) -> None:
     with open(summary_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
     with open(judged_json_path, "w", encoding="utf-8") as f:
-        json.dump({"summary": summary, "records": judged_records}, f, indent=2, ensure_ascii=False)
+        json.dump(
+            {"summary": summary, "records": judged_records},
+            f,
+            indent=2,
+            ensure_ascii=False,
+        )
 
     print(f"Judge report written to {summary_path}", file=sys.stderr)
     print(f"Judged records written to {judged_json_path}", file=sys.stderr)
@@ -753,29 +875,120 @@ async def run_judge(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Evaluate Cortex Memory using LoCoMo workflow")
-    parser.add_argument("mode", choices=["ingest", "qa", "judge"], help="Mode: ingest, qa, or judge")
+    parser = argparse.ArgumentParser(
+        description="Evaluate Cortex Memory using LoCoMo workflow"
+    )
+    parser.add_argument(
+        "mode", choices=["ingest", "qa", "judge"], help="Mode: ingest, qa, or judge"
+    )
     parser.add_argument("input", help="Path to test file (.txt or .json)")
-    parser.add_argument("--output", default=None, help="Path to output file (omit to skip writing)")
-    parser.add_argument("--base-url", default=DEFAULT_SERVICE_URL, help=f"Cortex service base URL (default: {DEFAULT_SERVICE_URL})")
-    parser.add_argument("--sample", type=int, default=None, help="LoCoMo sample index (0-based). Default: all samples.")
-    parser.add_argument("--sessions", default=None, help="LoCoMo session range, e.g. '1-4' or '3'. Default: all sessions.")
-    parser.add_argument("--tail", default="[]", help="Tail message appended after each bundled session message.")
-    parser.add_argument("--count", type=int, default=None, help="QA mode: number of QA questions to run. Default: all.")
-    parser.add_argument("--tenant", default=None, help="Override tenant id. Default: one tenant per sample.")
-    parser.add_argument("--tenant-prefix", default=DEFAULT_TENANT_PREFIX, help="Tenant prefix when auto-generating tenant ids.")
+    parser.add_argument(
+        "--output", default=None, help="Path to output file (omit to skip writing)"
+    )
+    parser.add_argument(
+        "--base-url",
+        default=DEFAULT_SERVICE_URL,
+        help=f"Cortex service base URL (default: {DEFAULT_SERVICE_URL})",
+    )
+    parser.add_argument(
+        "--sample",
+        type=int,
+        default=None,
+        help="LoCoMo sample index (0-based). Default: all samples.",
+    )
+    parser.add_argument(
+        "--sessions",
+        default=None,
+        help="LoCoMo session range, e.g. '1-4' or '3'. Default: all sessions.",
+    )
+    parser.add_argument(
+        "--tail",
+        default="[]",
+        help="Tail message appended after each bundled session message.",
+    )
+    parser.add_argument(
+        "--count",
+        type=int,
+        default=None,
+        help="QA mode: number of QA questions to run. Default: all.",
+    )
+    parser.add_argument(
+        "--tenant",
+        default=None,
+        help="Override tenant id. Default: one tenant per sample.",
+    )
+    parser.add_argument(
+        "--tenant-prefix",
+        default=DEFAULT_TENANT_PREFIX,
+        help="Tenant prefix when auto-generating tenant ids.",
+    )
     parser.add_argument("--user", default=None, help="Override user id for ingestion.")
-    parser.add_argument("--agent-id", default="cortex-eval-agent", help="Agent id used during ingestion.")
-    parser.add_argument("--parallel", type=int, default=1, metavar="N", help="QA mode: number of samples to process concurrently (max 10).")
-    parser.add_argument("--top-k", type=int, default=8, help="QA mode: number of search results to retrieve.")
-    parser.add_argument("--min-score", type=float, default=0.4, help="QA mode: minimum search score threshold.")
-    parser.add_argument("--wait-timeout", type=float, default=600.0, help="Ingest mode: max seconds to wait for memory readiness.")
-    parser.add_argument("--poll-interval", type=float, default=1.0, help="Ingest mode: memory readiness polling interval.")
-    parser.add_argument("--data-dir", default=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "cortex-data"), help="Local cortex data dir used to inspect memory_index during ingest readiness checks.")
-    parser.add_argument("--answer-model", default=DEFAULT_SEARCH_MODEL, help="LLM model used to answer from retrieved contexts.")
-    parser.add_argument("--judge-model", default=DEFAULT_JUDGE_MODEL, help="LLM model used to judge QA answers.")
-    parser.add_argument("--llm-base-url", default=os.getenv("OPENAI_BASE_URL"), help="OpenAI-compatible base URL for answer generation.")
-    parser.add_argument("--llm-api-key", default=os.getenv("OPENAI_API_KEY"), help="OpenAI-compatible API key for answer generation.")
+    parser.add_argument(
+        "--agent-id",
+        default="cortex-eval-agent",
+        help="Agent id used during ingestion.",
+    )
+    parser.add_argument(
+        "--parallel",
+        type=int,
+        default=1,
+        metavar="N",
+        help="QA mode: number of samples to process concurrently (max 10).",
+    )
+    parser.add_argument(
+        "--top-k",
+        type=int,
+        default=8,
+        help="QA mode: number of search results to retrieve.",
+    )
+    parser.add_argument(
+        "--min-score",
+        type=float,
+        default=0.4,
+        help="QA mode: minimum search score threshold.",
+    )
+    parser.add_argument(
+        "--wait-timeout",
+        type=float,
+        default=600.0,
+        help="Ingest mode: max seconds to wait for memory readiness.",
+    )
+    parser.add_argument(
+        "--poll-interval",
+        type=float,
+        default=1.0,
+        help="Ingest mode: memory readiness polling interval.",
+    )
+    parser.add_argument(
+        "--data-dir",
+        default=os.path.join(
+            os.path.dirname(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            ),
+            "cortex-data",
+        ),
+        help="Local cortex data dir used to inspect memory_index during ingest readiness checks.",
+    )
+    parser.add_argument(
+        "--answer-model",
+        default=DEFAULT_SEARCH_MODEL,
+        help="LLM model used to answer from retrieved contexts.",
+    )
+    parser.add_argument(
+        "--judge-model",
+        default=DEFAULT_JUDGE_MODEL,
+        help="LLM model used to judge QA answers.",
+    )
+    parser.add_argument(
+        "--llm-base-url",
+        default=os.getenv("OPENAI_BASE_URL"),
+        help="OpenAI-compatible base URL for answer generation.",
+    )
+    parser.add_argument(
+        "--llm-api-key",
+        default=os.getenv("OPENAI_API_KEY"),
+        help="OpenAI-compatible API key for answer generation.",
+    )
     return parser
 
 

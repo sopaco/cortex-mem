@@ -140,7 +140,7 @@ ln -sf "$(pwd)" ~/.openclaw/extensions/memclaw
           "autoStartServices": true,
           "llmApiBaseUrl": "https://api.openai.com/v1",
           "llmApiKey": "your-llm-api-key",
-          "llmModel": "gpt-4o-mini",
+          "llmModel": "gpt-5-mini",
           "embeddingApiBaseUrl": "https://api.openai.com/v1",
           "embeddingApiKey": "your-embedding-api-key",
           "embeddingModel": "text-embedding-3-small"
@@ -272,7 +272,9 @@ ln -sf "$(pwd)" ~/.openclaw/extensions/memclaw
 - `cortex://session` - 列出所有会话
 - `cortex://session/{session_id}` - 浏览特定会话
 - `cortex://session/{session_id}/timeline` - 查看时间线消息
-- `cortex://session/{session_id}/memories` - 查看提取的记忆
+- `cortex://user/{user_id}/preferences` - 查看用户偏好（提取的记忆）
+- `cortex://user/{user_id}/entities` - 查看用户实体（人物、项目等）
+- `cortex://agent/{agent_id}/cases` - 查看 Agent 问题解决案例
 
 ### cortex_get_abstract
 

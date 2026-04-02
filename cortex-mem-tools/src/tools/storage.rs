@@ -21,6 +21,9 @@ impl MemoryOperations {
         };
 
         // Build URI based on scope
+        // Note: This stores raw messages to memories/ subdirectory.
+        // Extracted structured memories (preferences, entities, cases, etc.)
+        // are stored in their respective directories after commit().
         let uri = match scope {
             "user" => {
                 // cortex://user/{user_id}/memories/YYYY-MM/DD/HH_MM_SS_id.md

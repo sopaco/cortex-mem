@@ -40,6 +40,11 @@ description: MemClaw Maintenance Guide — Installation, configuration, and main
 ```bash
 openclaw plugins install @memclaw/memclaw
 ```
+or
+```bash
+openclaw plugins install clawhub:@memclaw/memclaw
+```
+
 
 ### Step 2: Enable the Plugin
 

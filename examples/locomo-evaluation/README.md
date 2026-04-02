@@ -72,7 +72,7 @@ cargo run -p cortex-mem-service -- --port 8085 --data-dir ./cortex-data
 ```bash
 export OPENAI_BASE_URL="https://api.openai.com/v1"
 export OPENAI_API_KEY="your-key"
-export EVAL_ANSWER_MODEL="gpt-4o-mini"
+export EVAL_ANSWER_MODEL="gpt-5-mini"
 ```
 
 `judge.py` 默认也会读取 `OPENAI_BASE_URL` / `OPENAI_API_KEY`。
@@ -117,7 +117,7 @@ python eval.py qa ./locomo10.json --sample 0 --output ./output/qa_results.txt --
 ### 3. judge
 
 ```bash
-python judge.py ./output/qa_results.txt.json --output ./output/grades.json --model gpt-4o-mini
+python judge.py ./output/qa_results.txt.json --output ./output/grades.json --model gpt-5-mini
 ```
 
 ### 4. 统计

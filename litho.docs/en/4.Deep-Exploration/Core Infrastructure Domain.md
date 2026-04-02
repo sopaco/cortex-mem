@@ -241,7 +241,7 @@ SessionManager → SessionEvent::Closed → AutomationManager → AutoExtractor 
 ### 6.2 Key Configuration Parameters
 ```toml
 [llm]
-model = "gpt-4"
+model = "gpt-5-mini"
 api_key = "${OPENAI_API_KEY}"
 base_url = "https://api.openai.com/v1"
 

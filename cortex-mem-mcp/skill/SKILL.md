@@ -82,7 +82,7 @@ data_dir = "~/.cortex-data"
 # LLM API configuration
 api_base_url = "https://api.openai.com/v1"
 api_key = "your-api-key"
-model_efficient = "gpt-4o-mini"
+model_efficient = "gpt-5-mini"
 temperature = 0.1
 max_tokens = 65536
 
@@ -288,7 +288,7 @@ List directory contents to browse the memory space.
 Common URIs:
 - `cortex://session` - List all sessions
 - `cortex://user` - List user-level memories
-- `cortex://user/preferences` - User preference memories
+- `cortex://user/{user_id}/preferences` - User preference memories
 
 #### `explore`
 Smart exploration of memory space, combining search and browsing.
@@ -316,7 +316,7 @@ Get L0 abstract layer for quick relevance checking.
 
 ```json
 {
-  "uri": "cortex://session/project-alpha/conversation.md"
+  "uri": "cortex://session/project-alpha/timeline/2024-03/15/10_30_45_abc123.md"
 }
 ```
 
@@ -325,7 +325,7 @@ Get L1 overview layer for understanding core information.
 
 ```json
 {
-  "uri": "cortex://session/project-alpha/conversation.md"
+  "uri": "cortex://session/project-alpha/timeline/2024-03/15/10_30_45_abc123.md"
 }
 ```
 
@@ -334,7 +334,7 @@ Get L2 full content layer - the complete original content.
 
 ```json
 {
-  "uri": "cortex://session/project-alpha/conversation.md"
+  "uri": "cortex://session/project-alpha/timeline/2024-03/15/10_30_45_abc123.md"
 }
 ```
 
@@ -345,7 +345,7 @@ Delete a memory by its URI.
 
 ```json
 {
-  "uri": "cortex://session/old-project/conversation.md"
+  "uri": "cortex://session/old-project/timeline/2024-03/15/10_30_45_xyz.md"
 }
 ```
 
@@ -372,10 +372,15 @@ Index memory files for vector search.
 Memories are organized using a URI scheme:
 
 ```
-cortex://session/{thread_id}/conversation.md
+cortex://session/{thread_id}/timeline/{YYYY-MM}/{DD}/{HH_MM_SS}_{id}.md
 cortex://user/{user_id}/preferences/{topic}.md
-cortex://user/{user_id}/memories/{memory_id}.md
+cortex://user/{user_id}/entities/{name}.md
+cortex://user/{user_id}/events/{name}.md
+cortex://agent/{agent_id}/cases/{name}.md
+cortex://agent/{agent_id}/skills/{name}.md
 ```
+
+**Note**: Session dimension stores conversation timeline; extracted memories (preferences, entities, etc.) are stored in user/agent dimensions after `commit`.
 
 ## Best Practices
 
@@ -439,7 +444,7 @@ data_dir = "./cortex-data"
 [llm]
 api_base_url = "https://api.openai.com/v1"
 api_key = "your-api-key"
-model_efficient = "gpt-4o-mini"
+model_efficient = "gpt-5-mini"
 
 [embedding]
 api_base_url = "https://api.openai.com/v1"

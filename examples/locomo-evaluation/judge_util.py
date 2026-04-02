@@ -56,7 +56,11 @@ async def locomo_grader(
     content = response_obj.choices[0].message.content or "{}"
     start_idx = content.find("{")
     end_idx = content.rfind("}")
-    payload = content[start_idx : end_idx + 1] if start_idx != -1 and end_idx != -1 else content
+    payload = (
+        content[start_idx : end_idx + 1]
+        if start_idx != -1 and end_idx != -1
+        else content
+    )
     result = json.loads(payload)
     label = str(result.get("is_correct", result.get("label", "WRONG"))).strip().lower()
     reasoning = str(result.get("reasoning", "")).strip()
@@ -77,7 +81,7 @@ async def grade_answers(
     answers: list[dict[str, Any]],
     base_url: str | None = None,
     api_key: str | None = None,
-    model: str = "gpt-4o-mini",
+    model: str = "gpt-5-mini",
     parallel: int = 5,
 ) -> list[dict[str, Any]]:
     load_dotenv()

@@ -267,12 +267,17 @@ Cortex Memory 为 Agent 提供以下工具：
 ### 记忆 URI 格式
 
 ```
-cortex://user/{user_id}/              - 用户记忆目录
-cortex://user/{user_id}/profile.json  - 用户档案
-cortex://agent/{agent_id}/             - Agent 记忆目录
-cortex://session/{session_id}/         - 特定会话
-cortex://resources/                    - 知识库
+cortex://user/{user_id}/preferences/ - 用户偏好
+cortex://user/{user_id}/entities/    - 用户实体（人物、项目等）
+cortex://user/{user_id}/events/      - 用户事件（决策、里程碑）
+cortex://agent/{agent_id}/cases/     - Agent 案例记忆
+cortex://session/{session_id}/timeline/  - 会话时间线
+cortex://resources/                  - 知识库
 ```
+
+**注意**：在 TARS 项目中，`user_id` 固定为 `tars_user`，例如：
+- `cortex://user/tars_user/preferences/`
+- `cortex://user/tars_user/entities/`
 
 ### 分层访问示例
 
@@ -283,10 +288,10 @@ cortex://resources/                    - 知识库
 search("用户的编程语言偏好", scope="user/", layer="overview")
 
 // 2. 快速判断相关性（L0 层，最快）
-abstract("cortex://user/alice/profile.json")
+abstract("cortex://user/tars_user/preferences/typescript.md")
 
 // 3. 获取完整信息（L2 层，完整内容）
-read("cortex://session/2024-02-20-conversation-01/")
+read("cortex://session/2024-02-20-conversation-01/timeline/2024-02/20/10_30_00_abc.md")
 ```
 
 ## 🔧 开发相关

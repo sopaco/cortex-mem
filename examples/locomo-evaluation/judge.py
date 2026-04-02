@@ -48,7 +48,9 @@ async def run(
         for category in sorted(categories):
             stats = categories[category]
             pct = stats["correct"] / stats["total"] if stats["total"] > 0 else 0.0
-            print(f"  Category {category}: {stats['correct']}/{stats['total']} ({pct:.2%})")
+            print(
+                f"  Category {category}: {stats['correct']}/{stats['total']} ({pct:.2%})"
+            )
 
     if output_path:
         with open(output_path, "w", encoding="utf-8") as f:
@@ -67,16 +69,33 @@ async def run(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Grade Cortex Memory QA responses with LLM judge")
+    parser = argparse.ArgumentParser(
+        description="Grade Cortex Memory QA responses with LLM judge"
+    )
     parser.add_argument("input", help="Path to answers JSON/JSONL file")
     parser.add_argument("--output", default=None, help="Path to write grades JSON")
-    parser.add_argument("--base-url", default=None, help="LLM API base URL (or set OPENAI_BASE_URL)")
-    parser.add_argument("--token", default=None, help="LLM API key (or set OPENAI_API_KEY)")
-    parser.add_argument("--model", default="gpt-4o-mini", help="Model name for grading")
-    parser.add_argument("--parallel", type=int, default=5, help="Parallel grading requests")
+    parser.add_argument(
+        "--base-url", default=None, help="LLM API base URL (or set OPENAI_BASE_URL)"
+    )
+    parser.add_argument(
+        "--token", default=None, help="LLM API key (or set OPENAI_API_KEY)"
+    )
+    parser.add_argument("--model", default="gpt-5-mini", help="Model name for grading")
+    parser.add_argument(
+        "--parallel", type=int, default=5, help="Parallel grading requests"
+    )
     args = parser.parse_args()
 
-    asyncio.run(run(args.input, args.output, args.base_url, args.token, args.model, args.parallel))
+    asyncio.run(
+        run(
+            args.input,
+            args.output,
+            args.base_url,
+            args.token,
+            args.model,
+            args.parallel,
+        )
+    )
 
 
 if __name__ == "__main__":
