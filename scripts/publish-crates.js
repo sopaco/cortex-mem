@@ -28,13 +28,13 @@ function colorize(text, color) {
 // Order based on dependencies: config -> core -> tools -> rig -> (service, cli, mcp)
 // Note: cortex-mem-tars is excluded as it's an example project
 const CRATES_TO_PUBLISH = [
-	{ name: 'cortex-mem-config', path: 'cortex-mem-config' },
-	{ name: 'cortex-mem-core', path: 'cortex-mem-core' },
-	{ name: 'cortex-mem-tools', path: 'cortex-mem-tools' },
-	{ name: 'cortex-mem-rig', path: 'cortex-mem-rig' },
-	{ name: 'cortex-mem-service', path: 'cortex-mem-service' },
-	{ name: 'cortex-mem-cli', path: 'cortex-mem-cli' },
-	{ name: 'cortex-mem-mcp', path: 'cortex-mem-mcp' }
+	{ name: 'cortex-mem-config', path: 'cortex-mem-config', deps: [] },
+	{ name: 'cortex-mem-core', path: 'cortex-mem-core', deps: ['cortex-mem-config'] },
+	{ name: 'cortex-mem-tools', path: 'cortex-mem-tools', deps: ['cortex-mem-core'] },
+	{ name: 'cortex-mem-rig', path: 'cortex-mem-rig', deps: ['cortex-mem-core', 'cortex-mem-tools'] },
+	{ name: 'cortex-mem-service', path: 'cortex-mem-service', deps: ['cortex-mem-core', 'cortex-mem-config'] },
+	{ name: 'cortex-mem-cli', path: 'cortex-mem-cli', deps: ['cortex-mem-core', 'cortex-mem-tools', 'cortex-mem-config'] },
+	{ name: 'cortex-mem-mcp', path: 'cortex-mem-mcp', deps: ['cortex-mem-core', 'cortex-mem-tools', 'cortex-mem-config'] }
 ];
 
 // Get workspace version from root Cargo.toml
@@ -141,19 +141,40 @@ function restoreCargoToml(cratePath) {
 	}
 }
 
-// Run cargo publish
-function publishCrate(cratePath, dryRun = false) {
-	try {
-		let command = dryRun ? 'cargo publish --dry-run --allow-dirty' : 'cargo publish --allow-dirty';
+// Run cargo publish with retry on network errors
+function publishCrate(cratePath, dryRun = false, maxRetries = 3) {
+	let command = dryRun ? 'cargo publish --dry-run --allow-dirty' : 'cargo publish --allow-dirty';
 
-		execSync(command, {
-			cwd: path.join(PROJECT_ROOT, cratePath),
-			stdio: 'inherit'
-		});
-		return true;
-	} catch (error) {
-		return false;
+	for (let attempt = 1; attempt <= maxRetries; attempt++) {
+		try {
+			execSync(command, {
+				cwd: path.join(PROJECT_ROOT, cratePath),
+				stdio: 'inherit'
+			});
+			return { success: true, isNetworkError: false };
+		} catch (error) {
+			const errorMsg = error.message || '';
+			const isNetworkError = /SSL|network|connection|timeout|reset/i.test(errorMsg);
+			
+			if (!dryRun && isNetworkError && attempt < maxRetries) {
+				console.log(
+					colorize(
+						`    ⚠️  Network error detected, retrying (${attempt}/${maxRetries})...`,
+						'yellow'
+					)
+				);
+				// Wait a bit before retrying
+				const waitTime = attempt * 5000;
+				console.log(colorize(`    Waiting ${waitTime / 1000}s before retry...`, 'yellow'));
+				execSync(`timeout /t ${waitTime / 1000} /nobreak`, { stdio: 'inherit' });
+				continue;
+			}
+			
+			return { success: false, isNetworkError };
+		}
 	}
+	
+	return { success: false, isNetworkError: true };
 }
 
 // Helper: Make HTTP GET request (cross-platform, no curl dependency)
@@ -177,8 +198,13 @@ function httpGet(url) {
 }
 
 // Wait for a crate to be available on crates.io
-function waitForCrateAvailability(crateName, maxWaitSeconds = 120) {
-	console.log(colorize(`    Waiting for ${crateName} to be available on crates.io...`, 'cyan'));
+function waitForCrateAvailability(crateName, targetVersion, maxWaitSeconds = 180) {
+	console.log(
+		colorize(
+			`    Waiting for ${crateName} v${targetVersion} to be available on crates.io...`,
+			'cyan'
+		)
+	);
 
 	const startTime = Date.now();
 	const checkInterval = 5000; // Check every 5 seconds
@@ -187,13 +213,23 @@ function waitForCrateAvailability(crateName, maxWaitSeconds = 120) {
 		const checkAvailability = async () => {
 			try {
 				// Use native HTTPS instead of curl for cross-platform compatibility
-				await httpGet(`https://crates.io/api/v1/crates/${crateName}`);
-				console.log(colorize(`    ✓ ${crateName} is now available on crates.io`, 'green'));
-				resolve();
+				const result = await httpGet(`https://crates.io/api/v1/crates/${crateName}`);
+				const data = JSON.parse(result);
+				const versions = data.versions || [];
+				const targetVersionExists = versions.some(v => v.num === targetVersion);
+				
+				if (targetVersionExists) {
+					console.log(
+						colorize(`    ✓ ${crateName} v${targetVersion} is now available on crates.io`, 'green')
+					);
+					resolve();
+				} else {
+					throw new Error('Version not yet available');
+				}
 			} catch (error) {
 				const elapsed = (Date.now() - startTime) / 1000;
 				if (elapsed >= maxWaitSeconds) {
-					reject(new Error(`Timeout waiting for ${crateName} to be available`));
+					reject(new Error(`Timeout waiting for ${crateName} v${targetVersion} to be available`));
 				} else {
 					setTimeout(checkAvailability, checkInterval);
 				}
@@ -209,8 +245,8 @@ async function isVersionPublished(crateName, version) {
 	try {
 		const result = await httpGet(`https://crates.io/api/v1/crates/${crateName}`);
 		const data = JSON.parse(result);
-		const newestVersion = data.crate?.newest_version || data.crate?.max_version;
-		return newestVersion === version;
+		const versions = data.versions || [];
+		return versions.some(v => v.num === version);
 	} catch (error) {
 		return false;
 	}
@@ -261,10 +297,32 @@ async function main() {
 	let successCount = 0;
 	let failCount = 0;
 	let skippedCount = 0;
+	
+	// Track successfully published crates for dependency checking
+	const publishedCrates = new Set();
 
 	for (let i = 0; i < CRATES_TO_PUBLISH.length; i++) {
 		const crate = CRATES_TO_PUBLISH[i];
 		const version = getVersion(crate.path);
+
+		// Check if all dependencies have been successfully published
+		const failedDeps = crate.deps.filter(dep => !publishedCrates.has(dep));
+		if (failedDeps.length > 0 && !force) {
+			console.log(
+				colorize(
+					`\n⏭️  [${i + 1}/${CRATES_TO_PUBLISH.length}] Skipping ${crate.name} v${version}`,
+					'yellow'
+				)
+			);
+			console.log(
+				colorize(
+					`    Reason: Dependencies not published: ${failedDeps.join(', ')}`,
+					'red'
+				)
+			);
+			skippedCount++;
+			continue;
+		}
 
 		// Skip if already published (unless force mode)
 		if (!force && (await isVersionPublished(crate.name, version))) {
@@ -274,6 +332,7 @@ async function main() {
 					'yellow'
 				)
 			);
+			publishedCrates.add(crate.name);
 			skippedCount++;
 			continue;
 		}
@@ -298,9 +357,9 @@ async function main() {
 
 		// Dry run first
 		console.log(colorize('    🔍 Running dry-run check...', 'cyan'));
-		const dryRunSuccess = publishCrate(crate.path, true);
+		const dryRunResult = publishCrate(crate.path, true);
 
-		if (!dryRunSuccess) {
+		if (!dryRunResult.success) {
 			console.log(colorize('    ✗ Dry run failed, skipping publish', 'red'));
 			restoreCargoToml(crate.path);
 			failCount++;
@@ -312,16 +371,17 @@ async function main() {
 		// Actual publish
 		if (!dryRun) {
 			console.log(colorize('    🚀 Publishing to crates.io...', 'cyan'));
-			const publishSuccess = publishCrate(crate.path, false);
+			const publishResult = publishCrate(crate.path, false, 3); // 3 retries
 
-			if (publishSuccess) {
+			if (publishResult.success) {
 				console.log(colorize(`    ✓ ${crate.name} v${version} published successfully!`, 'green'));
 				successCount++;
+				publishedCrates.add(crate.name);
 
 				// Wait for crate to be available on crates.io (unless it's the last crate)
 				if (i < CRATES_TO_PUBLISH.length - 1 && !skipWait) {
 					try {
-						await waitForCrateAvailability(crate.name, 120);
+						await waitForCrateAvailability(crate.name, version, 180);
 					} catch (error) {
 						console.log(colorize(`    ⚠️  Warning: ${error.message}`, 'yellow'));
 						console.log(colorize('    Continuing anyway...', 'yellow'));
@@ -329,11 +389,20 @@ async function main() {
 				}
 			} else {
 				console.log(colorize(`    ✗ Failed to publish ${crate.name}`, 'red'));
+				if (publishResult.isNetworkError) {
+					console.log(
+						colorize(
+							'    💡 Tip: Check your network connection, firewall, or proxy settings.',
+							'yellow'
+						)
+					);
+				}
 				failCount++;
 			}
 		} else {
 			console.log(colorize(`    ✓ ${crate.name} v${version} ready for publishing`, 'green'));
 			successCount++;
+			publishedCrates.add(crate.name);
 		}
 
 		// Restore original Cargo.toml
@@ -347,7 +416,7 @@ async function main() {
 		`  ${colorize('✓', 'green')} ${successCount} crates ${dryRun ? 'ready' : 'published'} successfully`
 	);
 	if (skippedCount > 0) {
-		console.log(`  ${colorize('⏭️', 'yellow')} ${skippedCount} crates skipped (already published)`);
+		console.log(`  ${colorize('⏭️', 'yellow')} ${skippedCount} crates skipped`);
 	}
 	if (failCount > 0) {
 		console.log(`  ${colorize('✗', 'red')} ${failCount} crates failed`);
@@ -359,13 +428,16 @@ async function main() {
 			colorize('\n⚠️  Some crates failed to publish. Please check the errors above.', 'yellow')
 		);
 		process.exit(1);
-	} else if (!dryRun) {
+	} else if (!dryRun && successCount > 0) {
 		console.log(colorize('\n🎉 All crates published successfully!', 'green'));
 		console.log(colorize('You can now install them from crates.io', 'blue'));
 		process.exit(0);
-	} else {
+	} else if (dryRun) {
 		console.log(colorize('\n✅ Dry run completed successfully!', 'green'));
 		console.log(colorize('Run without --dry-run to actually publish the crates.', 'yellow'));
+		process.exit(0);
+	} else {
+		console.log(colorize('\nℹ️  No crates needed to be published.', 'blue'));
 		process.exit(0);
 	}
 }
