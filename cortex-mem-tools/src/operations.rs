@@ -94,6 +94,11 @@ impl MemoryOperations {
         self.memory_event_tx.as_ref()
     }
 
+    /// Get the vector store (for admin operations like prune, reindex)
+    pub fn vector_store(&self) -> &Arc<QdrantVectorStore> {
+        &self.vector_store
+    }
+
     /// Create from data directory with tenant isolation, LLM support, and vector search
     ///
     /// This is the primary constructor that requires all dependencies.

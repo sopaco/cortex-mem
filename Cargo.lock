@@ -600,16 +600,16 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-cli"
-version = "2.7.0"
+version = "2.7.1"
 dependencies = [
  "anyhow",
  "assert_cmd",
  "chrono",
  "clap",
  "colored",
- "cortex-mem-config 2.7.0",
- "cortex-mem-core 2.7.0",
- "cortex-mem-tools 2.7.0",
+ "cortex-mem-config",
+ "cortex-mem-core",
+ "cortex-mem-tools",
  "predicates",
  "reqwest 0.12.24",
  "serde",
@@ -622,20 +622,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-config"
-version = "2.7.0"
-dependencies = [
- "anyhow",
- "directories 5.0.1",
- "serde",
- "thiserror 2.0.17",
- "toml",
-]
-
-[[package]]
-name = "cortex-mem-config"
-version = "2.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb96c8de89ec4ee0d4b634ce86ebed4c14bc990b604a3cf86eaa0fc64d49298d"
+version = "2.7.1"
 dependencies = [
  "anyhow",
  "directories 5.0.1",
@@ -646,12 +633,12 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-core"
-version = "2.7.0"
+version = "2.7.1"
 dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
- "cortex-mem-config 2.7.0",
+ "cortex-mem-config",
  "dyn-clone",
  "futures",
  "qdrant-client",
@@ -673,44 +660,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "cortex-mem-core"
-version = "2.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ccc9c7a65901b61be1b2b73bc1d0e588dc8a40aff974df44b79beb4bcf94644c"
-dependencies = [
- "anyhow",
- "async-trait",
- "chrono",
- "cortex-mem-config 2.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "dyn-clone",
- "futures",
- "qdrant-client",
- "regex",
- "reqwest 0.12.24",
- "rig-core",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "sha2",
- "thiserror 2.0.17",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "uuid",
- "walkdir",
-]
-
-[[package]]
 name = "cortex-mem-mcp"
-version = "2.7.0"
+version = "2.7.1"
 dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
  "clap",
- "cortex-mem-config 2.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cortex-mem-core 2.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "cortex-mem-tools 2.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cortex-mem-config",
+ "cortex-mem-core",
+ "cortex-mem-tools",
  "dirs",
  "rmcp",
  "schemars 1.2.1",
@@ -725,12 +684,12 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-rig"
-version = "2.7.0"
+version = "2.7.1"
 dependencies = [
  "anyhow",
  "async-trait",
- "cortex-mem-core 2.7.0",
- "cortex-mem-tools 2.7.0",
+ "cortex-mem-core",
+ "cortex-mem-tools",
  "rig-core",
  "serde",
  "serde_json",
@@ -741,14 +700,14 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-service"
-version = "2.7.0"
+version = "2.7.1"
 dependencies = [
  "anyhow",
  "axum",
  "chrono",
  "clap",
- "cortex-mem-config 2.7.0",
- "cortex-mem-core 2.7.0",
+ "cortex-mem-config",
+ "cortex-mem-core",
  "futures",
  "http-body-util",
  "serde",
@@ -764,7 +723,7 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-tars"
-version = "2.7.0"
+version = "2.7.1"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -772,10 +731,10 @@ dependencies = [
  "chrono",
  "clap",
  "clipboard",
- "cortex-mem-config 2.7.0",
- "cortex-mem-core 2.7.0",
+ "cortex-mem-config",
+ "cortex-mem-core",
  "cortex-mem-rig",
- "cortex-mem-tools 2.7.0",
+ "cortex-mem-tools",
  "cpal",
  "crossterm",
  "directories 6.0.0",
@@ -804,34 +763,16 @@ dependencies = [
 
 [[package]]
 name = "cortex-mem-tools"
-version = "2.7.0"
+version = "2.7.1"
 dependencies = [
  "anyhow",
  "async-trait",
  "chrono",
- "cortex-mem-core 2.7.0",
+ "cortex-mem-core",
  "futures",
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 2.0.17",
- "tokio",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "cortex-mem-tools"
-version = "2.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "545813b8e08ac2f9f25c209d8d2a65b559b9e519d829d655378d401f6da1bf62"
-dependencies = [
- "anyhow",
- "async-trait",
- "chrono",
- "cortex-mem-core 2.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde",
- "serde_json",
  "thiserror 2.0.17",
  "tokio",
  "tracing",

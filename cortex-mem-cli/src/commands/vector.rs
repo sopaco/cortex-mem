@@ -3,16 +3,15 @@ use colored::Colorize;
 use cortex_mem_tools::MemoryOperations;
 use std::sync::Arc;
 
-fn qdrant_url() -> String {
-    std::env::var("QDRANT_URL").unwrap_or_else(|_| "http://localhost:6334".to_string())
-}
-
 /// Reindex: clean up no-URI vectors, then full sync
 pub async fn reindex(operations: Arc<MemoryOperations>) -> Result<()> {
     println!("{} Starting vector reindex...\n", "🔄".bold());
 
-    // Step 1: delete stale (no-URI) vectors
-    match clean_no_uri_vectors().await {
+    // Step 1: delete stale (no-URI) vectors using gRPC
+    let vector_store = operations.vector_store();
+    let collection_name = vector_store.collection_name().to_string();
+    
+    match vector_store.delete_no_uri_points(&collection_name).await {
         Ok(n) => println!("  {} Removed {} stale vectors (no URI metadata)", "✅".green(), n),
         Err(e) => println!("  {} Failed to clean stale vectors: {} (continuing...)", "⚠️".yellow(), e),
     }
@@ -45,67 +44,32 @@ pub async fn prune(operations: Arc<MemoryOperations>, dry_run: bool) -> Result<(
         println!("{} Scanning for dangling vectors (files deleted from disk)...\n", "🧹".bold());
     }
 
-    let url = qdrant_url();
-    let client = reqwest::Client::new();
-
-    let resp: serde_json::Value = client.get(format!("{}/collections", url))
-        .send().await?.json().await?;
-    let collections: Vec<String> = resp["result"]["collections"]
-        .as_array().unwrap_or(&vec![])
-        .iter()
-        .filter_map(|c| c["name"].as_str().map(|s| s.to_string()))
-        .collect();
+    let vector_store = operations.vector_store();
+    let collection_name = vector_store.collection_name().to_string();
+    
+    // Get all points with URI using gRPC scroll
+    let points = vector_store
+        .scroll_points_with_uri(&collection_name, 200)
+        .await?;
 
     let mut total_checked = 0u64;
-    let mut dangling_ids: Vec<(String, serde_json::Value)> = vec![]; // (collection, point_id)
+    let mut dangling_ids: Vec<String> = vec![];
 
-    for coll in &collections {
-        let mut offset: Option<serde_json::Value> = None;
+    for (point_id, uri_opt) in &points {
+        total_checked += 1;
+        
+        let uri = match uri_opt {
+            Some(u) if !u.is_empty() => u,
+            _ => continue,
+        };
 
-        loop {
-            let mut body = serde_json::json!({
-                "limit": 200,
-                "with_payload": ["uri"],
-                "with_vector": false,
-                "filter": {
-                    "must_not": [{"is_empty": {"key": "uri"}}]
-                }
-            });
-            if let Some(ref off) = offset {
-                body["offset"] = off.clone();
+        // Check if the file still exists in cortex filesystem
+        let exists = operations.exists(uri).await.unwrap_or(true); // assume exists on error
+        if !exists {
+            if dry_run {
+                println!("  {} would delete: {}", "→".dimmed(), uri);
             }
-
-            let scroll: serde_json::Value = client
-                .post(format!("{}/collections/{}/points/scroll", url, coll))
-                .json(&body)
-                .send().await?.json().await?;
-
-            let points = match scroll["result"]["points"].as_array() {
-                Some(p) if !p.is_empty() => p.clone(),
-                _ => break,
-            };
-
-            for pt in &points {
-                total_checked += 1;
-                let uri = match pt["payload"]["uri"].as_str() {
-                    Some(u) if !u.is_empty() => u,
-                    _ => continue,
-                };
-
-                // Check if the file still exists in cortex filesystem
-                let exists = operations.exists(uri).await.unwrap_or(true); // assume exists on error
-                if !exists {
-                    if dry_run {
-                        println!("  {} would delete: {}", "→".dimmed(), uri);
-                    }
-                    dangling_ids.push((coll.clone(), pt["id"].clone()));
-                }
-            }
-
-            offset = scroll["result"]["next_page_offset"].clone().into();
-            if offset.as_ref().map(|v| v.is_null()).unwrap_or(true) {
-                break;
-            }
+            dangling_ids.push(point_id.clone());
         }
     }
 
@@ -125,25 +89,10 @@ pub async fn prune(operations: Arc<MemoryOperations>, dry_run: bool) -> Result<(
         return Ok(());
     }
 
-    // Group by collection and batch-delete
-    let mut by_coll: std::collections::HashMap<String, Vec<serde_json::Value>> =
-        std::collections::HashMap::new();
-    for (coll, id) in dangling_ids {
-        by_coll.entry(coll).or_default().push(id);
-    }
+    // Delete dangling points using gRPC
+    vector_store.delete_points_by_ids(&collection_name, &dangling_ids).await?;
 
-    let mut total_deleted = 0usize;
-    for (coll, ids) in &by_coll {
-        let del: serde_json::Value = client
-            .post(format!("{}/collections/{}/points/delete", url, coll))
-            .json(&serde_json::json!({"points": ids}))
-            .send().await?.json().await?;
-        if del["status"].as_str() == Some("ok") {
-            total_deleted += ids.len();
-        }
-    }
-
-    println!("\n{} Pruned {} dangling vectors.", "✅".green(), total_deleted);
+    println!("\n{} Pruned {} dangling vectors.", "✅".green(), dangling_ids.len());
     Ok(())
 }
 
@@ -160,7 +109,7 @@ pub async fn status(operations: Arc<MemoryOperations>) -> Result<()> {
     }
     println!("  Total tracked files: ~{}", total_files);
 
-    match fetch_collection_stats().await {
+    match fetch_collection_stats(operations).await {
         Ok((total_pts, no_uri_pts)) => {
             println!("  Vectors in Qdrant:   {}", total_pts);
             if no_uri_pts > 0 {
@@ -183,90 +132,15 @@ pub async fn status(operations: Arc<MemoryOperations>) -> Result<()> {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-async fn fetch_collection_stats() -> Result<(u64, u64)> {
-    let url = qdrant_url();
-    let client = reqwest::Client::new();
-
-    let resp: serde_json::Value = client.get(format!("{}/collections", url))
-        .send().await?.json().await?;
-
-    let collections: Vec<String> = resp["result"]["collections"]
-        .as_array().unwrap_or(&vec![])
-        .iter()
-        .filter_map(|c| c["name"].as_str().map(|s| s.to_string()))
-        .collect();
-
-    if collections.is_empty() {
-        anyhow::bail!("No Qdrant collections found");
-    }
-
-    let mut total_pts = 0u64;
-    let mut no_uri_pts = 0u64;
-
-    for coll in &collections {
-        let info: serde_json::Value = client
-            .get(format!("{}/collections/{}", url, coll))
-            .send().await?.json().await?;
-        total_pts += info["result"]["points_count"].as_u64().unwrap_or(0);
-
-        let count_resp: serde_json::Value = client
-            .post(format!("{}/collections/{}/points/count", url, coll))
-            .json(&serde_json::json!({
-                "filter": {
-                    "must": [{"is_empty": {"key": "uri"}}]
-                }
-            }))
-            .send().await?.json().await?;
-
-        no_uri_pts += count_resp["result"]["count"].as_u64().unwrap_or(0);
-    }
+async fn fetch_collection_stats(operations: Arc<MemoryOperations>) -> Result<(u64, u64)> {
+    let vector_store = operations.vector_store();
+    let collection_name = vector_store.collection_name().to_string();
+    
+    // Get total points count
+    let total_pts = vector_store.get_collection_points_count(&collection_name).await?;
+    
+    // Get no-URI points count
+    let no_uri_pts = vector_store.count_no_uri_points(&collection_name).await?;
 
     Ok((total_pts, no_uri_pts))
-}
-
-async fn clean_no_uri_vectors() -> Result<usize> {
-    let url = qdrant_url();
-    let client = reqwest::Client::new();
-
-    let resp: serde_json::Value = client.get(format!("{}/collections", url))
-        .send().await?.json().await?;
-
-    let collections: Vec<String> = resp["result"]["collections"]
-        .as_array().unwrap_or(&vec![])
-        .iter()
-        .filter_map(|c| c["name"].as_str().map(|s| s.to_string()))
-        .collect();
-
-    let mut total_deleted = 0usize;
-
-    for coll in &collections {
-        let count_resp: serde_json::Value = client
-            .post(format!("{}/collections/{}/points/count", url, coll))
-            .json(&serde_json::json!({
-                "filter": {
-                    "must": [{"is_empty": {"key": "uri"}}]
-                }
-            }))
-            .send().await?.json().await?;
-
-        let count = count_resp["result"]["count"].as_u64().unwrap_or(0);
-        if count == 0 {
-            continue;
-        }
-
-        let del_resp: serde_json::Value = client
-            .post(format!("{}/collections/{}/points/delete", url, coll))
-            .json(&serde_json::json!({
-                "filter": {
-                    "must": [{"is_empty": {"key": "uri"}}]
-                }
-            }))
-            .send().await?.json().await?;
-
-        if del_resp["status"].as_str() == Some("ok") {
-            total_deleted += count as usize;
-        }
-    }
-
-    Ok(total_deleted)
 }

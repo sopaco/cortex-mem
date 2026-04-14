@@ -2,10 +2,11 @@ use async_trait::async_trait;
 use qdrant_client::{
     Qdrant,
     qdrant::{
-        Condition, CreateCollection, DeletePoints, Distance, FieldCondition, Filter, GetPoints,
-        Match, PointId, PointStruct, PointsIdsList, PointsSelector, Range, ScoredPoint,
-        ScrollPoints, SearchPoints, UpsertPoints, VectorParams, VectorsConfig, condition, r#match,
-        point_id, points_selector, vector_output, vectors_config, vectors_output,
+        Condition, CountPoints, CreateCollection, DeletePoints, Distance, FieldCondition, Filter,
+        GetPoints, IsEmptyCondition, Match, PointId, PointStruct, PointsIdsList, PointsSelector,
+        Range, ScoredPoint, ScrollPoints, SearchPoints, UpsertPoints, VectorParams, VectorsConfig,
+        condition, point_id, points_selector, r#match, vector_output, vectors_config,
+        vectors_output,
     },
 };
 use std::collections::HashMap;
@@ -833,6 +834,217 @@ impl QdrantVectorStore {
     /// Set the embedding dimension (used for auto-detection)
     pub fn set_embedding_dim(&mut self, dim: usize) {
         self.embedding_dim = Some(dim);
+    }
+
+    // ── Admin/Management Methods ─────────────────────────────────────────────
+
+    /// List all collection names in Qdrant
+    pub async fn list_collections(&self) -> Result<Vec<String>> {
+        let response = self
+            .client
+            .list_collections()
+            .await
+            .map_err(|e| Error::VectorStore(e))?;
+
+        let names: Vec<String> = response.collections.into_iter().map(|c| c.name).collect();
+        Ok(names)
+    }
+
+    /// Get collection info (points count, etc.)
+    pub async fn get_collection_points_count(&self, collection_name: &str) -> Result<u64> {
+        let response = self
+            .client
+            .collection_info(collection_name)
+            .await
+            .map_err(|e| Error::VectorStore(e))?;
+
+        let count = response
+            .result
+            .and_then(|info| info.points_count)
+            .unwrap_or(0);
+
+        Ok(count)
+    }
+
+    /// Scroll through all points with URI payload in a collection
+    ///
+    /// Returns a stream of (point_id, uri) pairs where uri is the file URI
+    pub async fn scroll_points_with_uri(
+        &self,
+        collection_name: &str,
+        batch_size: u32,
+    ) -> Result<Vec<(String, Option<String>)>> {
+        let mut results = Vec::new();
+        let mut offset: Option<PointId> = None;
+
+        loop {
+            let scroll_points = ScrollPoints {
+                collection_name: collection_name.to_string(),
+                limit: Some(batch_size),
+                offset: offset.clone(),
+                with_payload: Some(true.into()),
+                with_vectors: Some(false.into()),
+                filter: None,
+                ..Default::default()
+            };
+
+            let response = self
+                .client
+                .scroll(scroll_points)
+                .await
+                .map_err(|e| Error::VectorStore(e))?;
+
+            if response.result.is_empty() {
+                break;
+            }
+
+            for point in &response.result {
+                let point_id = match &point.id {
+                    Some(PointId {
+                        point_id_options: Some(pid),
+                    }) => match pid {
+                        point_id::PointIdOptions::Uuid(uuid) => uuid.clone(),
+                        point_id::PointIdOptions::Num(num) => num.to_string(),
+                    },
+                    _ => continue,
+                };
+
+                let uri = point.payload.get("uri").and_then(|v| match v {
+                    qdrant_client::qdrant::Value {
+                        kind: Some(qdrant_client::qdrant::value::Kind::StringValue(s)),
+                    } => Some(s.clone()),
+                    _ => None,
+                });
+
+                results.push((point_id, uri));
+            }
+
+            // Get next page offset
+            offset = response.next_page_offset;
+            if offset.is_none() {
+                break;
+            }
+        }
+
+        Ok(results)
+    }
+
+    /// Count points in collection, optionally with a filter
+    pub async fn count_points(&self, collection_name: &str, filter: Option<Filter>) -> Result<u64> {
+        let count_request = CountPoints {
+            collection_name: collection_name.to_string(),
+            filter,
+            exact: Some(true),
+            ..Default::default()
+        };
+
+        let response = self
+            .client
+            .count(count_request)
+            .await
+            .map_err(|e| Error::VectorStore(e))?;
+
+        Ok(response.result.map(|r| r.count).unwrap_or(0))
+    }
+
+    /// Count points with empty URI (stale vectors)
+    pub async fn count_no_uri_points(&self, collection_name: &str) -> Result<u64> {
+        let filter = Filter {
+            must: vec![Condition {
+                condition_one_of: Some(condition::ConditionOneOf::IsEmpty(IsEmptyCondition {
+                    key: "uri".to_string(),
+                })),
+            }],
+            ..Default::default()
+        };
+
+        self.count_points(collection_name, Some(filter)).await
+    }
+
+    /// Delete points by filter (e.g., points without URI)
+    pub async fn delete_points_by_filter(
+        &self,
+        collection_name: &str,
+        filter: Filter,
+    ) -> Result<()> {
+        let points_selector = PointsSelector {
+            points_selector_one_of: Some(points_selector::PointsSelectorOneOf::Filter(filter)),
+        };
+
+        let delete_request = DeletePoints {
+            collection_name: collection_name.to_string(),
+            points: Some(points_selector),
+            ..Default::default()
+        };
+
+        self.client
+            .delete_points(delete_request)
+            .await
+            .map_err(|e| Error::VectorStore(e))?;
+
+        debug!("Deleted points by filter from collection: {}", collection_name);
+        Ok(())
+    }
+
+    /// Delete points without URI (stale vectors)
+    pub async fn delete_no_uri_points(&self, collection_name: &str) -> Result<u64> {
+        // First count them
+        let count = self.count_no_uri_points(collection_name).await?;
+
+        if count == 0 {
+            return Ok(0);
+        }
+
+        let filter = Filter {
+            must: vec![Condition {
+                condition_one_of: Some(condition::ConditionOneOf::IsEmpty(IsEmptyCondition {
+                    key: "uri".to_string(),
+                })),
+            }],
+            ..Default::default()
+        };
+
+        self.delete_points_by_filter(collection_name, filter).await?;
+        Ok(count)
+    }
+
+    /// Delete specific points by IDs
+    pub async fn delete_points_by_ids(&self, collection_name: &str, ids: &[String]) -> Result<()> {
+        if ids.is_empty() {
+            return Ok(());
+        }
+
+        let point_ids: Vec<PointId> = ids
+            .iter()
+            .map(|id| PointId {
+                point_id_options: Some(point_id::PointIdOptions::Uuid(id.clone())),
+            })
+            .collect();
+
+        let points_selector = PointsSelector {
+            points_selector_one_of: Some(points_selector::PointsSelectorOneOf::Points(
+                PointsIdsList { ids: point_ids },
+            )),
+        };
+
+        let delete_request = DeletePoints {
+            collection_name: collection_name.to_string(),
+            points: Some(points_selector),
+            ..Default::default()
+        };
+
+        self.client
+            .delete_points(delete_request)
+            .await
+            .map_err(|e| Error::VectorStore(e))?;
+
+        debug!("Deleted {} points from collection: {}", ids.len(), collection_name);
+        Ok(())
+    }
+
+    /// Get the collection name (for admin operations that need to know the collection)
+    pub fn collection_name(&self) -> &str {
+        &self.collection_name
     }
 }
 
