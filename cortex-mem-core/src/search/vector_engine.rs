@@ -17,7 +17,7 @@ use tokio::sync::mpsc;
 use tracing::{debug, info, warn};
 
 /// Search options
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct SearchOptions {
     /// Maximum number of results
     pub limit: usize,
@@ -27,6 +27,10 @@ pub struct SearchOptions {
     pub root_uri: Option<String>,
     /// Enable recursive search
     pub recursive: bool,
+    /// Precomputed intent from LLM analysis.
+    /// If provided, semantic_search skips intent analysis and reuses this intent.
+    /// This reduces LLM calls from 5 per search → 1 per search.
+    pub precomputed_intent: Option<Arc<EnhancedQueryIntent>>,
 }
 
 impl Default for SearchOptions {
@@ -36,6 +40,7 @@ impl Default for SearchOptions {
             threshold: 0.6,
             root_uri: None,
             recursive: true,
+            precomputed_intent: None,
         }
     }
 }
@@ -262,13 +267,30 @@ impl VectorSearchEngine {
         Some((scope, owner_id, memory_id))
     }
 
+    /// Parse root_uri to extract (scope, owner_id) for filtering.
+    /// e.g. "cortex://session/wecom-alis" -> Some(("session", "wecom-alis"))
+    fn parse_root_uri(root_uri: &str) -> Option<(String, String)> {
+        let stripped = root_uri.strip_prefix("cortex://")?;
+        let parts: Vec<&str> = stripped.splitn(3, '/').collect();
+        if parts.len() < 2 {
+            return None;
+        }
+        Some((parts[0].to_string(), parts[1].to_string()))
+    }
+
     /// Semantic search using vector similarity
     pub async fn semantic_search(
         &self,
         query: &str,
         options: &SearchOptions,
     ) -> Result<Vec<SearchResult>> {
-        let intent = self.analyze_intent(query).await?;
+        // Reuse precomputed intent if available (reduces LLM calls from 5 → 1 per search)
+        let intent = if let Some(ref precomputed) = options.precomputed_intent {
+            info!("semantic_search: reusing precomputed intent (type={:?})", precomputed.intent_type);
+            (**precomputed).clone()
+        } else {
+            self.analyze_intent(query).await?
+        };
         let query_text = if intent.rewritten_query.trim().is_empty() {
             query
         } else {
@@ -279,7 +301,13 @@ impl VectorSearchEngine {
 
         let mut filters = crate::types::Filters::default();
         if let Some(scope) = &options.root_uri {
-            filters.uri_prefix = Some(scope.clone());
+            // Set owner_scope + uri_prefix so qdrant-level filtering uses exact scope
+            if let Some((owner_scope, _owner_id)) = Self::parse_root_uri(scope) {
+                filters.owner_scope = Some(owner_scope);
+                filters.uri_prefix = Some(scope.clone());
+            } else {
+                filters.uri_prefix = Some(scope.clone());
+            }
         }
 
         let scored = self
@@ -355,8 +383,13 @@ impl VectorSearchEngine {
         query: &str,
         options: &SearchOptions,
     ) -> Result<Vec<SearchResult>> {
-        // 1. LLM 统一意图分析（单次请求）
-        let intent = self.analyze_intent(query).await?;
+        // Reuse precomputed intent if available (reduces LLM calls from 5 → 1 per search)
+        let intent = if let Some(ref precomputed) = options.precomputed_intent {
+            info!("layered_semantic_search: reusing precomputed intent (type={:?})", precomputed.intent_type);
+            (**precomputed).clone()
+        } else {
+            self.analyze_intent(query).await?
+        };
 
         info!(
             "Intent analysis: type={:?}, entities={:?}, keywords={:?}, rewritten='{}'",
@@ -376,6 +409,9 @@ impl VectorSearchEngine {
         );
         let mut l0_filters = crate::types::Filters::with_layer("L0");
         if let Some(scope) = &options.root_uri {
+            if let Some((owner_scope, _owner_id)) = Self::parse_root_uri(scope) {
+                l0_filters.owner_scope = Some(owner_scope);
+            }
             l0_filters.uri_prefix = Some(scope.clone());
         }
 
@@ -560,7 +596,7 @@ impl VectorSearchEngine {
     }
 
     /// 统一意图分析（优先使用 LLM 单次调用，LLM 不可用时使用最小 fallback）
-    async fn analyze_intent(&self, query: &str) -> Result<EnhancedQueryIntent> {
+    pub async fn analyze_intent(&self, query: &str) -> Result<EnhancedQueryIntent> {
         if self.enable_intent_analysis {
             if let Some(llm) = &self.llm_client {
                 match self.analyze_intent_with_llm(llm.as_ref(), query).await {

@@ -1,7 +1,7 @@
 use axum::{Router, routing::get};
 use clap::Parser;
 use std::fs::File;
-use std::net::SocketAddr;
+use std::net::{SocketAddr, IpAddr};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use tower_http::cors::CorsLayer;
@@ -139,7 +139,8 @@ async fn main() -> anyhow::Result<()> {
         .with_state(state);
 
     // Start server
-    let addr = SocketAddr::from(([127, 0, 0, 1], cli.port));
+    let ip: IpAddr = cli.host.parse().unwrap_or(IpAddr::from([0, 0, 0, 0]));
+    let addr = SocketAddr::from((ip, cli.port));
     info!("Server listening on http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;

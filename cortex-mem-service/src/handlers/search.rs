@@ -59,6 +59,7 @@ async fn search_layered(
         threshold: min_score,
         root_uri: None,
         recursive: true,
+        precomputed_intent: None,
     };
     let mut semantic_options = options.clone();
     semantic_options.threshold = (min_score * 0.5).max(0.0);
@@ -84,6 +85,14 @@ async fn search_layered(
     };
 
     let profile = build_query_profile(query);
+
+    // [优化] 一次性 intent 分析，后续 semantic_search 复用（5次LLM→1次）
+    let precomputed_intent = vector_engine.analyze_intent(query).await?;
+    let precomputed_intent = Arc::new(precomputed_intent);
+    options.precomputed_intent = Some(precomputed_intent.clone());
+    semantic_options.precomputed_intent = Some(precomputed_intent.clone());
+    tracing::info!("[search优化] intent precomputed: type={:?}, keywords={:?}",
+        precomputed_intent.intent_type, precomputed_intent.keywords);
 
     let layered_results = vector_engine
         .layered_semantic_search(query, &options)

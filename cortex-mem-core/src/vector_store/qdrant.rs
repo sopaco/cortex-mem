@@ -343,6 +343,21 @@ impl QdrantVectorStore {
     fn filters_to_qdrant_filter(&self, filters: &Filters) -> Option<Filter> {
         let mut conditions = Vec::new();
 
+        // Filter by scope + uri_prefix as a Match on the uri field
+        // This enables session/agent/user scope filtering at the qdrant level
+        if filters.owner_scope.is_some() && filters.uri_prefix.is_some() {
+            let uri_prefix = filters.uri_prefix.as_ref().unwrap();
+            conditions.push(Condition {
+                condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
+                    key: "uri".to_string(),
+                    r#match: Some(Match {
+                        match_value: Some(r#match::MatchValue::Text(uri_prefix.clone())),
+                    }),
+                    ..Default::default()
+                })),
+            });
+        }
+
         if let Some(user_id) = &filters.user_id {
             conditions.push(Condition {
                 condition_one_of: Some(condition::ConditionOneOf::Field(FieldCondition {
