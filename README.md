@@ -317,7 +317,15 @@ openclaw plugins install @memclaw/memclaw
 
 ## Documentation
 
-For detailed configuration, troubleshooting, and best practices, see the [MemClaw README](examples/@memclaw/plugin/README.md).
+For current maintenance status and repository details, see the [MemClaw project notice](examples/@memclaw/README.md).
+
+---
+
+# Source Memory Example: TweetClaw X/Twitter Signals
+
+Cortex Memory can keep reviewed public X/Twitter research from TweetClaw as durable source memory without storing credentials, raw exports, or private account data. This is useful for OpenClaw agents that collect market, support, competitor, or community signals and need to recall why a decision was made later.
+
+See [TweetClaw X/Twitter source memory](examples/tweetclaw-x-signal-memory.md) for setup, storage shape, and search examples.
 
 ---
 
