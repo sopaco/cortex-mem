@@ -221,6 +221,8 @@ pub struct Filters {
     pub max_importance: Option<f32>,
     /// URI prefix filter for scope-based searching
     pub uri_prefix: Option<String>,
+    /// Owner scope hint: "session", "agent", or "user" (used with uri_prefix to construct qdrant filter)
+    pub owner_scope: Option<String>,
     pub custom: HashMap<String, serde_json::Value>,
 }
 

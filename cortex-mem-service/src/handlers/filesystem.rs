@@ -519,6 +519,7 @@ pub async fn explore(
         threshold: 0.3, // Lower threshold for exploration
         root_uri: Some(req.start_uri.clone()),
         recursive: true,
+        precomputed_intent: None,
     };
 
     let search_results = vector_engine
