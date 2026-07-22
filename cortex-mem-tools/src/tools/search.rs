@@ -117,6 +117,7 @@ impl MemoryOperations {
             threshold: 0.5,
             root_uri: args.scope.clone(),
             recursive: args.recursive.unwrap_or(true),
+            precomputed_intent: None,
         };
 
         // Use layered semantic search for L0/L1/L2 tiered retrieval

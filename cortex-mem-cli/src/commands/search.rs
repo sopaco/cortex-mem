@@ -48,6 +48,7 @@ pub async fn execute(
         threshold: min_score,
         root_uri: Some(scope_uri.clone()),
         recursive: true,
+        precomputed_intent: None,
     };
 
     // Perform layered vector search (L0/L1/L2 hierarchical search)
